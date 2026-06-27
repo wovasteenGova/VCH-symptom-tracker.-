@@ -1,0 +1,152 @@
+type UserProfilePayload = {
+  full_name?: string | null
+  display_name?: string | null
+}
+
+type SupporterProfilePayload = {
+  link_label?: string | null
+  visible_conditions: string[]
+}
+
+async function sha256Hex(value: string) {
+  const encodedValue = new TextEncoder().encode(value)
+  const hashBuffer = await crypto.subtle.digest('SHA-256', encodedValue)
+
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('')
+}
+
+function createLinkToken() {
+  const randomValues = new Uint8Array(32)
+  crypto.getRandomValues(randomValues)
+
+  return Array.from(randomValues)
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('')
+}
+
+export function useUserProfiles() {
+  const supabase = useSupabaseClient()
+
+  async function getUserId() {
+    const { data, error } = await supabase.auth.getUser()
+
+    if (error) {
+      throw error
+    }
+
+    if (!data.user) {
+      throw new Error('Please sign in first.')
+    }
+
+    return data.user.id
+  }
+
+  async function getProfile() {
+    const userId = await getUserId()
+
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    if (error) {
+      throw error
+    }
+
+    return data
+  }
+
+  async function upsertProfile(payload: UserProfilePayload) {
+    const userId = await getUserId()
+
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .upsert({
+        user_id: userId,
+        ...payload,
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+
+    if (error) {
+      throw error
+    }
+
+    return data
+  }
+
+  async function listSupporterProfiles() {
+    const userId = await getUserId()
+
+    const { data, error } = await supabase
+      .from('supporter_profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      throw error
+    }
+
+    return data || []
+  }
+
+  async function createSupporterProfile(payload: SupporterProfilePayload) {
+    const userId = await getUserId()
+    const token = createLinkToken()
+    const tokenHash = await sha256Hex(token)
+
+    const linkLabel = payload.link_label?.trim()
+    const displayName = linkLabel || 'Private supporter link'
+
+    const { data, error } = await supabase
+      .from('supporter_profiles')
+      .insert({
+        user_id: userId,
+        display_name: displayName,
+        visible_conditions: payload.visible_conditions,
+        token_hash: tokenHash
+      })
+      .select()
+      .single()
+
+    if (error) {
+      throw error
+    }
+
+    return {
+      profile: data,
+      token
+    }
+  }
+
+  async function toggleSupporterProfile(id: string, active: boolean) {
+    const { data, error } = await supabase
+      .from('supporter_profiles')
+      .update({
+        active,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) {
+      throw error
+    }
+
+    return data
+  }
+
+  return {
+    getProfile,
+    upsertProfile,
+    listSupporterProfiles,
+    createSupporterProfile,
+    toggleSupporterProfile
+  }
+}

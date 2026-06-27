@@ -40,7 +40,7 @@
             type="button"
             class="grid size-10 place-items-center rounded-full bg-slate-900 text-white shadow-sm ring-1 ring-slate-800 transition hover:bg-slate-800"
             :aria-label="user ? 'Open account' : 'Sign in'"
-            @click="toggleAuthPanel"
+            @click="handleProfileClick"
           >
             <UIcon :name="user ? 'i-lucide-user-check' : 'i-lucide-user-round'" class="size-5" />
           </button>
@@ -92,6 +92,18 @@
             </div>
 
             <form v-else class="mt-4 space-y-3" @submit.prevent="handleAuthSubmit">
+            <label v-if="authMode === 'signup'" class="block">
+              <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Name</span>
+              <input
+                v-model="authName"
+                type="text"
+                autocomplete="name"
+                class="w-full rounded-3xl border border-slate-600/70 bg-slate-800/70 px-4 py-4 text-base font-medium text-white outline-none placeholder:text-slate-400 focus:border-slate-400"
+                placeholder="Your full name"
+                required
+              >
+            </label>
+
             <label class="block">
               <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Email</span>
               <input
@@ -100,6 +112,18 @@
                 autocomplete="email"
                 class="w-full rounded-3xl border border-slate-600/70 bg-slate-800/70 px-4 py-4 text-base font-medium text-white outline-none placeholder:text-slate-400 focus:border-slate-400"
                 placeholder="you@example.com"
+                required
+              >
+            </label>
+
+            <label v-if="authMode === 'signup'" class="block">
+              <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Confirm password</span>
+              <input
+                v-model="authConfirmPassword"
+                type="password"
+                autocomplete="new-password"
+                class="w-full rounded-3xl border border-slate-600/70 bg-slate-800/70 px-4 py-4 text-base font-medium text-white outline-none placeholder:text-slate-400 focus:border-slate-400"
+                placeholder="Re-enter password"
                 required
               >
             </label>
@@ -582,6 +606,7 @@
 import { useSupabaseAuth } from '../composables/useSupabaseAuth'
 import { useSymptomEntries } from '../composables/useSymptomEntries'
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 
 const {
   user,
@@ -592,14 +617,17 @@ const {
   sendPasswordReset,
   signOut
 } = useSupabaseAuth()
+const router = useRouter()
 
 const activeIndex = ref(0)
 const activeHistoryTab = ref('Entries')
 const isEntryOpen = ref(false)
 const isAuthPanelOpen = ref(false)
 const authMode = ref<'login' | 'signup'>('login')
+const authName = ref('')
 const authEmail = ref('')
 const authPassword = ref('')
+const authConfirmPassword = ref('')
 const authMessage = ref('')
 const isAuthSubmitting = ref(false)
 const hasActiveDraft = ref(false)
@@ -1282,6 +1310,15 @@ function toggleAuthPanel() {
   isAuthPanelOpen.value = !isAuthPanelOpen.value
 }
 
+function handleProfileClick() {
+  if (user.value) {
+    router.push('/profile')
+    return
+  }
+
+  toggleAuthPanel()
+}
+
 async function handleAuthSubmit() {
   isAuthSubmitting.value = true
   authMessage.value = ''
@@ -1290,7 +1327,12 @@ async function handleAuthSubmit() {
     if (authMode.value === 'login') {
       await signIn(authEmail.value, authPassword.value)
     } else {
-      const data = await signUp(authEmail.value, authPassword.value)
+      if (authPassword.value !== authConfirmPassword.value) {
+        authMessage.value = 'Passwords do not match.'
+        return
+      }
+
+      const data = await signUp(authEmail.value, authPassword.value, authName.value)
 
       if (data.user) {
         authMessage.value = data.session

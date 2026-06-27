@@ -187,7 +187,7 @@ Primary page:
 
 Core features:
 - Require account login before saving symptom entries. Do not rely on anonymous auth for real user data.
-- Auth should support email/password, forgot password email, and Google login through Supabase Auth.
+- Auth should support name, email/password, confirm password, forgot password email, and Google login through Supabase Auth.
 - Home screen starts with a swipe/click condition slider. MVP condition templates: PTSD/Mental Health, Back or Joint Pain, Nerve/Radiculopathy, Migraine/Headache, GERD/IBS, and Sleep Issues.
 - The first slider card should always be a condition search card. It searches the larger condition library with debounced/live results after the user stops typing.
 - Search results should use compact entry-style rows with a small image on the left and condition/category text on the right. Tapping a result should select that condition and start an entry with the closest matching field template.
@@ -207,6 +207,9 @@ Core features:
 - Fields: symptom type, severity `1-10`, date/time, duration, body area, triggers, medication/treatment, missed work/activity, notes.
 - Optional evidence context: "could support claim for," "flare-up," "C&P/review note," "doctor visit planned."
 - Family/supporter observations: veteran can generate a private link and send it to a spouse, parent, adult child, caregiver, or trusted friend so they can submit notes like "I saw my dad have a hard time working today."
+- User profile page: users can add full name and manage supporter profiles.
+- Supporter profiles: veteran creates a profile for a trusted person, chooses which conditions are visible to that person, and gets a private link.
+- Supporter links must not expose the veteran's full history. The supporter sees only the allowed condition labels and can submit observations for review.
 - Tracking modes: Minimal Mode, Assisted Mode, Emergency Episode Log, and Family Observation Mode.
 - Condition-specific defaults: physical conditions can support daily/event logs; mental health defaults to weekly reflection unless detailed logging is enabled.
 - Dashboard summary: recent logs, average severity, most common symptoms, monthly count.

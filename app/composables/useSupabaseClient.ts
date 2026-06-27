@@ -1,4 +1,6 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+
+let browserClient: SupabaseClient | null = null
 
 export function useSupabaseClient() {
   const config = useRuntimeConfig()
@@ -9,11 +11,21 @@ export function useSupabaseClient() {
     throw new Error('Missing Supabase config. Set SUPABASE_URL and SUPABASE_ANON_KEY in .env.')
   }
 
-  return createClient(supabaseUrl, supabasePublishableKey, {
+  if (import.meta.client && browserClient) {
+    return browserClient
+  }
+
+  const client = createClient(supabaseUrl, supabasePublishableKey, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true
     }
   })
+
+  if (import.meta.client) {
+    browserClient = client
+  }
+
+  return client
 }
