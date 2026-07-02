@@ -146,6 +146,26 @@ export function useUserProfiles() {
     return data
   }
 
+  async function createSupporterProfileLink(profileId: string) {
+    const userId = await getUserId()
+    const token = createLinkToken()
+    const tokenHash = await sha256Hex(token)
+
+    const { error } = await supabase
+      .from('supporter_link_tokens')
+      .insert({
+        supporter_profile_id: profileId,
+        user_id: userId,
+        token_hash: tokenHash
+      })
+
+    if (error) {
+      throw error
+    }
+
+    return token
+  }
+
   async function deleteSupporterProfile(id: string) {
     const userId = await getUserId()
 
@@ -165,6 +185,7 @@ export function useUserProfiles() {
     upsertProfile,
     listSupporterProfiles,
     createSupporterProfile,
+    createSupporterProfileLink,
     toggleSupporterProfile,
     deleteSupporterProfile
   }

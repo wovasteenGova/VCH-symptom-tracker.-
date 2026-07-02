@@ -1,7 +1,7 @@
 <template>
   <main class="flex min-h-dvh flex-col bg-slate-50 text-slate-950 transition-colors dark:bg-slate-950 dark:text-white">
     <section class="mx-auto flex w-full max-w-md flex-1 flex-col px-4 pt-4 sm:max-w-lg">
-      <header class="flex items-start justify-between gap-3">
+      <header class="sticky top-0 z-40 -mx-4 flex shrink-0 items-start justify-between gap-3 border-b border-slate-200 bg-slate-50/95 px-4 pb-4 pt-4 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/95">
         <div>
           <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Supporter Report</p>
           <h1 class="mt-1 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">Submit an observation</h1>

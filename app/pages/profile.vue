@@ -297,17 +297,30 @@
               <p class="mt-1 text-sm text-sky-100">{{ profile.entry_context_summary }}</p>
             </div>
 
-            <div class="mt-4 grid grid-cols-2 gap-3">
+            <div class="mt-4 flex items-center gap-3">
               <button
                 type="button"
-                class="rounded-2xl bg-slate-800 px-4 py-3 text-sm font-bold text-white ring-1 ring-slate-700"
+                class="grid size-11 shrink-0 place-items-center rounded-full bg-slate-800 text-white ring-1 ring-slate-700 transition hover:bg-slate-700"
+                :disabled="isCopyingSupporterId === profile.id"
+                :aria-label="`Copy link for ${profile.display_name || 'private supporter link'}`"
+                @click="copyExistingSupporterLink(profile)"
+              >
+                <UIcon
+                  :name="copiedSupporterId === profile.id ? 'i-lucide-check' : 'i-lucide-copy'"
+                  class="size-4"
+                />
+                <span class="sr-only">{{ copiedSupporterId === profile.id ? 'Copied' : 'Copy link' }}</span>
+              </button>
+              <button
+                type="button"
+                class="flex-1 rounded-2xl bg-slate-800 px-4 py-3 text-sm font-bold text-white ring-1 ring-slate-700"
                 @click="toggleSupporter(profile)"
               >
                 {{ profile.active ? 'Disable link' : 'Reactivate link' }}
               </button>
               <button
                 type="button"
-                class="rounded-2xl bg-red-950/50 px-4 py-3 text-sm font-bold text-red-300 ring-1 ring-red-900/60"
+                class="flex-1 rounded-2xl bg-red-950/50 px-4 py-3 text-sm font-bold text-red-300 ring-1 ring-red-900/60"
                 @click="requestDeleteSupporter(profile)"
               >
                 Delete link
@@ -453,6 +466,7 @@ const {
   upsertProfile,
   listSupporterProfiles,
   createSupporterProfile,
+  createSupporterProfileLink,
   toggleSupporterProfile,
   deleteSupporterProfile
 } = useUserProfiles()
@@ -499,6 +513,8 @@ const isSavingProfile = ref(false)
 const isCreatingSupporter = ref(false)
 const isRestoringEntryId = ref<string | null>(null)
 const isDeletingSupporterId = ref<string | null>(null)
+const isCopyingSupporterId = ref<string | null>(null)
+const copiedSupporterId = ref<string | null>(null)
 const pendingPurgeEntry = ref<null | { id: string, title: string }>(null)
 const pendingDeleteSupporter = ref<null | { id: string, display_name: string }>(null)
 
@@ -650,6 +666,32 @@ async function copyCreatedLink() {
   const copied = await copyToClipboard(createdLink.value)
   createdLinkCopied.value = copied
   pageError.value = copied ? '' : 'Could not copy link. Copy it manually.'
+}
+
+async function copyExistingSupporterLink(profile: any) {
+  pageError.value = ''
+  pageMessage.value = ''
+  copiedSupporterId.value = null
+  isCopyingSupporterId.value = profile.id
+
+  try {
+    const token = await createSupporterProfileLink(profile.id)
+    const link = `${window.location.origin}/report/${token}`
+    const copied = await copyToClipboard(link)
+
+    if (copied) {
+      copiedSupporterId.value = profile.id
+      pageMessage.value = 'Private link copied.'
+    } else {
+      pageError.value = 'Could not copy link. Copy it manually.'
+      createdLink.value = link
+      createdLinkCopied.value = false
+    }
+  } catch (error) {
+    pageError.value = getErrorMessage(error)
+  } finally {
+    isCopyingSupporterId.value = null
+  }
 }
 
 function requestDeleteSupporter(profile: any) {
