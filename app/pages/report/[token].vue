@@ -14,7 +14,42 @@
         />
       </header>
 
-      <div class="mt-5 rounded-4xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <Transition
+        enter-active-class="transition duration-300 ease-out"
+        enter-from-class="-translate-y-3 opacity-0"
+        enter-to-class="translate-y-0 opacity-100"
+        leave-active-class="transition duration-200 ease-in"
+        leave-from-class="translate-y-0 opacity-100"
+        leave-to-class="-translate-y-3 opacity-0"
+      >
+        <div
+          v-if="pageMessage"
+          class="sticky top-[5.25rem] z-30 mt-4 flex items-start gap-3 rounded-3xl border border-emerald-200 bg-emerald-50 p-4 shadow-xl shadow-emerald-950/10 dark:border-emerald-900/70 dark:bg-emerald-950/40 dark:shadow-black/20"
+        >
+          <span class="grid size-10 shrink-0 place-items-center rounded-full bg-emerald-600 text-white">
+            <UIcon name="i-lucide-circle-check" class="size-5" />
+          </span>
+          <div class="min-w-0 flex-1">
+            <p class="font-bold text-emerald-950 dark:text-emerald-100">{{ pageMessage }}</p>
+            <p class="mt-1 text-[0.875rem] leading-6 text-emerald-900/80 dark:text-emerald-100/80">
+              Your observation was sent to the veteran for review.
+            </p>
+          </div>
+          <button
+            type="button"
+            class="grid size-8 shrink-0 place-items-center rounded-full text-emerald-800 transition hover:bg-emerald-100 dark:text-emerald-100 dark:hover:bg-emerald-900/60"
+            aria-label="Dismiss submission confirmation"
+            @click="pageMessage = ''"
+          >
+            <UIcon name="i-lucide-x" class="size-4" />
+          </button>
+        </div>
+      </Transition>
+
+      <div
+        v-if="!supporterProfile?.entry_context_summary"
+        class="mt-5 rounded-4xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+      >
         <p class="text-sm leading-6 text-slate-600 dark:text-slate-400">
           Enter your information and what you observed. The veteran reviews these notes before using them.
         </p>
@@ -29,14 +64,14 @@
       </section>
 
       <template v-else>
-        <div class="shrink-0 space-y-5">
+        <div class="mt-5 shrink-0 space-y-5">
         <section
           v-if="supporterProfile?.entry_context_summary"
           class="rounded-4xl border border-teal-200 bg-teal-50 p-4 dark:border-teal-500/30 dark:bg-teal-950/30"
         >
           <p class="text-xs font-bold uppercase tracking-[0.14em] text-teal-700 dark:text-teal-200">About this entry</p>
           <p class="mt-2 text-sm leading-6 text-teal-950/90 dark:text-teal-50/90">
-            The veteran shared a private link about
+            Entry context:
             <span class="font-semibold text-slate-950 dark:text-white">{{ supporterProfile.entry_context_summary }}</span>.
           </p>
         </section>
@@ -95,8 +130,8 @@
             >
               <div
                 :key="observationStep"
-                class="flex min-h-0 flex-1 flex-col overflow-y-auto no-scrollbar px-4 py-5"
-                :class="observationStep === 2 ? 'justify-center' : 'justify-start space-y-6'"
+                class="flex min-h-0 flex-1 flex-col overflow-y-auto no-scrollbar px-4"
+                :class="observationStep === 2 ? 'justify-center gap-5 py-8' : 'justify-start space-y-6 py-5'"
               >
                 <!-- Step 0: Your information -->
                 <template v-if="observationStep === 0">
@@ -362,9 +397,9 @@
             </Transition>
           </div>
 
-          <StickyActionBar>
+          <div class="sticky bottom-0 z-30 -mx-4 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
             <ul
-              v-if="currentStepBlockers.length && !isSubmitting"
+              v-if="showCurrentStepBlockers && currentStepBlockers.length && !isSubmitting"
               class="mb-4 rounded-3xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/60 dark:bg-amber-950/30"
             >
               <li
@@ -388,8 +423,7 @@
               <UIcon :name="isLastObservationStep ? 'i-lucide-check' : 'i-lucide-arrow-right'" class="size-5" />
             </button>
 
-            <p v-if="pageMessage" class="mt-4 text-center text-sm font-medium text-emerald-700 dark:text-emerald-200">{{ pageMessage }}</p>
-          </StickyActionBar>
+          </div>
         </form>
 
         <footer class="mt-6 flex shrink-0 items-center justify-center gap-3 pb-[max(1rem,env(safe-area-inset-bottom))] text-xs font-semibold text-slate-500">
@@ -549,6 +583,10 @@ function getAllSubmitBlockers() {
 }
 
 const currentStepBlockers = computed(() => getStepBlockers(observationStep.value))
+
+const showCurrentStepBlockers = computed(() => {
+  return observationStep.value !== 3 || Boolean(submitError.value)
+})
 
 function relationshipChipClass(suggestion: typeof relationshipSuggestions[number]) {
   const isSelected = form.value.relationship === suggestion.label

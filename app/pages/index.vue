@@ -42,6 +42,78 @@
             class="header-color-toggle"
           />
 
+          <div v-if="user" class="relative">
+            <button
+              type="button"
+              class="relative grid size-10 place-items-center rounded-full bg-white text-slate-950 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-100 dark:bg-slate-900 dark:text-white dark:ring-slate-800 dark:hover:bg-slate-800"
+              :aria-expanded="isSubmissionDropdownOpen"
+              aria-label="Open submission notifications"
+              @click="toggleSubmissionDropdown"
+            >
+              <UIcon name="i-lucide-inbox" class="size-5" />
+              <span
+                v-if="unreadSubmissionCount"
+                class="absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-sky-500 px-1.5 text-[0.65rem] font-bold leading-5 text-white ring-2 ring-slate-50 dark:ring-slate-950"
+              >
+                {{ unreadSubmissionCount }}
+              </span>
+            </button>
+
+            <Transition
+              enter-active-class="transition duration-200 ease-out"
+              enter-from-class="-translate-y-1 opacity-0"
+              enter-to-class="translate-y-0 opacity-100"
+              leave-active-class="transition duration-150 ease-in"
+              leave-from-class="translate-y-0 opacity-100"
+              leave-to-class="-translate-y-1 opacity-0"
+            >
+              <div
+                v-if="isSubmissionDropdownOpen"
+                class="absolute right-0 top-12 z-50 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/15 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/40"
+              >
+                <div class="border-b border-slate-200 px-4 py-3 dark:border-slate-800">
+                  <div class="flex items-center gap-2">
+                    <UIcon name="i-lucide-inbox" class="size-4 text-sky-500" />
+                    <p class="text-[0.875rem] font-bold text-slate-950 dark:text-white">Family submissions</p>
+                  </div>
+                  <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    Supporter observations submitted from private links.
+                  </p>
+                </div>
+
+                <div v-if="!familySubmissionNotifications.length" class="px-4 py-6 text-center text-[0.875rem] text-slate-500 dark:text-slate-400">
+                  No family submissions yet.
+                </div>
+
+                <div v-else class="max-h-80 overflow-y-auto no-scrollbar p-2">
+                  <button
+                    v-for="submission in familySubmissionNotifications"
+                    :key="submission.id"
+                    type="button"
+                    class="flex w-full items-start gap-3 rounded-2xl px-3 py-3 text-left transition hover:bg-slate-100 dark:hover:bg-slate-800/80"
+                    @click="focusSubmission(submission.id)"
+                  >
+                    <span
+                      class="mt-0.5 grid size-9 shrink-0 place-items-center rounded-full"
+                      :class="highlightedSubmissionIds.has(submission.id)
+                        ? 'bg-sky-500 text-white'
+                        : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300'"
+                    >
+                      <UIcon name="i-lucide-message-square-text" class="size-4" />
+                    </span>
+                    <span class="min-w-0 flex-1">
+                      <span class="block truncate text-[0.875rem] font-bold text-slate-950 dark:text-white">{{ submission.title }}</span>
+                      <span class="mt-1 line-clamp-2 block text-xs leading-5 text-slate-500 dark:text-slate-400">{{ submission.summary }}</span>
+                      <span class="mt-1 block text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
+                        {{ submission.condition }} · {{ submission.timeLabel }}
+                      </span>
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </Transition>
+          </div>
+
           <button
             type="button"
             class="grid size-10 place-items-center rounded-full bg-white text-slate-950 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-100 dark:bg-slate-900 dark:text-white dark:ring-slate-800 dark:hover:bg-slate-800"
@@ -720,7 +792,7 @@
           <div class="relative flex min-h-0 flex-col">
             <div
               class="relative w-full shrink-0 overflow-hidden rounded-[1.75rem] transition-[height,max-height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
-              :class="historyExpanded ? 'h-[50dvh]' : 'h-[62dvh]'"
+              :class="historyExpanded ? 'h-[50dvh]' : 'h-[55dvh]'"
             >
               <Transition
                 :enter-active-class="slideEnterActiveClass"
@@ -749,7 +821,7 @@
                   <div class="relative mt-2 min-h-0 flex-1">
                     <div
                       ref="conditionScrollEl"
-                      class="no-scrollbar h-full space-y-1 overflow-y-auto px-1"
+                      class="no-scrollbar h-full space-y-1 overflow-y-auto px-1 pb-16"
                       @scroll="handleConditionScroll"
                     >
                       <div
@@ -799,7 +871,8 @@
 
                     <div
                       v-if="filteredConditionResults.length > 2 && !showConditionSearchEmptyState"
-                      class="pointer-events-none absolute inset-x-0 bottom-0 flex h-10 items-end justify-center bg-linear-to-t from-white via-white/80 to-transparent pb-1 dark:from-slate-950 dark:via-slate-950/80"
+                      class="pointer-events-none absolute inset-x-0 bottom-1 flex h-8 items-end justify-center bg-linear-to-t from-white via-white/70 to-transparent pb-1 transition-opacity duration-200 dark:from-slate-950 dark:via-slate-950/70"
+                      :class="isConditionScrolling ? 'opacity-0' : 'opacity-100'"
                     >
                       <span class="text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
                         Scroll for more
@@ -985,7 +1058,11 @@
               <article
                 v-for="entry in historyEntries"
                 :key="entry.id"
-                class="rounded-2xl py-3 transition hover:bg-slate-50 active:bg-slate-100 dark:hover:bg-slate-900/70 dark:active:bg-slate-900"
+                :data-entry-id="entry.id"
+                class="rounded-2xl px-2 py-3 transition duration-500 hover:bg-slate-50 active:bg-slate-100 dark:hover:bg-slate-900/70 dark:active:bg-slate-900"
+                :class="highlightedSubmissionIds.has(entry.id)
+                  ? 'bg-sky-50 ring-2 ring-sky-300 shadow-lg shadow-sky-950/10 dark:bg-sky-950/30 dark:ring-sky-500/70 dark:shadow-black/20'
+                  : ''"
               >
                 <div class="flex items-center gap-3">
                   <button
@@ -1275,7 +1352,7 @@ import {
 import { getEntryFieldPresets } from '../utils/entryFieldPresets'
 import { getSeverityGuidance, severityQuickPresets } from '../utils/severityGuidance'
 import { CalendarDate } from '@internationalized/date'
-import { computed, onMounted, ref, shallowRef, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, shallowRef, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 const {
@@ -1327,6 +1404,10 @@ const deferredInstallPrompt = ref<any>(null)
 const historyExpanded = ref(false)
 const historyScrollEl = ref<HTMLElement | null>(null)
 const conditionScrollEl = ref<HTMLElement | null>(null)
+const isConditionScrolling = ref(false)
+const isSubmissionDropdownOpen = ref(false)
+const lastSeenSubmissionAt = ref('')
+const highlightedSubmissionIds = ref<Set<string>>(new Set())
 const searchQuery = ref('')
 const debouncedSearchQuery = ref('')
 const selectedSearchCondition = ref<null | {
@@ -1439,6 +1520,7 @@ const entryPickerDays = computed(() => {
 
 const historyTabs = ['Entries', 'Calendar']
 const installDismissedKey = 'symptom-tracker-install-dismissed'
+const submissionHighlightDurationMs = 60_000
 
 const pendingDelete = ref<null | {
   id: string
@@ -1674,6 +1756,40 @@ const conditionResults = [
 
 const historyEntries = computed(() => {
   return savedEntries.value.map((entry) => mapEntryHistoryItem(entry))
+})
+
+const familySubmissionNotifications = computed(() => {
+  return savedEntries.value
+    .filter((entry) => entry.source === 'family')
+    .map((entry) => {
+      const entryDate = entry.occurred_at ? new Date(entry.occurred_at) : new Date(entry.created_at)
+
+      return {
+        id: entry.id,
+        condition: entry.condition_label,
+        title: entry.summary || entry.condition_label,
+        summary: entry.impact || 'No impact note added',
+        createdAt: entry.created_at || entry.occurred_at || '',
+        timeLabel: entryDate.toLocaleString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit'
+        })
+      }
+    })
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+})
+
+const unreadSubmissionCount = computed(() => {
+  if (!lastSeenSubmissionAt.value) {
+    return familySubmissionNotifications.value.length
+  }
+
+  const lastSeenTime = new Date(lastSeenSubmissionAt.value).getTime()
+  return familySubmissionNotifications.value.filter((submission) => {
+    return new Date(submission.createdAt).getTime() > lastSeenTime
+  }).length
 })
 
 const weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
@@ -2172,6 +2288,8 @@ const installInstructionText = computed(() => {
 
 let searchTimer: ReturnType<typeof setTimeout> | undefined
 let customConditionTimer: ReturnType<typeof setTimeout> | undefined
+let conditionScrollTimer: ReturnType<typeof setTimeout> | undefined
+let submissionHighlightTimer: ReturnType<typeof setTimeout> | undefined
 
 watch(searchQuery, (value) => {
   if (searchTimer) {
@@ -2488,6 +2606,9 @@ async function promptInstall() {
 async function loadEntries() {
   if (!user.value) {
     savedEntries.value = []
+    isSubmissionDropdownOpen.value = false
+    lastSeenSubmissionAt.value = ''
+    highlightedSubmissionIds.value = new Set()
     return
   }
 
@@ -2497,11 +2618,100 @@ async function loadEntries() {
   try {
     const { listEntries } = useSymptomEntries()
     savedEntries.value = await listEntries()
+    updateSubmissionHighlights(savedEntries.value)
   } catch (error) {
     entriesError.value = getErrorMessage(error)
   } finally {
     isLoadingEntries.value = false
   }
+}
+
+function getSubmissionSeenKey() {
+  return user.value ? `symptom-tracker-family-submissions-seen:${user.value.id}` : ''
+}
+
+function loadSubmissionSeenState() {
+  if (!import.meta.client) {
+    return
+  }
+
+  const key = getSubmissionSeenKey()
+  lastSeenSubmissionAt.value = key ? window.localStorage.getItem(key) || '' : ''
+}
+
+function updateSubmissionHighlights(entries: any[]) {
+  loadSubmissionSeenState()
+
+  const lastSeenTime = lastSeenSubmissionAt.value
+    ? new Date(lastSeenSubmissionAt.value).getTime()
+    : 0
+  const newFamilyEntryIds = entries
+    .filter((entry) => entry.source === 'family')
+    .filter((entry) => {
+      const createdAt = entry.created_at || entry.occurred_at
+      return createdAt && new Date(createdAt).getTime() > lastSeenTime
+    })
+    .map((entry) => entry.id)
+
+  if (!newFamilyEntryIds.length) {
+    return
+  }
+
+  highlightedSubmissionIds.value = new Set([
+    ...highlightedSubmissionIds.value,
+    ...newFamilyEntryIds
+  ])
+
+  if (submissionHighlightTimer) {
+    clearTimeout(submissionHighlightTimer)
+  }
+
+  submissionHighlightTimer = setTimeout(() => {
+    highlightedSubmissionIds.value = new Set()
+  }, submissionHighlightDurationMs)
+}
+
+function markSubmissionsSeen() {
+  if (!import.meta.client) {
+    return
+  }
+
+  const newestSubmission = familySubmissionNotifications.value[0]
+  const key = getSubmissionSeenKey()
+
+  if (!newestSubmission?.createdAt || !key) {
+    return
+  }
+
+  lastSeenSubmissionAt.value = newestSubmission.createdAt
+  window.localStorage.setItem(key, newestSubmission.createdAt)
+}
+
+function toggleSubmissionDropdown() {
+  isSubmissionDropdownOpen.value = !isSubmissionDropdownOpen.value
+
+  if (isSubmissionDropdownOpen.value) {
+    markSubmissionsSeen()
+  }
+}
+
+async function focusSubmission(entryId: string) {
+  activeHistoryTab.value = 'Entries'
+  historyExpanded.value = true
+  isSubmissionDropdownOpen.value = false
+  highlightedSubmissionIds.value = new Set([
+    ...highlightedSubmissionIds.value,
+    entryId
+  ])
+
+  await nextTick()
+
+  if (!import.meta.client) {
+    return
+  }
+
+  const entryElement = document.querySelector(`[data-entry-id="${entryId}"]`)
+  entryElement?.scrollIntoView({ behavior: 'smooth', block: 'center' })
 }
 
 async function saveEntry() {
@@ -2901,6 +3111,16 @@ function collapseHistorySheet() {
 }
 
 function handleConditionScroll() {
+  isConditionScrolling.value = true
+
+  if (conditionScrollTimer) {
+    clearTimeout(conditionScrollTimer)
+  }
+
+  conditionScrollTimer = setTimeout(() => {
+    isConditionScrolling.value = false
+  }, 350)
+
   if (historyExpanded.value) {
     collapseHistorySheet()
   }

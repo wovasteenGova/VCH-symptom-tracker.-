@@ -1,7 +1,7 @@
 <template>
   <main class="flex min-h-dvh flex-col bg-slate-950 text-white">
     <section class="mx-auto flex w-full max-w-md flex-1 flex-col px-4 pt-4 sm:max-w-lg">
-      <header class="flex shrink-0 items-center justify-between gap-3">
+      <header class="sticky top-0 z-40 -mx-4 flex shrink-0 items-center justify-between gap-3 border-b border-slate-800 bg-slate-950/95 px-4 pb-4 pt-4 backdrop-blur-md">
         <div>
           <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Profile</p>
           <h1 class="mt-1 text-2xl font-bold tracking-tight text-white">Account Settings</h1>
