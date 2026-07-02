@@ -1,9 +1,14 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
-  devtools: { enabled: true },
+  devtools: { enabled: process.env.NODE_ENV === 'development' },
   modules: ['@nuxt/ui', '@vite-pwa/nuxt'],
   css: ['~/assets/css/main.css'],
+  colorMode: {
+    preference: 'dark',
+    fallback: 'dark',
+    classSuffix: ''
+  },
   runtimeConfig: {
     public: {
       supabaseUrl: process.env.SUPABASE_URL || process.env.NUXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '',
@@ -12,13 +17,24 @@ export default defineNuxtConfig({
   },
   app: {
     head: {
-      title: 'Symptom Tracker',
+      title: 'Veteran Symptom Tracker',
       meta: [
-        { name: 'description', content: 'A mobile-first symptom tracker for veterans.' },
+        { name: 'description', content: 'A mobile-first symptom tracker for veterans to log symptoms, track daily impact, and collect supporter observations.' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
         { name: 'theme-color', content: '#0f172a' },
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
-        { name: 'apple-mobile-web-app-title', content: 'Symptom Tracker' }
+        { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
+        { name: 'apple-mobile-web-app-title', content: 'Symptoms' },
+        { property: 'og:title', content: 'Veteran Symptom Tracker' },
+        { property: 'og:description', content: 'Track symptoms, daily impact, and signed supporter observations from your phone.' },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:image', content: '/pwa-512.png' },
+        { name: 'twitter:card', content: 'summary' }
+      ],
+      link: [
+        { rel: 'icon', type: 'image/svg+xml', href: '/icon.svg' },
+        { rel: 'icon', type: 'image/png', sizes: '48x48', href: '/favicon-48.png' },
+        { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' }
       ]
     }
   },
@@ -27,13 +43,47 @@ export default defineNuxtConfig({
     manifest: {
       name: 'Veteran Symptom Tracker',
       short_name: 'Symptoms',
-      description: 'A mobile-first symptom tracker for veterans.',
+      description: 'A mobile-first symptom tracker for veterans to log symptoms and supporter observations.',
       theme_color: '#0f172a',
-      background_color: '#f8fafc',
+      background_color: '#020617',
       display: 'standalone',
       orientation: 'portrait',
       scope: '/',
-      start_url: '/'
+      start_url: '/',
+      icons: [
+        {
+          src: '/pwa-192.png',
+          sizes: '192x192',
+          type: 'image/png',
+          purpose: 'any'
+        },
+        {
+          src: '/pwa-512.png',
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'any'
+        },
+        {
+          src: '/pwa-512.png',
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'maskable'
+        }
+      ],
+      categories: ['health', 'productivity', 'utilities'],
+      screenshots: [
+        {
+          src: '/pwa-512.png',
+          sizes: '512x512',
+          type: 'image/png',
+          form_factor: 'narrow'
+        }
+      ]
     }
+  },
+  nitro: {
+    preset: 'netlify',
+    compatibilityDate: '2025-07-15',
+    compressPublicAssets: true
   }
 })

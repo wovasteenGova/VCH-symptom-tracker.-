@@ -8,11 +8,29 @@ export function useSupabaseAuth() {
   const authError = ref('')
   let unsubscribe: (() => void) | undefined
 
-  onMounted(async () => {
-    const { data, error } = await supabase.auth.getUser()
+  function getAuthErrorMessage(error: unknown) {
+    if (error instanceof Error) {
+      if (/failed to fetch|fetch failed|networkerror|load failed/i.test(error.message)) {
+        return 'Could not reach Supabase. Check your internet connection, Supabase project URL, and browser/network blocking.'
+      }
 
-    if (!error) {
-      user.value = data.user
+      return error.message
+    }
+
+    return 'Authentication failed. Please try again.'
+  }
+
+  onMounted(async () => {
+    try {
+      const { data, error } = await supabase.auth.getUser()
+
+      if (error) {
+        authError.value = getAuthErrorMessage(error)
+      } else {
+        user.value = data.user
+      }
+    } catch (error) {
+      authError.value = getAuthErrorMessage(error)
     }
 
     const listener = supabase.auth.onAuthStateChange((_event, session) => {
@@ -30,13 +48,20 @@ export function useSupabaseAuth() {
   async function signIn(email: string, password: string) {
     authError.value = ''
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    })
+    let error: unknown
+
+    try {
+      const result = await supabase.auth.signInWithPassword({
+        email,
+        password
+      })
+      error = result.error
+    } catch (caughtError) {
+      error = caughtError
+    }
 
     if (error) {
-      authError.value = error.message
+      authError.value = getAuthErrorMessage(error)
       throw error
     }
   }
@@ -44,18 +69,27 @@ export function useSupabaseAuth() {
   async function signUp(email: string, password: string, fullName: string) {
     authError.value = ''
 
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName
+    let data
+    let error: unknown
+
+    try {
+      const result = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName
+          }
         }
-      }
-    })
+      })
+      data = result.data
+      error = result.error
+    } catch (caughtError) {
+      error = caughtError
+    }
 
     if (error) {
-      authError.value = error.message
+      authError.value = getAuthErrorMessage(error)
       throw error
     }
 
@@ -69,15 +103,22 @@ export function useSupabaseAuth() {
       ? window.location.origin
       : undefined
 
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo
-      }
-    })
+    let error: unknown
+
+    try {
+      const result = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo
+        }
+      })
+      error = result.error
+    } catch (caughtError) {
+      error = caughtError
+    }
 
     if (error) {
-      authError.value = error.message
+      authError.value = getAuthErrorMessage(error)
       throw error
     }
   }
@@ -89,12 +130,19 @@ export function useSupabaseAuth() {
       ? window.location.origin
       : undefined
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo
-    })
+    let error: unknown
+
+    try {
+      const result = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo
+      })
+      error = result.error
+    } catch (caughtError) {
+      error = caughtError
+    }
 
     if (error) {
-      authError.value = error.message
+      authError.value = getAuthErrorMessage(error)
       throw error
     }
   }
@@ -102,10 +150,17 @@ export function useSupabaseAuth() {
   async function signOut() {
     authError.value = ''
 
-    const { error } = await supabase.auth.signOut()
+    let error: unknown
+
+    try {
+      const result = await supabase.auth.signOut()
+      error = result.error
+    } catch (caughtError) {
+      error = caughtError
+    }
 
     if (error) {
-      authError.value = error.message
+      authError.value = getAuthErrorMessage(error)
       throw error
     }
   }

@@ -219,6 +219,11 @@
 
         <p v-if="pageMessage" class="text-center text-sm font-medium text-emerald-200">{{ pageMessage }}</p>
       </form>
+
+      <footer class="mt-6 flex items-center justify-center gap-3 text-xs font-semibold text-slate-500">
+        <NuxtLink to="/privacy" class="hover:text-slate-300">Privacy</NuxtLink>
+        <NuxtLink to="/disclaimer" class="hover:text-slate-300">Disclaimer</NuxtLink>
+      </footer>
     </section>
   </main>
 </template>

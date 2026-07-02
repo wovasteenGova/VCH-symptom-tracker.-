@@ -2,14 +2,27 @@
 @import "@nuxt/ui";
 
 html {
-  background: #020617;
+  background: #f8fafc;
   scrollbar-width: none;
+  overscroll-behavior: none;
+}
+
+html.dark {
+  background: #020617;
 }
 
 body {
   min-width: 320px;
+  color: #020617;
+  background: #f8fafc;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  overscroll-behavior: none;
+}
+
+html.dark body {
+  color: #ffffff;
+  background: #020617;
 }
 
 body::-webkit-scrollbar {
@@ -36,4 +49,25 @@ button:disabled,
 
 .no-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+.header-color-toggle {
+  flex-shrink: 0;
+}
+
+.sym-entry-time-menu button {
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.sym-entry-time-menu [data-reka-popper-content-wrapper] [role="listbox"],
+.sym-entry-time-menu [data-reka-popper-content-wrapper] [data-slot="content"] {
+  background: #ffffff;
+}
+
+html.dark .sym-entry-time-menu [data-reka-popper-content-wrapper] [role="listbox"],
+html.dark .sym-entry-time-menu [data-reka-popper-content-wrapper] [data-slot="content"] {
+  background: #0f172a;
 }
