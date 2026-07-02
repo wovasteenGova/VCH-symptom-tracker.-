@@ -675,7 +675,8 @@
                   </div>
               </div>
 
-              <div class="mt-auto shrink-0 pt-8 pb-6">
+              <div class="mt-auto shrink-0">
+              <StickyActionBar class="-mx-5 rounded-none border-x-0 dark:border-slate-800">
                 <button
                   v-if="isEditingEntry && user"
                   type="button"
@@ -688,7 +689,7 @@
 
                 <button
                   type="button"
-                  class="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-4 text-base font-bold text-white shadow-lg transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+                  class="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-4 text-base font-bold text-white shadow-lg transition hover:bg-slate-800 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600"
                   :disabled="isSavingEntry"
                   @click="handleEntryPrimaryAction"
                 >
@@ -698,6 +699,7 @@
                 <p v-if="entryError" class="mt-3 text-center text-sm font-medium text-red-300">
                   {{ entryError }}
                 </p>
+              </StickyActionBar>
               </div>
             </div>
           </Transition>

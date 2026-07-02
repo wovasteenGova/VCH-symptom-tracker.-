@@ -1,6 +1,6 @@
 <template>
-  <main class="min-h-dvh bg-slate-50 text-slate-950 transition-colors dark:bg-slate-950 dark:text-white">
-    <section class="mx-auto min-h-dvh w-full max-w-md px-4 pb-8 pt-4 sm:max-w-lg">
+  <main class="flex min-h-dvh flex-col bg-slate-50 text-slate-950 transition-colors dark:bg-slate-950 dark:text-white">
+    <section class="mx-auto flex w-full max-w-md flex-1 flex-col px-4 pt-4 sm:max-w-lg">
       <header class="flex items-start justify-between gap-3">
         <div>
           <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Supporter Report</p>
@@ -29,9 +29,10 @@
       </section>
 
       <template v-else>
+        <div class="shrink-0 space-y-5">
         <section
           v-if="supporterProfile?.entry_context_summary"
-          class="mt-5 rounded-4xl border border-teal-200 bg-teal-50 p-4 dark:border-teal-500/30 dark:bg-teal-950/30"
+          class="rounded-4xl border border-teal-200 bg-teal-50 p-4 dark:border-teal-500/30 dark:bg-teal-950/30"
         >
           <p class="text-xs font-bold uppercase tracking-[0.14em] text-teal-700 dark:text-teal-200">About this entry</p>
           <p class="mt-2 text-sm leading-6 text-teal-950/90 dark:text-teal-50/90">
@@ -39,12 +40,13 @@
             <span class="font-semibold text-slate-950 dark:text-white">{{ supporterProfile.entry_context_summary }}</span>.
           </p>
         </section>
+        </div>
 
         <form
-          class="mt-5 flex flex-col overflow-hidden rounded-4xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900"
+          class="mt-5 flex min-h-0 flex-1 flex-col overflow-hidden rounded-4xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900"
           @submit.prevent="handleObservationPrimaryAction"
         >
-          <div class="flex items-center justify-between gap-4 border-b border-slate-200 px-4 py-4 dark:border-slate-800">
+          <div class="sticky top-0 z-20 flex shrink-0 items-center justify-between gap-4 border-b border-slate-200 bg-white/95 px-4 py-4 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/95">
             <button
               type="button"
               class="grid size-10 place-items-center rounded-full bg-slate-100 text-slate-950 transition hover:bg-slate-200 disabled:opacity-30 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
@@ -351,7 +353,7 @@
                         @input="signatureManuallyEdited = true"
                       >
                       <p class="mt-2 px-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
-                        Must match <span class="font-semibold text-slate-950 dark:text-white">{{ reporterFullName || 'your first and last name' }}</span>.
+                        Include your first and last name (capitalization does not matter).
                       </p>
                     </label>
                   </div>
@@ -360,7 +362,7 @@
             </Transition>
           </div>
 
-          <div class="shrink-0 border-t border-slate-200 px-4 py-4 dark:border-slate-800">
+          <StickyActionBar>
             <ul
               v-if="currentStepBlockers.length && !isSubmitting"
               class="mb-4 rounded-3xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/60 dark:bg-amber-950/30"
@@ -387,10 +389,10 @@
             </button>
 
             <p v-if="pageMessage" class="mt-4 text-center text-sm font-medium text-emerald-700 dark:text-emerald-200">{{ pageMessage }}</p>
-          </div>
+          </StickyActionBar>
         </form>
 
-        <footer class="mt-6 flex items-center justify-center gap-3 text-xs font-semibold text-slate-500">
+        <footer class="mt-6 flex shrink-0 items-center justify-center gap-3 pb-[max(1rem,env(safe-area-inset-bottom))] text-xs font-semibold text-slate-500">
           <NuxtLink to="/privacy" class="hover:text-slate-700 dark:hover:text-slate-300">Privacy</NuxtLink>
           <NuxtLink to="/disclaimer" class="hover:text-slate-700 dark:hover:text-slate-300">Disclaimer</NuxtLink>
         </footer>
@@ -402,6 +404,7 @@
 <script setup lang="ts">
 import { useSupabaseClient } from '../../composables/useSupabaseClient'
 import { getSeverityGuidance, severityQuickPresets } from '../../utils/severityGuidance'
+import { signatureMatchesReporter } from '../../utils/signatureMatch'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
@@ -477,16 +480,12 @@ const observationProgressWidth = computed(() => {
   return `${((observationStep.value + 1) / observationStepCount) * 100}%`
 })
 
-function normalizePersonName(value: string) {
-  return value.trim().replace(/\s+/g, ' ').toLowerCase()
-}
-
 const signatureMatchesName = computed(() => {
-  if (!form.value.signature_name.trim() || !reporterFullName.value) {
-    return false
-  }
-
-  return normalizePersonName(form.value.signature_name) === normalizePersonName(reporterFullName.value)
+  return signatureMatchesReporter(
+    form.value.signature_name,
+    form.value.first_name,
+    form.value.last_name
+  )
 })
 
 const canSubmit = computed(() => getAllSubmitBlockers().length === 0)
@@ -538,7 +537,7 @@ function getStepBlockers(step: number) {
     if (!form.value.signature_name.trim()) {
       blockers.push('Type your electronic signature (full legal name).')
     } else if (!signatureMatchesName.value) {
-      blockers.push('Electronic signature must exactly match your first and last name.')
+      blockers.push('Signature should include your first and last name.')
     }
   }
 

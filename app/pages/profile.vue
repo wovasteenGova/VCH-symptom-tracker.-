@@ -1,7 +1,7 @@
 <template>
-  <main class="min-h-dvh bg-slate-950 text-white">
-    <section class="mx-auto min-h-dvh w-full max-w-md px-4 pb-8 pt-4 sm:max-w-lg">
-      <header class="flex items-center justify-between gap-3">
+  <main class="flex min-h-dvh flex-col bg-slate-950 text-white">
+    <section class="mx-auto flex w-full max-w-md flex-1 flex-col px-4 pt-4 sm:max-w-lg">
+      <header class="flex shrink-0 items-center justify-between gap-3">
         <div>
           <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Profile</p>
           <h1 class="mt-1 text-2xl font-bold tracking-tight text-white">Account Settings</h1>
@@ -16,103 +16,111 @@
         </NuxtLink>
       </header>
 
-      <section v-if="isAuthLoading" class="mt-6 rounded-4xl border border-slate-800 bg-slate-900 p-5">
+      <section v-if="isAuthLoading" class="mt-6 shrink-0 rounded-4xl border border-slate-800 bg-slate-900 p-5">
         <h2 class="text-xl font-bold text-white">Loading account...</h2>
         <p class="mt-2 text-sm leading-6 text-slate-400">
           Checking your saved session.
         </p>
       </section>
 
-      <section v-else-if="!user" class="mt-6 rounded-4xl border border-slate-800 bg-slate-900 p-5">
-        <h2 class="text-xl font-bold text-white">
-          {{ authMode === 'login' ? 'Sign in' : 'Create account' }}
-        </h2>
-        <p class="mt-2 text-sm leading-6 text-slate-400">
-          Sign in to save symptom entries, export reports, and manage deleted logs.
-        </p>
+      <div v-else-if="!user" class="mt-6 flex min-h-0 flex-1 flex-col">
+        <div class="flex-1 overflow-y-auto no-scrollbar">
+          <section class="rounded-4xl border border-slate-800 bg-slate-900 p-5">
+            <h2 class="text-xl font-bold text-white">
+              {{ authMode === 'login' ? 'Sign in' : 'Create account' }}
+            </h2>
+            <p class="mt-2 text-sm leading-6 text-slate-400">
+              Sign in to save symptom entries, export reports, and manage deleted logs.
+            </p>
 
-        <form class="mt-5 space-y-4" @submit.prevent="handleAuthSubmit">
-          <label v-if="authMode === 'signup'" class="block">
-            <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Name</span>
-            <input
-              v-model="authName"
-              type="text"
-              autocomplete="name"
-              class="w-full rounded-3xl border border-slate-600/70 bg-slate-800/70 px-4 py-4 text-base font-medium text-white outline-none placeholder:text-slate-400 focus:border-slate-400"
-              placeholder="Your full name"
-              required
-            >
-          </label>
+            <div class="mt-5 space-y-4">
+              <label v-if="authMode === 'signup'" class="block">
+                <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Name</span>
+                <input
+                  v-model="authName"
+                  type="text"
+                  autocomplete="name"
+                  class="w-full rounded-3xl border border-slate-600/70 bg-slate-800/70 px-4 py-4 text-base font-medium text-white outline-none placeholder:text-slate-400 focus:border-slate-400"
+                  placeholder="Your full name"
+                  required
+                >
+              </label>
 
-          <label class="block">
-            <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Email</span>
-            <input
-              v-model="authEmail"
-              type="email"
-              autocomplete="email"
-              class="w-full rounded-3xl border border-slate-600/70 bg-slate-800/70 px-4 py-4 text-base font-medium text-white outline-none placeholder:text-slate-400 focus:border-slate-400"
-              placeholder="you@example.com"
-              required
-            >
-          </label>
+              <label class="block">
+                <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Email</span>
+                <input
+                  v-model="authEmail"
+                  type="email"
+                  autocomplete="email"
+                  class="w-full rounded-3xl border border-slate-600/70 bg-slate-800/70 px-4 py-4 text-base font-medium text-white outline-none placeholder:text-slate-400 focus:border-slate-400"
+                  placeholder="you@example.com"
+                  required
+                >
+              </label>
 
-          <label v-if="authMode === 'signup'" class="block">
-            <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Confirm password</span>
-            <input
-              v-model="authConfirmPassword"
-              type="password"
-              autocomplete="new-password"
-              class="w-full rounded-3xl border border-slate-600/70 bg-slate-800/70 px-4 py-4 text-base font-medium text-white outline-none placeholder:text-slate-400 focus:border-slate-400"
-              placeholder="Re-enter password"
-              required
-            >
-          </label>
+              <label v-if="authMode === 'signup'" class="block">
+                <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Confirm password</span>
+                <input
+                  v-model="authConfirmPassword"
+                  type="password"
+                  autocomplete="new-password"
+                  class="w-full rounded-3xl border border-slate-600/70 bg-slate-800/70 px-4 py-4 text-base font-medium text-white outline-none placeholder:text-slate-400 focus:border-slate-400"
+                  placeholder="Re-enter password"
+                  required
+                >
+              </label>
 
-          <label class="block">
-            <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Password</span>
-            <input
-              v-model="authPassword"
-              type="password"
-              autocomplete="current-password"
-              class="w-full rounded-3xl border border-slate-600/70 bg-slate-800/70 px-4 py-4 text-base font-medium text-white outline-none placeholder:text-slate-400 focus:border-slate-400"
-              placeholder="At least 6 characters"
-              required
-            >
-          </label>
+              <label class="block">
+                <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Password</span>
+                <input
+                  v-model="authPassword"
+                  type="password"
+                  autocomplete="current-password"
+                  class="w-full rounded-3xl border border-slate-600/70 bg-slate-800/70 px-4 py-4 text-base font-medium text-white outline-none placeholder:text-slate-400 focus:border-slate-400"
+                  placeholder="At least 6 characters"
+                  required
+                >
+              </label>
+
+              <button
+                type="button"
+                class="w-full rounded-2xl px-4 py-2 text-sm font-semibold text-slate-300"
+                @click="authMode = authMode === 'login' ? 'signup' : 'login'"
+              >
+                {{ authMode === 'login' ? 'Need an account? Sign up' : 'Already have an account? Sign in' }}
+              </button>
+            </div>
+          </section>
+        </div>
+
+        <StickyActionBar tone="dark">
+          <p v-if="authMessage" class="mb-3 text-center text-sm font-medium text-slate-300">{{ authMessage }}</p>
+          <p v-if="authError" class="mb-3 text-center text-sm font-medium text-red-300">{{ authError }}</p>
 
           <button
-            type="submit"
+            type="button"
             class="w-full rounded-2xl bg-white px-5 py-4 text-base font-bold text-slate-950 shadow-lg transition hover:bg-slate-200"
             :disabled="isAuthSubmitting"
+            @click="handleAuthSubmit"
           >
             {{ isAuthSubmitting ? 'Working...' : authMode === 'login' ? 'Sign in' : 'Create account' }}
           </button>
 
           <button
             type="button"
-            class="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-800 px-4 py-4 text-base font-bold text-white ring-1 ring-slate-700 transition hover:bg-slate-700"
+            class="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-800 px-4 py-4 text-base font-bold text-white ring-1 ring-slate-700 transition hover:bg-slate-700"
             :disabled="isAuthSubmitting"
             @click="handleGoogleSignIn"
           >
             <UIcon name="i-lucide-chrome" class="size-5" />
             Continue with Google
           </button>
+        </StickyActionBar>
+      </div>
 
-          <button
-            type="button"
-            class="w-full rounded-2xl px-4 py-2 text-sm font-semibold text-slate-300"
-            @click="authMode = authMode === 'login' ? 'signup' : 'login'"
-          >
-            {{ authMode === 'login' ? 'Need an account? Sign up' : 'Already have an account? Sign in' }}
-          </button>
-
-          <p v-if="authMessage" class="text-center text-sm font-medium text-slate-300">{{ authMessage }}</p>
-          <p v-if="authError" class="text-center text-sm font-medium text-red-300">{{ authError }}</p>
-        </form>
-      </section>
-
-      <template v-else>
-        <section class="mt-6 rounded-4xl border border-slate-800 bg-slate-900 p-4">
+      <div v-else class="mt-6 flex min-h-0 flex-1 flex-col">
+        <div class="flex-1 space-y-5 overflow-y-auto no-scrollbar pb-4">
+        <section class="rounded-4xl border border-slate-800 bg-slate-900 p-4">
           <div>
             <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Your Info</p>
             <h2 class="mt-1 text-xl font-bold text-white">{{ user.email }}</h2>
@@ -128,19 +136,10 @@
                 placeholder="Your full name"
               >
             </label>
-
-            <button
-              type="button"
-              class="w-full rounded-2xl bg-white px-5 py-4 text-base font-bold text-slate-950 shadow-lg transition hover:bg-slate-200"
-              :disabled="isSavingProfile"
-              @click="saveProfile"
-            >
-              {{ isSavingProfile ? 'Saving...' : 'Save Profile' }}
-            </button>
           </div>
         </section>
 
-        <section class="mt-5 rounded-4xl border border-slate-800 bg-slate-900 p-4">
+        <section class="rounded-4xl border border-slate-800 bg-slate-900 p-4">
           <div>
             <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Deleted Entries</p>
             <h2 class="mt-1 text-xl font-bold text-white">Recovery bin</h2>
@@ -191,7 +190,7 @@
           </div>
         </section>
 
-        <section class="mt-5 rounded-4xl border border-slate-800 bg-slate-900 p-4">
+        <section class="rounded-4xl border border-slate-800 bg-slate-900 p-4">
           <div>
             <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Supporter Links</p>
             <h2 class="mt-1 text-xl font-bold text-white">Family reporting access</h2>
@@ -260,7 +259,7 @@
           </div>
         </section>
 
-        <section class="mt-5 space-y-3">
+        <section class="space-y-3">
           <h2 class="px-1 text-xl font-bold text-white">Existing supporter profiles</h2>
 
           <div v-if="!supporterProfiles.length" class="rounded-4xl border border-slate-800 bg-slate-900 p-5 text-center text-sm text-slate-400">
@@ -316,19 +315,31 @@
             </div>
           </article>
         </section>
+        </div>
 
-        <button
-          type="button"
-          class="mt-5 w-full rounded-2xl bg-slate-800 px-4 py-3 text-sm font-bold text-white ring-1 ring-slate-700"
-          :disabled="isAuthSubmitting"
-          @click="handleSignOut"
-        >
-          {{ isAuthSubmitting ? 'Signing out...' : 'Sign out' }}
-        </button>
+        <StickyActionBar tone="dark">
+          <p v-if="pageMessage" class="mb-3 text-center text-sm font-medium text-slate-300">{{ pageMessage }}</p>
+          <p v-if="pageError" class="mb-3 text-center text-sm font-medium text-red-300">{{ pageError }}</p>
 
-        <p v-if="pageMessage" class="mt-4 text-center text-sm font-medium text-slate-300">{{ pageMessage }}</p>
-        <p v-if="pageError" class="mt-4 text-center text-sm font-medium text-red-300">{{ pageError }}</p>
-      </template>
+          <button
+            type="button"
+            class="w-full rounded-2xl bg-white px-5 py-4 text-base font-bold text-slate-950 shadow-lg transition hover:bg-slate-200"
+            :disabled="isSavingProfile"
+            @click="saveProfile"
+          >
+            {{ isSavingProfile ? 'Saving...' : 'Save Profile' }}
+          </button>
+
+          <button
+            type="button"
+            class="mt-3 w-full rounded-2xl bg-slate-800 px-4 py-3 text-sm font-bold text-white ring-1 ring-slate-700"
+            :disabled="isAuthSubmitting"
+            @click="handleSignOut"
+          >
+            {{ isAuthSubmitting ? 'Signing out...' : 'Sign out' }}
+          </button>
+        </StickyActionBar>
+      </div>
     </section>
 
     <Transition
