@@ -535,6 +535,12 @@
                           >
                             {{ field.label }}
                           </span>
+                          <p
+                            v-if="field.helper"
+                            class="-mt-2 mb-4 text-xs leading-5 text-slate-500 dark:text-slate-400"
+                          >
+                            {{ field.helper }}
+                          </p>
 
                           <div
                             v-if="field.type === 'slider'"
@@ -721,7 +727,7 @@
                           </div>
                         </div>
                         <div
-                          v-else-if="isEpisodeDurationField(field) || isEpisodeFollowUpField(field)"
+                          v-else-if="isEpisodeDurationField(field) || isEpisodeFollowUpField(field) || getEntryFieldPresets(field.label).length"
                           class="space-y-5"
                         >
                           <div class="flex flex-wrap gap-2.5">
@@ -730,7 +736,9 @@
                               :key="preset.label"
                               type="button"
                               class="rounded-full px-3 py-1.5 text-xs font-bold transition"
-                              :class="entryForm[fieldKey(field.label)] === preset.value
+                              :class="(isMultiSelectPresetField(field.label)
+                                ? entryPresetIsSelected(entryForm[fieldKey(field.label)], preset.value)
+                                : entryForm[fieldKey(field.label)] === preset.value)
                                 ? 'bg-slate-950 text-white dark:bg-white dark:text-slate-950'
                                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'"
                               @click="applyEntryFieldPreset(field.label, preset.value)"
@@ -753,7 +761,7 @@
                           class="w-full resize-none border-0 border-b border-slate-300/80 bg-transparent px-0 py-4 text-base font-medium leading-7 text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-700 dark:text-white dark:focus:border-slate-400"
                         />
                         <input
-                          v-else-if="field.type !== 'slider' && field.type !== 'datetime' && !isEpisodeDurationField(field) && !isEpisodeFollowUpField(field)"
+                          v-else-if="field.type !== 'slider' && field.type !== 'datetime' && !isEpisodeDurationField(field) && !isEpisodeFollowUpField(field) && !getEntryFieldPresets(field.label).length"
                           v-model="entryForm[fieldKey(field.label)]"
                           :type="field.type"
                           :placeholder="field.placeholder"
@@ -1367,7 +1375,19 @@ import {
   splitEntryDateTimeLocal,
   toLocalDateTimeInputValue
 } from '../utils/symptomDateTime'
-import { getEntryFieldPresets } from '../utils/entryFieldPresets'
+import {
+  entryPresetIsSelected,
+  getEntryFieldPresets,
+  isMultiSelectPresetField,
+  toggleEntryFieldPresetValue
+} from '../utils/entryFieldPresets'
+import {
+  defaultEntryFields,
+  entryFieldsByCondition,
+  getEntryFieldsForSearchCondition,
+  isEpisodeDurationField,
+  isEpisodeFollowUpField
+} from '../utils/vaConditionFields'
 import {
   carouselConditions,
   conditionImageAssets,
@@ -1719,7 +1739,13 @@ const conditionResults = conditionResultDefinitions.map((condition) => ({
 }))
 
 const historyEntries = computed(() => {
-  return savedEntries.value.map((entry) => mapEntryHistoryItem(entry))
+  return [...savedEntries.value]
+    .sort((a, b) => {
+      const bTime = new Date(b.created_at || b.occurred_at).getTime()
+      const aTime = new Date(a.created_at || a.occurred_at).getTime()
+      return bTime - aTime
+    })
+    .map((entry) => mapEntryHistoryItem(entry))
 })
 
 const submissionNotifications = computed(() => {
@@ -1853,184 +1879,6 @@ const calendarDays = computed(() => {
 
   return days
 })
-
-const defaultEntryFields = [
-  {
-    label: 'Date and time',
-    type: 'datetime',
-    placeholder: ''
-  },
-  {
-    label: 'How bad was it?',
-    type: 'slider',
-    placeholder: ''
-  },
-  {
-    label: 'What happened?',
-    type: 'textarea',
-    placeholder: 'Short note about the symptom, episode, or flare-up.'
-  },
-  {
-    label: 'Daily impact',
-    type: 'textarea',
-    placeholder: 'Missed work, family activity, sleep, errands, walking, lifting, or other limits.'
-  }
-]
-
-const durationField = {
-  label: 'Duration',
-  type: 'text',
-  placeholder: 'Example: 30 minutes, 4 hours, all day'
-}
-
-const episodeDurationField = {
-  label: 'Episode duration',
-  type: 'text',
-  placeholder: 'Example: 20 minutes, 2 hours, most of the day'
-}
-
-const stopActivityField = {
-  label: 'Had to stop activity?',
-  type: 'text',
-  placeholder: 'Lie down, leave work, cancel plans, or avoid movement?'
-}
-
-const sleepLimitField = {
-  label: 'Kept you from sleeping?',
-  type: 'text',
-  placeholder: 'Hard to fall asleep, stay asleep, or get useful rest?'
-}
-
-const episodeTypeField = {
-  label: 'Episode type',
-  type: 'text',
-  placeholder: 'Panic, nightmare, flashback, isolation, irritability...'
-}
-
-type EntryFieldDef = {
-  label: string
-  type: string
-  placeholder: string
-  stepRole?: 'duration' | 'followUp'
-}
-
-type ConditionEpisodeConfig = {
-  duration: Omit<EntryFieldDef, 'stepRole'>
-  followUp?: Omit<EntryFieldDef, 'stepRole'>
-}
-
-const conditionEpisodeConfig: Record<string, ConditionEpisodeConfig> = {
-  'Migraine / Headache': {
-    duration: durationField
-  },
-  'PTSD / Mental Health': {
-    duration: episodeDurationField,
-    followUp: episodeTypeField
-  },
-  'Back or Joint Pain': {
-    duration: durationField,
-    followUp: stopActivityField
-  },
-  'Nerve / Radiculopathy': {
-    duration: durationField,
-    followUp: stopActivityField
-  },
-  'Sleep Issues': {
-    duration: durationField,
-    followUp: sleepLimitField
-  }
-}
-
-function buildEntryFields(conditionTitle: string, extraFields: Array<Record<string, string>> = []) {
-  const fields: EntryFieldDef[] = [
-    defaultEntryFields[0] as EntryFieldDef,
-    defaultEntryFields[1] as EntryFieldDef
-  ]
-
-  const episodeConfig = conditionEpisodeConfig[conditionTitle]
-  if (episodeConfig) {
-    fields.push({ ...episodeConfig.duration, stepRole: 'duration' })
-    if (episodeConfig.followUp) {
-      fields.push({ ...episodeConfig.followUp, stepRole: 'followUp' })
-    }
-  }
-
-  fields.push(
-    defaultEntryFields[2] as EntryFieldDef,
-    defaultEntryFields[3] as EntryFieldDef,
-    ...(extraFields as EntryFieldDef[])
-  )
-
-  return fields
-}
-
-function isEpisodeDurationField(field: { stepRole?: string }) {
-  return field.stepRole === 'duration'
-}
-
-function isEpisodeFollowUpField(field: { stepRole?: string }) {
-  return field.stepRole === 'followUp'
-}
-
-const entryFieldsByCondition = {
-  'PTSD / Mental Health': buildEntryFields('PTSD / Mental Health', [
-    {
-      label: 'Safety note',
-      type: 'textarea',
-      placeholder: 'Optional: anything important to remember or discuss with care team.'
-    }
-  ]),
-  'Back or Joint Pain': buildEntryFields('Back or Joint Pain', [
-    {
-      label: 'Movement limit',
-      type: 'text',
-      placeholder: 'Sitting, standing, walking, lifting, bending...'
-    },
-    {
-      label: 'Flare-up trigger',
-      type: 'text',
-      placeholder: 'Driving, stairs, lifting groceries, weather, unknown...'
-    }
-  ]),
-  'Nerve / Radiculopathy': buildEntryFields('Nerve / Radiculopathy', [
-    {
-      label: 'Side affected',
-      type: 'text',
-      placeholder: 'Left, right, both, arm, leg, foot...'
-    },
-    {
-      label: 'Nerve symptoms',
-      type: 'textarea',
-      placeholder: 'Numbness, tingling, burning, weakness, falls, radiating pain.'
-    }
-  ]),
-  'Migraine / Headache': buildEntryFields('Migraine / Headache'),
-  'GERD / IBS': [
-    ...defaultEntryFields,
-    {
-      label: 'Digestive symptom',
-      type: 'text',
-      placeholder: 'Heartburn, regurgitation, diarrhea, constipation, urgency...'
-    },
-    {
-      label: 'Medication or food trigger',
-      type: 'text',
-      placeholder: 'Medication used, meal trigger, or unknown.'
-    }
-  ],
-  'Sleep Issues': buildEntryFields('Sleep Issues', [
-    {
-      label: 'Hours slept',
-      type: 'number',
-      placeholder: 'Example: 4'
-    },
-    {
-      label: 'Sleep interruption',
-      type: 'textarea',
-      placeholder: 'Nightmares, wake-ups, pain, reflux, panic, breathing issues, fatigue.'
-    }
-  ])
-}
 
 const totalSlides = computed(() => conditions.length + 1)
 const isSearchSlide = computed(() => activeIndex.value === 0)
@@ -2371,7 +2219,14 @@ function applySeverityPreset(value: number) {
 }
 
 function applyEntryFieldPreset(label: string, value: string) {
-  entryForm.value[fieldKey(label)] = value
+  const key = fieldKey(label)
+
+  if (isMultiSelectPresetField(label)) {
+    entryForm.value[key] = toggleEntryFieldPresetValue(entryForm.value[key], value)
+    return
+  }
+
+  entryForm.value[key] = value
 }
 
 function refreshEntryDateLimits() {
@@ -2501,7 +2356,17 @@ async function exportEntriesPdf() {
   exportError.value = ''
 
   try {
-    await downloadEntriesPdf(savedEntries.value)
+    const { getProfile } = useUserProfiles()
+    const profile = await getProfile()
+    const veteranName = profile?.full_name?.trim()
+      || (typeof user.value?.user_metadata?.full_name === 'string'
+        ? user.value.user_metadata.full_name.trim()
+        : '')
+
+    await downloadEntriesPdf(savedEntries.value, {
+      veteranName: veteranName || null,
+      veteranEmail: user.value?.email || null
+    })
   } catch (error) {
     exportError.value = getErrorMessage(error)
   } finally {
@@ -2971,37 +2836,6 @@ function showSlide(index: number) {
 
 function goToSearch() {
   showSlide(0)
-}
-
-function getEntryFieldsForSearchCondition(condition: { title: string, category: string }) {
-  const title = condition.title.toLowerCase()
-  const category = condition.category.toLowerCase()
-
-  if (category.includes('mental')) {
-    return entryFieldsByCondition['PTSD / Mental Health']
-  }
-
-  if (category.includes('back') || title.includes('arthritis') || title.includes('knee') || title.includes('shoulder')) {
-    return entryFieldsByCondition['Back or Joint Pain']
-  }
-
-  if (category.includes('nerve') || title.includes('sciatica') || title.includes('neuropathy')) {
-    return entryFieldsByCondition['Nerve / Radiculopathy']
-  }
-
-  if (category.includes('neurological') || title.includes('migraine') || title.includes('headache') || title.includes('vertigo')) {
-    return entryFieldsByCondition['Migraine / Headache']
-  }
-
-  if (category.includes('digestive') || title.includes('gerd') || title.includes('ibs')) {
-    return entryFieldsByCondition['GERD / IBS']
-  }
-
-  if (category.includes('sleep') || title.includes('sleep')) {
-    return entryFieldsByCondition['Sleep Issues']
-  }
-
-  return defaultEntryFields
 }
 
 function changeEntryCondition(condition: { title: string, category: string, description: string, image: string }) {

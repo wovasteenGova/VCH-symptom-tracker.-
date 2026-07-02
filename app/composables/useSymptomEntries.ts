@@ -34,7 +34,6 @@ export function useSymptomEntries() {
       .from('symptom_entries')
       .select('*')
       .eq('user_id', userId)
-      .order('occurred_at', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false })
 
     if (error) {

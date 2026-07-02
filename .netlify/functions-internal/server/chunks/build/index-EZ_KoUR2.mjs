@@ -208,20 +208,416 @@ const episodeTypePresets = [
   { label: "Isolation", value: "Isolation" },
   { label: "Irritability", value: "Irritability" }
 ];
+const mentalHealthSymptomPresets = [
+  { label: "Nightmares", value: "Nightmares" },
+  { label: "Flashbacks", value: "Flashbacks" },
+  { label: "Hypervigilance", value: "Hypervigilance" },
+  { label: "Avoidance", value: "Avoidance" },
+  { label: "Panic", value: "Panic" },
+  { label: "Irritability", value: "Irritability" },
+  { label: "Isolation", value: "Isolation" }
+];
+const backJointSymptomPresets = [
+  { label: "Stiffness", value: "Stiffness" },
+  { label: "Swelling", value: "Swelling" },
+  { label: "Limited motion", value: "Limited range of motion" },
+  { label: "Instability", value: "Joint instability" },
+  { label: "Radiating pain", value: "Radiating pain" }
+];
+const nerveSymptomPresets = [
+  { label: "Numbness", value: "Numbness" },
+  { label: "Tingling", value: "Tingling" },
+  { label: "Burning", value: "Burning pain" },
+  { label: "Weakness", value: "Weakness" },
+  { label: "Falls", value: "Near fall or fall" }
+];
+const migraineSymptomPresets = [
+  { label: "Prostrating", value: "Prostrating attack" },
+  { label: "Light sensitivity", value: "Light sensitivity" },
+  { label: "Sound sensitivity", value: "Sound sensitivity" },
+  { label: "Nausea", value: "Nausea or vomiting" },
+  { label: "Aura", value: "Aura" },
+  { label: "Vertigo", value: "Vertigo or dizziness" }
+];
+const digestiveSymptomPresets = [
+  { label: "Heartburn", value: "Heartburn" },
+  { label: "Regurgitation", value: "Regurgitation" },
+  { label: "Trouble swallowing", value: "Trouble swallowing" },
+  { label: "Pain swallowing", value: "Pain when swallowing" },
+  { label: "Vomiting", value: "Vomiting" },
+  { label: "Nausea", value: "Nausea" },
+  { label: "Diarrhea", value: "Diarrhea" },
+  { label: "Constipation", value: "Constipation" }
+];
+const digestiveNightSymptomPresets = [
+  { label: "Slept propped up", value: "Slept propped up" },
+  { label: "Woke up choking", value: "Woke up choking or aspirating" },
+  { label: "Reflux lying down", value: "Reflux after lying down" },
+  { label: "No night issues", value: "No major night symptoms" }
+];
+const digestiveTriggerPresets = [
+  { label: "Late meal", value: "Late meal or snacking" },
+  { label: "Spicy/acidic food", value: "Spicy or acidic food" },
+  { label: "Alcohol", value: "Alcohol" },
+  { label: "Took antacid/PPI", value: "Used antacid or PPI" },
+  { label: "Unknown", value: "Unknown trigger" }
+];
+const sleepDayEffectPresets = [
+  { label: "Heavy fatigue", value: "Heavy daytime fatigue" },
+  { label: "Needed naps", value: "Needed naps" },
+  { label: "Trouble focusing", value: "Trouble focusing" },
+  { label: "Used CPAP", value: "Used CPAP/BiPAP" },
+  { label: "Missed activity", value: "Missed work or activity" }
+];
+const respiratorySymptomPresets = [
+  { label: "Short of breath", value: "Shortness of breath" },
+  { label: "Wheezing", value: "Wheezing" },
+  { label: "Chest tightness", value: "Chest tightness" },
+  { label: "Cough", value: "Cough" },
+  { label: "Congestion", value: "Congestion" }
+];
+const respiratoryTreatmentPresets = [
+  { label: "Rescue inhaler", value: "Rescue inhaler" },
+  { label: "Nebulizer", value: "Nebulizer" },
+  { label: "CPAP/BiPAP", value: "CPAP/BiPAP" },
+  { label: "Steroids", value: "Steroids" },
+  { label: "None", value: "No rescue treatment" }
+];
+const skinSymptomPresets = [
+  { label: "Itching", value: "Itching" },
+  { label: "Burning", value: "Burning" },
+  { label: "Flare-up", value: "Flare-up" },
+  { label: "Open sores", value: "Open sores or cracking" },
+  { label: "Sleep loss", value: "Sleep loss from itching" }
+];
+const chronicPainSymptomPresets = [
+  { label: "Widespread pain", value: "Widespread pain" },
+  { label: "Fatigue", value: "Fatigue" },
+  { label: "Brain fog", value: "Brain fog" },
+  { label: "Tender areas", value: "Tender areas" },
+  { label: "Post-exertion crash", value: "Post-exertion crash" }
+];
 function getEntryFieldPresets(fieldLabel) {
   switch (fieldLabel) {
     case "Duration":
     case "Episode duration":
       return durationPresets;
     case "Had to stop activity?":
+    case "Had to stop and rest?":
       return stopActivityPresets;
     case "Kept you from sleeping?":
       return sleepLimitPresets;
     case "Episode type":
       return episodeTypePresets;
+    case "Symptoms noticed":
+      return mentalHealthSymptomPresets;
+    case "Joint symptoms":
+      return backJointSymptomPresets;
+    case "Pain and fatigue symptoms":
+      return chronicPainSymptomPresets;
+    case "Headache symptoms":
+      return migraineSymptomPresets;
+    case "Digestive symptoms":
+      return digestiveSymptomPresets;
+    case "Night symptoms":
+      return digestiveNightSymptomPresets;
+    case "Medication or food trigger":
+      return digestiveTriggerPresets;
+    case "Nerve symptoms":
+      return nerveSymptomPresets;
+    case "Daytime effect":
+      return sleepDayEffectPresets;
+    case "Breathing symptoms":
+      return respiratorySymptomPresets;
+    case "Rescue treatment used":
+      return respiratoryTreatmentPresets;
+    case "Skin symptoms":
+      return skinSymptomPresets;
     default:
       return [];
   }
+}
+const defaultEntryFields = [
+  {
+    label: "Date and time",
+    type: "datetime",
+    placeholder: ""
+  },
+  {
+    label: "How bad was it?",
+    type: "slider",
+    placeholder: ""
+  },
+  {
+    label: "What happened?",
+    type: "textarea",
+    placeholder: "Short note about the symptom, episode, or flare-up."
+  },
+  {
+    label: "Daily impact",
+    type: "textarea",
+    placeholder: "Missed work, family activity, sleep, errands, walking, lifting, or other limits."
+  }
+];
+const durationField = {
+  label: "Duration",
+  type: "text",
+  placeholder: "Example: 30 minutes, 4 hours, all day"
+};
+const episodeDurationField = {
+  label: "Episode duration",
+  type: "text",
+  placeholder: "Example: 20 minutes, 2 hours, most of the day"
+};
+const stopActivityField = {
+  label: "Had to stop activity?",
+  type: "text",
+  placeholder: "Lie down, leave work, cancel plans, or avoid movement?"
+};
+const sleepLimitField = {
+  label: "Kept you from sleeping?",
+  type: "text",
+  placeholder: "Hard to fall asleep, stay asleep, or get useful rest?"
+};
+const episodeTypeField = {
+  label: "Episode type",
+  type: "text",
+  placeholder: "Panic, nightmare, flashback, isolation, irritability..."
+};
+const conditionEpisodeConfig = {
+  "Migraine / Headache": {
+    duration: durationField
+  },
+  "PTSD / Mental Health": {
+    duration: episodeDurationField,
+    followUp: episodeTypeField
+  },
+  "Back or Joint Pain": {
+    duration: durationField,
+    followUp: stopActivityField
+  },
+  "Nerve / Radiculopathy": {
+    duration: durationField,
+    followUp: stopActivityField
+  },
+  "GERD / IBS": {
+    duration: durationField,
+    followUp: stopActivityField
+  },
+  "Sleep Issues": {
+    duration: durationField,
+    followUp: sleepLimitField
+  },
+  Respiratory: {
+    duration: durationField,
+    followUp: stopActivityField
+  },
+  "Skin Conditions": {
+    duration: durationField
+  },
+  "Chronic Pain / Fatigue": {
+    duration: durationField,
+    followUp: stopActivityField
+  }
+};
+function buildEntryFields(conditionTitle, extraFields = []) {
+  const fields = [
+    defaultEntryFields[0],
+    defaultEntryFields[1]
+  ];
+  const episodeConfig = conditionEpisodeConfig[conditionTitle];
+  if (episodeConfig) {
+    fields.push({ ...episodeConfig.duration, stepRole: "duration" });
+    if (episodeConfig.followUp) {
+      fields.push({ ...episodeConfig.followUp, stepRole: "followUp" });
+    }
+  }
+  fields.push(
+    defaultEntryFields[2],
+    defaultEntryFields[3],
+    ...extraFields
+  );
+  return fields;
+}
+function isEpisodeDurationField(field) {
+  return field.stepRole === "duration";
+}
+function isEpisodeFollowUpField(field) {
+  return field.stepRole === "followUp";
+}
+const entryFieldsByCondition = {
+  "PTSD / Mental Health": buildEntryFields("PTSD / Mental Health", [
+    {
+      label: "Symptoms noticed",
+      type: "text",
+      placeholder: "Nightmares, flashbacks, hypervigilance, avoidance, panic, irritability...",
+      helper: "Tracks common mental health symptoms raters review over time."
+    },
+    {
+      label: "Safety note",
+      type: "textarea",
+      placeholder: "Optional: anything important to remember or discuss with your care team."
+    }
+  ]),
+  "Back or Joint Pain": buildEntryFields("Back or Joint Pain", [
+    {
+      label: "Joint symptoms",
+      type: "text",
+      placeholder: "Stiffness, swelling, limited motion, instability, radiating pain..."
+    },
+    {
+      label: "Movement limit",
+      type: "text",
+      placeholder: "Sitting, standing, walking, lifting, bending..."
+    },
+    {
+      label: "Flare-up trigger",
+      type: "text",
+      placeholder: "Driving, stairs, lifting groceries, weather, unknown..."
+    }
+  ]),
+  "Nerve / Radiculopathy": buildEntryFields("Nerve / Radiculopathy", [
+    {
+      label: "Side affected",
+      type: "text",
+      placeholder: "Left, right, both, arm, leg, foot..."
+    },
+    {
+      label: "Nerve symptoms",
+      type: "textarea",
+      placeholder: "Numbness, tingling, burning, weakness, falls, radiating pain."
+    }
+  ]),
+  "Migraine / Headache": buildEntryFields("Migraine / Headache", [
+    {
+      label: "Headache symptoms",
+      type: "text",
+      placeholder: "Prostrating attack, aura, light sensitivity, nausea, vertigo..."
+    },
+    {
+      label: "Had to stop and rest?",
+      type: "text",
+      placeholder: "Lie down, dark room, miss work, cancel plans..."
+    }
+  ]),
+  "GERD / IBS": buildEntryFields("GERD / IBS", [
+    {
+      label: "Digestive symptoms",
+      type: "text",
+      placeholder: "Heartburn, regurgitation, trouble swallowing, pain when swallowing, vomiting...",
+      helper: "Include swallowing issues if GERD affects eating or sleep."
+    },
+    {
+      label: "Medication or food trigger",
+      type: "text",
+      placeholder: "Antacids, PPI, meal trigger, alcohol, late eating, or unknown."
+    },
+    {
+      label: "Night symptoms",
+      type: "text",
+      placeholder: "Slept propped up, woke up choking, reflux after lying down..."
+    }
+  ]),
+  "Sleep Issues": buildEntryFields("Sleep Issues", [
+    {
+      label: "Hours slept",
+      type: "number",
+      placeholder: "Example: 4"
+    },
+    {
+      label: "Sleep interruption",
+      type: "textarea",
+      placeholder: "Nightmares, wake-ups, pain, reflux, panic, breathing issues, fatigue."
+    },
+    {
+      label: "Daytime effect",
+      type: "text",
+      placeholder: "Fatigue, naps, trouble focusing, CPAP use, missed activity..."
+    }
+  ]),
+  Respiratory: buildEntryFields("Respiratory", [
+    {
+      label: "Breathing symptoms",
+      type: "text",
+      placeholder: "Shortness of breath, wheezing, chest tightness, cough, congestion..."
+    },
+    {
+      label: "Rescue treatment used",
+      type: "text",
+      placeholder: "Rescue inhaler, nebulizer, CPAP/BiPAP, steroids, or none."
+    },
+    {
+      label: "Trigger or limit",
+      type: "text",
+      placeholder: "Exercise, weather, smoke, sleep, stairs, work, or unknown."
+    }
+  ]),
+  "Skin Conditions": buildEntryFields("Skin Conditions", [
+    {
+      label: "Skin symptoms",
+      type: "text",
+      placeholder: "Itching, burning, flare-up, open sores, sleep loss from itching..."
+    },
+    {
+      label: "Areas affected",
+      type: "text",
+      placeholder: "Hands, arms, legs, scalp, face, widespread..."
+    },
+    {
+      label: "Treatment used",
+      type: "text",
+      placeholder: "Topical cream, steroids, antihistamine, bath/soak, or none."
+    }
+  ]),
+  "Chronic Pain / Fatigue": buildEntryFields("Chronic Pain / Fatigue", [
+    {
+      label: "Pain and fatigue symptoms",
+      type: "text",
+      placeholder: "Widespread pain, fatigue, brain fog, tender areas, post-exertion crash..."
+    },
+    {
+      label: "Useful function today",
+      type: "text",
+      placeholder: "Hours you could work, cook, drive, socialize, or care for yourself."
+    },
+    {
+      label: "What made it worse",
+      type: "text",
+      placeholder: "Poor sleep, stress, weather, overdoing it, standing, unknown..."
+    }
+  ])
+};
+function getEntryFieldsForSearchCondition(condition) {
+  const title = condition.title.toLowerCase();
+  const category = condition.category.toLowerCase();
+  if (category.includes("mental")) {
+    return entryFieldsByCondition["PTSD / Mental Health"];
+  }
+  if (category.includes("back") || category.includes("neck") || category.includes("joint") || title.includes("arthritis") || title.includes("knee") || title.includes("shoulder")) {
+    return entryFieldsByCondition["Back or Joint Pain"];
+  }
+  if (category.includes("nerve") || title.includes("sciatica") || title.includes("neuropathy") || title.includes("radiculopathy")) {
+    return entryFieldsByCondition["Nerve / Radiculopathy"];
+  }
+  if (category.includes("neurological") || title.includes("migraine") || title.includes("headache") || title.includes("vertigo") || title.includes("seizure")) {
+    return entryFieldsByCondition["Migraine / Headache"];
+  }
+  if (category.includes("digestive") || title.includes("gerd") || title.includes("ibs") || title.includes("diarrhea") || title.includes("constipation")) {
+    return entryFieldsByCondition["GERD / IBS"];
+  }
+  if (category.includes("respiratory") || title.includes("asthma") || title.includes("apnea") || title.includes("sinus") || title.includes("rhinitis")) {
+    return entryFieldsByCondition.Respiratory;
+  }
+  if (category.includes("skin") || title.includes("eczema") || title.includes("psoriasis") || title.includes("dermatitis")) {
+    return entryFieldsByCondition["Skin Conditions"];
+  }
+  if (category.includes("chronic pain") || category.includes("fatigue") || title.includes("fibromyalgia") || title.includes("fatigue")) {
+    return entryFieldsByCondition["Chronic Pain / Fatigue"];
+  }
+  if (category.includes("sleep") || title.includes("insomnia")) {
+    return entryFieldsByCondition["Sleep Issues"];
+  }
+  return defaultEntryFields;
 }
 const conditionImageAssets = {
   mentalHealth: "/image/ptsd-mental-health.png",
@@ -229,7 +625,17 @@ const conditionImageAssets = {
   nerveRadiculopathy: "/image/nerve-radiculopathy.png",
   migraineHeadache: "/image/migraine-headache.png",
   gerdIbs: "/image/gerd-ibs.png",
-  sleepIssues: "/image/sleep-issues.png"
+  sleepIssues: "/image/sleep-issues.png",
+  asthma: "/image/asthma.png",
+  sleepApnea: "/image/sleep-apnea.png",
+  sinusitis: "/image/sinusitis.png",
+  rhinitis: "/image/rhinitis.png",
+  eczema: "/image/eczema.png",
+  psoriasis: "/image/psoriasis.png",
+  dermatitis: "/image/dermatitis.png",
+  chronicPain: "/image/chronic-pain.png",
+  fibromyalgia: "/image/fibromyalgia.png",
+  chronicFatigue: "/image/chronic-fatigue.png"
 };
 const categoryImageMap = {
   "Mental Health": conditionImageAssets.mentalHealth,
@@ -237,11 +643,22 @@ const categoryImageMap = {
   Sleep: conditionImageAssets.sleepIssues,
   "Back, Neck, and Joint": conditionImageAssets.backJointPain,
   Nerve: conditionImageAssets.nerveRadiculopathy,
-  Digestive: conditionImageAssets.gerdIbs
+  Digestive: conditionImageAssets.gerdIbs,
+  Respiratory: conditionImageAssets.asthma,
+  Skin: conditionImageAssets.eczema,
+  "Chronic Pain / Fatigue": conditionImageAssets.chronicPain
 };
 const defaultConditionImage = conditionImageAssets.mentalHealth;
 const conditionTitleImageOverrides = {
-  "Sleep apnea": conditionImageAssets.sleepIssues
+  Asthma: conditionImageAssets.asthma,
+  "Sleep apnea": conditionImageAssets.sleepApnea,
+  Sinusitis: conditionImageAssets.sinusitis,
+  Rhinitis: conditionImageAssets.rhinitis,
+  Eczema: conditionImageAssets.eczema,
+  Psoriasis: conditionImageAssets.psoriasis,
+  Dermatitis: conditionImageAssets.dermatitis,
+  Fibromyalgia: conditionImageAssets.fibromyalgia,
+  "Chronic fatigue": conditionImageAssets.chronicFatigue
 };
 const carouselConditions = [
   {
@@ -658,158 +1075,6 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
       }
       return days;
     });
-    const defaultEntryFields = [
-      {
-        label: "Date and time",
-        type: "datetime",
-        placeholder: ""
-      },
-      {
-        label: "How bad was it?",
-        type: "slider",
-        placeholder: ""
-      },
-      {
-        label: "What happened?",
-        type: "textarea",
-        placeholder: "Short note about the symptom, episode, or flare-up."
-      },
-      {
-        label: "Daily impact",
-        type: "textarea",
-        placeholder: "Missed work, family activity, sleep, errands, walking, lifting, or other limits."
-      }
-    ];
-    const durationField = {
-      label: "Duration",
-      type: "text",
-      placeholder: "Example: 30 minutes, 4 hours, all day"
-    };
-    const episodeDurationField = {
-      label: "Episode duration",
-      type: "text",
-      placeholder: "Example: 20 minutes, 2 hours, most of the day"
-    };
-    const stopActivityField = {
-      label: "Had to stop activity?",
-      type: "text",
-      placeholder: "Lie down, leave work, cancel plans, or avoid movement?"
-    };
-    const sleepLimitField = {
-      label: "Kept you from sleeping?",
-      type: "text",
-      placeholder: "Hard to fall asleep, stay asleep, or get useful rest?"
-    };
-    const episodeTypeField = {
-      label: "Episode type",
-      type: "text",
-      placeholder: "Panic, nightmare, flashback, isolation, irritability..."
-    };
-    const conditionEpisodeConfig = {
-      "Migraine / Headache": {
-        duration: durationField
-      },
-      "PTSD / Mental Health": {
-        duration: episodeDurationField,
-        followUp: episodeTypeField
-      },
-      "Back or Joint Pain": {
-        duration: durationField,
-        followUp: stopActivityField
-      },
-      "Nerve / Radiculopathy": {
-        duration: durationField,
-        followUp: stopActivityField
-      },
-      "Sleep Issues": {
-        duration: durationField,
-        followUp: sleepLimitField
-      }
-    };
-    function buildEntryFields(conditionTitle, extraFields = []) {
-      const fields = [
-        defaultEntryFields[0],
-        defaultEntryFields[1]
-      ];
-      const episodeConfig = conditionEpisodeConfig[conditionTitle];
-      if (episodeConfig) {
-        fields.push({ ...episodeConfig.duration, stepRole: "duration" });
-        if (episodeConfig.followUp) {
-          fields.push({ ...episodeConfig.followUp, stepRole: "followUp" });
-        }
-      }
-      fields.push(
-        defaultEntryFields[2],
-        defaultEntryFields[3],
-        ...extraFields
-      );
-      return fields;
-    }
-    function isEpisodeDurationField(field) {
-      return field.stepRole === "duration";
-    }
-    function isEpisodeFollowUpField(field) {
-      return field.stepRole === "followUp";
-    }
-    const entryFieldsByCondition = {
-      "PTSD / Mental Health": buildEntryFields("PTSD / Mental Health", [
-        {
-          label: "Safety note",
-          type: "textarea",
-          placeholder: "Optional: anything important to remember or discuss with care team."
-        }
-      ]),
-      "Back or Joint Pain": buildEntryFields("Back or Joint Pain", [
-        {
-          label: "Movement limit",
-          type: "text",
-          placeholder: "Sitting, standing, walking, lifting, bending..."
-        },
-        {
-          label: "Flare-up trigger",
-          type: "text",
-          placeholder: "Driving, stairs, lifting groceries, weather, unknown..."
-        }
-      ]),
-      "Nerve / Radiculopathy": buildEntryFields("Nerve / Radiculopathy", [
-        {
-          label: "Side affected",
-          type: "text",
-          placeholder: "Left, right, both, arm, leg, foot..."
-        },
-        {
-          label: "Nerve symptoms",
-          type: "textarea",
-          placeholder: "Numbness, tingling, burning, weakness, falls, radiating pain."
-        }
-      ]),
-      "Migraine / Headache": buildEntryFields("Migraine / Headache"),
-      "GERD / IBS": [
-        ...defaultEntryFields,
-        {
-          label: "Digestive symptom",
-          type: "text",
-          placeholder: "Heartburn, regurgitation, diarrhea, constipation, urgency..."
-        },
-        {
-          label: "Medication or food trigger",
-          type: "text",
-          placeholder: "Medication used, meal trigger, or unknown."
-        }
-      ],
-      "Sleep Issues": buildEntryFields("Sleep Issues", [
-        {
-          label: "Hours slept",
-          type: "number",
-          placeholder: "Example: 4"
-        },
-        {
-          label: "Sleep interruption",
-          type: "textarea",
-          placeholder: "Nightmares, wake-ups, pain, reflux, panic, breathing issues, fatigue."
-        }
-      ])
-    };
     const totalSlides = computed(() => conditions.length + 1);
     const isSearchSlide = computed(() => activeIndex.value === 0);
     const activeCondition = computed(() => conditions[Math.max(activeIndex.value - 1, 0)]);
@@ -1199,29 +1464,6 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
       }
       return "Something went wrong. Please try again.";
     }
-    function getEntryFieldsForSearchCondition(condition) {
-      const title = condition.title.toLowerCase();
-      const category = condition.category.toLowerCase();
-      if (category.includes("mental")) {
-        return entryFieldsByCondition["PTSD / Mental Health"];
-      }
-      if (category.includes("back") || title.includes("arthritis") || title.includes("knee") || title.includes("shoulder")) {
-        return entryFieldsByCondition["Back or Joint Pain"];
-      }
-      if (category.includes("nerve") || title.includes("sciatica") || title.includes("neuropathy")) {
-        return entryFieldsByCondition["Nerve / Radiculopathy"];
-      }
-      if (category.includes("neurological") || title.includes("migraine") || title.includes("headache") || title.includes("vertigo")) {
-        return entryFieldsByCondition["Migraine / Headache"];
-      }
-      if (category.includes("digestive") || title.includes("gerd") || title.includes("ibs")) {
-        return entryFieldsByCondition["GERD / IBS"];
-      }
-      if (category.includes("sleep") || title.includes("sleep")) {
-        return entryFieldsByCondition["Sleep Issues"];
-      }
-      return defaultEntryFields;
-    }
     function closeEntryPanel(clearDraft = false) {
       if (isEntryOpen.value) {
         transitionDirection.value = "collapse";
@@ -1260,18 +1502,18 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
       const _component_USelectMenu = _sfc_main$2;
       const _component_StickyActionBar = __nuxt_component_5;
       const _component_UBadge = _sfc_main$2$1;
-      _push(`<!--[--><main class="h-dvh max-h-dvh overflow-hidden bg-slate-50 text-slate-950 transition-colors dark:bg-slate-950 dark:text-white" data-v-c7dedc53><section class="mx-auto flex h-full max-h-dvh w-full max-w-md flex-col overflow-hidden pt-4 pb-0 sm:max-w-lg" data-v-c7dedc53><header class="flex shrink-0 items-center justify-between gap-3 px-4" data-v-c7dedc53><div data-v-c7dedc53><p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400" data-v-c7dedc53>Today</p><h1 class="mt-1 text-2xl font-bold tracking-tight text-slate-950 dark:text-white" data-v-c7dedc53>Symptom Tracker</h1></div>`);
+      _push(`<!--[--><main class="h-dvh max-h-dvh overflow-hidden bg-slate-50 text-slate-950 transition-colors dark:bg-slate-950 dark:text-white" data-v-5f1e629c><section class="mx-auto flex h-full max-h-dvh w-full max-w-md flex-col overflow-hidden pt-4 pb-0 sm:max-w-lg" data-v-5f1e629c><header class="flex shrink-0 items-center justify-between gap-3 px-4" data-v-5f1e629c><div data-v-5f1e629c><p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400" data-v-5f1e629c>Today</p><h1 class="mt-1 text-2xl font-bold tracking-tight text-slate-950 dark:text-white" data-v-5f1e629c>Symptom Tracker</h1></div>`);
       if (isEntryOpen.value) {
-        _push(`<div class="flex items-center gap-2" data-v-c7dedc53><button type="button" class="rounded-full px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-800" data-v-c7dedc53> Cancel </button><button type="button" class="rounded-full bg-slate-950 px-4 py-2 text-sm font-bold text-white shadow-sm dark:bg-white dark:text-slate-950" data-v-c7dedc53> Done </button></div>`);
+        _push(`<div class="flex items-center gap-2" data-v-5f1e629c><button type="button" class="rounded-full px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-800" data-v-5f1e629c> Cancel </button><button type="button" class="rounded-full bg-slate-950 px-4 py-2 text-sm font-bold text-white shadow-sm dark:bg-white dark:text-slate-950" data-v-5f1e629c> Done </button></div>`);
       } else {
-        _push(`<div class="flex items-center gap-2" data-v-c7dedc53>`);
+        _push(`<div class="flex items-center gap-2" data-v-5f1e629c>`);
         if (hasActiveDraft.value) {
-          _push(`<button type="button" class="relative grid size-10 place-items-center rounded-full bg-white text-slate-950 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-100 dark:bg-slate-900 dark:text-white dark:ring-slate-800 dark:hover:bg-slate-800" aria-label="Open active draft" data-v-c7dedc53>`);
+          _push(`<button type="button" class="relative grid size-10 place-items-center rounded-full bg-white text-slate-950 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-100 dark:bg-slate-900 dark:text-white dark:ring-slate-800 dark:hover:bg-slate-800" aria-label="Open active draft" data-v-5f1e629c>`);
           _push(ssrRenderComponent(_component_UIcon, {
             name: "i-lucide-files",
             class: "size-5"
           }, null, _parent));
-          _push(`<span class="absolute right-0.5 top-0.5 size-2.5 rounded-full bg-red-500 ring-2 ring-slate-950" data-v-c7dedc53></span></button>`);
+          _push(`<span class="absolute right-0.5 top-0.5 size-2.5 rounded-full bg-red-500 ring-2 ring-slate-950" data-v-5f1e629c></span></button>`);
         } else {
           _push(`<!---->`);
         }
@@ -1281,40 +1523,40 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
           class: "header-color-toggle"
         }, null, _parent));
         if (unref(user)) {
-          _push(`<div class="relative" data-v-c7dedc53><button type="button" class="${ssrRenderClass([isSubmissionDropdownOpen.value ? "bg-sky-500 text-white ring-sky-400 dark:bg-sky-500 dark:text-white dark:ring-sky-400" : "bg-white text-slate-950 ring-slate-200 hover:bg-slate-100 dark:bg-slate-900 dark:text-white dark:ring-slate-800 dark:hover:bg-slate-800", "relative z-[60] grid size-10 place-items-center rounded-full shadow-sm ring-1 transition"])}"${ssrRenderAttr("aria-expanded", isSubmissionDropdownOpen.value)} aria-label="Open submission notifications" data-v-c7dedc53>`);
+          _push(`<div class="relative" data-v-5f1e629c><button type="button" class="${ssrRenderClass([isSubmissionDropdownOpen.value ? "bg-sky-500 text-white ring-sky-400 dark:bg-sky-500 dark:text-white dark:ring-sky-400" : "bg-white text-slate-950 ring-slate-200 hover:bg-slate-100 dark:bg-slate-900 dark:text-white dark:ring-slate-800 dark:hover:bg-slate-800", "relative z-[60] grid size-10 place-items-center rounded-full shadow-sm ring-1 transition"])}"${ssrRenderAttr("aria-expanded", isSubmissionDropdownOpen.value)} aria-label="Open submission notifications" data-v-5f1e629c>`);
           _push(ssrRenderComponent(_component_UIcon, {
             name: "i-lucide-inbox",
             class: "size-5"
           }, null, _parent));
           if (unreadSubmissionCount.value) {
-            _push(`<span class="absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-sky-500 px-1.5 text-[0.65rem] font-bold leading-5 text-white ring-2 ring-slate-50 dark:ring-slate-950" data-v-c7dedc53>${ssrInterpolate(unreadSubmissionCount.value)}</span>`);
+            _push(`<span class="absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-sky-500 px-1.5 text-[0.65rem] font-bold leading-5 text-white ring-2 ring-slate-50 dark:ring-slate-950" data-v-5f1e629c>${ssrInterpolate(unreadSubmissionCount.value)}</span>`);
           } else {
             _push(`<!---->`);
           }
           _push(`</button>`);
           if (isSubmissionDropdownOpen.value) {
-            _push(`<div class="fixed inset-0 z-40" data-v-c7dedc53></div>`);
+            _push(`<div class="fixed inset-0 z-40" data-v-5f1e629c></div>`);
           } else {
             _push(`<!---->`);
           }
           if (isSubmissionDropdownOpen.value) {
-            _push(`<div class="absolute right-0 top-12 z-[70] w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/15 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/40" data-v-c7dedc53><div class="border-b border-slate-200 px-4 py-3 dark:border-slate-800" data-v-c7dedc53><div class="flex items-center gap-2" data-v-c7dedc53>`);
+            _push(`<div class="absolute right-0 top-12 z-[70] w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/15 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/40" data-v-5f1e629c><div class="border-b border-slate-200 px-4 py-3 dark:border-slate-800" data-v-5f1e629c><div class="flex items-center gap-2" data-v-5f1e629c>`);
             _push(ssrRenderComponent(_component_UIcon, {
               name: "i-lucide-inbox",
               class: "size-4 text-sky-500"
             }, null, _parent));
-            _push(`<p class="text-[0.875rem] font-bold text-slate-950 dark:text-white" data-v-c7dedc53>Submissions</p></div><p class="mt-1 text-xs text-slate-500 dark:text-slate-400" data-v-c7dedc53> All observations submitted to your tracker. </p></div>`);
+            _push(`<p class="text-[0.875rem] font-bold text-slate-950 dark:text-white" data-v-5f1e629c>Submissions</p></div><p class="mt-1 text-xs text-slate-500 dark:text-slate-400" data-v-5f1e629c> All observations submitted to your tracker. </p></div>`);
             if (!submissionNotifications.value.length) {
-              _push(`<div class="px-4 py-6 text-center text-[0.875rem] text-slate-500 dark:text-slate-400" data-v-c7dedc53> No submissions yet. </div>`);
+              _push(`<div class="px-4 py-6 text-center text-[0.875rem] text-slate-500 dark:text-slate-400" data-v-5f1e629c> No submissions yet. </div>`);
             } else {
-              _push(`<div class="max-h-80 overflow-y-auto no-scrollbar p-2" data-v-c7dedc53><!--[-->`);
+              _push(`<div class="max-h-80 overflow-y-auto no-scrollbar p-2" data-v-5f1e629c><!--[-->`);
               ssrRenderList(submissionNotifications.value, (submission) => {
-                _push(`<button type="button" class="flex w-full items-start gap-3 rounded-2xl px-3 py-3 text-left transition hover:bg-slate-100 dark:hover:bg-slate-800/80" data-v-c7dedc53><span class="${ssrRenderClass([highlightedSubmissionId.value === submission.id ? "bg-sky-500 text-white" : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300", "mt-0.5 grid size-9 shrink-0 place-items-center rounded-full"])}" data-v-c7dedc53>`);
+                _push(`<button type="button" class="flex w-full items-start gap-3 rounded-2xl px-3 py-3 text-left transition hover:bg-slate-100 dark:hover:bg-slate-800/80" data-v-5f1e629c><span class="${ssrRenderClass([highlightedSubmissionId.value === submission.id ? "bg-sky-500 text-white" : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300", "mt-0.5 grid size-9 shrink-0 place-items-center rounded-full"])}" data-v-5f1e629c>`);
                 _push(ssrRenderComponent(_component_UIcon, {
                   name: "i-lucide-message-square-text",
                   class: "size-4"
                 }, null, _parent));
-                _push(`</span><span class="min-w-0 flex-1" data-v-c7dedc53><span class="block truncate text-[0.875rem] font-bold text-slate-950 dark:text-white" data-v-c7dedc53>${ssrInterpolate(submission.title)}</span><span class="mt-1 line-clamp-2 block text-xs leading-5 text-slate-500 dark:text-slate-400" data-v-c7dedc53>${ssrInterpolate(submission.summary)}</span><span class="mt-1 block text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500" data-v-c7dedc53>${ssrInterpolate(submission.source)} · ${ssrInterpolate(submission.condition)} · ${ssrInterpolate(submission.timeLabel)}</span></span></button>`);
+                _push(`</span><span class="min-w-0 flex-1" data-v-5f1e629c><span class="block truncate text-[0.875rem] font-bold text-slate-950 dark:text-white" data-v-5f1e629c>${ssrInterpolate(submission.title)}</span><span class="mt-1 line-clamp-2 block text-xs leading-5 text-slate-500 dark:text-slate-400" data-v-5f1e629c>${ssrInterpolate(submission.summary)}</span><span class="mt-1 block text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500" data-v-5f1e629c>${ssrInterpolate(submission.source)} · ${ssrInterpolate(submission.condition)} · ${ssrInterpolate(submission.timeLabel)}</span></span></button>`);
               });
               _push(`<!--]--></div>`);
             }
@@ -1326,7 +1568,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
         } else {
           _push(`<!---->`);
         }
-        _push(`<button type="button" class="grid size-10 place-items-center rounded-full bg-white text-slate-950 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-100 dark:bg-slate-900 dark:text-white dark:ring-slate-800 dark:hover:bg-slate-800"${ssrRenderAttr("aria-label", unref(user) ? "Open account" : "Sign in")} data-v-c7dedc53>`);
+        _push(`<button type="button" class="grid size-10 place-items-center rounded-full bg-white text-slate-950 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-100 dark:bg-slate-900 dark:text-white dark:ring-slate-800 dark:hover:bg-slate-800"${ssrRenderAttr("aria-label", unref(user) ? "Open account" : "Sign in")} data-v-5f1e629c>`);
         _push(ssrRenderComponent(_component_UIcon, {
           name: unref(user) ? "i-lucide-user-check" : "i-lucide-user-round",
           class: "size-5"
@@ -1335,14 +1577,14 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
       }
       _push(`</header>`);
       if (showInstallCard.value && !isEntryOpen.value) {
-        _push(`<section class="mx-4 mt-5 shrink-0 rounded-4xl border border-teal-200 bg-teal-50 p-4 shadow-lg shadow-teal-950/5 dark:border-teal-500/30 dark:bg-teal-950/30 dark:shadow-black/20" data-v-c7dedc53><div class="flex items-start justify-between gap-3" data-v-c7dedc53><div data-v-c7dedc53><p class="text-xs font-bold uppercase tracking-[0.2em] text-teal-700 dark:text-teal-200" data-v-c7dedc53>Install on phone</p><h2 class="mt-1 text-lg font-bold text-slate-950 dark:text-white" data-v-c7dedc53>Use this like an app</h2></div><button type="button" class="grid size-8 shrink-0 place-items-center rounded-full bg-white text-slate-600 ring-1 ring-slate-200 dark:bg-slate-900/80 dark:text-slate-300 dark:ring-0" aria-label="Dismiss install instructions" data-v-c7dedc53>`);
+        _push(`<section class="mx-4 mt-5 shrink-0 rounded-4xl border border-teal-200 bg-teal-50 p-4 shadow-lg shadow-teal-950/5 dark:border-teal-500/30 dark:bg-teal-950/30 dark:shadow-black/20" data-v-5f1e629c><div class="flex items-start justify-between gap-3" data-v-5f1e629c><div data-v-5f1e629c><p class="text-xs font-bold uppercase tracking-[0.2em] text-teal-700 dark:text-teal-200" data-v-5f1e629c>Install on phone</p><h2 class="mt-1 text-lg font-bold text-slate-950 dark:text-white" data-v-5f1e629c>Use this like an app</h2></div><button type="button" class="grid size-8 shrink-0 place-items-center rounded-full bg-white text-slate-600 ring-1 ring-slate-200 dark:bg-slate-900/80 dark:text-slate-300 dark:ring-0" aria-label="Dismiss install instructions" data-v-5f1e629c>`);
         _push(ssrRenderComponent(_component_UIcon, {
           name: "i-lucide-x",
           class: "size-4"
         }, null, _parent));
-        _push(`</button></div><p class="mt-3 text-sm leading-6 text-teal-950/90 dark:text-teal-50/90" data-v-c7dedc53>${ssrInterpolate(installInstructionText.value)}</p><div class="mt-4 flex flex-wrap gap-2" data-v-c7dedc53>`);
+        _push(`</button></div><p class="mt-3 text-sm leading-6 text-teal-950/90 dark:text-teal-50/90" data-v-5f1e629c>${ssrInterpolate(installInstructionText.value)}</p><div class="mt-4 flex flex-wrap gap-2" data-v-5f1e629c>`);
         if (canPromptInstall.value) {
-          _push(`<button type="button" class="rounded-full bg-slate-950 px-4 py-2 text-sm font-bold text-white shadow-sm dark:bg-white dark:text-slate-950" data-v-c7dedc53> Install app </button>`);
+          _push(`<button type="button" class="rounded-full bg-slate-950 px-4 py-2 text-sm font-bold text-white shadow-sm dark:bg-white dark:text-slate-950" data-v-5f1e629c> Install app </button>`);
         } else {
           _push(`<!---->`);
         }
@@ -1366,14 +1608,14 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
         _push(`<!---->`);
       }
       if (isAuthPanelOpen.value) {
-        _push(`<div class="fixed inset-0 z-50 flex items-start justify-center bg-slate-200/70 px-4 pt-20 backdrop-blur-sm dark:bg-slate-950/70" data-v-c7dedc53><section class="w-full max-w-md rounded-4xl border border-slate-200 bg-white p-4 shadow-2xl shadow-slate-950/10 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/40" data-v-c7dedc53><div class="flex items-start justify-between gap-3" data-v-c7dedc53><div data-v-c7dedc53><p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400" data-v-c7dedc53>${ssrInterpolate(unref(user) ? "Account" : authMode.value === "login" ? "Welcome back" : "Create account")}</p><h2 class="mt-1 text-xl font-bold text-slate-950 dark:text-white" data-v-c7dedc53>${ssrInterpolate(unref(user) ? unref(user).email : authMode.value === "login" ? "Sign in to save entries" : "Start saving your tracker")}</h2></div><button type="button" class="grid size-9 place-items-center rounded-full bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300" aria-label="Close account panel" data-v-c7dedc53>`);
+        _push(`<div class="fixed inset-0 z-50 flex items-start justify-center bg-slate-200/70 px-4 pt-20 backdrop-blur-sm dark:bg-slate-950/70" data-v-5f1e629c><section class="w-full max-w-md rounded-4xl border border-slate-200 bg-white p-4 shadow-2xl shadow-slate-950/10 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/40" data-v-5f1e629c><div class="flex items-start justify-between gap-3" data-v-5f1e629c><div data-v-5f1e629c><p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400" data-v-5f1e629c>${ssrInterpolate(unref(user) ? "Account" : authMode.value === "login" ? "Welcome back" : "Create account")}</p><h2 class="mt-1 text-xl font-bold text-slate-950 dark:text-white" data-v-5f1e629c>${ssrInterpolate(unref(user) ? unref(user).email : authMode.value === "login" ? "Sign in to save entries" : "Start saving your tracker")}</h2></div><button type="button" class="grid size-9 place-items-center rounded-full bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300" aria-label="Close account panel" data-v-5f1e629c>`);
         _push(ssrRenderComponent(_component_UIcon, {
           name: "i-lucide-x",
           class: "size-4"
         }, null, _parent));
         _push(`</button></div>`);
         if (unref(user)) {
-          _push(`<div class="mt-4 space-y-3" data-v-c7dedc53>`);
+          _push(`<div class="mt-4 space-y-3" data-v-5f1e629c>`);
           _push(ssrRenderComponent(_component_NuxtLink, {
             to: "/profile",
             class: "flex w-full items-center justify-center rounded-2xl bg-slate-100 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700",
@@ -1390,45 +1632,45 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
             }),
             _: 1
           }, _parent));
-          _push(`<button type="button" class="w-full rounded-2xl bg-white px-4 py-3 text-sm font-bold text-slate-950"${ssrIncludeBooleanAttr(isAuthSubmitting.value) ? " disabled" : ""} data-v-c7dedc53>${ssrInterpolate(isAuthSubmitting.value ? "Signing out..." : "Sign out")}</button>`);
+          _push(`<button type="button" class="w-full rounded-2xl bg-white px-4 py-3 text-sm font-bold text-slate-950"${ssrIncludeBooleanAttr(isAuthSubmitting.value) ? " disabled" : ""} data-v-5f1e629c>${ssrInterpolate(isAuthSubmitting.value ? "Signing out..." : "Sign out")}</button>`);
           if (unref(authError)) {
-            _push(`<p class="text-center text-sm font-medium text-red-300" data-v-c7dedc53>${ssrInterpolate(unref(authError))}</p>`);
+            _push(`<p class="text-center text-sm font-medium text-red-300" data-v-5f1e629c>${ssrInterpolate(unref(authError))}</p>`);
           } else {
             _push(`<!---->`);
           }
           _push(`</div>`);
         } else {
-          _push(`<form class="mt-4 space-y-3" data-v-c7dedc53>`);
+          _push(`<form class="mt-4 space-y-3" data-v-5f1e629c>`);
           if (authMode.value === "signup") {
-            _push(`<label class="block" data-v-c7dedc53><span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400" data-v-c7dedc53>Name</span><input${ssrRenderAttr("value", authName.value)} type="text" autocomplete="name" class="w-full rounded-3xl border border-slate-300 bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-600/70 dark:bg-slate-800/70 dark:text-white dark:focus:border-slate-400" placeholder="Your full name" required data-v-c7dedc53></label>`);
+            _push(`<label class="block" data-v-5f1e629c><span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400" data-v-5f1e629c>Name</span><input${ssrRenderAttr("value", authName.value)} type="text" autocomplete="name" class="w-full rounded-3xl border border-slate-300 bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-600/70 dark:bg-slate-800/70 dark:text-white dark:focus:border-slate-400" placeholder="Your full name" required data-v-5f1e629c></label>`);
           } else {
             _push(`<!---->`);
           }
-          _push(`<label class="block" data-v-c7dedc53><span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400" data-v-c7dedc53>Email</span><input${ssrRenderAttr("value", authEmail.value)} type="email" autocomplete="email" class="w-full rounded-3xl border border-slate-300 bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-600/70 dark:bg-slate-800/70 dark:text-white dark:focus:border-slate-400" placeholder="you@example.com" required data-v-c7dedc53></label>`);
+          _push(`<label class="block" data-v-5f1e629c><span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400" data-v-5f1e629c>Email</span><input${ssrRenderAttr("value", authEmail.value)} type="email" autocomplete="email" class="w-full rounded-3xl border border-slate-300 bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-600/70 dark:bg-slate-800/70 dark:text-white dark:focus:border-slate-400" placeholder="you@example.com" required data-v-5f1e629c></label>`);
           if (authMode.value === "signup") {
-            _push(`<label class="block" data-v-c7dedc53><span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400" data-v-c7dedc53>Confirm password</span><input${ssrRenderAttr("value", authConfirmPassword.value)} type="password" autocomplete="new-password" class="w-full rounded-3xl border border-slate-300 bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-600/70 dark:bg-slate-800/70 dark:text-white dark:focus:border-slate-400" placeholder="Re-enter password" required data-v-c7dedc53></label>`);
+            _push(`<label class="block" data-v-5f1e629c><span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400" data-v-5f1e629c>Confirm password</span><input${ssrRenderAttr("value", authConfirmPassword.value)} type="password" autocomplete="new-password" class="w-full rounded-3xl border border-slate-300 bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-600/70 dark:bg-slate-800/70 dark:text-white dark:focus:border-slate-400" placeholder="Re-enter password" required data-v-5f1e629c></label>`);
           } else {
             _push(`<!---->`);
           }
-          _push(`<label class="block" data-v-c7dedc53><span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400" data-v-c7dedc53>Password</span><input${ssrRenderAttr("value", authPassword.value)} type="password" autocomplete="current-password" class="w-full rounded-3xl border border-slate-300 bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-600/70 dark:bg-slate-800/70 dark:text-white dark:focus:border-slate-400" placeholder="At least 6 characters" required data-v-c7dedc53></label><button type="submit" class="w-full rounded-2xl bg-white px-4 py-4 text-base font-bold text-slate-950"${ssrIncludeBooleanAttr(isAuthSubmitting.value) ? " disabled" : ""} data-v-c7dedc53>${ssrInterpolate(isAuthSubmitting.value ? "Working..." : authMode.value === "login" ? "Sign in" : "Create account")}</button><button type="button" class="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-100 px-4 py-4 text-base font-bold text-slate-950 ring-1 ring-slate-200 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-white dark:ring-slate-700 dark:hover:bg-slate-700"${ssrIncludeBooleanAttr(isAuthSubmitting.value) ? " disabled" : ""} data-v-c7dedc53>`);
+          _push(`<label class="block" data-v-5f1e629c><span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400" data-v-5f1e629c>Password</span><input${ssrRenderAttr("value", authPassword.value)} type="password" autocomplete="current-password" class="w-full rounded-3xl border border-slate-300 bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-600/70 dark:bg-slate-800/70 dark:text-white dark:focus:border-slate-400" placeholder="At least 6 characters" required data-v-5f1e629c></label><button type="submit" class="w-full rounded-2xl bg-white px-4 py-4 text-base font-bold text-slate-950"${ssrIncludeBooleanAttr(isAuthSubmitting.value) ? " disabled" : ""} data-v-5f1e629c>${ssrInterpolate(isAuthSubmitting.value ? "Working..." : authMode.value === "login" ? "Sign in" : "Create account")}</button><button type="button" class="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-100 px-4 py-4 text-base font-bold text-slate-950 ring-1 ring-slate-200 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-white dark:ring-slate-700 dark:hover:bg-slate-700"${ssrIncludeBooleanAttr(isAuthSubmitting.value) ? " disabled" : ""} data-v-5f1e629c>`);
           _push(ssrRenderComponent(_component_UIcon, {
             name: "i-lucide-chrome",
             class: "size-5"
           }, null, _parent));
           _push(` Continue with Google </button>`);
           if (authMode.value === "login") {
-            _push(`<button type="button" class="w-full rounded-2xl px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-300"${ssrIncludeBooleanAttr(isAuthSubmitting.value) ? " disabled" : ""} data-v-c7dedc53> Forgot password? </button>`);
+            _push(`<button type="button" class="w-full rounded-2xl px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-300"${ssrIncludeBooleanAttr(isAuthSubmitting.value) ? " disabled" : ""} data-v-5f1e629c> Forgot password? </button>`);
           } else {
             _push(`<!---->`);
           }
-          _push(`<button type="button" class="w-full rounded-2xl px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-300" data-v-c7dedc53>${ssrInterpolate(authMode.value === "login" ? "Need an account? Sign up" : "Already have an account? Sign in")}</button>`);
+          _push(`<button type="button" class="w-full rounded-2xl px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-300" data-v-5f1e629c>${ssrInterpolate(authMode.value === "login" ? "Need an account? Sign up" : "Already have an account? Sign in")}</button>`);
           if (authMessage.value) {
-            _push(`<p class="text-center text-sm font-medium text-slate-300" data-v-c7dedc53>${ssrInterpolate(authMessage.value)}</p>`);
+            _push(`<p class="text-center text-sm font-medium text-slate-300" data-v-5f1e629c>${ssrInterpolate(authMessage.value)}</p>`);
           } else {
             _push(`<!---->`);
           }
           if (unref(authError)) {
-            _push(`<p class="text-center text-sm font-medium text-red-300" data-v-c7dedc53>${ssrInterpolate(unref(authError))}</p>`);
+            _push(`<p class="text-center text-sm font-medium text-red-300" data-v-5f1e629c>${ssrInterpolate(unref(authError))}</p>`);
           } else {
             _push(`<!---->`);
           }
@@ -1439,22 +1681,22 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
         _push(`<!---->`);
       }
       if (isEntryOpen.value) {
-        _push(`<section class="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden" data-v-c7dedc53><div class="flex min-h-0 flex-1 flex-col overflow-hidden px-5" data-v-c7dedc53><div class="flex min-h-0 flex-1 flex-col overflow-hidden" data-v-c7dedc53><div class="mb-6 shrink-0 flex items-center gap-4" data-v-c7dedc53><img${ssrRenderAttr("src", activeEntryImage.value)}${ssrRenderAttr("alt", entryTitle.value)} class="size-16 shrink-0 rounded-2xl object-cover" data-v-c7dedc53><div class="min-w-0 flex-1" data-v-c7dedc53><p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400" data-v-c7dedc53>${ssrInterpolate(isEditingEntry.value ? "Edit Entry" : "New Entry")}</p><div class="mt-1.5 flex items-center gap-2" data-v-c7dedc53><h2 class="min-w-0 truncate text-xl font-bold text-slate-950 dark:text-white" data-v-c7dedc53>${ssrInterpolate(entryTitle.value)}</h2><button type="button" class="${ssrRenderClass([isConditionPickerOpen.value ? "bg-slate-950 text-white dark:bg-white dark:text-slate-950" : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700", "grid size-8 shrink-0 place-items-center rounded-full transition"])}"${ssrRenderAttr("aria-label", isConditionPickerOpen.value ? "Close condition picker" : "Change condition")}${ssrRenderAttr("aria-expanded", isConditionPickerOpen.value)} data-v-c7dedc53>`);
+        _push(`<section class="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden" data-v-5f1e629c><div class="flex min-h-0 flex-1 flex-col overflow-hidden px-5" data-v-5f1e629c><div class="flex min-h-0 flex-1 flex-col overflow-hidden" data-v-5f1e629c><div class="mb-6 shrink-0 flex items-center gap-4" data-v-5f1e629c><img${ssrRenderAttr("src", activeEntryImage.value)}${ssrRenderAttr("alt", entryTitle.value)} class="size-16 shrink-0 rounded-2xl object-cover" data-v-5f1e629c><div class="min-w-0 flex-1" data-v-5f1e629c><p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400" data-v-5f1e629c>${ssrInterpolate(isEditingEntry.value ? "Edit Entry" : "New Entry")}</p><div class="mt-1.5 flex items-center gap-2" data-v-5f1e629c><h2 class="min-w-0 truncate text-xl font-bold text-slate-950 dark:text-white" data-v-5f1e629c>${ssrInterpolate(entryTitle.value)}</h2><button type="button" class="${ssrRenderClass([isConditionPickerOpen.value ? "bg-slate-950 text-white dark:bg-white dark:text-slate-950" : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700", "grid size-8 shrink-0 place-items-center rounded-full transition"])}"${ssrRenderAttr("aria-label", isConditionPickerOpen.value ? "Close condition picker" : "Change condition")}${ssrRenderAttr("aria-expanded", isConditionPickerOpen.value)} data-v-5f1e629c>`);
         _push(ssrRenderComponent(_component_UIcon, {
           name: "i-lucide-pencil",
           class: "size-4"
         }, null, _parent));
-        _push(`</button></div><p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400" data-v-c7dedc53>Log what you know right now.</p></div></div>`);
+        _push(`</button></div><p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400" data-v-5f1e629c>Log what you know right now.</p></div></div>`);
         if (isConditionPickerOpen.value) {
-          _push(`<div class="mt-3 overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900" data-v-c7dedc53><div class="border-b border-slate-200 px-3 py-3 dark:border-slate-800" data-v-c7dedc53><label class="mb-2 block text-[0.65rem] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400" data-v-c7dedc53> Custom condition </label><div class="flex gap-2" data-v-c7dedc53><input${ssrRenderAttr("value", customConditionInput.value)} type="text" placeholder="Example: tinnitus, sinusitis, skin flare-up..." class="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-slate-500" data-v-c7dedc53><button type="button" class="inline-flex shrink-0 items-center rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800 disabled:opacity-40 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"${ssrIncludeBooleanAttr(!customConditionInput.value.trim()) ? " disabled" : ""} data-v-c7dedc53> Use </button></div></div><div class="border-b border-slate-200 px-3 py-2 dark:border-slate-800" data-v-c7dedc53><p class="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400" data-v-c7dedc53>${ssrInterpolate(hasCustomConditionSearch.value ? filteredPickerConditionResults.value.length ? "Matching conditions" : "No matches" : "Or pick from the list")}</p></div><div class="no-scrollbar max-h-52 space-y-0.5 overflow-y-auto p-2" data-v-c7dedc53>`);
+          _push(`<div class="mt-3 overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900" data-v-5f1e629c><div class="border-b border-slate-200 px-3 py-3 dark:border-slate-800" data-v-5f1e629c><label class="mb-2 block text-[0.65rem] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400" data-v-5f1e629c> Custom condition </label><div class="flex gap-2" data-v-5f1e629c><input${ssrRenderAttr("value", customConditionInput.value)} type="text" placeholder="Example: tinnitus, sinusitis, skin flare-up..." class="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-slate-500" data-v-5f1e629c><button type="button" class="inline-flex shrink-0 items-center rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800 disabled:opacity-40 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"${ssrIncludeBooleanAttr(!customConditionInput.value.trim()) ? " disabled" : ""} data-v-5f1e629c> Use </button></div></div><div class="border-b border-slate-200 px-3 py-2 dark:border-slate-800" data-v-5f1e629c><p class="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400" data-v-5f1e629c>${ssrInterpolate(hasCustomConditionSearch.value ? filteredPickerConditionResults.value.length ? "Matching conditions" : "No matches" : "Or pick from the list")}</p></div><div class="no-scrollbar max-h-52 space-y-0.5 overflow-y-auto p-2" data-v-5f1e629c>`);
           if (showCustomConditionEmptyState.value) {
-            _push(`<div class="rounded-xl px-3 py-4 text-center" data-v-c7dedc53><p class="text-sm font-bold text-slate-950 dark:text-white" data-v-c7dedc53> No results </p><p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400" data-v-c7dedc53> Tap <span class="font-bold text-slate-950 dark:text-white" data-v-c7dedc53>Use</span> to add <span class="font-semibold text-slate-700 dark:text-slate-200" data-v-c7dedc53>&quot;${ssrInterpolate(debouncedCustomConditionPreview.value.trim())}&quot;</span> as a custom condition. </p></div>`);
+            _push(`<div class="rounded-xl px-3 py-4 text-center" data-v-5f1e629c><p class="text-sm font-bold text-slate-950 dark:text-white" data-v-5f1e629c> No results </p><p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400" data-v-5f1e629c> Tap <span class="font-bold text-slate-950 dark:text-white" data-v-5f1e629c>Use</span> to add <span class="font-semibold text-slate-700 dark:text-slate-200" data-v-5f1e629c>&quot;${ssrInterpolate(debouncedCustomConditionPreview.value.trim())}&quot;</span> as a custom condition. </p></div>`);
           } else {
             _push(`<!---->`);
           }
           _push(`<!--[-->`);
           ssrRenderList(filteredPickerConditionResults.value, (result) => {
-            _push(`<button type="button" class="${ssrRenderClass([result.title === entryTitle.value ? "bg-slate-100 ring-1 ring-slate-300 dark:bg-slate-800 dark:ring-slate-600" : "hover:bg-slate-50 dark:hover:bg-slate-800/80", "flex w-full items-center gap-2.5 rounded-xl p-2 text-left transition"])}" data-v-c7dedc53><img${ssrRenderAttr("src", result.image)}${ssrRenderAttr("alt", result.title)} class="size-10 shrink-0 rounded-xl object-cover" data-v-c7dedc53><span class="min-w-0 flex-1" data-v-c7dedc53><span class="block truncate text-sm font-bold text-slate-950 dark:text-white" data-v-c7dedc53>${ssrInterpolate(result.title)}</span><span class="mt-0.5 block truncate text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400" data-v-c7dedc53>${ssrInterpolate(result.category)}</span></span>`);
+            _push(`<button type="button" class="${ssrRenderClass([result.title === entryTitle.value ? "bg-slate-100 ring-1 ring-slate-300 dark:bg-slate-800 dark:ring-slate-600" : "hover:bg-slate-50 dark:hover:bg-slate-800/80", "flex w-full items-center gap-2.5 rounded-xl p-2 text-left transition"])}" data-v-5f1e629c><img${ssrRenderAttr("src", result.image)}${ssrRenderAttr("alt", result.title)} class="size-10 shrink-0 rounded-xl object-cover" data-v-5f1e629c><span class="min-w-0 flex-1" data-v-5f1e629c><span class="block truncate text-sm font-bold text-slate-950 dark:text-white" data-v-5f1e629c>${ssrInterpolate(result.title)}</span><span class="mt-0.5 block truncate text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400" data-v-5f1e629c>${ssrInterpolate(result.category)}</span></span>`);
             if (result.title === entryTitle.value) {
               _push(ssrRenderComponent(_component_UIcon, {
                 name: "i-lucide-check",
@@ -1469,26 +1711,31 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
         } else {
           _push(`<!---->`);
         }
-        _push(`<div class="flex min-h-0 flex-1 flex-col overflow-hidden" data-v-c7dedc53><div class="relative z-10 mb-6 shrink-0 flex items-center justify-between gap-4 bg-slate-50 px-1 dark:bg-slate-950" data-v-c7dedc53><button type="button" class="grid size-10 place-items-center rounded-full bg-slate-100 text-slate-950 transition hover:bg-slate-200 disabled:opacity-30 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"${ssrIncludeBooleanAttr(entryStep.value === 0) ? " disabled" : ""} aria-label="Previous entry step" data-v-c7dedc53>`);
+        _push(`<div class="flex min-h-0 flex-1 flex-col overflow-hidden" data-v-5f1e629c><div class="relative z-10 mb-6 shrink-0 flex items-center justify-between gap-4 bg-slate-50 px-1 dark:bg-slate-950" data-v-5f1e629c><button type="button" class="grid size-10 place-items-center rounded-full bg-slate-100 text-slate-950 transition hover:bg-slate-200 disabled:opacity-30 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"${ssrIncludeBooleanAttr(entryStep.value === 0) ? " disabled" : ""} aria-label="Previous entry step" data-v-5f1e629c>`);
         _push(ssrRenderComponent(_component_UIcon, {
           name: "i-lucide-chevron-left",
           class: "size-5"
         }, null, _parent));
-        _push(`</button><div class="min-w-0 flex-1" data-v-c7dedc53><p class="text-center text-xs font-bold uppercase tracking-[0.18em] text-slate-500" data-v-c7dedc53> Step ${ssrInterpolate(entryStep.value + 1)} of ${ssrInterpolate(entrySteps.value.length)}</p><div class="mt-2.5 h-1.5 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800" data-v-c7dedc53><div class="h-full rounded-full bg-slate-950 transition-all duration-300 dark:bg-white" style="${ssrRenderStyle({ width: entryProgressWidth.value })}" data-v-c7dedc53></div></div></div><button type="button" class="grid size-10 place-items-center rounded-full bg-slate-100 text-slate-950 transition hover:bg-slate-200 disabled:opacity-30 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"${ssrIncludeBooleanAttr(isLastEntryStep.value) ? " disabled" : ""} aria-label="Next entry step" data-v-c7dedc53>`);
+        _push(`</button><div class="min-w-0 flex-1" data-v-5f1e629c><p class="text-center text-xs font-bold uppercase tracking-[0.18em] text-slate-500" data-v-5f1e629c> Step ${ssrInterpolate(entryStep.value + 1)} of ${ssrInterpolate(entrySteps.value.length)}</p><div class="mt-2.5 h-1.5 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800" data-v-5f1e629c><div class="h-full rounded-full bg-slate-950 transition-all duration-300 dark:bg-white" style="${ssrRenderStyle({ width: entryProgressWidth.value })}" data-v-5f1e629c></div></div></div><button type="button" class="grid size-10 place-items-center rounded-full bg-slate-100 text-slate-950 transition hover:bg-slate-200 disabled:opacity-30 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"${ssrIncludeBooleanAttr(isLastEntryStep.value) ? " disabled" : ""} aria-label="Next entry step" data-v-5f1e629c>`);
         _push(ssrRenderComponent(_component_UIcon, {
           name: "i-lucide-chevron-right",
           class: "size-5"
         }, null, _parent));
-        _push(`</button></div><div class="flex min-h-0 flex-1 flex-col overflow-hidden" data-v-c7dedc53><div class="${ssrRenderClass([currentStepHasSliderField() && currentEntryStepFields.value.length === 1 ? "justify-center px-1 py-4" : currentStepIsEpisodeDetailStep() ? "mt-8 justify-start space-y-12 overflow-y-auto no-scrollbar pt-2" : "mt-6 justify-start space-y-6 overflow-y-auto no-scrollbar", "flex min-h-0 flex-1 flex-col"])}" data-v-c7dedc53><!--[-->`);
+        _push(`</button></div><div class="flex min-h-0 flex-1 flex-col overflow-hidden" data-v-5f1e629c><div class="${ssrRenderClass([currentStepHasSliderField() && currentEntryStepFields.value.length === 1 ? "justify-center px-1 py-4" : currentStepIsEpisodeDetailStep() ? "mt-8 justify-start space-y-12 overflow-y-auto no-scrollbar pt-2" : "mt-6 justify-start space-y-6 overflow-y-auto no-scrollbar", "flex min-h-0 flex-1 flex-col"])}" data-v-5f1e629c><!--[-->`);
         ssrRenderList(currentEntryStepFields.value, (field, fieldIndex) => {
-          _push(`<label class="${ssrRenderClass([fieldIndex > 0 && isEpisodeFollowUpField(field) ? "border-t border-slate-200/80 pt-10 dark:border-slate-700/80" : "", "block w-full"])}" data-v-c7dedc53>`);
+          _push(`<label class="${ssrRenderClass([fieldIndex > 0 && unref(isEpisodeFollowUpField)(field) ? "border-t border-slate-200/80 pt-10 dark:border-slate-700/80" : "", "block w-full"])}" data-v-5f1e629c>`);
           if (field.type !== "datetime" && field.type !== "slider") {
-            _push(`<span class="${ssrRenderClass([isEpisodeDurationField(field) || isEpisodeFollowUpField(field) ? "mb-5" : "", "mb-4 block text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400"])}" data-v-c7dedc53>${ssrInterpolate(field.label)}</span>`);
+            _push(`<span class="${ssrRenderClass([unref(isEpisodeDurationField)(field) || unref(isEpisodeFollowUpField)(field) ? "mb-5" : "", "mb-4 block text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400"])}" data-v-5f1e629c>${ssrInterpolate(field.label)}</span>`);
+          } else {
+            _push(`<!---->`);
+          }
+          if (field.helper) {
+            _push(`<p class="-mt-2 mb-4 text-xs leading-5 text-slate-500 dark:text-slate-400" data-v-5f1e629c>${ssrInterpolate(field.helper)}</p>`);
           } else {
             _push(`<!---->`);
           }
           if (field.type === "slider") {
-            _push(`<div class="w-full space-y-5" data-v-c7dedc53><div class="space-y-1 text-center" data-v-c7dedc53><p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400" data-v-c7dedc53> How much did today affect you? </p><p class="text-xs leading-5 text-slate-500 dark:text-slate-400" data-v-c7dedc53> Slide between a best day and a worst day for this condition. </p></div><div class="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400" data-v-c7dedc53><span data-v-c7dedc53>Best day</span><span data-v-c7dedc53>Worst day</span></div>`);
+            _push(`<div class="w-full space-y-5" data-v-5f1e629c><div class="space-y-1 text-center" data-v-5f1e629c><p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400" data-v-5f1e629c> How much did today affect you? </p><p class="text-xs leading-5 text-slate-500 dark:text-slate-400" data-v-5f1e629c> Slide between a best day and a worst day for this condition. </p></div><div class="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400" data-v-5f1e629c><span data-v-5f1e629c>Best day</span><span data-v-5f1e629c>Worst day</span></div>`);
             _push(ssrRenderComponent(_component_USlider, {
               modelValue: severityValue.value,
               "onUpdate:modelValue": ($event) => severityValue.value = $event,
@@ -1499,42 +1746,42 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
               color: "neutral",
               tooltip: ""
             }, null, _parent));
-            _push(`<div class="flex flex-wrap justify-center gap-2" data-v-c7dedc53><!--[-->`);
+            _push(`<div class="flex flex-wrap justify-center gap-2" data-v-5f1e629c><!--[-->`);
             ssrRenderList(unref(severityQuickPresets), (preset) => {
-              _push(`<button type="button" class="${ssrRenderClass([severityValue.value === preset.value ? "border-slate-950 bg-slate-950 text-white dark:border-white dark:bg-white dark:text-slate-950" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800", "rounded-full border px-3 py-1.5 text-xs font-bold transition"])}" data-v-c7dedc53>${ssrInterpolate(preset.label)}</button>`);
+              _push(`<button type="button" class="${ssrRenderClass([severityValue.value === preset.value ? "border-slate-950 bg-slate-950 text-white dark:border-white dark:bg-white dark:text-slate-950" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800", "rounded-full border px-3 py-1.5 text-xs font-bold transition"])}" data-v-5f1e629c>${ssrInterpolate(preset.label)}</button>`);
             });
-            _push(`<!--]--></div><div class="min-h-[5rem] overflow-hidden" data-v-c7dedc53><div class="rounded-2xl bg-slate-100/80 px-5 py-4 dark:bg-slate-800/80" data-v-c7dedc53><p class="text-sm font-bold text-slate-950 dark:text-white" data-v-c7dedc53>${ssrInterpolate(severityGuidance.value.title)}</p><p class="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300" data-v-c7dedc53>${ssrInterpolate(severityGuidance.value.text)}</p></div></div></div>`);
+            _push(`<!--]--></div><div class="min-h-[5rem] overflow-hidden" data-v-5f1e629c><div class="rounded-2xl bg-slate-100/80 px-5 py-4 dark:bg-slate-800/80" data-v-5f1e629c><p class="text-sm font-bold text-slate-950 dark:text-white" data-v-5f1e629c>${ssrInterpolate(severityGuidance.value.title)}</p><p class="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300" data-v-5f1e629c>${ssrInterpolate(severityGuidance.value.text)}</p></div></div></div>`);
           } else if (field.type === "datetime") {
-            _push(`<div class="space-y-4" data-v-c7dedc53><div class="flex items-start justify-between gap-3" data-v-c7dedc53><div class="min-w-0 flex-1" data-v-c7dedc53><span class="mb-2 block text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400" data-v-c7dedc53> When did this happen? </span><p class="text-sm leading-6 font-medium text-slate-950 dark:text-white" data-v-c7dedc53>${ssrInterpolate(entryDateTimePreview.value)}</p></div><button type="button" class="relative z-10 inline-flex shrink-0 items-center gap-1 rounded-full border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-950 shadow-sm transition hover:bg-slate-100 active:scale-[0.98] dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700" data-v-c7dedc53>`);
+            _push(`<div class="space-y-4" data-v-5f1e629c><div class="flex items-start justify-between gap-3" data-v-5f1e629c><div class="min-w-0 flex-1" data-v-5f1e629c><span class="mb-2 block text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400" data-v-5f1e629c> When did this happen? </span><p class="text-sm leading-6 font-medium text-slate-950 dark:text-white" data-v-5f1e629c>${ssrInterpolate(entryDateTimePreview.value)}</p></div><button type="button" class="relative z-10 inline-flex shrink-0 items-center gap-1 rounded-full border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-950 shadow-sm transition hover:bg-slate-100 active:scale-[0.98] dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700" data-v-5f1e629c>`);
             _push(ssrRenderComponent(_component_UIcon, {
               name: "i-lucide-clock-3",
               class: "size-3.5"
             }, null, _parent));
-            _push(` Now </button></div><div class="space-y-4" data-v-c7dedc53><div class="flex items-center justify-center gap-2" data-v-c7dedc53><button type="button" class="grid size-8 place-items-center rounded-full text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800" aria-label="Previous month" data-v-c7dedc53>`);
+            _push(` Now </button></div><div class="space-y-4" data-v-5f1e629c><div class="flex items-center justify-center gap-2" data-v-5f1e629c><button type="button" class="grid size-8 place-items-center rounded-full text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800" aria-label="Previous month" data-v-5f1e629c>`);
             _push(ssrRenderComponent(_component_UIcon, {
               name: "i-lucide-chevron-left",
               class: "size-4"
             }, null, _parent));
-            _push(`</button><p class="min-w-[8rem] text-center text-sm font-bold text-slate-950 dark:text-white" data-v-c7dedc53>${ssrInterpolate(entryPickerMonthLabel.value)}</p><button type="button" class="grid size-8 place-items-center rounded-full text-slate-500 hover:bg-slate-100 disabled:opacity-30 dark:text-slate-400 dark:hover:bg-slate-800" aria-label="Next month"${ssrIncludeBooleanAttr(!canShowNextEntryPickerMonth.value) ? " disabled" : ""} data-v-c7dedc53>`);
+            _push(`</button><p class="min-w-[8rem] text-center text-sm font-bold text-slate-950 dark:text-white" data-v-5f1e629c>${ssrInterpolate(entryPickerMonthLabel.value)}</p><button type="button" class="grid size-8 place-items-center rounded-full text-slate-500 hover:bg-slate-100 disabled:opacity-30 dark:text-slate-400 dark:hover:bg-slate-800" aria-label="Next month"${ssrIncludeBooleanAttr(!canShowNextEntryPickerMonth.value) ? " disabled" : ""} data-v-5f1e629c>`);
             _push(ssrRenderComponent(_component_UIcon, {
               name: "i-lucide-chevron-right",
               class: "size-4"
             }, null, _parent));
-            _push(`</button></div><div class="grid grid-cols-7 text-center text-xs font-semibold text-slate-500 dark:text-slate-400" data-v-c7dedc53><!--[-->`);
+            _push(`</button></div><div class="grid grid-cols-7 text-center text-xs font-semibold text-slate-500 dark:text-slate-400" data-v-5f1e629c><!--[-->`);
             ssrRenderList(weekDays, (day) => {
-              _push(`<span data-v-c7dedc53>${ssrInterpolate(day)}</span>`);
+              _push(`<span data-v-5f1e629c>${ssrInterpolate(day)}</span>`);
             });
-            _push(`<!--]--></div><div class="grid grid-cols-7 gap-y-2 text-center" data-v-c7dedc53><!--[-->`);
+            _push(`<!--]--></div><div class="grid grid-cols-7 gap-y-2 text-center" data-v-5f1e629c><!--[-->`);
             ssrRenderList(entryPickerDays.value, (day) => {
-              _push(`<div class="flex justify-center" data-v-c7dedc53>`);
+              _push(`<div class="flex justify-center" data-v-5f1e629c>`);
               if (day.dayNumber) {
-                _push(`<button type="button" class="${ssrRenderClass([day.selected ? "bg-slate-950 text-white dark:bg-white dark:text-slate-950" : day.selectable ? "text-slate-950 hover:bg-slate-100 dark:text-white dark:hover:bg-slate-800" : "cursor-not-allowed text-slate-300 dark:text-slate-600", "grid size-8 place-items-center rounded-full text-xs font-bold transition"])}"${ssrIncludeBooleanAttr(!day.selectable) ? " disabled" : ""}${ssrRenderAttr("aria-label", day.label)}${ssrRenderAttr("aria-pressed", day.selected)} data-v-c7dedc53>${ssrInterpolate(day.dayNumber)}</button>`);
+                _push(`<button type="button" class="${ssrRenderClass([day.selected ? "bg-slate-950 text-white dark:bg-white dark:text-slate-950" : day.selectable ? "text-slate-950 hover:bg-slate-100 dark:text-white dark:hover:bg-slate-800" : "cursor-not-allowed text-slate-300 dark:text-slate-600", "grid size-8 place-items-center rounded-full text-xs font-bold transition"])}"${ssrIncludeBooleanAttr(!day.selectable) ? " disabled" : ""}${ssrRenderAttr("aria-label", day.label)}${ssrRenderAttr("aria-pressed", day.selected)} data-v-5f1e629c>${ssrInterpolate(day.dayNumber)}</button>`);
               } else {
                 _push(`<!---->`);
               }
               _push(`</div>`);
             });
-            _push(`<!--]--></div><div class="mt-6 space-y-3" data-v-c7dedc53><p class="text-center text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400" data-v-c7dedc53> Time </p><div class="grid grid-cols-3 gap-3" data-v-c7dedc53>`);
+            _push(`<!--]--></div><div class="mt-6 space-y-3" data-v-5f1e629c><p class="text-center text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400" data-v-5f1e629c> Time </p><div class="grid grid-cols-3 gap-3" data-v-5f1e629c>`);
             _push(ssrRenderComponent(_component_USelectMenu, {
               modelValue: entryTimeHour.value,
               "onUpdate:modelValue": [($event) => entryTimeHour.value = $event, onEntryTimePartsChange],
@@ -1572,27 +1819,27 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
               popper: { strategy: "fixed" }
             }, null, _parent));
             _push(`</div></div></div></div>`);
-          } else if (isEpisodeDurationField(field) || isEpisodeFollowUpField(field)) {
-            _push(`<div class="space-y-5" data-v-c7dedc53><div class="flex flex-wrap gap-2.5" data-v-c7dedc53><!--[-->`);
+          } else if (unref(isEpisodeDurationField)(field) || unref(isEpisodeFollowUpField)(field) || unref(getEntryFieldPresets)(field.label).length) {
+            _push(`<div class="space-y-5" data-v-5f1e629c><div class="flex flex-wrap gap-2.5" data-v-5f1e629c><!--[-->`);
             ssrRenderList(unref(getEntryFieldPresets)(field.label), (preset) => {
-              _push(`<button type="button" class="${ssrRenderClass([entryForm.value[fieldKey(field.label)] === preset.value ? "bg-slate-950 text-white dark:bg-white dark:text-slate-950" : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700", "rounded-full px-3 py-1.5 text-xs font-bold transition"])}" data-v-c7dedc53>${ssrInterpolate(preset.label)}</button>`);
+              _push(`<button type="button" class="${ssrRenderClass([entryForm.value[fieldKey(field.label)] === preset.value ? "bg-slate-950 text-white dark:bg-white dark:text-slate-950" : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700", "rounded-full px-3 py-1.5 text-xs font-bold transition"])}" data-v-5f1e629c>${ssrInterpolate(preset.label)}</button>`);
             });
-            _push(`<!--]--></div><input${ssrRenderAttr("value", entryForm.value[fieldKey(field.label)])} type="text"${ssrRenderAttr("placeholder", field.placeholder)} class="w-full border-0 bg-transparent px-0 py-3 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 dark:text-white" data-v-c7dedc53></div>`);
+            _push(`<!--]--></div><input${ssrRenderAttr("value", entryForm.value[fieldKey(field.label)])} type="text"${ssrRenderAttr("placeholder", field.placeholder)} class="w-full border-0 bg-transparent px-0 py-3 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 dark:text-white" data-v-5f1e629c></div>`);
           } else if (field.type === "textarea") {
-            _push(`<textarea${ssrRenderAttr("placeholder", field.placeholder)} rows="4" class="w-full resize-none border-0 border-b border-slate-300/80 bg-transparent px-0 py-4 text-base font-medium leading-7 text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-700 dark:text-white dark:focus:border-slate-400" data-v-c7dedc53>${ssrInterpolate(entryForm.value[fieldKey(field.label)])}</textarea>`);
-          } else if (field.type !== "slider" && field.type !== "datetime" && !isEpisodeDurationField(field) && !isEpisodeFollowUpField(field)) {
-            _push(`<input${ssrRenderDynamicModel(field.type, entryForm.value[fieldKey(field.label)], null)}${ssrRenderAttr("type", field.type)}${ssrRenderAttr("placeholder", field.placeholder)} class="w-full border-0 border-b border-slate-300/80 bg-transparent px-0 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-700 dark:text-white dark:focus:border-slate-400" data-v-c7dedc53>`);
+            _push(`<textarea${ssrRenderAttr("placeholder", field.placeholder)} rows="4" class="w-full resize-none border-0 border-b border-slate-300/80 bg-transparent px-0 py-4 text-base font-medium leading-7 text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-700 dark:text-white dark:focus:border-slate-400" data-v-5f1e629c>${ssrInterpolate(entryForm.value[fieldKey(field.label)])}</textarea>`);
+          } else if (field.type !== "slider" && field.type !== "datetime" && !unref(isEpisodeDurationField)(field) && !unref(isEpisodeFollowUpField)(field) && !unref(getEntryFieldPresets)(field.label).length) {
+            _push(`<input${ssrRenderDynamicModel(field.type, entryForm.value[fieldKey(field.label)], null)}${ssrRenderAttr("type", field.type)}${ssrRenderAttr("placeholder", field.placeholder)} class="w-full border-0 border-b border-slate-300/80 bg-transparent px-0 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-700 dark:text-white dark:focus:border-slate-400" data-v-5f1e629c>`);
           } else {
             _push(`<!---->`);
           }
           _push(`</label>`);
         });
-        _push(`<!--]--></div></div></div><div class="mt-auto shrink-0" data-v-c7dedc53>`);
+        _push(`<!--]--></div></div></div><div class="mt-auto shrink-0" data-v-5f1e629c>`);
         _push(ssrRenderComponent(_component_StickyActionBar, { class: "-mx-5 rounded-none border-x-0 dark:border-slate-800" }, {
           default: withCtx((_, _push2, _parent2, _scopeId) => {
             if (_push2) {
               if (isEditingEntry.value && unref(user)) {
-                _push2(`<button type="button" class="mb-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-100 px-5 py-3.5 text-sm font-bold text-slate-950 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700" data-v-c7dedc53${_scopeId}>`);
+                _push2(`<button type="button" class="mb-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-100 px-5 py-3.5 text-sm font-bold text-slate-950 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700" data-v-5f1e629c${_scopeId}>`);
                 _push2(ssrRenderComponent(_component_UIcon, {
                   name: "i-lucide-link",
                   class: "size-4"
@@ -1601,14 +1848,14 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
               } else {
                 _push2(`<!---->`);
               }
-              _push2(`<button type="button" class="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-4 text-base font-bold text-white shadow-lg transition hover:bg-slate-800 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600"${ssrIncludeBooleanAttr(isSavingEntry.value) ? " disabled" : ""} data-v-c7dedc53${_scopeId}>${ssrInterpolate(isSavingEntry.value ? "Saving..." : isLastEntryStep.value ? isEditingEntry.value ? "Save changes" : "Finish" : "Continue")} `);
+              _push2(`<button type="button" class="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-4 text-base font-bold text-white shadow-lg transition hover:bg-slate-800 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600"${ssrIncludeBooleanAttr(isSavingEntry.value) ? " disabled" : ""} data-v-5f1e629c${_scopeId}>${ssrInterpolate(isSavingEntry.value ? "Saving..." : isLastEntryStep.value ? isEditingEntry.value ? "Save changes" : "Finish" : "Continue")} `);
               _push2(ssrRenderComponent(_component_UIcon, {
                 name: isLastEntryStep.value ? "i-lucide-check" : "i-lucide-arrow-right",
                 class: "size-5"
               }, null, _parent2, _scopeId));
               _push2(`</button>`);
               if (entryError.value) {
-                _push2(`<p class="mt-3 text-center text-sm font-medium text-red-300" data-v-c7dedc53${_scopeId}>${ssrInterpolate(entryError.value)}</p>`);
+                _push2(`<p class="mt-3 text-center text-sm font-medium text-red-300" data-v-5f1e629c${_scopeId}>${ssrInterpolate(entryError.value)}</p>`);
               } else {
                 _push2(`<!---->`);
               }
@@ -1649,92 +1896,92 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
         }, _parent));
         _push(`</div></div></div></section>`);
       } else {
-        _push(`<div class="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden" data-v-c7dedc53><div class="${ssrRenderClass([historyExpanded.value ? "pb-1" : "pb-2", "shrink-0 px-4 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"])}" data-v-c7dedc53><div class="relative flex min-h-0 flex-col" data-v-c7dedc53><div class="${ssrRenderClass([historyExpanded.value ? "h-[40dvh]" : "h-[55dvh]", "relative w-full shrink-0 overflow-hidden rounded-[1.75rem] transition-[height,max-height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"])}" data-v-c7dedc53>`);
+        _push(`<div class="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden" data-v-5f1e629c><div class="${ssrRenderClass([historyExpanded.value ? "pb-1" : "pb-2", "shrink-0 px-4 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"])}" data-v-5f1e629c><div class="relative flex min-h-0 flex-col" data-v-5f1e629c><div class="${ssrRenderClass([historyExpanded.value ? "h-[40dvh]" : "h-[55dvh]", "relative w-full shrink-0 overflow-hidden rounded-[1.75rem] transition-[height,max-height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"])}" data-v-5f1e629c>`);
         if (isSearchSlide.value) {
-          _push(`<div class="absolute inset-0 flex h-full flex-col px-2 pt-3 pb-20" data-v-c7dedc53><p class="px-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400" data-v-c7dedc53> 1 of ${ssrInterpolate(totalSlides.value)}</p><input${ssrRenderAttr("value", searchQuery.value)} type="search" placeholder="Find a condition or + custom" class="mt-2 w-full border-0 border-b border-slate-300/80 bg-transparent px-1 py-2.5 text-lg font-semibold text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-500" data-v-c7dedc53><div class="relative mt-2 min-h-0 flex-1" data-v-c7dedc53><div class="no-scrollbar h-full space-y-1 overflow-y-auto px-1 pb-16" data-v-c7dedc53>`);
+          _push(`<div class="absolute inset-0 flex h-full flex-col px-2 pt-3 pb-20" data-v-5f1e629c><p class="px-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400" data-v-5f1e629c> 1 of ${ssrInterpolate(totalSlides.value)}</p><input${ssrRenderAttr("value", searchQuery.value)} type="search" placeholder="Find a condition or + custom" class="mt-2 w-full border-0 border-b border-slate-300/80 bg-transparent px-1 py-2.5 text-lg font-semibold text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-500" data-v-5f1e629c><div class="relative mt-2 min-h-0 flex-1" data-v-5f1e629c><div class="no-scrollbar h-full space-y-1 overflow-y-auto px-1 pb-16" data-v-5f1e629c>`);
           if (showConditionSearchEmptyState.value) {
-            _push(`<div class="rounded-2xl px-3 py-6 text-center" data-v-c7dedc53><p class="text-lg font-bold text-slate-950 dark:text-white" data-v-c7dedc53> No results </p><p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300" data-v-c7dedc53> Press <span class="inline-grid size-7 translate-y-0.5 align-middle place-items-center rounded-full bg-slate-950 text-white dark:bg-white dark:text-slate-950" data-v-c7dedc53>`);
+            _push(`<div class="rounded-2xl px-3 py-6 text-center" data-v-5f1e629c><p class="text-lg font-bold text-slate-950 dark:text-white" data-v-5f1e629c> No results </p><p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300" data-v-5f1e629c> Press <span class="inline-grid size-7 translate-y-0.5 align-middle place-items-center rounded-full bg-slate-950 text-white dark:bg-white dark:text-slate-950" data-v-5f1e629c>`);
             _push(ssrRenderComponent(_component_UIcon, {
               name: "i-lucide-plus",
               class: "size-4"
             }, null, _parent));
-            _push(`</span> to add <span class="font-semibold text-slate-950 dark:text-white" data-v-c7dedc53>&quot;${ssrInterpolate(debouncedSearchQuery.value.trim())}&quot;</span> as a custom condition. </p></div>`);
+            _push(`</span> to add <span class="font-semibold text-slate-950 dark:text-white" data-v-5f1e629c>&quot;${ssrInterpolate(debouncedSearchQuery.value.trim())}&quot;</span> as a custom condition. </p></div>`);
           } else {
             _push(`<!---->`);
           }
           _push(`<!--[-->`);
           ssrRenderList(filteredConditionResults.value, (result) => {
-            _push(`<button type="button" class="flex w-full items-start gap-3 rounded-2xl px-2 py-2.5 text-left transition hover:bg-slate-100 active:scale-[0.99] dark:hover:bg-slate-800/80" data-v-c7dedc53><img${ssrRenderAttr("src", result.image)}${ssrRenderAttr("alt", result.title)} class="size-16 shrink-0 rounded-2xl object-cover" data-v-c7dedc53><span class="min-w-0 flex-1" data-v-c7dedc53><span class="block text-lg font-bold leading-snug text-slate-950 dark:text-white" data-v-c7dedc53>${ssrInterpolate(result.title)}</span><span class="mt-1 block text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400" data-v-c7dedc53>${ssrInterpolate(result.category)}</span><span class="mt-1 block text-sm leading-5 text-slate-600 dark:text-slate-300" data-v-c7dedc53>${ssrInterpolate(result.description)}</span></span></button>`);
+            _push(`<button type="button" class="flex w-full items-start gap-3 rounded-2xl px-2 py-2.5 text-left transition hover:bg-slate-100 active:scale-[0.99] dark:hover:bg-slate-800/80" data-v-5f1e629c><img${ssrRenderAttr("src", result.image)}${ssrRenderAttr("alt", result.title)} class="size-16 shrink-0 rounded-2xl object-cover" data-v-5f1e629c><span class="min-w-0 flex-1" data-v-5f1e629c><span class="block text-lg font-bold leading-snug text-slate-950 dark:text-white" data-v-5f1e629c>${ssrInterpolate(result.title)}</span><span class="mt-1 block text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400" data-v-5f1e629c>${ssrInterpolate(result.category)}</span><span class="mt-1 block text-sm leading-5 text-slate-600 dark:text-slate-300" data-v-5f1e629c>${ssrInterpolate(result.description)}</span></span></button>`);
           });
           _push(`<!--]--></div>`);
           if (filteredConditionResults.value.length > 2 && !showConditionSearchEmptyState.value) {
-            _push(`<div class="${ssrRenderClass([isConditionScrolling.value ? "opacity-0" : "opacity-100", "pointer-events-none absolute inset-x-0 bottom-3 flex h-10 items-end justify-center bg-linear-to-t from-white via-white/75 to-transparent pb-1.5 transition-opacity duration-200 dark:from-slate-950 dark:via-slate-950/75"])}" data-v-c7dedc53><span class="rounded-full bg-slate-950/85 px-3 py-1 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-white shadow-lg shadow-slate-950/20 ring-1 ring-white/40 dark:bg-white/90 dark:text-slate-950 dark:shadow-black/30 dark:ring-slate-700/40" data-v-c7dedc53> Scroll for more </span></div>`);
+            _push(`<div class="${ssrRenderClass([isConditionScrolling.value ? "opacity-0" : "opacity-100", "pointer-events-none absolute inset-x-0 bottom-3 flex h-10 items-end justify-center bg-linear-to-t from-white via-white/75 to-transparent pb-1.5 transition-opacity duration-200 dark:from-slate-950 dark:via-slate-950/75"])}" data-v-5f1e629c><span class="rounded-full bg-slate-950/85 px-3 py-1 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-white shadow-lg shadow-slate-950/20 ring-1 ring-white/40 dark:bg-white/90 dark:text-slate-950 dark:shadow-black/30 dark:ring-slate-700/40" data-v-5f1e629c> Scroll for more </span></div>`);
           } else {
             _push(`<!---->`);
           }
           _push(`</div></div>`);
         } else {
-          _push(`<div class="absolute inset-0" role="button" tabindex="0"${ssrRenderAttr("aria-label", `Start entry for ${activeCondition.value.title}`)} data-clickable="true" data-v-c7dedc53><img${ssrRenderAttr("src", activeCondition.value.image)}${ssrRenderAttr("alt", activeCondition.value.title)} class="h-full w-full object-cover" data-v-c7dedc53><div class="absolute inset-x-0 top-0 bg-linear-to-b from-black/70 via-black/20 to-transparent p-5 pb-16" data-v-c7dedc53><div class="flex items-start justify-between gap-4" data-v-c7dedc53><p class="text-xs font-semibold uppercase tracking-[0.2em] text-white/70" data-v-c7dedc53>${ssrInterpolate(activeIndex.value + 1)} of ${ssrInterpolate(totalSlides.value)}</p><button type="button" class="grid size-10 place-items-center rounded-full bg-slate-950/70 text-white shadow-sm ring-1 ring-white/10 backdrop-blur transition hover:bg-slate-900" aria-label="Search conditions" data-v-c7dedc53>`);
+          _push(`<div class="absolute inset-0" role="button" tabindex="0"${ssrRenderAttr("aria-label", `Start entry for ${activeCondition.value.title}`)} data-clickable="true" data-v-5f1e629c><img${ssrRenderAttr("src", activeCondition.value.image)}${ssrRenderAttr("alt", activeCondition.value.title)} class="h-full w-full object-cover" data-v-5f1e629c><div class="absolute inset-x-0 top-0 bg-linear-to-b from-black/70 via-black/20 to-transparent p-5 pb-16" data-v-5f1e629c><div class="flex items-start justify-between gap-4" data-v-5f1e629c><p class="text-xs font-semibold uppercase tracking-[0.2em] text-white/70" data-v-5f1e629c>${ssrInterpolate(activeIndex.value + 1)} of ${ssrInterpolate(totalSlides.value)}</p><button type="button" class="grid size-10 place-items-center rounded-full bg-slate-950/70 text-white shadow-sm ring-1 ring-white/10 backdrop-blur transition hover:bg-slate-900" aria-label="Search conditions" data-v-5f1e629c>`);
           _push(ssrRenderComponent(_component_UIcon, {
             name: "i-lucide-search",
             class: "size-5"
           }, null, _parent));
-          _push(`</button></div><h2 class="mt-1 text-2xl font-bold text-white" data-v-c7dedc53>${ssrInterpolate(activeCondition.value.title)}</h2></div></div>`);
+          _push(`</button></div><h2 class="mt-1 text-2xl font-bold text-white" data-v-5f1e629c>${ssrInterpolate(activeCondition.value.title)}</h2></div></div>`);
         }
-        _push(`<div class="${ssrRenderClass([isSearchSlide.value ? "bg-linear-to-t from-white via-white/95 to-transparent dark:from-slate-950 dark:via-slate-950/95" : "bg-linear-to-t from-slate-950 via-slate-950/90 to-transparent", "pointer-events-none absolute inset-x-0 bottom-0 z-10 px-3 pb-1 pt-6"])}" data-v-c7dedc53><div class="pointer-events-auto flex flex-col items-center gap-1.5" data-v-c7dedc53><div class="flex justify-center gap-2" data-v-c7dedc53><!--[-->`);
+        _push(`<div class="${ssrRenderClass([isSearchSlide.value ? "bg-linear-to-t from-white via-white/95 to-transparent dark:from-slate-950 dark:via-slate-950/95" : "bg-linear-to-t from-slate-950 via-slate-950/90 to-transparent", "pointer-events-none absolute inset-x-0 bottom-0 z-10 px-3 pb-1 pt-6"])}" data-v-5f1e629c><div class="pointer-events-auto flex flex-col items-center gap-1.5" data-v-5f1e629c><div class="flex justify-center gap-2" data-v-5f1e629c><!--[-->`);
         ssrRenderList(totalSlides.value, (_, index2) => {
           _push(`<button type="button" class="${ssrRenderClass([[
             index2 === activeIndex.value ? "w-7" : "w-2",
             isSearchSlide.value ? index2 === activeIndex.value ? "bg-slate-950 dark:bg-white" : "bg-slate-300 dark:bg-white/35" : index2 === activeIndex.value ? "bg-white" : "bg-white/35"
-          ], "h-2 rounded-full transition-all"])}"${ssrRenderAttr("aria-label", `Show condition ${index2 + 1}`)} data-v-c7dedc53></button>`);
+          ], "h-2 rounded-full transition-all"])}"${ssrRenderAttr("aria-label", `Show condition ${index2 + 1}`)} data-v-5f1e629c></button>`);
         });
-        _push(`<!--]--></div><div class="flex items-center justify-center gap-4" data-v-c7dedc53><button type="button" class="grid size-11 place-items-center rounded-full bg-white text-slate-950 shadow-lg transition hover:bg-slate-100 dark:bg-slate-900 dark:text-white dark:hover:bg-slate-800" aria-label="Previous condition" data-v-c7dedc53>`);
+        _push(`<!--]--></div><div class="flex items-center justify-center gap-4" data-v-5f1e629c><button type="button" class="grid size-11 place-items-center rounded-full bg-white text-slate-950 shadow-lg transition hover:bg-slate-100 dark:bg-slate-900 dark:text-white dark:hover:bg-slate-800" aria-label="Previous condition" data-v-5f1e629c>`);
         _push(ssrRenderComponent(_component_UIcon, {
           name: "i-lucide-chevron-left",
           class: "size-5"
         }, null, _parent));
-        _push(`</button><button type="button" class="${ssrRenderClass([historyExpanded.value ? "scale-90" : "scale-100", "grid size-[4.5rem] place-items-center rounded-full bg-white text-slate-950 shadow-xl transition hover:bg-slate-100 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"])}"${ssrRenderAttr("aria-label", isSearchSlide.value ? "Add custom condition" : `Add ${activeCondition.value.title} entry`)} data-v-c7dedc53>`);
+        _push(`</button><button type="button" class="${ssrRenderClass([historyExpanded.value ? "scale-90" : "scale-100", "grid size-[4.5rem] place-items-center rounded-full bg-white text-slate-950 shadow-xl transition hover:bg-slate-100 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"])}"${ssrRenderAttr("aria-label", isSearchSlide.value ? "Add custom condition" : `Add ${activeCondition.value.title} entry`)} data-v-5f1e629c>`);
         _push(ssrRenderComponent(_component_UIcon, {
           name: "i-lucide-plus",
           class: "size-9"
         }, null, _parent));
-        _push(`</button><button type="button" class="grid size-11 place-items-center rounded-full bg-white text-slate-950 shadow-lg transition hover:bg-slate-100 dark:bg-slate-900 dark:text-white dark:hover:bg-slate-800" aria-label="Next condition" data-v-c7dedc53>`);
+        _push(`</button><button type="button" class="grid size-11 place-items-center rounded-full bg-white text-slate-950 shadow-lg transition hover:bg-slate-100 dark:bg-slate-900 dark:text-white dark:hover:bg-slate-800" aria-label="Next condition" data-v-5f1e629c>`);
         _push(ssrRenderComponent(_component_UIcon, {
           name: "i-lucide-chevron-right",
           class: "size-5"
         }, null, _parent));
-        _push(`</button></div></div></div></div></div></div><section class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-t-[1.75rem] border-t border-slate-200/80 bg-white transition-[flex] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] dark:border-slate-800 dark:bg-slate-900" data-v-c7dedc53><button type="button" class="flex w-full shrink-0 justify-center py-2.5"${ssrRenderAttr("aria-label", historyExpanded.value ? "Collapse history" : "Expand history")} data-v-c7dedc53><span class="h-1 w-10 rounded-full bg-slate-300 dark:bg-slate-600" data-v-c7dedc53></span></button><div class="shrink-0 px-4" data-v-c7dedc53><div class="flex items-start justify-between gap-3" data-v-c7dedc53><h2 class="text-2xl font-bold text-slate-950 dark:text-white" data-v-c7dedc53>History</h2><button type="button" class="inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-slate-600 transition hover:text-slate-950 disabled:opacity-40 dark:text-slate-300 dark:hover:text-white"${ssrIncludeBooleanAttr(!savedEntries.value.length || isExportingPdf.value) ? " disabled" : ""} data-v-c7dedc53>`);
+        _push(`</button></div></div></div></div></div></div><section class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-t-[1.75rem] border-t border-slate-200/80 bg-white transition-[flex] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] dark:border-slate-800 dark:bg-slate-900" data-v-5f1e629c><button type="button" class="flex w-full shrink-0 justify-center py-2.5"${ssrRenderAttr("aria-label", historyExpanded.value ? "Collapse history" : "Expand history")} data-v-5f1e629c><span class="h-1 w-10 rounded-full bg-slate-300 dark:bg-slate-600" data-v-5f1e629c></span></button><div class="shrink-0 px-4" data-v-5f1e629c><div class="flex items-start justify-between gap-3" data-v-5f1e629c><h2 class="text-2xl font-bold text-slate-950 dark:text-white" data-v-5f1e629c>History</h2><button type="button" class="inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-slate-600 transition hover:text-slate-950 disabled:opacity-40 dark:text-slate-300 dark:hover:text-white"${ssrIncludeBooleanAttr(!savedEntries.value.length || isExportingPdf.value) ? " disabled" : ""} data-v-5f1e629c>`);
         _push(ssrRenderComponent(_component_UIcon, {
           name: "i-lucide-download",
           class: "size-4"
         }, null, _parent));
         _push(` ${ssrInterpolate(isExportingPdf.value ? "Exporting..." : "PDF")}</button></div>`);
         if (exportError.value) {
-          _push(`<p class="mt-2 text-sm font-medium text-red-600 dark:text-red-300" data-v-c7dedc53>${ssrInterpolate(exportError.value)}</p>`);
+          _push(`<p class="mt-2 text-sm font-medium text-red-600 dark:text-red-300" data-v-5f1e629c>${ssrInterpolate(exportError.value)}</p>`);
         } else {
           _push(`<!---->`);
         }
-        _push(`<div class="mt-4 rounded-full bg-slate-100 p-1 dark:bg-slate-800/80" data-v-c7dedc53><div class="grid grid-cols-2 gap-1" data-v-c7dedc53><!--[-->`);
+        _push(`<div class="mt-4 rounded-full bg-slate-100 p-1 dark:bg-slate-800/80" data-v-5f1e629c><div class="grid grid-cols-2 gap-1" data-v-5f1e629c><!--[-->`);
         ssrRenderList(historyTabs, (tab) => {
-          _push(`<button type="button" class="${ssrRenderClass([activeHistoryTab.value === tab ? "bg-white text-slate-950 shadow-sm dark:bg-slate-700 dark:text-white" : "text-slate-500 dark:text-slate-400", "rounded-full px-4 py-3 text-sm font-semibold transition"])}" data-v-c7dedc53>${ssrInterpolate(tab)}</button>`);
+          _push(`<button type="button" class="${ssrRenderClass([activeHistoryTab.value === tab ? "bg-white text-slate-950 shadow-sm dark:bg-slate-700 dark:text-white" : "text-slate-500 dark:text-slate-400", "rounded-full px-4 py-3 text-sm font-semibold transition"])}" data-v-5f1e629c>${ssrInterpolate(tab)}</button>`);
         });
-        _push(`<!--]--></div></div></div><div class="${ssrRenderClass([historyExpanded.value ? "overflow-y-auto" : "overflow-hidden touch-pan-y", "min-h-0 flex-1 overscroll-contain px-4 pb-2 pt-3 no-scrollbar"])}" data-v-c7dedc53>`);
+        _push(`<!--]--></div></div></div><div class="${ssrRenderClass([historyExpanded.value ? "overflow-y-auto" : "overflow-hidden touch-pan-y", "min-h-0 flex-1 overscroll-contain px-4 pb-2 pt-3 no-scrollbar"])}" data-v-5f1e629c>`);
         if (activeHistoryTab.value === "Entries") {
-          _push(`<div class="divide-y divide-slate-200 dark:divide-slate-800" data-v-c7dedc53>`);
+          _push(`<div class="divide-y divide-slate-200 dark:divide-slate-800" data-v-5f1e629c>`);
           if (!unref(user) && !unref(isAuthLoading)) {
-            _push(`<div class="py-8 text-center" data-v-c7dedc53><p class="font-bold text-slate-950 dark:text-white" data-v-c7dedc53>Sign in to save entries</p><p class="mt-1 text-sm text-slate-600 dark:text-slate-400" data-v-c7dedc53> Your symptom logs sync to your account once you sign in. </p><button type="button" class="mt-4 rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white dark:bg-white dark:text-slate-950" data-v-c7dedc53> Sign in </button></div>`);
+            _push(`<div class="py-8 text-center" data-v-5f1e629c><p class="font-bold text-slate-950 dark:text-white" data-v-5f1e629c>Sign in to save entries</p><p class="mt-1 text-sm text-slate-600 dark:text-slate-400" data-v-5f1e629c> Your symptom logs sync to your account once you sign in. </p><button type="button" class="mt-4 rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white dark:bg-white dark:text-slate-950" data-v-5f1e629c> Sign in </button></div>`);
           } else if (isLoadingEntries.value) {
-            _push(`<div class="py-8 text-center text-sm text-slate-500 dark:text-slate-400" data-v-c7dedc53> Loading entries... </div>`);
+            _push(`<div class="py-8 text-center text-sm text-slate-500 dark:text-slate-400" data-v-5f1e629c> Loading entries... </div>`);
           } else if (entriesError.value) {
-            _push(`<div class="py-8 text-center text-sm text-red-600 dark:text-red-300" data-v-c7dedc53>${ssrInterpolate(entriesError.value)}</div>`);
+            _push(`<div class="py-8 text-center text-sm text-red-600 dark:text-red-300" data-v-5f1e629c>${ssrInterpolate(entriesError.value)}</div>`);
           } else if (!historyEntries.value.length) {
-            _push(`<div class="py-8 text-center" data-v-c7dedc53><p class="font-bold text-slate-950 dark:text-white" data-v-c7dedc53>No entries yet</p><p class="mt-1 text-sm text-slate-600 dark:text-slate-400" data-v-c7dedc53>Tap a condition or use search to create your first log.</p></div>`);
+            _push(`<div class="py-8 text-center" data-v-5f1e629c><p class="font-bold text-slate-950 dark:text-white" data-v-5f1e629c>No entries yet</p><p class="mt-1 text-sm text-slate-600 dark:text-slate-400" data-v-5f1e629c>Tap a condition or use search to create your first log.</p></div>`);
           } else {
             _push(`<!---->`);
           }
           _push(`<!--[-->`);
           ssrRenderList(historyEntries.value, (entry) => {
-            _push(`<article${ssrRenderAttr("data-entry-id", entry.id)} class="${ssrRenderClass([highlightedSubmissionId.value === entry.id ? "submission-flash bg-sky-50 ring-2 ring-sky-300 shadow-lg shadow-sky-950/10 dark:bg-sky-950/30 dark:ring-sky-500/70 dark:shadow-black/20" : "", "rounded-2xl px-2 py-3 transition duration-500 hover:bg-slate-50 active:bg-slate-100 dark:hover:bg-slate-900/70 dark:active:bg-slate-900"])}" data-v-c7dedc53><div class="flex items-center gap-3" data-v-c7dedc53><button type="button" class="${ssrRenderClass([entry.statusColor, "grid size-14 shrink-0 place-items-center rounded-2xl bg-slate-100 text-center transition dark:bg-slate-800"])}"${ssrRenderAttr("aria-label", `Edit ${entry.title}`)} data-v-c7dedc53><div data-v-c7dedc53><p class="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400" data-v-c7dedc53>${ssrInterpolate(entry.month)}</p><p class="text-lg font-bold leading-none text-slate-950 dark:text-white" data-v-c7dedc53>${ssrInterpolate(entry.day)}</p></div></button><button type="button" class="min-w-0 flex-1 text-left"${ssrRenderAttr("aria-label", `View and edit ${entry.title}`)} data-v-c7dedc53><div class="flex flex-wrap items-center gap-2" data-v-c7dedc53>`);
+            _push(`<article${ssrRenderAttr("data-entry-id", entry.id)} class="${ssrRenderClass([highlightedSubmissionId.value === entry.id ? "submission-flash bg-sky-50 ring-2 ring-sky-300 shadow-lg shadow-sky-950/10 dark:bg-sky-950/30 dark:ring-sky-500/70 dark:shadow-black/20" : "", "rounded-2xl px-2 py-3 transition duration-500 hover:bg-slate-50 active:bg-slate-100 dark:hover:bg-slate-900/70 dark:active:bg-slate-900"])}" data-v-5f1e629c><div class="flex items-center gap-3" data-v-5f1e629c><button type="button" class="${ssrRenderClass([entry.statusColor, "grid size-14 shrink-0 place-items-center rounded-2xl bg-slate-100 text-center transition dark:bg-slate-800"])}"${ssrRenderAttr("aria-label", `Edit ${entry.title}`)} data-v-5f1e629c><div data-v-5f1e629c><p class="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400" data-v-5f1e629c>${ssrInterpolate(entry.month)}</p><p class="text-lg font-bold leading-none text-slate-950 dark:text-white" data-v-5f1e629c>${ssrInterpolate(entry.day)}</p></div></button><button type="button" class="min-w-0 flex-1 text-left"${ssrRenderAttr("aria-label", `View and edit ${entry.title}`)} data-v-5f1e629c><div class="flex flex-wrap items-center gap-2" data-v-5f1e629c>`);
             _push(ssrRenderComponent(_component_UBadge, {
               color: "neutral",
               variant: "soft",
@@ -1787,20 +2034,20 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
             } else {
               _push(`<!---->`);
             }
-            _push(`</div><h3 class="mt-2 truncate font-bold text-slate-950 dark:text-white" data-v-c7dedc53>${ssrInterpolate(entry.title)}</h3><div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500 dark:text-slate-400" data-v-c7dedc53><span class="inline-flex items-center gap-1" data-v-c7dedc53>`);
+            _push(`</div><h3 class="mt-2 truncate font-bold text-slate-950 dark:text-white" data-v-5f1e629c>${ssrInterpolate(entry.title)}</h3><div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500 dark:text-slate-400" data-v-5f1e629c><span class="inline-flex items-center gap-1" data-v-5f1e629c>`);
             _push(ssrRenderComponent(_component_UIcon, {
               name: "i-lucide-clock-3",
               class: "size-3.5"
             }, null, _parent));
-            _push(` ${ssrInterpolate(entry.time)}</span><span class="text-slate-300 dark:text-slate-700" data-v-c7dedc53>•</span><span data-v-c7dedc53>Severity ${ssrInterpolate(entry.severity)}/10</span><span class="text-slate-300 dark:text-slate-700" data-v-c7dedc53>•</span><span data-v-c7dedc53>${ssrInterpolate(entry.summary)}</span></div>`);
+            _push(` ${ssrInterpolate(entry.time)}</span><span class="text-slate-300 dark:text-slate-700" data-v-5f1e629c>•</span><span data-v-5f1e629c>Severity ${ssrInterpolate(entry.severity)}/10</span><span class="text-slate-300 dark:text-slate-700" data-v-5f1e629c>•</span><span data-v-5f1e629c>${ssrInterpolate(entry.summary)}</span></div>`);
             if (entry.editedLabel) {
-              _push(`<p class="mt-1 text-xs text-slate-400 dark:text-slate-500" data-v-c7dedc53>${ssrInterpolate(entry.editedLabel)}</p>`);
+              _push(`<p class="mt-1 text-xs text-slate-400 dark:text-slate-500" data-v-5f1e629c>${ssrInterpolate(entry.editedLabel)}</p>`);
             } else {
               _push(`<!---->`);
             }
             _push(`</button>`);
             if (entry.source === "Veteran") {
-              _push(`<button type="button" class="grid size-10 shrink-0 place-items-center rounded-full text-slate-400 transition hover:bg-sky-50 hover:text-sky-600 dark:hover:bg-sky-950/40 dark:hover:text-sky-300"${ssrRenderAttr("aria-label", `Create private link for ${entry.title}`)} data-v-c7dedc53>`);
+              _push(`<button type="button" class="grid size-10 shrink-0 place-items-center rounded-full text-slate-400 transition hover:bg-sky-50 hover:text-sky-600 dark:hover:bg-sky-950/40 dark:hover:text-sky-300"${ssrRenderAttr("aria-label", `Create private link for ${entry.title}`)} data-v-5f1e629c>`);
               _push(ssrRenderComponent(_component_UIcon, {
                 name: "i-lucide-link",
                 class: "size-4"
@@ -1809,7 +2056,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
             } else {
               _push(`<!---->`);
             }
-            _push(`<button type="button" class="grid size-10 shrink-0 place-items-center rounded-full text-slate-400 transition hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40 dark:hover:text-red-300"${ssrRenderAttr("aria-label", `Delete ${entry.title}`)} data-v-c7dedc53>`);
+            _push(`<button type="button" class="grid size-10 shrink-0 place-items-center rounded-full text-slate-400 transition hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40 dark:hover:text-red-300"${ssrRenderAttr("aria-label", `Delete ${entry.title}`)} data-v-5f1e629c>`);
             _push(ssrRenderComponent(_component_UIcon, {
               name: "i-lucide-trash-2",
               class: "size-4"
@@ -1818,43 +2065,43 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
           });
           _push(`<!--]--></div>`);
         } else {
-          _push(`<div class="py-1" data-v-c7dedc53><div class="flex items-center justify-between" data-v-c7dedc53><button type="button" class="grid size-8 place-items-center rounded-full text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800" aria-label="Previous month" data-v-c7dedc53>`);
+          _push(`<div class="py-1" data-v-5f1e629c><div class="flex items-center justify-between" data-v-5f1e629c><button type="button" class="grid size-8 place-items-center rounded-full text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800" aria-label="Previous month" data-v-5f1e629c>`);
           _push(ssrRenderComponent(_component_UIcon, {
             name: "i-lucide-chevron-left",
             class: "size-4"
           }, null, _parent));
-          _push(`</button><p class="font-bold text-slate-950 dark:text-white" data-v-c7dedc53>${ssrInterpolate(historyMonthLabel.value)}</p><button type="button" class="grid size-8 place-items-center rounded-full text-slate-500 hover:bg-slate-100 disabled:opacity-30 dark:text-slate-400 dark:hover:bg-slate-800" aria-label="Next month"${ssrIncludeBooleanAttr(!canShowNextHistoryMonth.value) ? " disabled" : ""} data-v-c7dedc53>`);
+          _push(`</button><p class="font-bold text-slate-950 dark:text-white" data-v-5f1e629c>${ssrInterpolate(historyMonthLabel.value)}</p><button type="button" class="grid size-8 place-items-center rounded-full text-slate-500 hover:bg-slate-100 disabled:opacity-30 dark:text-slate-400 dark:hover:bg-slate-800" aria-label="Next month"${ssrIncludeBooleanAttr(!canShowNextHistoryMonth.value) ? " disabled" : ""} data-v-5f1e629c>`);
           _push(ssrRenderComponent(_component_UIcon, {
             name: "i-lucide-chevron-right",
             class: "size-4"
           }, null, _parent));
-          _push(`</button></div><div class="mt-4 grid grid-cols-7 text-center text-xs font-semibold text-slate-500 dark:text-slate-400" data-v-c7dedc53><!--[-->`);
+          _push(`</button></div><div class="mt-4 grid grid-cols-7 text-center text-xs font-semibold text-slate-500 dark:text-slate-400" data-v-5f1e629c><!--[-->`);
           ssrRenderList(weekDays, (day) => {
-            _push(`<span data-v-c7dedc53>${ssrInterpolate(day)}</span>`);
+            _push(`<span data-v-5f1e629c>${ssrInterpolate(day)}</span>`);
           });
-          _push(`<!--]--></div><div class="mt-3 grid grid-cols-7 gap-y-3 text-center" data-v-c7dedc53><!--[-->`);
+          _push(`<!--]--></div><div class="mt-3 grid grid-cols-7 gap-y-3 text-center" data-v-5f1e629c><!--[-->`);
           ssrRenderList(calendarDays.value, (day) => {
-            _push(`<div class="flex justify-center" data-v-c7dedc53><button type="button" class="${ssrRenderClass([day.entry ? day.color : day.currentMonth ? "text-slate-400" : "text-slate-700", "relative grid size-8 place-items-center rounded-full text-xs font-bold"])}"${ssrRenderAttr("aria-label", day.entry ? `${day.label} has ${day.entryCount} ${day.entryCount === 1 ? "entry" : "entries"}` : day.label)} data-v-c7dedc53>`);
+            _push(`<div class="flex justify-center" data-v-5f1e629c><button type="button" class="${ssrRenderClass([day.entry ? day.color : day.currentMonth ? "text-slate-400" : "text-slate-700", "relative grid size-8 place-items-center rounded-full text-xs font-bold"])}"${ssrRenderAttr("aria-label", day.entry ? `${day.label} has ${day.entryCount} ${day.entryCount === 1 ? "entry" : "entries"}` : day.label)} data-v-5f1e629c>`);
             if (day.entry) {
-              _push(`<span class="relative inline-flex" data-v-c7dedc53>`);
+              _push(`<span class="relative inline-flex" data-v-5f1e629c>`);
               _push(ssrRenderComponent(_component_UIcon, {
                 name: day.icon,
                 class: "size-5"
               }, null, _parent));
               if (day.entryCount > 1) {
-                _push(`<span class="absolute -right-1.5 -top-1.5 grid min-w-[0.85rem] place-items-center rounded-full bg-slate-950 px-0.5 text-[0.55rem] font-bold leading-none text-white dark:bg-white dark:text-slate-950" data-v-c7dedc53>${ssrInterpolate(day.entryCount)}</span>`);
+                _push(`<span class="absolute -right-1.5 -top-1.5 grid min-w-[0.85rem] place-items-center rounded-full bg-slate-950 px-0.5 text-[0.55rem] font-bold leading-none text-white dark:bg-white dark:text-slate-950" data-v-5f1e629c>${ssrInterpolate(day.entryCount)}</span>`);
               } else {
                 _push(`<!---->`);
               }
               _push(`</span>`);
             } else {
-              _push(`<span data-v-c7dedc53>${ssrInterpolate(day.date)}</span>`);
+              _push(`<span data-v-5f1e629c>${ssrInterpolate(day.date)}</span>`);
             }
             _push(`</button></div>`);
           });
           _push(`<!--]--></div></div>`);
         }
-        _push(`<p class="mt-4 text-center text-xs leading-5 text-slate-500" data-v-c7dedc53> Swipe up on history to expand. </p><div class="mt-2 flex items-center justify-center gap-3 pb-1 text-xs font-semibold text-slate-500" data-v-c7dedc53>`);
+        _push(`<p class="mt-4 text-center text-xs leading-5 text-slate-500" data-v-5f1e629c> Swipe up on history to expand. </p><div class="mt-2 flex items-center justify-center gap-3 pb-1 text-xs font-semibold text-slate-500" data-v-5f1e629c>`);
         _push(ssrRenderComponent(_component_NuxtLink, {
           to: "/install",
           class: "hover:text-slate-700 dark:hover:text-slate-300"
@@ -1904,16 +2151,16 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
       }
       _push(`</section></main>`);
       if (pendingDelete.value) {
-        _push(`<div class="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/55 p-4 sm:items-center" data-v-c7dedc53><div class="w-full max-w-md rounded-[1.75rem] bg-white p-5 shadow-2xl dark:bg-slate-900" data-v-c7dedc53><p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400" data-v-c7dedc53> Move to deleted </p><h3 class="mt-2 text-xl font-bold text-slate-950 dark:text-white" data-v-c7dedc53> Delete this entry? </h3><p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300" data-v-c7dedc53><span class="font-semibold text-slate-950 dark:text-white" data-v-c7dedc53>${ssrInterpolate(pendingDelete.value.title)}</span> will move to Deleted in your account settings. You can restore it later from there. </p><div class="mt-5 grid grid-cols-2 gap-3" data-v-c7dedc53><button type="button" class="rounded-2xl bg-slate-100 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700" data-v-c7dedc53> Cancel </button><button type="button" class="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200" data-v-c7dedc53> Move to Deleted </button></div></div></div>`);
+        _push(`<div class="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/55 p-4 sm:items-center" data-v-5f1e629c><div class="w-full max-w-md rounded-[1.75rem] bg-white p-5 shadow-2xl dark:bg-slate-900" data-v-5f1e629c><p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400" data-v-5f1e629c> Move to deleted </p><h3 class="mt-2 text-xl font-bold text-slate-950 dark:text-white" data-v-5f1e629c> Delete this entry? </h3><p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300" data-v-5f1e629c><span class="font-semibold text-slate-950 dark:text-white" data-v-5f1e629c>${ssrInterpolate(pendingDelete.value.title)}</span> will move to Deleted in your account settings. You can restore it later from there. </p><div class="mt-5 grid grid-cols-2 gap-3" data-v-5f1e629c><button type="button" class="rounded-2xl bg-slate-100 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700" data-v-5f1e629c> Cancel </button><button type="button" class="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200" data-v-5f1e629c> Move to Deleted </button></div></div></div>`);
       } else {
         _push(`<!---->`);
       }
       if (isShareLinkOpen.value && shareLinkEntry.value) {
-        _push(`<div class="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/55 p-4 sm:items-center" data-v-c7dedc53><div class="w-full max-w-md rounded-[1.75rem] bg-white p-5 shadow-2xl dark:bg-slate-900" data-v-c7dedc53><p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400" data-v-c7dedc53> Private supporter link </p><h3 class="mt-2 text-xl font-bold text-slate-950 dark:text-white" data-v-c7dedc53> Share this entry </h3><p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300" data-v-c7dedc53> Create a one-time private URL for someone you trust to report what they observed about <span class="font-semibold text-slate-950 dark:text-white" data-v-c7dedc53>${ssrInterpolate(shareLinkEntry.value.summary || shareLinkEntry.value.condition_label)}</span>. </p>`);
+        _push(`<div class="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/55 p-4 sm:items-center" data-v-5f1e629c><div class="w-full max-w-md rounded-[1.75rem] bg-white p-5 shadow-2xl dark:bg-slate-900" data-v-5f1e629c><p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400" data-v-5f1e629c> Private supporter link </p><h3 class="mt-2 text-xl font-bold text-slate-950 dark:text-white" data-v-5f1e629c> Share this entry </h3><p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300" data-v-5f1e629c> Create a one-time private URL for someone you trust to report what they observed about <span class="font-semibold text-slate-950 dark:text-white" data-v-5f1e629c>${ssrInterpolate(shareLinkEntry.value.summary || shareLinkEntry.value.condition_label)}</span>. </p>`);
         if (!shareLinkCreatedUrl.value) {
-          _push(`<div class="mt-5 space-y-4" data-v-c7dedc53><label class="block" data-v-c7dedc53><span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400" data-v-c7dedc53>Link label (optional)</span><input${ssrRenderAttr("value", shareLinkLabel.value)} type="text" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-white" placeholder="Example: Spouse, caregiver" data-v-c7dedc53></label><div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-950" data-v-c7dedc53><p class="text-xs font-bold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400" data-v-c7dedc53>Visible condition</p><p class="mt-1 font-semibold text-slate-950 dark:text-white" data-v-c7dedc53>${ssrInterpolate(shareLinkEntry.value.condition_label)}</p></div><button type="button" class="w-full rounded-2xl bg-slate-950 px-4 py-3 text-sm font-bold text-white dark:bg-white dark:text-slate-950"${ssrIncludeBooleanAttr(isCreatingShareLink.value) ? " disabled" : ""} data-v-c7dedc53>${ssrInterpolate(isCreatingShareLink.value ? "Creating..." : "Create private link")}</button></div>`);
+          _push(`<div class="mt-5 space-y-4" data-v-5f1e629c><label class="block" data-v-5f1e629c><span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400" data-v-5f1e629c>Link label (optional)</span><input${ssrRenderAttr("value", shareLinkLabel.value)} type="text" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-white" placeholder="Example: Spouse, caregiver" data-v-5f1e629c></label><div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-950" data-v-5f1e629c><p class="text-xs font-bold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400" data-v-5f1e629c>Visible condition</p><p class="mt-1 font-semibold text-slate-950 dark:text-white" data-v-5f1e629c>${ssrInterpolate(shareLinkEntry.value.condition_label)}</p></div><button type="button" class="w-full rounded-2xl bg-slate-950 px-4 py-3 text-sm font-bold text-white dark:bg-white dark:text-slate-950"${ssrIncludeBooleanAttr(isCreatingShareLink.value) ? " disabled" : ""} data-v-5f1e629c>${ssrInterpolate(isCreatingShareLink.value ? "Creating..." : "Create private link")}</button></div>`);
         } else {
-          _push(`<div class="mt-5 space-y-4" data-v-c7dedc53><p class="break-all rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-950 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100" data-v-c7dedc53>${ssrInterpolate(shareLinkCreatedUrl.value)}</p><button type="button" class="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white" data-v-c7dedc53>`);
+          _push(`<div class="mt-5 space-y-4" data-v-5f1e629c><p class="break-all rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-950 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100" data-v-5f1e629c>${ssrInterpolate(shareLinkCreatedUrl.value)}</p><button type="button" class="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white" data-v-5f1e629c>`);
           _push(ssrRenderComponent(_component_UIcon, {
             name: shareLinkCopied.value ? "i-lucide-check" : "i-lucide-copy",
             class: "size-4"
@@ -1921,11 +2168,11 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
           _push(` ${ssrInterpolate(shareLinkCopied.value ? "Copied to clipboard" : "Copy link")}</button></div>`);
         }
         if (shareLinkError.value) {
-          _push(`<p class="mt-4 text-center text-sm font-medium text-red-600 dark:text-red-300" data-v-c7dedc53>${ssrInterpolate(shareLinkError.value)}</p>`);
+          _push(`<p class="mt-4 text-center text-sm font-medium text-red-600 dark:text-red-300" data-v-5f1e629c>${ssrInterpolate(shareLinkError.value)}</p>`);
         } else {
           _push(`<!---->`);
         }
-        _push(`<button type="button" class="mt-4 w-full rounded-2xl px-4 py-2 text-sm font-semibold text-slate-500 dark:text-slate-400" data-v-c7dedc53> Close </button></div></div>`);
+        _push(`<button type="button" class="mt-4 w-full rounded-2xl px-4 py-2 text-sm font-semibold text-slate-500 dark:text-slate-400" data-v-5f1e629c> Close </button></div></div>`);
       } else {
         _push(`<!---->`);
       }
@@ -1939,7 +2186,7 @@ _sfc_main.setup = (props, ctx) => {
   (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("pages/index.vue");
   return _sfc_setup ? _sfc_setup(props, ctx) : void 0;
 };
-const index = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-c7dedc53"]]);
+const index = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-5f1e629c"]]);
 
 export { index as default };
-//# sourceMappingURL=index-DgdHmxuI.mjs.map
+//# sourceMappingURL=index-EZ_KoUR2.mjs.map

@@ -4,7 +4,19 @@ export const conditionImageAssets = {
   nerveRadiculopathy: '/image/nerve-radiculopathy.png',
   migraineHeadache: '/image/migraine-headache.png',
   gerdIbs: '/image/gerd-ibs.png',
-  sleepIssues: '/image/sleep-issues.png'
+  sleepIssues: '/image/sleep-issues.png',
+  asthma: '/image/asthma.png',
+  sleepApnea: '/image/sleep-apnea.png',
+  sinusitis: '/image/sinusitis.png',
+  rhinitis: '/image/rhinitis.png',
+  eczema: '/image/eczema.png',
+  psoriasis: '/image/psoriasis.png',
+  dermatitis: '/image/dermatitis.png',
+  chronicPain: '/image/chronic-pain.png',
+  fibromyalgia: '/image/fibromyalgia.png',
+  chronicFatigue: '/image/chronic-fatigue.png',
+  chronicFatigueCloseup: '/image/chronic-fatigue-closeup.png',
+  chronicFatigueAlternate: '/image/chronic-fatigue-alternate.png'
 } as const
 
 const categoryImageMap: Record<string, string> = {
@@ -13,14 +25,25 @@ const categoryImageMap: Record<string, string> = {
   Sleep: conditionImageAssets.sleepIssues,
   'Back, Neck, and Joint': conditionImageAssets.backJointPain,
   Nerve: conditionImageAssets.nerveRadiculopathy,
-  Digestive: conditionImageAssets.gerdIbs
+  Digestive: conditionImageAssets.gerdIbs,
+  Respiratory: conditionImageAssets.asthma,
+  Skin: conditionImageAssets.eczema,
+  'Chronic Pain / Fatigue': conditionImageAssets.chronicPain
 }
 
-/** Best fallback when a category has no artwork in /public/image yet */
+/** Best fallback for custom conditions that do not match a category yet */
 const defaultConditionImage = conditionImageAssets.mentalHealth
 
 const conditionTitleImageOverrides: Record<string, string> = {
-  'Sleep apnea': conditionImageAssets.sleepIssues
+  Asthma: conditionImageAssets.asthma,
+  'Sleep apnea': conditionImageAssets.sleepApnea,
+  Sinusitis: conditionImageAssets.sinusitis,
+  Rhinitis: conditionImageAssets.rhinitis,
+  Eczema: conditionImageAssets.eczema,
+  Psoriasis: conditionImageAssets.psoriasis,
+  Dermatitis: conditionImageAssets.dermatitis,
+  Fibromyalgia: conditionImageAssets.fibromyalgia,
+  'Chronic fatigue': conditionImageAssets.chronicFatigue
 }
 
 export const carouselConditions = [
@@ -60,18 +83,7 @@ export function hasDedicatedCategoryImage(category: string) {
   return Boolean(categoryImageMap[category])
 }
 
-/** Search-list conditions whose category has no matching file in /public/image */
-export const conditionsWithoutDedicatedImages = [
-  { title: 'Asthma', category: 'Respiratory' },
-  { title: 'Sleep apnea', category: 'Respiratory' },
-  { title: 'Sinusitis', category: 'Respiratory' },
-  { title: 'Rhinitis', category: 'Respiratory' },
-  { title: 'Eczema', category: 'Skin' },
-  { title: 'Psoriasis', category: 'Skin' },
-  { title: 'Dermatitis', category: 'Skin' },
-  { title: 'Fibromyalgia', category: 'Chronic Pain / Fatigue' },
-  { title: 'Chronic fatigue', category: 'Chronic Pain / Fatigue' }
-] as const
+export const conditionsWithoutDedicatedImages = [] as const
 
 export const conditionImageCatalog = [
   { file: 'ptsd-mental-health.png', usedFor: ['Mental Health', 'PTSD', 'Anxiety', 'Depression', 'Panic attacks'] },
@@ -79,5 +91,17 @@ export const conditionImageCatalog = [
   { file: 'nerve-radiculopathy.png', usedFor: ['Nerve', 'Radiculopathy', 'Sciatica', 'Peripheral neuropathy'] },
   { file: 'migraine-headache.png', usedFor: ['Neurological', 'Migraine', 'Tension headaches', 'Vertigo / Dizziness', 'Seizures'] },
   { file: 'gerd-ibs.png', usedFor: ['Digestive', 'GERD', 'IBS', 'Chronic diarrhea', 'Constipation'] },
-  { file: 'sleep-issues.png', usedFor: ['Sleep', 'Insomnia / Sleep disturbances', 'Sleep apnea (fallback)'] }
+  { file: 'sleep-issues.png', usedFor: ['Sleep', 'Insomnia / Sleep disturbances'] },
+  { file: 'asthma.png', usedFor: ['Asthma', 'Respiratory fallback'] },
+  { file: 'sleep-apnea.png', usedFor: ['Sleep apnea'] },
+  { file: 'sinusitis.png', usedFor: ['Sinusitis'] },
+  { file: 'rhinitis.png', usedFor: ['Rhinitis'] },
+  { file: 'eczema.png', usedFor: ['Eczema', 'Skin fallback'] },
+  { file: 'psoriasis.png', usedFor: ['Psoriasis'] },
+  { file: 'dermatitis.png', usedFor: ['Dermatitis'] },
+  { file: 'chronic-pain.png', usedFor: ['Chronic Pain / Fatigue fallback'] },
+  { file: 'fibromyalgia.png', usedFor: ['Fibromyalgia'] },
+  { file: 'chronic-fatigue.png', usedFor: ['Chronic fatigue'] },
+  { file: 'chronic-fatigue-closeup.png', usedFor: ['Available chronic fatigue close-up variant, not currently assigned'] },
+  { file: 'chronic-fatigue-alternate.png', usedFor: ['Available chronic fatigue alternate illustration, not currently assigned'] }
 ] as const

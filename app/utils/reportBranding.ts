@@ -24,6 +24,11 @@ export async function loadReportLogoDataUrl() {
     }
 
     const blob = await response.blob()
+    if (!blob.type.startsWith('image/') || blob.type.includes('svg')) {
+      cachedLogoDataUrl = null
+      return null
+    }
+
     cachedLogoDataUrl = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader()
       reader.onload = () => resolve(reader.result as string)
