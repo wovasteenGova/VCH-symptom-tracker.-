@@ -45,7 +45,10 @@
           <div v-if="user" class="relative">
             <button
               type="button"
-              class="relative grid size-10 place-items-center rounded-full bg-white text-slate-950 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-100 dark:bg-slate-900 dark:text-white dark:ring-slate-800 dark:hover:bg-slate-800"
+              class="relative z-[60] grid size-10 place-items-center rounded-full shadow-sm ring-1 transition"
+              :class="isSubmissionDropdownOpen
+                ? 'bg-sky-500 text-white ring-sky-400 dark:bg-sky-500 dark:text-white dark:ring-sky-400'
+                : 'bg-white text-slate-950 ring-slate-200 hover:bg-slate-100 dark:bg-slate-900 dark:text-white dark:ring-slate-800 dark:hover:bg-slate-800'"
               :aria-expanded="isSubmissionDropdownOpen"
               aria-label="Open submission notifications"
               @click="toggleSubmissionDropdown"
@@ -69,25 +72,40 @@
             >
               <div
                 v-if="isSubmissionDropdownOpen"
-                class="absolute right-0 top-12 z-50 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/15 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/40"
+                class="fixed inset-0 z-40"
+                @click="closeSubmissionDropdown"
+              />
+            </Transition>
+
+            <Transition
+              enter-active-class="transition duration-200 ease-out"
+              enter-from-class="-translate-y-1 opacity-0"
+              enter-to-class="translate-y-0 opacity-100"
+              leave-active-class="transition duration-150 ease-in"
+              leave-from-class="translate-y-0 opacity-100"
+              leave-to-class="-translate-y-1 opacity-0"
+            >
+              <div
+                v-if="isSubmissionDropdownOpen"
+                class="absolute right-0 top-12 z-[70] w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/15 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/40"
               >
                 <div class="border-b border-slate-200 px-4 py-3 dark:border-slate-800">
                   <div class="flex items-center gap-2">
                     <UIcon name="i-lucide-inbox" class="size-4 text-sky-500" />
-                    <p class="text-[0.875rem] font-bold text-slate-950 dark:text-white">Family submissions</p>
+                    <p class="text-[0.875rem] font-bold text-slate-950 dark:text-white">Submissions</p>
                   </div>
                   <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                    Supporter observations submitted from private links.
+                    All observations submitted to your tracker.
                   </p>
                 </div>
 
-                <div v-if="!familySubmissionNotifications.length" class="px-4 py-6 text-center text-[0.875rem] text-slate-500 dark:text-slate-400">
-                  No family submissions yet.
+                <div v-if="!submissionNotifications.length" class="px-4 py-6 text-center text-[0.875rem] text-slate-500 dark:text-slate-400">
+                  No submissions yet.
                 </div>
 
                 <div v-else class="max-h-80 overflow-y-auto no-scrollbar p-2">
                   <button
-                    v-for="submission in familySubmissionNotifications"
+                    v-for="submission in submissionNotifications"
                     :key="submission.id"
                     type="button"
                     class="flex w-full items-start gap-3 rounded-2xl px-3 py-3 text-left transition hover:bg-slate-100 dark:hover:bg-slate-800/80"
@@ -95,7 +113,7 @@
                   >
                     <span
                       class="mt-0.5 grid size-9 shrink-0 place-items-center rounded-full"
-                      :class="highlightedSubmissionIds.has(submission.id)
+                      :class="highlightedSubmissionId === submission.id
                         ? 'bg-sky-500 text-white'
                         : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300'"
                     >
@@ -105,7 +123,7 @@
                       <span class="block truncate text-[0.875rem] font-bold text-slate-950 dark:text-white">{{ submission.title }}</span>
                       <span class="mt-1 line-clamp-2 block text-xs leading-5 text-slate-500 dark:text-slate-400">{{ submission.summary }}</span>
                       <span class="mt-1 block text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
-                        {{ submission.condition }} · {{ submission.timeLabel }}
+                        {{ submission.source }} · {{ submission.condition }} · {{ submission.timeLabel }}
                       </span>
                     </span>
                   </button>
@@ -792,7 +810,7 @@
           <div class="relative flex min-h-0 flex-col">
             <div
               class="relative w-full shrink-0 overflow-hidden rounded-[1.75rem] transition-[height,max-height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
-              :class="historyExpanded ? 'h-[50dvh]' : 'h-[55dvh]'"
+              :class="historyExpanded ? 'h-[40dvh]' : 'h-[55dvh]'"
             >
               <Transition
                 :enter-active-class="slideEnterActiveClass"
@@ -871,10 +889,10 @@
 
                     <div
                       v-if="filteredConditionResults.length > 2 && !showConditionSearchEmptyState"
-                      class="pointer-events-none absolute inset-x-0 bottom-1 flex h-8 items-end justify-center bg-linear-to-t from-white via-white/70 to-transparent pb-1 transition-opacity duration-200 dark:from-slate-950 dark:via-slate-950/70"
+                      class="pointer-events-none absolute inset-x-0 bottom-3 flex h-10 items-end justify-center bg-linear-to-t from-white via-white/75 to-transparent pb-1.5 transition-opacity duration-200 dark:from-slate-950 dark:via-slate-950/75"
                       :class="isConditionScrolling ? 'opacity-0' : 'opacity-100'"
                     >
-                      <span class="text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
+                      <span class="rounded-full bg-slate-950/85 px-3 py-1 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-white shadow-lg shadow-slate-950/20 ring-1 ring-white/40 dark:bg-white/90 dark:text-slate-950 dark:shadow-black/30 dark:ring-slate-700/40">
                         Scroll for more
                       </span>
                     </div>
@@ -1060,8 +1078,8 @@
                 :key="entry.id"
                 :data-entry-id="entry.id"
                 class="rounded-2xl px-2 py-3 transition duration-500 hover:bg-slate-50 active:bg-slate-100 dark:hover:bg-slate-900/70 dark:active:bg-slate-900"
-                :class="highlightedSubmissionIds.has(entry.id)
-                  ? 'bg-sky-50 ring-2 ring-sky-300 shadow-lg shadow-sky-950/10 dark:bg-sky-950/30 dark:ring-sky-500/70 dark:shadow-black/20'
+                :class="highlightedSubmissionId === entry.id
+                  ? 'submission-flash bg-sky-50 ring-2 ring-sky-300 shadow-lg shadow-sky-950/10 dark:bg-sky-950/30 dark:ring-sky-500/70 dark:shadow-black/20'
                   : ''"
               >
                 <div class="flex items-center gap-3">
@@ -1350,6 +1368,11 @@ import {
   toLocalDateTimeInputValue
 } from '../utils/symptomDateTime'
 import { getEntryFieldPresets } from '../utils/entryFieldPresets'
+import {
+  carouselConditions,
+  conditionImageAssets,
+  getConditionImage
+} from '../utils/conditionImages'
 import { getSeverityGuidance, severityQuickPresets } from '../utils/severityGuidance'
 import { CalendarDate } from '@internationalized/date'
 import { computed, nextTick, onMounted, ref, shallowRef, watch } from 'vue'
@@ -1407,7 +1430,7 @@ const conditionScrollEl = ref<HTMLElement | null>(null)
 const isConditionScrolling = ref(false)
 const isSubmissionDropdownOpen = ref(false)
 const lastSeenSubmissionAt = ref('')
-const highlightedSubmissionIds = ref<Set<string>>(new Set())
+const highlightedSubmissionId = ref<string | null>(null)
 const searchQuery = ref('')
 const debouncedSearchQuery = ref('')
 const selectedSearchCondition = ref<null | {
@@ -1520,7 +1543,7 @@ const entryPickerDays = computed(() => {
 
 const historyTabs = ['Entries', 'Calendar']
 const installDismissedKey = 'symptom-tracker-install-dismissed'
-const submissionHighlightDurationMs = 60_000
+const submissionHighlightDurationMs = 1_400
 
 const pendingDelete = ref<null | {
   id: string
@@ -1535,238 +1558,179 @@ const shareLinkCopied = ref(false)
 const shareLinkError = ref('')
 const isCreatingShareLink = ref(false)
 
-const conditionImages = [
-  '/image/ptsd-mental-health.png',
-  '/image/back-joint-pain.png',
-  '/image/nerve-radiculopathy.png',
-  '/image/migraine-headache.png',
-  '/image/gerd-ibs.png',
-  '/image/sleep-issues.png'
-]
+const conditions = [...carouselConditions]
 
-const conditions = [
-  {
-    title: 'PTSD / Mental Health',
-    image: conditionImages[0]
-  },
-  {
-    title: 'Back or Joint Pain',
-    image: conditionImages[1]
-  },
-  {
-    title: 'Nerve / Radiculopathy',
-    image: conditionImages[2]
-  },
-  {
-    title: 'Migraine / Headache',
-    image: conditionImages[3]
-  },
-  {
-    title: 'GERD / IBS',
-    image: conditionImages[4]
-  },
-  {
-    title: 'Sleep Issues',
-    image: conditionImages[5]
-  }
-]
-
-const conditionResults = [
+const conditionResultDefinitions = [
   {
     title: 'Migraine',
     category: 'Neurological',
-    description: 'Frequency, duration, severity, triggers, and daily impact.',
-    image: conditionImages[0]
+    description: 'Frequency, duration, severity, triggers, and daily impact.'
   },
   {
     title: 'Tension headaches',
     category: 'Neurological',
-    description: 'Headache pattern, pain level, work impact, and medication use.',
-    image: conditionImages[1]
+    description: 'Headache pattern, pain level, work impact, and medication use.'
   },
   {
     title: 'Vertigo / Dizziness',
     category: 'Neurological',
-    description: 'Dizzy spells, falls, nausea, balance issues, and missed activity.',
-    image: conditionImages[0]
+    description: 'Dizzy spells, falls, nausea, balance issues, and missed activity.'
   },
   {
     title: 'Seizures',
     category: 'Neurological',
-    description: 'Episode timing, recovery, injuries, witnesses, and daily impact.',
-    image: conditionImages[1]
+    description: 'Episode timing, recovery, injuries, witnesses, and daily impact.'
   },
   {
     title: 'PTSD',
     category: 'Mental Health',
-    description: 'Nightmares, flashbacks, panic, isolation, irritability, and missed work.',
-    image: conditionImages[0]
+    description: 'Nightmares, flashbacks, panic, isolation, irritability, and missed work.'
   },
   {
     title: 'Anxiety',
     category: 'Mental Health',
-    description: 'Triggers, panic symptoms, avoidance, sleep, and social impact.',
-    image: conditionImages[1]
+    description: 'Triggers, panic symptoms, avoidance, sleep, and social impact.'
   },
   {
     title: 'Depression',
     category: 'Mental Health',
-    description: 'Mood, motivation, hygiene, isolation, sleep, and daily functioning.',
-    image: conditionImages[0]
+    description: 'Mood, motivation, hygiene, isolation, sleep, and daily functioning.'
   },
   {
     title: 'Panic attacks',
     category: 'Mental Health',
-    description: 'Immediate episode logs for panic symptoms, duration, and recovery.',
-    image: conditionImages[1]
+    description: 'Immediate episode logs for panic symptoms, duration, and recovery.'
   },
   {
     title: 'Insomnia / Sleep disturbances',
     category: 'Sleep',
-    description: 'Hours slept, wake-ups, nightmares, fatigue, and next-day effects.',
-    image: conditionImages[0]
+    description: 'Hours slept, wake-ups, nightmares, fatigue, and next-day effects.'
   },
   {
     title: 'Lower back pain',
     category: 'Back, Neck, and Joint',
-    description: 'Pain level, flare-ups, limits sitting, standing, walking, and lifting.',
-    image: conditionImages[1]
+    description: 'Pain level, flare-ups, limits sitting, standing, walking, and lifting.'
   },
   {
     title: 'Neck pain',
     category: 'Back, Neck, and Joint',
-    description: 'Range of motion, flare-ups, pain level, and activity limits.',
-    image: conditionImages[0]
+    description: 'Range of motion, flare-ups, pain level, and activity limits.'
   },
   {
     title: 'Knee conditions',
     category: 'Back, Neck, and Joint',
-    description: 'Pain, swelling, instability, walking limits, stairs, and missed activity.',
-    image: conditionImages[1]
+    description: 'Pain, swelling, instability, walking limits, stairs, and missed activity.'
   },
   {
     title: 'Shoulder conditions',
     category: 'Back, Neck, and Joint',
-    description: 'Pain, range of motion, lifting limits, sleep interruption, and flare-ups.',
-    image: conditionImages[0]
+    description: 'Pain, range of motion, lifting limits, sleep interruption, and flare-ups.'
   },
   {
     title: 'Arthritis',
     category: 'Back, Neck, and Joint',
-    description: 'Joint pain, stiffness, flare-ups, movement limits, and medication use.',
-    image: conditionImages[1]
+    description: 'Joint pain, stiffness, flare-ups, movement limits, and medication use.'
   },
   {
     title: 'Radiculopathy',
     category: 'Nerve',
-    description: 'Left/right symptoms, numbness, tingling, burning, weakness, and falls.',
-    image: conditionImages[0]
+    description: 'Left/right symptoms, numbness, tingling, burning, weakness, and falls.'
   },
   {
     title: 'Sciatica',
     category: 'Nerve',
-    description: 'Radiating pain, leg weakness, numbness, sitting limits, and flare-ups.',
-    image: conditionImages[1]
+    description: 'Radiating pain, leg weakness, numbness, sitting limits, and flare-ups.'
   },
   {
     title: 'Peripheral neuropathy',
     category: 'Nerve',
-    description: 'Numbness, tingling, burning, weakness, walking issues, and falls.',
-    image: conditionImages[0]
+    description: 'Numbness, tingling, burning, weakness, walking issues, and falls.'
   },
   {
     title: 'GERD',
     category: 'Digestive',
-    description: 'Heartburn, regurgitation, medication, sleep interruption, and diet triggers.',
-    image: conditionImages[1]
+    description: 'Heartburn, regurgitation, medication, sleep interruption, and diet triggers.'
   },
   {
     title: 'IBS',
     category: 'Digestive',
-    description: 'Pain, diarrhea, constipation, urgency, missed activity, and triggers.',
-    image: conditionImages[0]
+    description: 'Pain, diarrhea, constipation, urgency, missed activity, and triggers.'
   },
   {
     title: 'Chronic diarrhea',
     category: 'Digestive',
-    description: 'Frequency, urgency, dehydration, medication, and daily interruptions.',
-    image: conditionImages[1]
+    description: 'Frequency, urgency, dehydration, medication, and daily interruptions.'
   },
   {
     title: 'Constipation',
     category: 'Digestive',
-    description: 'Frequency, pain, medication, diet triggers, and functional impact.',
-    image: conditionImages[0]
+    description: 'Frequency, pain, medication, diet triggers, and functional impact.'
   },
   {
     title: 'Asthma',
     category: 'Respiratory',
-    description: 'Shortness of breath, rescue inhaler use, attacks, and triggers.',
-    image: conditionImages[1]
+    description: 'Shortness of breath, rescue inhaler use, attacks, and triggers.'
   },
   {
     title: 'Sleep apnea',
     category: 'Respiratory',
-    description: 'Sleep problems, fatigue, CPAP use, headaches, and daytime impact.',
-    image: conditionImages[0]
+    description: 'Sleep problems, fatigue, CPAP use, headaches, and daytime impact.'
   },
   {
     title: 'Sinusitis',
     category: 'Respiratory',
-    description: 'Congestion, headaches, flare-ups, infections, medication, and missed activity.',
-    image: conditionImages[1]
+    description: 'Congestion, headaches, flare-ups, infections, medication, and missed activity.'
   },
   {
     title: 'Rhinitis',
     category: 'Respiratory',
-    description: 'Congestion, runny nose, sneezing, breathing issues, and triggers.',
-    image: conditionImages[0]
+    description: 'Congestion, runny nose, sneezing, breathing issues, and triggers.'
   },
   {
     title: 'Eczema',
     category: 'Skin',
-    description: 'Area affected, itching, flare-ups, treatment, and photos later.',
-    image: conditionImages[1]
+    description: 'Area affected, itching, flare-ups, treatment, and photos later.'
   },
   {
     title: 'Psoriasis',
     category: 'Skin',
-    description: 'Area affected, plaques, itching, flare-ups, treatment, and photos later.',
-    image: conditionImages[0]
+    description: 'Area affected, plaques, itching, flare-ups, treatment, and photos later.'
   },
   {
     title: 'Dermatitis',
     category: 'Skin',
-    description: 'Rash location, itching, triggers, flare-ups, treatment, and photos later.',
-    image: conditionImages[1]
+    description: 'Rash location, itching, triggers, flare-ups, treatment, and photos later.'
   },
   {
     title: 'Fibromyalgia',
     category: 'Chronic Pain / Fatigue',
-    description: 'Pain, fatigue, brain fog, flare-ups, and days unable to function normally.',
-    image: conditionImages[0]
+    description: 'Pain, fatigue, brain fog, flare-ups, and days unable to function normally.'
   },
   {
     title: 'Chronic fatigue',
     category: 'Chronic Pain / Fatigue',
-    description: 'Fatigue level, brain fog, rest needs, and functional limitations.',
-    image: conditionImages[1]
+    description: 'Fatigue level, brain fog, rest needs, and functional limitations.'
   }
-]
+] as const
+
+const conditionResults = conditionResultDefinitions.map((condition) => ({
+  ...condition,
+  image: getConditionImage(condition.title, condition.category)
+}))
 
 const historyEntries = computed(() => {
   return savedEntries.value.map((entry) => mapEntryHistoryItem(entry))
 })
 
-const familySubmissionNotifications = computed(() => {
+const submissionNotifications = computed(() => {
   return savedEntries.value
-    .filter((entry) => entry.source === 'family')
     .map((entry) => {
       const entryDate = entry.occurred_at ? new Date(entry.occurred_at) : new Date(entry.created_at)
 
       return {
         id: entry.id,
         condition: entry.condition_label,
+        source: entry.source === 'family' ? 'Family' : 'Veteran',
         title: entry.summary || entry.condition_label,
         summary: entry.impact || 'No impact note added',
         createdAt: entry.created_at || entry.occurred_at || '',
@@ -1783,11 +1747,11 @@ const familySubmissionNotifications = computed(() => {
 
 const unreadSubmissionCount = computed(() => {
   if (!lastSeenSubmissionAt.value) {
-    return familySubmissionNotifications.value.length
+    return submissionNotifications.value.length
   }
 
   const lastSeenTime = new Date(lastSeenSubmissionAt.value).getTime()
-  return familySubmissionNotifications.value.filter((submission) => {
+  return submissionNotifications.value.filter((submission) => {
     return new Date(submission.createdAt).getTime() > lastSeenTime
   }).length
 })
@@ -2104,7 +2068,7 @@ const activeEntryImage = computed(() => {
   }
 
   if (isSearchSlide.value) {
-    return conditionImages[0]
+    return conditionImageAssets.mentalHealth
   }
 
   return activeCondition.value.image
@@ -2608,7 +2572,7 @@ async function loadEntries() {
     savedEntries.value = []
     isSubmissionDropdownOpen.value = false
     lastSeenSubmissionAt.value = ''
-    highlightedSubmissionIds.value = new Set()
+    highlightedSubmissionId.value = null
     return
   }
 
@@ -2627,7 +2591,7 @@ async function loadEntries() {
 }
 
 function getSubmissionSeenKey() {
-  return user.value ? `symptom-tracker-family-submissions-seen:${user.value.id}` : ''
+  return user.value ? `symptom-tracker-submissions-seen:${user.value.id}` : ''
 }
 
 function loadSubmissionSeenState() {
@@ -2636,7 +2600,10 @@ function loadSubmissionSeenState() {
   }
 
   const key = getSubmissionSeenKey()
-  lastSeenSubmissionAt.value = key ? window.localStorage.getItem(key) || '' : ''
+  const legacyKey = user.value ? `symptom-tracker-family-submissions-seen:${user.value.id}` : ''
+  lastSeenSubmissionAt.value = key
+    ? window.localStorage.getItem(key) || (legacyKey ? window.localStorage.getItem(legacyKey) || '' : '')
+    : ''
 }
 
 function updateSubmissionHighlights(entries: any[]) {
@@ -2645,29 +2612,29 @@ function updateSubmissionHighlights(entries: any[]) {
   const lastSeenTime = lastSeenSubmissionAt.value
     ? new Date(lastSeenSubmissionAt.value).getTime()
     : 0
-  const newFamilyEntryIds = entries
-    .filter((entry) => entry.source === 'family')
+  const latestUnseenSubmission = entries
     .filter((entry) => {
       const createdAt = entry.created_at || entry.occurred_at
       return createdAt && new Date(createdAt).getTime() > lastSeenTime
     })
-    .map((entry) => entry.id)
+    .sort((a, b) => {
+      const bTime = new Date(b.created_at || b.occurred_at).getTime()
+      const aTime = new Date(a.created_at || a.occurred_at).getTime()
+      return bTime - aTime
+    })[0]
 
-  if (!newFamilyEntryIds.length) {
+  if (!latestUnseenSubmission) {
     return
   }
 
-  highlightedSubmissionIds.value = new Set([
-    ...highlightedSubmissionIds.value,
-    ...newFamilyEntryIds
-  ])
+  highlightedSubmissionId.value = latestUnseenSubmission.id
 
   if (submissionHighlightTimer) {
     clearTimeout(submissionHighlightTimer)
   }
 
   submissionHighlightTimer = setTimeout(() => {
-    highlightedSubmissionIds.value = new Set()
+    highlightedSubmissionId.value = null
   }, submissionHighlightDurationMs)
 }
 
@@ -2676,7 +2643,7 @@ function markSubmissionsSeen() {
     return
   }
 
-  const newestSubmission = familySubmissionNotifications.value[0]
+  const newestSubmission = submissionNotifications.value[0]
   const key = getSubmissionSeenKey()
 
   if (!newestSubmission?.createdAt || !key) {
@@ -2695,14 +2662,23 @@ function toggleSubmissionDropdown() {
   }
 }
 
+function closeSubmissionDropdown() {
+  isSubmissionDropdownOpen.value = false
+}
+
 async function focusSubmission(entryId: string) {
   activeHistoryTab.value = 'Entries'
   historyExpanded.value = true
   isSubmissionDropdownOpen.value = false
-  highlightedSubmissionIds.value = new Set([
-    ...highlightedSubmissionIds.value,
-    entryId
-  ])
+  highlightedSubmissionId.value = entryId
+
+  if (submissionHighlightTimer) {
+    clearTimeout(submissionHighlightTimer)
+  }
+
+  submissionHighlightTimer = setTimeout(() => {
+    highlightedSubmissionId.value = null
+  }, submissionHighlightDurationMs)
 
   await nextTick()
 
@@ -3080,19 +3056,24 @@ function toggleConditionPicker() {
 }
 
 function selectSearchCondition(condition: { title: string, category: string, description: string, image: string }) {
-  selectedSearchCondition.value = condition
-  openEntryPanel()
+  openEntryPanel({ condition })
 }
 
 function startEntryFromCurrentSlide() {
   if (isSearchSlide.value) {
-    selectedSearchCondition.value = null
     const customName = debouncedSearchQuery.value.trim() || searchQuery.value.trim()
-    openEntryPanel(customName || undefined)
+    openEntryPanel({ prefillCustomCondition: customName || undefined })
     return
   }
 
-  openEntryPanel()
+  openEntryPanel({
+    condition: {
+      title: activeCondition.value.title,
+      category: activeCondition.value.category,
+      description: activeCondition.value.description,
+      image: activeCondition.value.image
+    }
+  })
 }
 
 function expandHistorySheet() {
@@ -3287,7 +3268,15 @@ function openEntryForEdit(entryId: string) {
   }
 }
 
-function openEntryPanel(prefillCustomCondition?: string) {
+function openEntryPanel(options: {
+  prefillCustomCondition?: string
+  condition?: {
+    title: string
+    category: string
+    description: string
+    image: string
+  }
+} = {}) {
   if (!user.value) {
     isAuthPanelOpen.value = true
     return
@@ -3299,16 +3288,16 @@ function openEntryPanel(prefillCustomCondition?: string) {
   resetEntryForm()
   editingEntryId.value = null
   editingEntryConditionLabel.value = null
-  selectedSearchCondition.value = null
+  selectedSearchCondition.value = options.condition ?? null
   hasActiveDraft.value = true
   isConditionPickerOpen.value = false
   customConditionInput.value = ''
   debouncedCustomConditionPreview.value = ''
 
-  if (prefillCustomCondition) {
-    entryForm.value.condition_name = prefillCustomCondition
-    customConditionInput.value = prefillCustomCondition
-    debouncedCustomConditionPreview.value = prefillCustomCondition
+  if (options.prefillCustomCondition) {
+    entryForm.value.condition_name = options.prefillCustomCondition
+    customConditionInput.value = options.prefillCustomCondition
+    debouncedCustomConditionPreview.value = options.prefillCustomCondition
   }
 
   isEntryOpen.value = true
@@ -3372,5 +3361,26 @@ function handleEntryPrimaryAction() {
 .severity-guide-leave-to {
   opacity: 0;
   transform: translateY(-0.35rem);
+}
+
+.submission-flash {
+  animation: submission-flash 1.15s ease-out both;
+}
+
+@keyframes submission-flash {
+  0% {
+    filter: brightness(1);
+    transform: scale(1);
+  }
+
+  18% {
+    filter: brightness(1.08);
+    transform: scale(1.01);
+  }
+
+  100% {
+    filter: brightness(1);
+    transform: scale(1);
+  }
 }
 </style>
