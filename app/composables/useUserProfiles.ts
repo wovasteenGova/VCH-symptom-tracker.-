@@ -6,6 +6,8 @@ type UserProfilePayload = {
 type SupporterProfilePayload = {
   link_label?: string | null
   visible_conditions: string[]
+  linked_entry_id?: string | null
+  entry_context_summary?: string | null
 }
 
 async function sha256Hex(value: string) {
@@ -109,7 +111,9 @@ export function useUserProfiles() {
         user_id: userId,
         display_name: displayName,
         visible_conditions: payload.visible_conditions,
-        token_hash: tokenHash
+        token_hash: tokenHash,
+        linked_entry_id: payload.linked_entry_id || null,
+        entry_context_summary: payload.entry_context_summary || null
       })
       .select()
       .single()
@@ -142,11 +146,26 @@ export function useUserProfiles() {
     return data
   }
 
+  async function deleteSupporterProfile(id: string) {
+    const userId = await getUserId()
+
+    const { error } = await supabase
+      .from('supporter_profiles')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', userId)
+
+    if (error) {
+      throw error
+    }
+  }
+
   return {
     getProfile,
     upsertProfile,
     listSupporterProfiles,
     createSupporterProfile,
-    toggleSupporterProfile
+    toggleSupporterProfile,
+    deleteSupporterProfile
   }
 }

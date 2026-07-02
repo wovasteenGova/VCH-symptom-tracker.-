@@ -24,10 +24,91 @@
       </section>
 
       <section v-else-if="!user" class="mt-6 rounded-4xl border border-slate-800 bg-slate-900 p-5">
-        <h2 class="text-xl font-bold text-white">Sign in required</h2>
+        <h2 class="text-xl font-bold text-white">
+          {{ authMode === 'login' ? 'Sign in' : 'Create account' }}
+        </h2>
         <p class="mt-2 text-sm leading-6 text-slate-400">
-          Sign in from the home screen before managing your profile or supporter links.
+          Sign in to save symptom entries, export reports, and manage deleted logs.
         </p>
+
+        <form class="mt-5 space-y-4" @submit.prevent="handleAuthSubmit">
+          <label v-if="authMode === 'signup'" class="block">
+            <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Name</span>
+            <input
+              v-model="authName"
+              type="text"
+              autocomplete="name"
+              class="w-full rounded-3xl border border-slate-600/70 bg-slate-800/70 px-4 py-4 text-base font-medium text-white outline-none placeholder:text-slate-400 focus:border-slate-400"
+              placeholder="Your full name"
+              required
+            >
+          </label>
+
+          <label class="block">
+            <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Email</span>
+            <input
+              v-model="authEmail"
+              type="email"
+              autocomplete="email"
+              class="w-full rounded-3xl border border-slate-600/70 bg-slate-800/70 px-4 py-4 text-base font-medium text-white outline-none placeholder:text-slate-400 focus:border-slate-400"
+              placeholder="you@example.com"
+              required
+            >
+          </label>
+
+          <label v-if="authMode === 'signup'" class="block">
+            <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Confirm password</span>
+            <input
+              v-model="authConfirmPassword"
+              type="password"
+              autocomplete="new-password"
+              class="w-full rounded-3xl border border-slate-600/70 bg-slate-800/70 px-4 py-4 text-base font-medium text-white outline-none placeholder:text-slate-400 focus:border-slate-400"
+              placeholder="Re-enter password"
+              required
+            >
+          </label>
+
+          <label class="block">
+            <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Password</span>
+            <input
+              v-model="authPassword"
+              type="password"
+              autocomplete="current-password"
+              class="w-full rounded-3xl border border-slate-600/70 bg-slate-800/70 px-4 py-4 text-base font-medium text-white outline-none placeholder:text-slate-400 focus:border-slate-400"
+              placeholder="At least 6 characters"
+              required
+            >
+          </label>
+
+          <button
+            type="submit"
+            class="w-full rounded-2xl bg-white px-5 py-4 text-base font-bold text-slate-950 shadow-lg transition hover:bg-slate-200"
+            :disabled="isAuthSubmitting"
+          >
+            {{ isAuthSubmitting ? 'Working...' : authMode === 'login' ? 'Sign in' : 'Create account' }}
+          </button>
+
+          <button
+            type="button"
+            class="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-800 px-4 py-4 text-base font-bold text-white ring-1 ring-slate-700 transition hover:bg-slate-700"
+            :disabled="isAuthSubmitting"
+            @click="handleGoogleSignIn"
+          >
+            <UIcon name="i-lucide-chrome" class="size-5" />
+            Continue with Google
+          </button>
+
+          <button
+            type="button"
+            class="w-full rounded-2xl px-4 py-2 text-sm font-semibold text-slate-300"
+            @click="authMode = authMode === 'login' ? 'signup' : 'login'"
+          >
+            {{ authMode === 'login' ? 'Need an account? Sign up' : 'Already have an account? Sign in' }}
+          </button>
+
+          <p v-if="authMessage" class="text-center text-sm font-medium text-slate-300">{{ authMessage }}</p>
+          <p v-if="authError" class="text-center text-sm font-medium text-red-300">{{ authError }}</p>
+        </form>
       </section>
 
       <template v-else>
@@ -61,11 +142,68 @@
 
         <section class="mt-5 rounded-4xl border border-slate-800 bg-slate-900 p-4">
           <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Deleted Entries</p>
+            <h2 class="mt-1 text-xl font-bold text-white">Recovery bin</h2>
+            <p class="mt-2 text-sm leading-6 text-slate-400">
+              Entries removed from your log stay here until you restore or permanently remove them.
+            </p>
+          </div>
+
+          <div v-if="!deletedHistoryEntries.length" class="mt-5 rounded-3xl border border-slate-800 bg-slate-950/60 p-5 text-center text-sm text-slate-400">
+            No deleted entries.
+          </div>
+
+          <div v-else class="mt-5 space-y-3">
+            <article
+              v-for="entry in deletedHistoryEntries"
+              :key="entry.id"
+              class="rounded-3xl border border-slate-800 bg-slate-950/60 p-4"
+            >
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <UBadge color="neutral" variant="soft" size="sm">{{ entry.condition }}</UBadge>
+                    <UBadge color="error" variant="soft" size="sm">Deleted</UBadge>
+                  </div>
+                  <h3 class="mt-2 font-bold text-white">{{ entry.title }}</h3>
+                  <p class="mt-1 text-xs text-slate-400">{{ entry.deletedLabel }}</p>
+                </div>
+
+                <div class="flex shrink-0 flex-col gap-2">
+                  <button
+                    type="button"
+                    class="rounded-full bg-white px-3 py-2 text-xs font-bold text-slate-950"
+                    :disabled="isRestoringEntryId === entry.id"
+                    @click="restoreDeletedEntry(entry.id)"
+                  >
+                    {{ isRestoringEntryId === entry.id ? 'Restoring...' : 'Restore' }}
+                  </button>
+                  <button
+                    type="button"
+                    class="rounded-full px-3 py-2 text-xs font-semibold text-red-300 transition hover:bg-red-950/40"
+                    @click="requestPurgeDeletedEntry(entry.id)"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="mt-5 rounded-4xl border border-slate-800 bg-slate-900 p-4">
+          <div>
             <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Supporter Links</p>
             <h2 class="mt-1 text-xl font-bold text-white">Family reporting access</h2>
             <p class="mt-2 text-sm leading-6 text-slate-400">
-              Create a private link for someone you trust. They enter their own contact info on each report. You only choose which conditions they can see.
+              Create a private link for someone you trust. They enter their own contact info on each report. You can also create a link from a saved entry in your history.
             </p>
+          </div>
+
+          <div v-if="linkedEntryContext" class="mt-4 rounded-3xl border border-sky-900/60 bg-sky-950/30 p-4">
+            <p class="text-xs font-bold uppercase tracking-[0.14em] text-sky-300">Linked entry</p>
+            <p class="mt-2 font-semibold text-white">{{ linkedEntryContext.summary }}</p>
+            <p class="mt-1 text-xs text-sky-200/80">{{ linkedEntryContext.condition }}</p>
           </div>
 
           <div class="mt-5 space-y-4">
@@ -111,6 +249,14 @@
             <p class="mt-2 text-xs leading-5 text-emerald-200/80">
               Save this now. For privacy, the raw token is only shown when the link is created.
             </p>
+            <button
+              type="button"
+              class="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-emerald-400"
+              @click="copyCreatedLink"
+            >
+              <UIcon :name="createdLinkCopied ? 'i-lucide-check' : 'i-lucide-copy'" class="size-4" />
+              {{ createdLinkCopied ? 'Copied to clipboard' : 'Copy link' }}
+            </button>
           </div>
         </section>
 
@@ -147,36 +293,164 @@
               </UBadge>
             </div>
 
-            <button
-              type="button"
-              class="mt-4 w-full rounded-2xl bg-slate-800 px-4 py-3 text-sm font-bold text-white ring-1 ring-slate-700"
-              @click="toggleSupporter(profile)"
-            >
-              {{ profile.active ? 'Disable link' : 'Reactivate link' }}
-            </button>
+            <div v-if="profile.entry_context_summary" class="mt-3 rounded-2xl border border-sky-900/50 bg-sky-950/20 px-3 py-2">
+              <p class="text-xs font-bold uppercase tracking-[0.12em] text-sky-300">Linked entry</p>
+              <p class="mt-1 text-sm text-sky-100">{{ profile.entry_context_summary }}</p>
+            </div>
+
+            <div class="mt-4 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                class="rounded-2xl bg-slate-800 px-4 py-3 text-sm font-bold text-white ring-1 ring-slate-700"
+                @click="toggleSupporter(profile)"
+              >
+                {{ profile.active ? 'Disable link' : 'Reactivate link' }}
+              </button>
+              <button
+                type="button"
+                class="rounded-2xl bg-red-950/50 px-4 py-3 text-sm font-bold text-red-300 ring-1 ring-red-900/60"
+                @click="requestDeleteSupporter(profile)"
+              >
+                Delete link
+              </button>
+            </div>
           </article>
         </section>
+
+        <button
+          type="button"
+          class="mt-5 w-full rounded-2xl bg-slate-800 px-4 py-3 text-sm font-bold text-white ring-1 ring-slate-700"
+          :disabled="isAuthSubmitting"
+          @click="handleSignOut"
+        >
+          {{ isAuthSubmitting ? 'Signing out...' : 'Sign out' }}
+        </button>
 
         <p v-if="pageMessage" class="mt-4 text-center text-sm font-medium text-slate-300">{{ pageMessage }}</p>
         <p v-if="pageError" class="mt-4 text-center text-sm font-medium text-red-300">{{ pageError }}</p>
       </template>
     </section>
+
+    <Transition
+      enter-active-class="transition duration-200 ease-out"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-active-class="transition duration-150 ease-in"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
+    >
+      <div
+        v-if="pendingPurgeEntry"
+        class="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/70 p-4 sm:items-center"
+        @click.self="cancelPurgeDeletedEntry"
+      >
+        <div class="w-full max-w-md rounded-[1.75rem] border border-slate-800 bg-slate-900 p-5 shadow-2xl">
+          <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Permanent removal</p>
+          <h3 class="mt-2 text-xl font-bold text-white">Remove forever?</h3>
+          <p class="mt-3 text-sm leading-6 text-slate-300">
+            <span class="font-semibold text-white">{{ pendingPurgeEntry.title }}</span>
+            will be removed from your deleted archive. This cannot be undone.
+          </p>
+
+          <div class="mt-5 grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              class="rounded-2xl bg-slate-800 px-4 py-3 text-sm font-bold text-white"
+              @click="cancelPurgeDeletedEntry"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="rounded-2xl bg-red-600 px-4 py-3 text-sm font-bold text-white"
+              @click="confirmPurgeDeletedEntry"
+            >
+              Remove forever
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <Transition
+      enter-active-class="transition duration-200 ease-out"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-active-class="transition duration-150 ease-in"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
+    >
+      <div
+        v-if="pendingDeleteSupporter"
+        class="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/70 p-4 sm:items-center"
+        @click.self="cancelDeleteSupporter"
+      >
+        <div class="w-full max-w-md rounded-[1.75rem] border border-slate-800 bg-slate-900 p-5 shadow-2xl">
+          <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Delete supporter link</p>
+          <h3 class="mt-2 text-xl font-bold text-white">Remove this link forever?</h3>
+          <p class="mt-3 text-sm leading-6 text-slate-300">
+            <span class="font-semibold text-white">{{ pendingDeleteSupporter.display_name }}</span>
+            will stop working immediately. Anyone with the old URL will no longer be able to submit reports.
+          </p>
+
+          <div class="mt-5 grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              class="rounded-2xl bg-slate-800 px-4 py-3 text-sm font-bold text-white"
+              @click="cancelDeleteSupporter"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="rounded-2xl bg-red-600 px-4 py-3 text-sm font-bold text-white"
+              :disabled="isDeletingSupporterId === pendingDeleteSupporter.id"
+              @click="confirmDeleteSupporter"
+            >
+              {{ isDeletingSupporterId === pendingDeleteSupporter.id ? 'Deleting...' : 'Delete link' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </main>
 </template>
 
 <script setup lang="ts">
 import { useSupabaseAuth } from '../composables/useSupabaseAuth'
 import { useUserProfiles } from '../composables/useUserProfiles'
-import { onMounted, ref, watch } from 'vue'
+import { useSymptomEntries } from '../composables/useSymptomEntries'
+import { useDeletedEntryArchive } from '../composables/useDeletedEntryArchive'
+import { mapEntryHistoryItem } from '../utils/entryDisplay'
+import { copyToClipboard } from '../utils/copyToClipboard'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
-const { user, isAuthLoading } = useSupabaseAuth()
+const route = useRoute()
+
+const {
+  user,
+  isAuthLoading,
+  authError,
+  signIn,
+  signUp,
+  signInWithGoogle,
+  signOut
+} = useSupabaseAuth()
 const {
   getProfile,
   upsertProfile,
   listSupporterProfiles,
   createSupporterProfile,
-  toggleSupporterProfile
+  toggleSupporterProfile,
+  deleteSupporterProfile
 } = useUserProfiles()
+const { createEntry } = useSymptomEntries()
+const {
+  listDeletedEntries,
+  removeDeletedEntry,
+  takeDeletedEntry
+} = useDeletedEntryArchive()
 
 const conditionOptions = [
   'PTSD / Mental Health',
@@ -187,6 +461,14 @@ const conditionOptions = [
   'Sleep Issues'
 ]
 
+const authMode = ref<'login' | 'signup'>('login')
+const authName = ref('')
+const authEmail = ref('')
+const authPassword = ref('')
+const authConfirmPassword = ref('')
+const authMessage = ref('')
+const isAuthSubmitting = ref(false)
+
 const profileForm = ref({
   full_name: ''
 })
@@ -195,21 +477,61 @@ const supporterForm = ref({
   visible_conditions: [] as string[]
 })
 const supporterProfiles = ref<any[]>([])
+const deletedEntries = ref<any[]>([])
 const createdLink = ref('')
+const createdLinkCopied = ref(false)
+const linkedEntryId = ref<string | null>(null)
+const linkedEntryContext = ref<null | { summary: string, condition: string }>(null)
 const pageMessage = ref('')
 const pageError = ref('')
 const isSavingProfile = ref(false)
 const isCreatingSupporter = ref(false)
+const isRestoringEntryId = ref<string | null>(null)
+const isDeletingSupporterId = ref<string | null>(null)
+const pendingPurgeEntry = ref<null | { id: string, title: string }>(null)
+const pendingDeleteSupporter = ref<null | { id: string, display_name: string }>(null)
+
+const deletedHistoryEntries = computed(() => {
+  return deletedEntries.value.map((entry) => mapEntryHistoryItem(entry, { deleted: true }))
+})
 
 onMounted(() => {
+  applySupporterLinkQuery()
   if (user.value) {
     loadProfilePage()
   }
 })
 
+function applySupporterLinkQuery() {
+  const entryId = typeof route.query.entry === 'string' ? route.query.entry : null
+  const condition = typeof route.query.condition === 'string' ? route.query.condition : null
+  const label = typeof route.query.label === 'string' ? route.query.label : null
+  const summary = typeof route.query.summary === 'string' ? route.query.summary : null
+
+  linkedEntryId.value = entryId
+
+  if (condition) {
+    supporterForm.value.visible_conditions = [condition]
+  }
+
+  if (label) {
+    supporterForm.value.link_label = label
+  }
+
+  if (summary && condition) {
+    linkedEntryContext.value = {
+      summary,
+      condition
+    }
+  }
+}
+
 watch(user, (currentUser) => {
   if (currentUser) {
     loadProfilePage()
+  } else {
+    deletedEntries.value = []
+    supporterProfiles.value = []
   }
 })
 
@@ -219,8 +541,18 @@ watch(isAuthLoading, (loading) => {
   }
 })
 
+function loadDeletedEntries() {
+  if (!user.value) {
+    deletedEntries.value = []
+    return
+  }
+
+  deletedEntries.value = listDeletedEntries(user.value.id)
+}
+
 async function loadProfilePage() {
   pageError.value = ''
+  loadDeletedEntries()
 
   try {
     const [profile, supporters] = await Promise.all([
@@ -266,12 +598,20 @@ async function createSupporter() {
   isCreatingSupporter.value = true
 
   try {
-    const { token } = await createSupporterProfile(supporterForm.value)
+    const payload = {
+      ...supporterForm.value,
+      linked_entry_id: linkedEntryId.value,
+      entry_context_summary: linkedEntryContext.value?.summary || null
+    }
+    const { token } = await createSupporterProfile(payload)
     createdLink.value = `${window.location.origin}/report/${token}`
+    createdLinkCopied.value = false
     supporterForm.value = {
       link_label: '',
       visible_conditions: []
     }
+    linkedEntryId.value = null
+    linkedEntryContext.value = null
     await loadProfilePage()
   } catch (error) {
     pageError.value = getErrorMessage(error)
@@ -288,6 +628,168 @@ async function toggleSupporter(profile: any) {
     await loadProfilePage()
   } catch (error) {
     pageError.value = getErrorMessage(error)
+  }
+}
+
+async function copyCreatedLink() {
+  if (!createdLink.value) {
+    return
+  }
+
+  const copied = await copyToClipboard(createdLink.value)
+  createdLinkCopied.value = copied
+  pageError.value = copied ? '' : 'Could not copy link. Copy it manually.'
+}
+
+function requestDeleteSupporter(profile: any) {
+  pendingDeleteSupporter.value = {
+    id: profile.id,
+    display_name: profile.display_name || 'Private supporter link'
+  }
+}
+
+function cancelDeleteSupporter() {
+  pendingDeleteSupporter.value = null
+}
+
+async function confirmDeleteSupporter() {
+  if (!pendingDeleteSupporter.value) {
+    return
+  }
+
+  pageError.value = ''
+  isDeletingSupporterId.value = pendingDeleteSupporter.value.id
+
+  try {
+    await deleteSupporterProfile(pendingDeleteSupporter.value.id)
+    pendingDeleteSupporter.value = null
+    pageMessage.value = 'Supporter link deleted.'
+    await loadProfilePage()
+  } catch (error) {
+    pageError.value = getErrorMessage(error)
+  } finally {
+    isDeletingSupporterId.value = null
+  }
+}
+
+async function restoreDeletedEntry(entryId: string) {
+  if (!user.value) {
+    return
+  }
+
+  pageError.value = ''
+  pageMessage.value = ''
+  isRestoringEntryId.value = entryId
+
+  const archivedEntry = takeDeletedEntry(user.value.id, entryId)
+  if (!archivedEntry) {
+    isRestoringEntryId.value = null
+    return
+  }
+
+  try {
+    const restoredEntry = { ...archivedEntry }
+    delete restoredEntry.deleted_at
+
+    await createEntry({
+      condition_key: restoredEntry.condition_key,
+      condition_label: restoredEntry.condition_label,
+      severity: restoredEntry.severity,
+      occurred_at: restoredEntry.occurred_at,
+      summary: restoredEntry.summary,
+      impact: restoredEntry.impact,
+      details: restoredEntry.details || {}
+    })
+
+    loadDeletedEntries()
+    pageMessage.value = 'Entry restored.'
+  } catch (error) {
+    pageError.value = getErrorMessage(error)
+  } finally {
+    isRestoringEntryId.value = null
+  }
+}
+
+function requestPurgeDeletedEntry(entryId: string) {
+  const entry = deletedHistoryEntries.value.find((item) => item.id === entryId)
+  if (!entry || !user.value) {
+    return
+  }
+
+  pendingPurgeEntry.value = {
+    id: entryId,
+    title: entry.title
+  }
+}
+
+function cancelPurgeDeletedEntry() {
+  pendingPurgeEntry.value = null
+}
+
+function confirmPurgeDeletedEntry() {
+  if (!pendingPurgeEntry.value || !user.value) {
+    return
+  }
+
+  removeDeletedEntry(user.value.id, pendingPurgeEntry.value.id)
+  pendingPurgeEntry.value = null
+  loadDeletedEntries()
+  pageMessage.value = 'Deleted entry removed permanently.'
+}
+
+async function handleAuthSubmit() {
+  isAuthSubmitting.value = true
+  authMessage.value = ''
+
+  try {
+    if (authMode.value === 'login') {
+      await signIn(authEmail.value, authPassword.value)
+    } else {
+      if (authPassword.value !== authConfirmPassword.value) {
+        authMessage.value = 'Passwords do not match.'
+        return
+      }
+
+      const data = await signUp(authEmail.value, authPassword.value, authName.value)
+
+      if (data.user) {
+        authMessage.value = data.session
+          ? 'Account created. You are signed in.'
+          : 'Account created. Check your email to confirm before signing in.'
+      } else {
+        authMessage.value = 'Signup did not return a user. Check Supabase Auth settings and try again.'
+      }
+    }
+  } catch {
+    // useSupabaseAuth exposes the message in authError.
+  } finally {
+    isAuthSubmitting.value = false
+  }
+}
+
+async function handleGoogleSignIn() {
+  isAuthSubmitting.value = true
+  authMessage.value = ''
+
+  try {
+    await signInWithGoogle()
+  } catch {
+    // useSupabaseAuth exposes the message in authError.
+  } finally {
+    isAuthSubmitting.value = false
+  }
+}
+
+async function handleSignOut() {
+  isAuthSubmitting.value = true
+  pageMessage.value = ''
+
+  try {
+    await signOut()
+  } catch {
+    pageError.value = authError.value
+  } finally {
+    isAuthSubmitting.value = false
   }
 }
 

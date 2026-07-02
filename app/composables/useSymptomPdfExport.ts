@@ -8,6 +8,7 @@ import {
   drawStatCards,
   drawVerticalBarChart
 } from '../utils/symptomReportCharts'
+import { drawEntryLogSection } from '../utils/symptomReportEntryLog'
 import { getLogoFormat, loadReportLogoDataUrl, reportBranding } from '../utils/reportBranding'
 
 type SymptomEntryRecord = {
@@ -17,6 +18,7 @@ type SymptomEntryRecord = {
   severity?: number | null
   occurred_at?: string | null
   created_at?: string | null
+  updated_at?: string | null
   summary?: string | null
   impact?: string | null
   details?: Record<string, unknown> | null
@@ -49,7 +51,6 @@ export function useSymptomPdfExport() {
     }
 
     const metrics = buildReportMetrics(entries)
-    const totalPages = metrics.extendedConditionBreakdown.length ? 3 : 2
     const logoDataUrl = await loadReportLogoDataUrl()
 
     const doc = new jsPDF({
@@ -57,6 +58,7 @@ export function useSymptomPdfExport() {
       format: 'letter'
     })
     const pageWidth = doc.internal.pageSize.getWidth()
+    const pageHeight = doc.internal.pageSize.getHeight()
     const margin = 42
     const contentWidth = pageWidth - margin * 2
     let y = margin
@@ -141,8 +143,6 @@ export function useSymptomPdfExport() {
       [[16, 185, 129], [245, 158, 11], [249, 115, 22]]
     )
 
-    drawPageFooter(doc, 1, totalPages, margin)
-
     doc.addPage()
     y = margin
 
@@ -165,8 +165,7 @@ export function useSymptomPdfExport() {
       metrics.sourceBreakdown,
       [[14, 165, 233], [139, 92, 246]]
     )
-
-    drawPageFooter(doc, 2, totalPages, margin)
+    y += Math.max(92, metrics.sourceBreakdown.length * 28 + 24) + 20
 
     if (metrics.extendedConditionBreakdown.length) {
       doc.addPage()
@@ -174,7 +173,7 @@ export function useSymptomPdfExport() {
 
       drawSectionTitle(doc, 'Additional conditions tracked', margin, y)
       y += 10
-      drawHorizontalBarChart(
+      y = drawHorizontalBarChart(
         doc,
         margin,
         y,
@@ -182,9 +181,23 @@ export function useSymptomPdfExport() {
         Math.max(160, metrics.extendedConditionBreakdown.length * 28 + 36),
         metrics.extendedConditionBreakdown,
         chartColors
-      )
+      ) + 20
+    }
 
-      drawPageFooter(doc, 3, totalPages, margin)
+    drawEntryLogSection(
+      doc,
+      entries,
+      margin,
+      y,
+      contentWidth,
+      margin,
+      pageHeight
+    )
+
+    const totalPages = doc.getNumberOfPages()
+    for (let pageNumber = 1; pageNumber <= totalPages; pageNumber += 1) {
+      doc.setPage(pageNumber)
+      drawPageFooter(doc, pageNumber, totalPages, margin)
     }
 
     const fileDate = new Date().toISOString().slice(0, 10)

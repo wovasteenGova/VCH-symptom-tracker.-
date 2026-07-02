@@ -130,7 +130,14 @@
               </button>
             </div>
 
-            <div v-if="user" class="mt-4">
+            <div v-if="user" class="mt-4 space-y-3">
+              <NuxtLink
+                to="/profile"
+                class="flex w-full items-center justify-center rounded-2xl bg-slate-100 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
+                @click="isAuthPanelOpen = false"
+              >
+                Account settings
+              </NuxtLink>
               <button
                 type="button"
                 class="w-full rounded-2xl bg-white px-4 py-3 text-sm font-bold text-slate-950"
@@ -139,7 +146,7 @@
               >
                 {{ isAuthSubmitting ? 'Signing out...' : 'Sign out' }}
               </button>
-              <p v-if="authError" class="mt-3 text-center text-sm font-medium text-red-300">{{ authError }}</p>
+              <p v-if="authError" class="text-center text-sm font-medium text-red-300">{{ authError }}</p>
             </div>
 
             <form v-else class="mt-4 space-y-3" @submit.prevent="handleAuthSubmit">
@@ -256,7 +263,9 @@
                   >
 
                   <div class="min-w-0 flex-1">
-                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">New Entry</p>
+                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                      {{ isEditingEntry ? 'Edit Entry' : 'New Entry' }}
+                    </p>
                     <div class="mt-1.5 flex items-center gap-2">
                       <h2 class="min-w-0 truncate text-xl font-bold text-slate-950 dark:text-white">{{ entryTitle }}</h2>
                       <button
@@ -313,13 +322,29 @@
 
                   <div class="border-b border-slate-200 px-3 py-2 dark:border-slate-800">
                     <p class="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                      Or pick from the list
+                      {{ hasCustomConditionSearch
+                        ? (filteredPickerConditionResults.length ? 'Matching conditions' : 'No matches')
+                        : 'Or pick from the list' }}
                     </p>
                   </div>
 
                   <div class="no-scrollbar max-h-52 space-y-0.5 overflow-y-auto p-2">
+                    <div
+                      v-if="showCustomConditionEmptyState"
+                      class="rounded-xl px-3 py-4 text-center"
+                    >
+                      <p class="text-sm font-bold text-slate-950 dark:text-white">
+                        No results
+                      </p>
+                      <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                        Tap <span class="font-bold text-slate-950 dark:text-white">Use</span> to add
+                        <span class="font-semibold text-slate-700 dark:text-slate-200">"{{ debouncedCustomConditionPreview.trim() }}"</span>
+                        as a custom condition.
+                      </p>
+                    </div>
+
                     <button
-                      v-for="result in conditionResults"
+                      v-for="result in filteredPickerConditionResults"
                       :key="result.title"
                       type="button"
                       class="flex w-full items-center gap-2.5 rounded-xl p-2 text-left transition"
@@ -652,12 +677,22 @@
 
               <div class="mt-auto shrink-0 pt-8 pb-6">
                 <button
+                  v-if="isEditingEntry && user"
+                  type="button"
+                  class="mb-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-100 px-5 py-3.5 text-sm font-bold text-slate-950 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
+                  @click="openShareLinkForEntry(editingEntryId!)"
+                >
+                  <UIcon name="i-lucide-link" class="size-4" />
+                  Create private link for this entry
+                </button>
+
+                <button
                   type="button"
                   class="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-4 text-base font-bold text-white shadow-lg transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
                   :disabled="isSavingEntry"
                   @click="handleEntryPrimaryAction"
                 >
-                  {{ isSavingEntry ? 'Saving...' : isLastEntryStep ? 'Finish' : 'Continue' }}
+                  {{ isSavingEntry ? 'Saving...' : isLastEntryStep ? (isEditingEntry ? 'Save changes' : 'Finish') : 'Continue' }}
                   <UIcon :name="isLastEntryStep ? 'i-lucide-check' : 'i-lucide-arrow-right'" class="size-5" />
                 </button>
                 <p v-if="entryError" class="mt-3 text-center text-sm font-medium text-red-300">
@@ -683,7 +718,7 @@
           <div class="relative flex min-h-0 flex-col">
             <div
               class="relative w-full shrink-0 overflow-hidden rounded-[1.75rem] transition-[height,max-height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
-              :class="historyExpanded ? 'h-[42dvh]' : 'h-[54dvh]'"
+              :class="historyExpanded ? 'h-[50dvh]' : 'h-[62dvh]'"
             >
               <Transition
                 :enter-active-class="slideEnterActiveClass"
@@ -696,7 +731,7 @@
                 <div
                   v-if="isSearchSlide"
                   key="search"
-                  class="absolute inset-0 flex h-full flex-col px-2 pt-4 pb-24"
+                  class="absolute inset-0 flex h-full flex-col px-2 pt-3 pb-20"
                 >
                   <p class="px-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
                     1 of {{ totalSlides }}
@@ -706,20 +741,38 @@
                     v-model="searchQuery"
                     type="search"
                     placeholder="Find a condition or + custom"
-                    class="mt-3 w-full border-0 border-b border-slate-300/80 bg-transparent px-1 py-3 text-lg font-semibold text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-500"
+                    class="mt-2 w-full border-0 border-b border-slate-300/80 bg-transparent px-1 py-2.5 text-lg font-semibold text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-500"
                   >
 
-                  <div class="relative mt-4 min-h-0 flex-1">
+                  <div class="relative mt-2 min-h-0 flex-1">
                     <div
                       ref="conditionScrollEl"
-                      class="no-scrollbar h-full space-y-3 overflow-y-auto px-1"
+                      class="no-scrollbar h-full space-y-1 overflow-y-auto px-1"
                       @scroll="handleConditionScroll"
                     >
+                      <div
+                        v-if="showConditionSearchEmptyState"
+                        class="rounded-2xl px-3 py-6 text-center"
+                      >
+                        <p class="text-lg font-bold text-slate-950 dark:text-white">
+                          No results
+                        </p>
+                        <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                          Press
+                          <span class="inline-grid size-7 translate-y-0.5 align-middle place-items-center rounded-full bg-slate-950 text-white dark:bg-white dark:text-slate-950">
+                            <UIcon name="i-lucide-plus" class="size-4" />
+                          </span>
+                          to add
+                          <span class="font-semibold text-slate-950 dark:text-white">"{{ debouncedSearchQuery.trim() }}"</span>
+                          as a custom condition.
+                        </p>
+                      </div>
+
                       <button
                         v-for="result in filteredConditionResults"
                         :key="result.title"
                         type="button"
-                        class="flex w-full items-start gap-4 rounded-2xl px-3 py-4 text-left transition hover:bg-slate-100 active:scale-[0.99] dark:hover:bg-slate-800/80"
+                        class="flex w-full items-start gap-3 rounded-2xl px-2 py-2.5 text-left transition hover:bg-slate-100 active:scale-[0.99] dark:hover:bg-slate-800/80"
                         @click="selectSearchCondition(result)"
                       >
                         <img
@@ -728,14 +781,14 @@
                           class="size-16 shrink-0 rounded-2xl object-cover"
                         >
 
-                        <span class="min-w-0 flex-1 py-0.5">
+                        <span class="min-w-0 flex-1">
                           <span class="block text-lg font-bold leading-snug text-slate-950 dark:text-white">
                             {{ result.title }}
                           </span>
-                          <span class="mt-1.5 block text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+                          <span class="mt-1 block text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
                             {{ result.category }}
                           </span>
-                          <span class="mt-2 block text-sm leading-6 text-slate-600 dark:text-slate-300">
+                          <span class="mt-1 block text-sm leading-5 text-slate-600 dark:text-slate-300">
                             {{ result.description }}
                           </span>
                         </span>
@@ -743,7 +796,7 @@
                     </div>
 
                     <div
-                      v-if="filteredConditionResults.length > 2"
+                      v-if="filteredConditionResults.length > 2 && !showConditionSearchEmptyState"
                       class="pointer-events-none absolute inset-x-0 bottom-0 flex h-10 items-end justify-center bg-linear-to-t from-white via-white/80 to-transparent pb-1 dark:from-slate-950 dark:via-slate-950/80"
                     >
                       <span class="text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
@@ -904,7 +957,20 @@
             @touchmove.passive="handleHistoryTouchMove"
           >
             <div v-if="activeHistoryTab === 'Entries'" class="divide-y divide-slate-200 dark:divide-slate-800">
-              <div v-if="isLoadingEntries" class="py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+              <div v-if="!user && !isAuthLoading" class="py-8 text-center">
+                <p class="font-bold text-slate-950 dark:text-white">Sign in to save entries</p>
+                <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                  Your symptom logs sync to your account once you sign in.
+                </p>
+                <button
+                  type="button"
+                  class="mt-4 rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white dark:bg-white dark:text-slate-950"
+                  @click="toggleAuthPanel"
+                >
+                  Sign in
+                </button>
+              </div>
+              <div v-else-if="isLoadingEntries" class="py-8 text-center text-sm text-slate-500 dark:text-slate-400">
                 Loading entries...
               </div>
               <div v-else-if="entriesError" class="py-8 text-center text-sm text-red-600 dark:text-red-300">
@@ -917,21 +983,35 @@
               <article
                 v-for="entry in historyEntries"
                 :key="entry.id"
-                class="py-3"
+                class="rounded-2xl py-3 transition hover:bg-slate-50 active:bg-slate-100 dark:hover:bg-slate-900/70 dark:active:bg-slate-900"
               >
                 <div class="flex items-center gap-3">
-                  <div class="grid size-14 shrink-0 place-items-center rounded-2xl bg-slate-100 text-center dark:bg-slate-800">
+                  <button
+                    type="button"
+                    class="grid size-14 shrink-0 place-items-center rounded-2xl bg-slate-100 text-center transition dark:bg-slate-800"
+                    :class="entry.statusColor"
+                    :aria-label="`Edit ${entry.title}`"
+                    @click="openEntryForEdit(entry.id)"
+                  >
                     <div>
                       <p class="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{{ entry.month }}</p>
                       <p class="text-lg font-bold leading-none text-slate-950 dark:text-white">{{ entry.day }}</p>
                     </div>
-                  </div>
+                  </button>
 
-                  <div class="min-w-0 flex-1">
+                  <button
+                    type="button"
+                    class="min-w-0 flex-1 text-left"
+                    :aria-label="`View and edit ${entry.title}`"
+                    @click="openEntryForEdit(entry.id)"
+                  >
                     <div class="flex flex-wrap items-center gap-2">
                       <UBadge color="neutral" variant="soft" size="sm">{{ entry.condition }}</UBadge>
                       <UBadge :color="entry.source === 'Family' ? 'info' : 'primary'" variant="soft" size="sm">
                         {{ entry.source }}
+                      </UBadge>
+                      <UBadge v-if="entry.wasEdited" color="warning" variant="soft" size="sm">
+                        Edited
                       </UBadge>
                     </div>
 
@@ -942,22 +1022,33 @@
                         {{ entry.time }}
                       </span>
                       <span class="text-slate-300 dark:text-slate-700">•</span>
+                      <span>Severity {{ entry.severity }}/10</span>
+                      <span class="text-slate-300 dark:text-slate-700">•</span>
                       <span>{{ entry.summary }}</span>
                     </div>
-                  </div>
+                    <p v-if="entry.editedLabel" class="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                      {{ entry.editedLabel }}
+                    </p>
+                  </button>
 
-                  <div
-                    class="grid size-12 shrink-0 place-items-center rounded-full"
-                    :class="entry.statusColor"
+                  <button
+                    v-if="entry.source === 'Veteran'"
+                    type="button"
+                    class="grid size-10 shrink-0 place-items-center rounded-full text-slate-400 transition hover:bg-sky-50 hover:text-sky-600 dark:hover:bg-sky-950/40 dark:hover:text-sky-300"
+                    :aria-label="`Create private link for ${entry.title}`"
+                    @click.stop="openShareLinkForEntry(entry.id)"
                   >
-                    <button
-                      type="button"
-                      :aria-label="`Delete ${entry.title}`"
-                      @click="removeEntry(entry.id)"
-                    >
-                      <UIcon :name="entry.statusIcon" class="size-7" />
-                    </button>
-                  </div>
+                    <UIcon name="i-lucide-link" class="size-4" />
+                  </button>
+
+                  <button
+                    type="button"
+                    class="grid size-10 shrink-0 place-items-center rounded-full text-slate-400 transition hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40 dark:hover:text-red-300"
+                    :aria-label="`Delete ${entry.title}`"
+                    @click.stop="requestDeleteEntry(entry.id)"
+                  >
+                    <UIcon name="i-lucide-trash-2" class="size-4" />
+                  </button>
                 </div>
               </article>
             </div>
@@ -1030,12 +1121,139 @@
       </div>
     </section>
   </main>
+
+  <Transition
+    enter-active-class="transition duration-200 ease-out"
+    enter-from-class="opacity-0"
+    enter-to-class="opacity-100"
+    leave-active-class="transition duration-150 ease-in"
+    leave-from-class="opacity-100"
+    leave-to-class="opacity-0"
+  >
+    <div
+      v-if="pendingDelete"
+      class="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/55 p-4 sm:items-center"
+      @click.self="cancelDeleteEntry"
+    >
+      <div class="w-full max-w-md rounded-[1.75rem] bg-white p-5 shadow-2xl dark:bg-slate-900">
+        <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+          Move to deleted
+        </p>
+        <h3 class="mt-2 text-xl font-bold text-slate-950 dark:text-white">
+          Delete this entry?
+        </h3>
+        <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+          <span class="font-semibold text-slate-950 dark:text-white">{{ pendingDelete.title }}</span>
+          will move to Deleted in your account settings. You can restore it later from there.
+        </p>
+
+        <div class="mt-5 grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            class="rounded-2xl bg-slate-100 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
+            @click="cancelDeleteEntry"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+            @click="confirmDeleteEntry"
+          >
+            Move to Deleted
+          </button>
+        </div>
+      </div>
+    </div>
+  </Transition>
+
+  <Transition
+    enter-active-class="transition duration-200 ease-out"
+    enter-from-class="opacity-0"
+    enter-to-class="opacity-100"
+    leave-active-class="transition duration-150 ease-in"
+    leave-from-class="opacity-100"
+    leave-to-class="opacity-0"
+  >
+    <div
+      v-if="isShareLinkOpen && shareLinkEntry"
+      class="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/55 p-4 sm:items-center"
+      @click.self="closeShareLinkModal"
+    >
+      <div class="w-full max-w-md rounded-[1.75rem] bg-white p-5 shadow-2xl dark:bg-slate-900">
+        <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+          Private supporter link
+        </p>
+        <h3 class="mt-2 text-xl font-bold text-slate-950 dark:text-white">
+          Share this entry
+        </h3>
+        <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+          Create a one-time private URL for someone you trust to report what they observed about
+          <span class="font-semibold text-slate-950 dark:text-white">{{ shareLinkEntry.summary || shareLinkEntry.condition_label }}</span>.
+        </p>
+
+        <div v-if="!shareLinkCreatedUrl" class="mt-5 space-y-4">
+          <label class="block">
+            <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Link label (optional)</span>
+            <input
+              v-model="shareLinkLabel"
+              type="text"
+              class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              placeholder="Example: Spouse, caregiver"
+            >
+          </label>
+
+          <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-950">
+            <p class="text-xs font-bold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Visible condition</p>
+            <p class="mt-1 font-semibold text-slate-950 dark:text-white">{{ shareLinkEntry.condition_label }}</p>
+          </div>
+
+          <button
+            type="button"
+            class="w-full rounded-2xl bg-slate-950 px-4 py-3 text-sm font-bold text-white dark:bg-white dark:text-slate-950"
+            :disabled="isCreatingShareLink"
+            @click="createShareLinkForEntry"
+          >
+            {{ isCreatingShareLink ? 'Creating...' : 'Create private link' }}
+          </button>
+        </div>
+
+        <div v-else class="mt-5 space-y-4">
+          <p class="break-all rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-950 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100">
+            {{ shareLinkCreatedUrl }}
+          </p>
+          <button
+            type="button"
+            class="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white"
+            @click="copyShareLink"
+          >
+            <UIcon :name="shareLinkCopied ? 'i-lucide-check' : 'i-lucide-copy'" class="size-4" />
+            {{ shareLinkCopied ? 'Copied to clipboard' : 'Copy link' }}
+          </button>
+        </div>
+
+        <p v-if="shareLinkError" class="mt-4 text-center text-sm font-medium text-red-600 dark:text-red-300">{{ shareLinkError }}</p>
+
+        <button
+          type="button"
+          class="mt-4 w-full rounded-2xl px-4 py-2 text-sm font-semibold text-slate-500 dark:text-slate-400"
+          @click="closeShareLinkModal"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </Transition>
 </template>
 
 <script setup lang="ts">
 import { useSupabaseAuth } from '../composables/useSupabaseAuth'
 import { useSymptomEntries } from '../composables/useSymptomEntries'
 import { useSymptomPdfExport } from '../composables/useSymptomPdfExport'
+import { useDeletedEntryArchive } from '../composables/useDeletedEntryArchive'
+import { useUserProfiles } from '../composables/useUserProfiles'
+import { mapEntryHistoryItem } from '../utils/entryDisplay'
+import { copyToClipboard } from '../utils/copyToClipboard'
 import {
   calendarDateToDateString,
   clampTime24ToMax,
@@ -1049,7 +1267,8 @@ import {
   getTodayCalendarDate,
   isFutureEntryDateTime,
   parseTime24ToParts,
-  splitEntryDateTimeLocal
+  splitEntryDateTimeLocal,
+  toLocalDateTimeInputValue
 } from '../utils/symptomDateTime'
 import { getEntryFieldPresets } from '../utils/entryFieldPresets'
 import { getSeverityGuidance, severityQuickPresets } from '../utils/severityGuidance'
@@ -1059,6 +1278,7 @@ import { useRouter } from 'vue-router'
 
 const {
   user,
+  isAuthLoading,
   authError,
   signIn,
   signUp,
@@ -1073,6 +1293,7 @@ const activeHistoryTab = ref('Entries')
 const isEntryOpen = ref(false)
 const isConditionPickerOpen = ref(false)
 const customConditionInput = ref('')
+const debouncedCustomConditionPreview = ref('')
 const isAuthPanelOpen = ref(false)
 const authMode = ref<'login' | 'signup'>('login')
 const authName = ref('')
@@ -1083,7 +1304,10 @@ const authMessage = ref('')
 const isAuthSubmitting = ref(false)
 const hasActiveDraft = ref(false)
 const entryStep = ref(0)
+const editingEntryId = ref<string | null>(null)
+const editingEntryConditionLabel = ref<string | null>(null)
 const severityValue = ref(5)
+const isEditingEntry = computed(() => Boolean(editingEntryId.value))
 
 const severityGuidance = computed(() => getSeverityGuidance(severityValue.value))
 const entryForm = ref<Record<string, string>>({})
@@ -1111,6 +1335,7 @@ const selectedSearchCondition = ref<null | {
 }>(null)
 
 const { downloadEntriesPdf } = useSymptomPdfExport()
+const { archiveDeletedEntry } = useDeletedEntryArchive()
 
 const initialEntryDateTime = splitEntryDateTimeLocal(getMaxEntryDateTimeLocal())
 const initialEntryTimeParts = parseTime24ToParts(initialEntryDateTime.time)
@@ -1213,8 +1438,18 @@ const entryPickerDays = computed(() => {
 const historyTabs = ['Entries', 'Calendar']
 const installDismissedKey = 'symptom-tracker-install-dismissed'
 
-// TEMP: local testing fallback while auth checks are commented out below.
-const localEntriesKey = 'symptom-tracker-local-entries'
+const pendingDelete = ref<null | {
+  id: string
+  mode: 'archive'
+  title: string
+}>(null)
+const isShareLinkOpen = ref(false)
+const shareLinkEntry = ref<any | null>(null)
+const shareLinkLabel = ref('')
+const shareLinkCreatedUrl = ref('')
+const shareLinkCopied = ref(false)
+const shareLinkError = ref('')
+const isCreatingShareLink = ref(false)
 
 const conditionImages = [
   '/image/ptsd-mental-health.png',
@@ -1436,29 +1671,7 @@ const conditionResults = [
 ]
 
 const historyEntries = computed(() => {
-  return savedEntries.value.map((entry) => {
-    const entryDate = entry.occurred_at ? new Date(entry.occurred_at) : new Date(entry.created_at)
-
-    return {
-      id: entry.id,
-      month: entryDate.toLocaleString('en-US', { month: 'short' }),
-      day: entryDate.toLocaleString('en-US', { day: '2-digit' }),
-      condition: entry.condition_label,
-      source: entry.source === 'family' ? 'Family' : 'Veteran',
-      title: entry.summary || entry.condition_label,
-      summary: entry.impact || 'No impact note added',
-      time: entryDate.toLocaleString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit'
-      }),
-      statusIcon: entry.severity >= 7 ? 'i-lucide-frown' : entry.severity >= 4 ? 'i-lucide-meh' : 'i-lucide-smile',
-      statusColor: entry.severity >= 7
-        ? 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300'
-        : entry.severity >= 4
-          ? 'bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-300'
-          : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
-    }
-  })
+  return savedEntries.value.map((entry) => mapEntryHistoryItem(entry))
 })
 
 const weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
@@ -1741,6 +1954,13 @@ const totalSlides = computed(() => conditions.length + 1)
 const isSearchSlide = computed(() => activeIndex.value === 0)
 const activeCondition = computed(() => conditions[Math.max(activeIndex.value - 1, 0)])
 const entryTitle = computed(() => {
+  if (isConditionPickerOpen.value) {
+    const previewName = debouncedCustomConditionPreview.value.trim()
+    if (previewName) {
+      return previewName
+    }
+  }
+
   if (selectedSearchCondition.value) {
     return selectedSearchCondition.value.title
   }
@@ -1748,6 +1968,10 @@ const entryTitle = computed(() => {
   const customName = entryForm.value.condition_name?.trim()
   if (customName) {
     return customName
+  }
+
+  if (editingEntryConditionLabel.value) {
+    return editingEntryConditionLabel.value
   }
 
   if (isSearchSlide.value) {
@@ -1773,7 +1997,23 @@ const activeEntryFields = computed(() => {
   }
 
   const customName = entryForm.value.condition_name?.trim()
-  if (customName || isSearchSlide.value) {
+  if (customName) {
+    return [
+      {
+        label: 'Condition name',
+        type: 'text',
+        placeholder: 'Example: tinnitus, sinusitis, skin flare-up...'
+      },
+      ...defaultEntryFields
+    ]
+  }
+
+  if (editingEntryConditionLabel.value) {
+    return entryFieldsByCondition[editingEntryConditionLabel.value as keyof typeof entryFieldsByCondition]
+      || defaultEntryFields
+  }
+
+  if (isSearchSlide.value) {
     return [
       {
         label: 'Condition name',
@@ -1904,6 +2144,15 @@ function filterConditionResults(query: string) {
 }
 
 const filteredConditionResults = computed(() => filterConditionResults(debouncedSearchQuery.value))
+const hasConditionSearch = computed(() => debouncedSearchQuery.value.trim().length > 0)
+const showConditionSearchEmptyState = computed(() =>
+  hasConditionSearch.value && filteredConditionResults.value.length === 0
+)
+const filteredPickerConditionResults = computed(() => filterConditionResults(debouncedCustomConditionPreview.value))
+const hasCustomConditionSearch = computed(() => debouncedCustomConditionPreview.value.trim().length > 0)
+const showCustomConditionEmptyState = computed(() =>
+  hasCustomConditionSearch.value && filteredPickerConditionResults.value.length === 0
+)
 const canPromptInstall = computed(() => Boolean(deferredInstallPrompt.value))
 const installInstructionText = computed(() => {
   if (installPlatform.value === 'ios') {
@@ -1920,6 +2169,7 @@ const installInstructionText = computed(() => {
 })
 
 let searchTimer: ReturnType<typeof setTimeout> | undefined
+let customConditionTimer: ReturnType<typeof setTimeout> | undefined
 
 watch(searchQuery, (value) => {
   if (searchTimer) {
@@ -1931,17 +2181,35 @@ watch(searchQuery, (value) => {
   }, 250)
 })
 
+watch(customConditionInput, (value) => {
+  if (customConditionTimer) {
+    clearTimeout(customConditionTimer)
+  }
+
+  customConditionTimer = setTimeout(() => {
+    debouncedCustomConditionPreview.value = value
+  }, 250)
+})
+
+watch(isConditionPickerOpen, (open) => {
+  if (!open) {
+    debouncedCustomConditionPreview.value = ''
+    if (customConditionTimer) {
+      clearTimeout(customConditionTimer)
+    }
+  }
+})
+
 onMounted(() => {
   setupInstallCard()
-  loadEntries()
 
   if (!entryCalendarDate.value) {
     syncEntryInputsFromForm()
   }
 
-  // if (user.value) {
-  //   loadEntries()
-  // }
+  if (user.value) {
+    loadEntries()
+  }
 })
 
 watch(user, (currentUser) => {
@@ -1951,8 +2219,8 @@ watch(user, (currentUser) => {
     return
   }
 
-  // savedEntries.value = []
-  loadEntries() // TEMP: load local entries while auth is disabled
+  savedEntries.value = []
+  closeEntryPanel(true)
 })
 
 function fieldKey(label: string) {
@@ -2215,36 +2483,9 @@ async function promptInstall() {
   deferredInstallPrompt.value = null
 }
 
-function readLocalEntries() {
-  if (!import.meta.client) {
-    return []
-  }
-
-  try {
-    const raw = window.localStorage.getItem(localEntriesKey)
-    return raw ? JSON.parse(raw) : []
-  } catch {
-    return []
-  }
-}
-
-function writeLocalEntries(entries: any[]) {
-  if (!import.meta.client) {
-    return
-  }
-
-  window.localStorage.setItem(localEntriesKey, JSON.stringify(entries))
-}
-
 async function loadEntries() {
-  // if (!user.value) {
-  //   savedEntries.value = []
-  //   return
-  // }
-
-  // TEMP: local testing fallback while auth is disabled
   if (!user.value) {
-    savedEntries.value = readLocalEntries()
+    savedEntries.value = []
     return
   }
 
@@ -2262,11 +2503,11 @@ async function loadEntries() {
 }
 
 async function saveEntry() {
-  // if (!user.value) {
-  //   entryError.value = 'Please sign in before saving symptom entries.'
-  //   isAuthPanelOpen.value = true
-  //   return
-  // }
+  if (!user.value) {
+    entryError.value = 'Please sign in before saving symptom entries.'
+    isAuthPanelOpen.value = true
+    return
+  }
 
   if (!validateEntryDateTimeStep()) {
     return
@@ -2276,38 +2517,12 @@ async function saveEntry() {
   entryError.value = ''
 
   try {
-    const { createEntry } = useSymptomEntries()
+    const { createEntry, updateEntry } = useSymptomEntries()
     const details = { ...entryForm.value }
     const occurredAt = entryForm.value.date_and_time
       ? new Date(entryForm.value.date_and_time).toISOString()
       : null
-
-    // TEMP: local testing fallback while auth is disabled
-    if (!user.value) {
-      const now = new Date().toISOString()
-      const localEntry = {
-        id: crypto.randomUUID(),
-        condition_key: conditionKey(entryTitle.value),
-        condition_label: entryTitle.value,
-        source: 'veteran',
-        entry_status: 'complete',
-        severity: severityValue.value,
-        occurred_at: occurredAt,
-        summary: entryForm.value.what_happened || entryForm.value.condition_name || entryTitle.value,
-        impact: entryForm.value.daily_impact || null,
-        details,
-        created_at: now,
-        updated_at: now
-      }
-      const entries = [localEntry, ...readLocalEntries()]
-      writeLocalEntries(entries)
-      savedEntries.value = entries
-      hasActiveDraft.value = false
-      closeEntryPanel(true)
-      return
-    }
-
-    await createEntry({
+    const payload = {
       condition_key: conditionKey(entryTitle.value),
       condition_label: entryTitle.value,
       severity: severityValue.value,
@@ -2315,7 +2530,13 @@ async function saveEntry() {
       summary: entryForm.value.what_happened || entryForm.value.condition_name || entryTitle.value,
       impact: entryForm.value.daily_impact || null,
       details
-    })
+    }
+
+    if (editingEntryId.value) {
+      await updateEntry(editingEntryId.value, payload)
+    } else {
+      await createEntry(payload)
+    }
 
     hasActiveDraft.value = false
     closeEntryPanel(true)
@@ -2327,29 +2548,120 @@ async function saveEntry() {
   }
 }
 
-async function removeEntry(id: string) {
-  // if (!user.value) {
-  //   entriesError.value = 'Please sign in before deleting symptom entries.'
-  //   isAuthPanelOpen.value = true
-  //   return
-  // }
+async function archiveEntry(id: string) {
+  if (!user.value) {
+    entriesError.value = 'Please sign in to manage entries.'
+    isAuthPanelOpen.value = true
+    return
+  }
 
   entriesError.value = ''
 
+  const entry = savedEntries.value.find((item) => item.id === id)
+  if (!entry) {
+    return
+  }
+
   try {
-    // TEMP: local testing fallback while auth is disabled
-    if (!user.value) {
-      const entries = readLocalEntries().filter((entry) => entry.id !== id)
-      writeLocalEntries(entries)
-      savedEntries.value = entries
-      return
-    }
+    archiveDeletedEntry(user.value.id, entry)
 
     const { deleteEntry } = useSymptomEntries()
     await deleteEntry(id)
     await loadEntries()
   } catch (error) {
     entriesError.value = getErrorMessage(error)
+  }
+}
+
+function requestDeleteEntry(id: string) {
+  const entry = historyEntries.value.find((item) => item.id === id)
+  if (!entry) {
+    return
+  }
+
+  pendingDelete.value = {
+    id,
+    mode: 'archive',
+    title: entry.title
+  }
+}
+
+function cancelDeleteEntry() {
+  pendingDelete.value = null
+}
+
+async function confirmDeleteEntry() {
+  if (!pendingDelete.value) {
+    return
+  }
+
+  const { id } = pendingDelete.value
+  pendingDelete.value = null
+  await archiveEntry(id)
+}
+
+function openShareLinkForEntry(entryId: string) {
+  if (!user.value) {
+    isAuthPanelOpen.value = true
+    return
+  }
+
+  const entry = savedEntries.value.find((item) => item.id === entryId)
+  if (!entry || entry.source === 'family') {
+    return
+  }
+
+  shareLinkEntry.value = entry
+  shareLinkLabel.value = ''
+  shareLinkCreatedUrl.value = ''
+  shareLinkCopied.value = false
+  shareLinkError.value = ''
+  isShareLinkOpen.value = true
+}
+
+function closeShareLinkModal() {
+  isShareLinkOpen.value = false
+  shareLinkEntry.value = null
+  shareLinkLabel.value = ''
+  shareLinkCreatedUrl.value = ''
+  shareLinkCopied.value = false
+  shareLinkError.value = ''
+}
+
+async function createShareLinkForEntry() {
+  if (!shareLinkEntry.value) {
+    return
+  }
+
+  isCreatingShareLink.value = true
+  shareLinkError.value = ''
+
+  try {
+    const { createSupporterProfile } = useUserProfiles()
+    const { token } = await createSupporterProfile({
+      link_label: shareLinkLabel.value,
+      visible_conditions: [shareLinkEntry.value.condition_label],
+      linked_entry_id: shareLinkEntry.value.id,
+      entry_context_summary: shareLinkEntry.value.summary || shareLinkEntry.value.condition_label
+    })
+    shareLinkCreatedUrl.value = `${window.location.origin}/report/${token}`
+    shareLinkCopied.value = false
+  } catch (error) {
+    shareLinkError.value = getErrorMessage(error)
+  } finally {
+    isCreatingShareLink.value = false
+  }
+}
+
+async function copyShareLink() {
+  if (!shareLinkCreatedUrl.value) {
+    return
+  }
+
+  const copied = await copyToClipboard(shareLinkCreatedUrl.value)
+  shareLinkCopied.value = copied
+  if (!copied) {
+    shareLinkError.value = 'Could not copy link. Copy it manually.'
   }
 }
 
@@ -2363,17 +2675,6 @@ function getErrorMessage(error: unknown) {
 
 function toggleAuthPanel() {
   isAuthPanelOpen.value = !isAuthPanelOpen.value
-}
-
-function handleProfileClick() {
-  // if (user.value) {
-  //   router.push('/profile')
-  //   return
-  // }
-  //
-  // toggleAuthPanel()
-
-  router.push('/profile') // TEMP: allow profile without auth for testing
 }
 
 async function handleAuthSubmit() {
@@ -2522,6 +2823,7 @@ function changeEntryCondition(condition: { title: string, category: string, desc
   }
 
   selectedSearchCondition.value = condition
+  editingEntryConditionLabel.value = null
 
   if (entryForm.value.condition_name) {
     delete entryForm.value.condition_name
@@ -2544,6 +2846,7 @@ function applyCustomEntryCondition() {
   }
 
   selectedSearchCondition.value = null
+  editingEntryConditionLabel.value = null
   entryForm.value.condition_name = customName
   entryStep.value = 0
   isConditionPickerOpen.value = false
@@ -2556,10 +2859,12 @@ function toggleConditionPicker() {
     customConditionInput.value = selectedSearchCondition.value
       ? ''
       : (entryForm.value.condition_name?.trim() || '')
+    debouncedCustomConditionPreview.value = customConditionInput.value
     return
   }
 
   customConditionInput.value = ''
+  debouncedCustomConditionPreview.value = ''
 }
 
 function selectSearchCondition(condition: { title: string, category: string, description: string, image: string }) {
@@ -2570,6 +2875,9 @@ function selectSearchCondition(condition: { title: string, category: string, des
 function startEntryFromCurrentSlide() {
   if (isSearchSlide.value) {
     selectedSearchCondition.value = null
+    const customName = debouncedSearchQuery.value.trim() || searchQuery.value.trim()
+    openEntryPanel(customName || undefined)
+    return
   }
 
   openEntryPanel()
@@ -2669,19 +2977,118 @@ function handleHistoryTouchMove(event: TouchEvent) {
   }
 }
 
-function openEntryPanel() {
-  // if (!user.value) {
-  //   isAuthPanelOpen.value = true
-  //   return
-  // }
+function resolveEntryConditionLabel(label: string) {
+  const searchMatch = conditionResults.find((condition) => condition.title === label)
+  if (searchMatch) {
+    return {
+      searchCondition: searchMatch,
+      conditionLabel: null as string | null,
+      customName: null as string | null
+    }
+  }
+
+  if (label in entryFieldsByCondition) {
+    return {
+      searchCondition: null,
+      conditionLabel: label,
+      customName: null
+    }
+  }
+
+  return {
+    searchCondition: null,
+    conditionLabel: null,
+    customName: label
+  }
+}
+
+function populateEntryFormFromRecord(entry: Record<string, any>) {
+  const details = {
+    ...(entry.details || {})
+  } as Record<string, string>
+
+  if (entry.summary && !details.what_happened) {
+    details.what_happened = entry.summary
+  }
+
+  if (entry.impact && !details.daily_impact) {
+    details.daily_impact = entry.impact
+  }
+
+  if (!details.date_and_time && entry.occurred_at) {
+    details.date_and_time = toLocalDateTimeInputValue(new Date(entry.occurred_at))
+  }
+
+  entryForm.value = details
+  severityValue.value = entry.severity ?? 5
+  syncEntryInputsFromForm()
+}
+
+function handleProfileClick() {
+  if (user.value) {
+    router.push('/profile')
+    return
+  }
+
+  toggleAuthPanel()
+}
+
+function openEntryForEdit(entryId: string) {
+  if (!user.value) {
+    isAuthPanelOpen.value = true
+    return
+  }
+  const entry = savedEntries.value.find((item) => item.id === entryId)
+  if (!entry) {
+    return
+  }
+
+  const resolved = resolveEntryConditionLabel(entry.condition_label)
+  editingEntryId.value = entryId
+  editingEntryConditionLabel.value = resolved.conditionLabel
+  selectedSearchCondition.value = resolved.searchCondition
+  customConditionInput.value = ''
+  debouncedCustomConditionPreview.value = ''
+  isConditionPickerOpen.value = false
+  historyExpanded.value = false
+  transitionDirection.value = 'expand'
+  entryStep.value = 0
+  entryError.value = ''
+  hasActiveDraft.value = true
+  isEntryOpen.value = true
+
+  resetEntryForm()
+  populateEntryFormFromRecord(entry)
+
+  if (resolved.customName) {
+    entryForm.value.condition_name = resolved.customName
+  }
+}
+
+function openEntryPanel(prefillCustomCondition?: string) {
+  if (!user.value) {
+    isAuthPanelOpen.value = true
+    return
+  }
 
   historyExpanded.value = false
   transitionDirection.value = 'expand'
   entryStep.value = 0
   resetEntryForm()
+  editingEntryId.value = null
+  editingEntryConditionLabel.value = null
+  selectedSearchCondition.value = null
   hasActiveDraft.value = true
   isConditionPickerOpen.value = false
   customConditionInput.value = ''
+  debouncedCustomConditionPreview.value = ''
+
+  if (prefillCustomCondition) {
+    entryForm.value.condition_name = prefillCustomCondition
+    customConditionInput.value = prefillCustomCondition
+    debouncedCustomConditionPreview.value = prefillCustomCondition
+  }
+
   isEntryOpen.value = true
 }
 
@@ -2694,8 +3101,12 @@ function closeEntryPanel(clearDraft = false) {
     hasActiveDraft.value = false
   }
 
+  editingEntryId.value = null
+  editingEntryConditionLabel.value = null
+  selectedSearchCondition.value = null
   isConditionPickerOpen.value = false
   customConditionInput.value = ''
+  debouncedCustomConditionPreview.value = ''
   isEntryOpen.value = false
 }
 
