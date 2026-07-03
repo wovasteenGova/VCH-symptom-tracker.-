@@ -1,5 +1,8 @@
 <template>
-  <main class="app-shell overflow-hidden bg-slate-50 text-slate-950 transition-colors dark:bg-slate-950 dark:text-white">
+  <main
+    class="app-shell relative overflow-hidden bg-slate-50 text-slate-950 transition-colors dark:bg-slate-950 dark:text-white"
+    :class="{ 'app-shell-embed': isEmbeddedPreview }"
+  >
     <section class="mx-auto flex h-full w-full max-w-md flex-col overflow-hidden pt-4 pb-0 sm:max-w-lg">
       <header class="flex shrink-0 flex-col gap-4 px-4">
         <div class="flex items-center justify-between gap-3">
@@ -188,7 +191,16 @@
             </div>
 
             <div v-if="user" class="mt-4 space-y-3">
+              <button
+                v-if="isEmbeddedPreview"
+                type="button"
+                class="flex w-full items-center justify-center rounded-2xl bg-slate-100 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
+                @click="openEmbedProfile(); isAuthPanelOpen = false"
+              >
+                Account settings
+              </button>
               <NuxtLink
+                v-else
                 to="/profile"
                 class="flex w-full items-center justify-center rounded-2xl bg-slate-100 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
                 @click="isAuthPanelOpen = false"
@@ -886,7 +898,7 @@
                             </button>
                           </div>
 
-                          <div class="mt-8 px-2 pb-1">
+                          <div class="mt-4 px-2 pb-1">
                             <div class="flex justify-center gap-2">
                               <button
                                 v-for="slideIndex in homeCarouselSlideCount"
@@ -901,7 +913,7 @@
                               />
                             </div>
 
-                            <div v-if="homeVisitTip" class="mt-2">
+                            <div v-if="homeVisitTip" class="mt-5">
                               <Transition name="home-tip" mode="out-in">
                                 <div :key="`${homeVisitTip.title}-${homeVisitTip.text}`">
                                   <p class="text-xs font-bold uppercase tracking-[0.14em] text-sky-700 dark:text-sky-300">
@@ -1314,6 +1326,13 @@
         </Transition>
       </div>
     </section>
+
+    <div
+      v-if="isEmbeddedPreview && isEmbedProfileOpen"
+      class="absolute inset-0 z-[100] flex min-h-0 flex-col overflow-hidden bg-slate-950"
+    >
+      <ProfilePage />
+    </div>
   </main>
 
   <Transition
@@ -1630,9 +1649,10 @@ import { conditionCatalog, pickRandomHomeVisitTip, resolveCatalogConditionByStor
 import { conditionImageAssets } from '../../utils/conditionImages'
 import { getSeverityGuidance, severityQuickPresets } from '../../utils/severityGuidance'
 import { CalendarDate } from '@internationalized/date'
-import { computed, nextTick, onBeforeMount, onMounted, ref, shallowRef, watch } from 'vue'
+import { computed, nextTick, onBeforeMount, onMounted, provide, ref, shallowRef, watch } from 'vue'
 import { useKeyboardAwareScroll } from '../../composables/useKeyboardAwareScroll'
-import { useTrackerLayout } from '../../composables/useTrackerLayout'
+import { useTrackerLayout, TRACKER_CLOSE_EMBED_PROFILE_KEY } from '../../composables/useTrackerLayout'
+import ProfilePage from '../profile.vue'
 
 const {
   user,
@@ -1721,7 +1741,18 @@ const historyExpanded = ref(false)
 const historyScrollEl = ref<HTMLElement | null>(null)
 const homeVisitTip = ref<{ title: string, text: string } | null>(null)
 const homeSortUsesEntryDates = ref(false)
-const { isDesktopLayout, isMobileLayout } = useTrackerLayout()
+const { isDesktopLayout, isMobileLayout, isEmbeddedPreview } = useTrackerLayout()
+const isEmbedProfileOpen = ref(false)
+
+function closeEmbedProfile() {
+  isEmbedProfileOpen.value = false
+}
+
+function openEmbedProfile() {
+  isEmbedProfileOpen.value = true
+}
+
+provide(TRACKER_CLOSE_EMBED_PROFILE_KEY, closeEmbedProfile)
 const isConditionScrolling = ref(false)
 const isSubmissionDropdownOpen = ref(false)
 const lastSeenSubmissionAt = ref('')
@@ -4009,6 +4040,11 @@ function populateEntryFormFromRecord(entry: Record<string, any>) {
 
 function handleProfileClick() {
   if (user.value) {
+    if (isEmbeddedPreview) {
+      openEmbedProfile()
+      return
+    }
+
     router.push('/profile')
     return
   }

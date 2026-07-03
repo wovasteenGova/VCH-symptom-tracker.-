@@ -1,13 +1,29 @@
 <template>
-  <main class="flex min-h-dvh flex-col bg-slate-950 text-white">
-    <section class="mx-auto flex w-full max-w-md flex-1 flex-col px-4 pt-4 sm:max-w-lg">
+  <main
+    class="flex flex-col bg-slate-950 text-white"
+    :class="closeEmbedProfile ? 'h-full min-h-0' : 'min-h-dvh'"
+  >
+    <section
+      class="mx-auto flex w-full max-w-md flex-1 flex-col px-4 pt-4 sm:max-w-lg"
+      :class="closeEmbedProfile ? 'min-h-0 overflow-y-auto no-scrollbar' : ''"
+    >
       <header class="sticky top-0 z-40 -mx-4 flex shrink-0 items-center justify-between gap-3 border-b border-slate-800 bg-slate-950/95 px-4 pb-4 pt-4 backdrop-blur-md">
         <div>
           <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Profile</p>
           <h1 class="mt-1 text-2xl font-bold tracking-tight text-white">Account Settings</h1>
         </div>
 
+        <button
+          v-if="closeEmbedProfile"
+          type="button"
+          class="grid size-10 place-items-center rounded-full bg-slate-900 text-white shadow-sm ring-1 ring-slate-800 transition hover:bg-slate-800"
+          aria-label="Back to tracker"
+          @click="closeEmbedProfile()"
+        >
+          <UIcon name="i-lucide-arrow-left" class="size-5" />
+        </button>
         <NuxtLink
+          v-else
           to="/app"
           class="grid size-10 place-items-center rounded-full bg-slate-900 text-white shadow-sm ring-1 ring-slate-800 transition hover:bg-slate-800"
           aria-label="Back to tracker"
@@ -719,13 +735,14 @@ import {
   buildSupportEmailHref
 } from '../utils/subscription'
 import { WEEKLY_LOG_DAY_OPTIONS, type LoggingCadence } from '../utils/loggingCadence'
-import { useTrackerLayout, type TrackerLayoutMode } from '../composables/useTrackerLayout'
+import { useTrackerLayout, TRACKER_CLOSE_EMBED_PROFILE_KEY, type TrackerLayoutMode } from '../composables/useTrackerLayout'
 import { mapEntryHistoryItem } from '../utils/entryDisplay'
 import { copyToClipboard } from '../utils/copyToClipboard'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, inject, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
+const closeEmbedProfile = inject<(() => void) | null>(TRACKER_CLOSE_EMBED_PROFILE_KEY, null)
 
 const {
   user,

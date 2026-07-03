@@ -1,68 +1,60 @@
 <template>
   <main class="flex min-h-screen flex-col bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-white">
     <div class="flex flex-1 items-center">
-      <div class="mx-auto w-full max-w-4xl px-6 py-12 lg:py-20">
-        <div class="flex flex-col gap-8">
-          <div class="flex items-center gap-4">
-            <div class="size-20 shrink-0 overflow-hidden rounded-[1.25rem] shadow-lg ring-1 ring-slate-200 dark:ring-slate-700 sm:size-24 sm:rounded-[1.5rem]">
-              <img
-                :src="reportBranding.logoPath"
-                alt="Veterans Central Hub"
-                class="size-full object-cover object-center"
+      <div class="mx-auto grid w-full max-w-7xl items-start gap-10 px-6 py-12 lg:grid-cols-[1fr_minmax(20rem,28rem)] lg:gap-14 lg:py-16 xl:gap-20">
+        <div class="flex flex-col justify-center gap-8 lg:pr-2">
+          <div class="space-y-6">
+            <div class="flex items-center gap-3">
+              <div class="size-14 shrink-0 overflow-hidden rounded-2xl ring-1 ring-slate-200 dark:ring-slate-700">
+                <img
+                  :src="reportBranding.logoPath"
+                  alt="Veterans Central Hub"
+                  class="size-full object-cover object-center"
+                >
+              </div>
+              <div>
+                <p class="text-3xl font-bold tracking-[0.14em] lg:text-4xl">
+                  VCH
+                </p>
+                <p class="mt-1 text-base text-slate-600 dark:text-slate-300 lg:text-lg">
+                  VCH Symptom Tracker is a VCH tool.
+                </p>
+              </div>
+            </div>
+
+            <div class="space-y-4">
+              <UBadge color="primary" variant="soft" size="lg">
+                Live · Free to start
+              </UBadge>
+              <h1 class="text-3xl font-bold tracking-tight text-balance sm:text-4xl lg:text-[2.75rem] lg:leading-tight">
+                Log symptoms on your phone. Build claim evidence over time.
+              </h1>
+              <p class="max-w-xl text-base leading-relaxed text-slate-600 dark:text-slate-300 lg:text-lg">
+                A mobile-first tracker for veterans — built separately from the main VCH site so your health
+                logs stay focused, private, and easy to use day to day.
+              </p>
+            </div>
+
+            <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <UButton
+                to="/app"
+                color="primary"
+                size="xl"
+                trailing-icon="i-lucide-arrow-right"
               >
+                Open Symptom Tracker
+              </UButton>
+              <UButton
+                :href="VCH_HUB_URL"
+                external
+                target="_blank"
+                color="neutral"
+                variant="outline"
+                size="xl"
+              >
+                Visit Veterans Central Hub
+              </UButton>
             </div>
-            <div>
-              <p class="text-3xl font-bold tracking-[0.14em] sm:text-4xl">
-                VCH
-              </p>
-              <p class="mt-1 text-base text-slate-600 dark:text-slate-300 sm:text-lg">
-                VCH Symptom Tracker is a VCH tool.
-              </p>
-            </div>
-          </div>
-
-          <div class="space-y-4">
-            <UBadge color="primary" variant="soft" size="lg">
-              Live · Free to start
-            </UBadge>
-            <h1 class="text-3xl font-bold tracking-tight text-balance sm:text-4xl lg:text-5xl lg:leading-tight">
-              Log symptoms on your phone. Build claim evidence over time.
-            </h1>
-            <p class="max-w-2xl text-base leading-relaxed text-slate-600 dark:text-slate-300 lg:text-lg">
-              A mobile-first tracker for veterans — built separately from the main VCH site so your health
-              logs stay focused, private, and easy to use day to day.
-            </p>
-          </div>
-
-          <div class="overflow-hidden rounded-[2rem] border border-slate-200 bg-slate-950 shadow-2xl dark:border-slate-800">
-            <img
-              :src="trackerPreviewImage"
-              alt="VCH Symptom Tracker home screen"
-              class="w-full object-cover object-top"
-              loading="eager"
-              decoding="async"
-            >
-          </div>
-
-          <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <UButton
-              to="/app"
-              color="primary"
-              size="xl"
-              trailing-icon="i-lucide-arrow-right"
-            >
-              Open Symptom Tracker
-            </UButton>
-            <UButton
-              :href="VCH_HUB_URL"
-              external
-              target="_blank"
-              color="neutral"
-              variant="outline"
-              size="xl"
-            >
-              Visit Veterans Central Hub
-            </UButton>
           </div>
 
           <TrackerOpenQrCode
@@ -70,15 +62,34 @@
             class="max-w-md"
           />
         </div>
+
+        <div class="mx-auto w-full max-w-[28rem] lg:mx-0 lg:justify-self-end">
+          <div class="h-[min(820px,calc(100vh-10rem))] min-h-[620px] overflow-hidden rounded-[2.5rem] bg-slate-950 shadow-2xl ring-1 ring-slate-200 dark:ring-slate-800">
+            <ClientOnly>
+              <TrackerLivePreview />
+              <template #fallback>
+                <div class="grid h-full place-items-center text-slate-400">
+                  <UIcon name="i-lucide-loader-circle" class="size-8 animate-spin" />
+                </div>
+              </template>
+            </ClientOnly>
+          </div>
+          <p class="mt-4 text-center text-xs text-slate-500 dark:text-slate-400 lg:text-right">
+            Live preview — use the tracker here, or
+            <NuxtLink to="/app" class="font-semibold text-sky-600 underline underline-offset-2 dark:text-sky-400">
+              open full screen
+            </NuxtLink>
+          </p>
+        </div>
       </div>
     </div>
 
     <section class="border-t border-slate-200 bg-white/90 backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/90">
-      <div class="mx-auto max-w-4xl px-6 py-10 lg:py-14">
+      <div class="mx-auto max-w-7xl px-6 py-10 lg:py-14">
         <h2 class="text-2xl font-bold tracking-tight sm:text-3xl">
           What the Symptom Tracker does
         </h2>
-        <p class="mt-4 text-base leading-relaxed text-slate-600 dark:text-slate-300 lg:text-lg">
+        <p class="mt-4 max-w-4xl text-base leading-relaxed text-slate-600 dark:text-slate-300 lg:text-lg">
           Track flare-ups, severity, daily impact, and mental health symptoms in one place. Add family
           observations when you need them, review your history on a calendar, and export signed PDF reports
           for C&amp;P exams, personal statements, SHA, and your own records. Strong evidence starts before
@@ -142,7 +153,6 @@ import { VCH_HUB_URL } from '../utils/subscription'
 const config = useRuntimeConfig()
 
 const trackerAppUrl = computed(() => resolveTrackerAppUrl(config.public.siteUrl))
-const trackerPreviewImage = 'https://ik.imagekit.io/i4urmqzd19/VCH_tracker/tracker_home.png?updatedAt=1783102472893'
 
 const isDesktopLayout = useMediaQuery('(min-width: 768px)')
 

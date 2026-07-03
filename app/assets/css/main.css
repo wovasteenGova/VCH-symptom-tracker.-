@@ -62,6 +62,23 @@ button:disabled,
   display: none;
 }
 
+.app-shell-embed {
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+}
+
+html:has(.app-shell-embed),
+html:has(.app-shell-embed) body {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+html:has(.app-shell-embed) {
+  --app-height: 100%;
+}
+
 .header-color-toggle {
   flex-shrink: 0;
 }
