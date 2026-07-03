@@ -2,11 +2,14 @@
   <UApp>
     <NuxtRouteAnnouncer />
     <NuxtPage />
+    <SubmissionToast />
   </UApp>
 </template>
 
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue'
+
+const { showSubmissionToast } = useSubmissionToast()
 
 function updateAppHeight() {
   if (typeof window === 'undefined') {
@@ -19,6 +22,10 @@ function updateAppHeight() {
 
 onMounted(() => {
   updateAppHeight()
+  if (import.meta.client && window.sessionStorage.getItem('symptom-tracker-auth-success')) {
+    window.sessionStorage.removeItem('symptom-tracker-auth-success')
+    showSubmissionToast('Signed in.')
+  }
   window.addEventListener('resize', updateAppHeight)
   window.addEventListener('orientationchange', updateAppHeight)
   window.visualViewport?.addEventListener('resize', updateAppHeight)

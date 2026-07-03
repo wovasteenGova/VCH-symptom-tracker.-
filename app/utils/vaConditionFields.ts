@@ -61,7 +61,7 @@ const sleepLimitField: EntryFieldDef = {
 const episodeTypeField: EntryFieldDef = {
   label: 'Episode type',
   type: 'text',
-  placeholder: 'Panic, nightmare, flashback, isolation, irritability...'
+  placeholder: 'Panic, nightmare, flashback, suicidal thoughts, isolation...'
 }
 
 const conditionEpisodeConfig: Record<string, ConditionEpisodeConfig> = {
@@ -138,7 +138,7 @@ export const entryFieldsByCondition: Record<string, EntryFieldDef[]> = {
     {
       label: 'Symptoms noticed',
       type: 'text',
-      placeholder: 'Nightmares, flashbacks, hypervigilance, avoidance, panic, irritability...',
+      placeholder: 'Nightmares, flashbacks, hypervigilance, avoidance, panic, irritability, suicidal thoughts...',
       helper: 'Tracks common mental health symptoms raters review over time.'
     },
     {

@@ -9,8 +9,9 @@ import {
   drawVerticalBarChart
 } from '../utils/symptomReportCharts'
 import { drawEntryLogSection } from '../utils/symptomReportEntryLog'
-import { buildBackfillReportNote } from '../utils/reportBackfillNote'
 import { getLogoFormat, loadReportLogoDataUrl, reportBranding } from '../utils/reportBranding'
+import type { LoggingCadence } from '../utils/loggingCadence'
+import { PDF_EXPORT_CERTIFICATION_TEXT } from '../utils/pdfExportCertification'
 
 type SymptomEntryRecord = {
   id: string
@@ -33,6 +34,8 @@ type VeteranSignatureInfo = {
 type PdfExportOptions = VeteranSignatureInfo & {
   includeCharts?: boolean
   conditionLabel?: string | null
+  loggingCadence?: LoggingCadence
+  weeklyLogDay?: number
 }
 
 function resolveTypedSignatureName(signatureInfo: VeteranSignatureInfo) {
@@ -59,33 +62,6 @@ function drawPageFooter(doc: jsPDF, pageNumber: number, totalPages: number, marg
   doc.text(`Page ${pageNumber} of ${totalPages}`, pageWidth - margin, pageHeight - 24, { align: 'right' })
 }
 
-function drawReportNoticeSection(
-  doc: jsPDF,
-  y: number,
-  margin: number,
-  contentWidth: number,
-  noticeText: string
-) {
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(10)
-  doc.setTextColor(180, 83, 9)
-  doc.text('Report note for raters', margin, y)
-  y += 14
-
-  doc.setDrawColor(251, 191, 36)
-  doc.setFillColor(255, 251, 235)
-  const wrapped = doc.splitTextToSize(noticeText, contentWidth - 28) as string[]
-  const boxHeight = wrapped.length * 12 + 24
-  doc.roundedRect(margin, y, contentWidth, boxHeight, 10, 10, 'FD')
-
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(9)
-  doc.setTextColor(120, 53, 15)
-  doc.text(wrapped, margin + 14, y + 18)
-
-  return y + boxHeight + 16
-}
-
 function drawVeteranElectronicSignatureSection(
   doc: jsPDF,
   y: number,
@@ -100,7 +76,11 @@ function drawVeteranElectronicSignatureSection(
   }
 
   const contactEmail = signatureInfo.veteranEmail?.trim() || null
-  const signatureBlockHeight = contactEmail ? 176 : 158
+  const certificationText = doc.splitTextToSize(
+    PDF_EXPORT_CERTIFICATION_TEXT,
+    contentWidth - 36
+  ) as string[]
+  const signatureBlockHeight = certificationText.length * 13 + (contactEmail ? 118 : 104)
   if (y + signatureBlockHeight > pageHeight - 56) {
     doc.addPage()
     y = margin
@@ -127,10 +107,6 @@ function drawVeteranElectronicSignatureSection(
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(10)
   doc.setTextColor(51, 65, 85)
-  const certificationText = doc.splitTextToSize(
-    'I certify that the information in this symptom report was entered or reviewed by me and is true and correct to the best of my knowledge and belief. I understand this report may be used to support VA disability, health care, or benefits-related documentation.',
-    contentWidth - 36
-  ) as string[]
   doc.text(certificationText, innerX, textY)
   textY += certificationText.length * 13 + 16
 
@@ -159,7 +135,14 @@ export function useSymptomPdfExport() {
     entries: SymptomEntryRecord[],
     options: PdfExportOptions = {}
   ) {
-    const { includeCharts = true, veteranName = null, veteranEmail = null, conditionLabel = null } = options
+    const {
+      includeCharts = true,
+      veteranName = null,
+      veteranEmail = null,
+      conditionLabel = null,
+      loggingCadence = 'weekly',
+      weeklyLogDay = 0
+    } = options
     const signatureInfo = { veteranName, veteranEmail }
 
     if (!entries.length) {
@@ -237,12 +220,6 @@ export function useSymptomPdfExport() {
       { label: 'Peak severity', value: String(metrics.peakSeverity) },
       { label: 'Conditions', value: String(metrics.conditionCount) }
     ]) + 18
-
-    const backfillReportNote = buildBackfillReportNote(entries)
-
-    if (backfillReportNote) {
-      y = drawReportNoticeSection(doc, y, margin, contentWidth, backfillReportNote)
-    }
 
     if (includeCharts) {
       drawSectionTitle(doc, 'Severity trend', margin, y)
@@ -329,7 +306,11 @@ export function useSymptomPdfExport() {
       y,
       contentWidth,
       margin,
-      pageHeight
+      pageHeight,
+      {
+        loggingCadence,
+        weeklyLogDay
+      }
     )
 
     drawVeteranElectronicSignatureSection(

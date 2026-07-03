@@ -13,7 +13,19 @@ export const EFFECTIVE_DATE_TIP =
   'If you\'re nearing an important filing deadline or effective date, consider filing your claim first. Additional evidence and symptom logs can be submitted later.'
 
 export const VA_MENTAL_HEALTH_COMBINED_TIP =
-  'The VA evaluates mental health as one combined rating. Log any mental health symptoms you have — even if you do not think they belong to your diagnosis. Anxiety, depression, panic, nightmares, and sleep issues all count.'
+  'The VA evaluates mental health as one combined rating. Log any mental health symptoms you have, even if you do not think they belong to your diagnosis. Anxiety, depression, panic, nightmares, and sleep issues all count.'
+
+export const VA_MENTAL_HEALTH_SEVERITY_TIP =
+  'Severity is about impact, not toughness. Log what happened under episode type or symptoms noticed. Your 0-10 score should reflect how the day actually went: work, sleep, relationships, and safety. You are not picking a diagnosis. You are building an honest timeline.'
+
+export const VA_MENTAL_HEALTH_WORST_DAY_TIP =
+  'Worst days often look like this: could not leave the house, panic most of the day, no sleep, or thoughts of not wanting to be here. If it happened, log it. Many veterans minimize symptoms that raters still treat as significant.'
+
+export const VA_MENTAL_HEALTH_CRISIS_TIP =
+  'In crisis right now? Call 988 and press 1, text 838255, or visit veteranscrisisline.net. This tracker is for your records, not an emergency line. Passive or brief suicidal thoughts are still worth logging when you are safe.'
+
+export const VA_CRISIS_LINE_SHORT =
+  'In crisis? Call 988 and press 1, text 838255, or visit veteranscrisisline.net.'
 
 const mentalHealthFocus = [
   'How often symptoms happen and how severe they are',
@@ -23,11 +35,11 @@ const mentalHealthFocus = [
 
 const mentalHealthTip = (title: string) => {
   if (title === 'PTSD') {
-    return 'Don\'t feel bad about asking loved ones to help document what they see. Family members often notice changes we overlook ourselves, and most want to help you heal—not see you struggle alone.'
+    return 'Don\'t feel bad about asking loved ones to help document what they see. Family members often notice changes we overlook ourselves, and most want to help you heal, not see you struggle alone.'
   }
 
   if (title === 'Panic attacks') {
-    return 'Log episodes as soon as you can while the physical symptoms are fresh—racing heart, shortness of breath, fear, and how long it took to recover.'
+    return 'Log episodes as soon as you can while the physical symptoms are fresh: racing heart, shortness of breath, fear, and how long it took to recover.'
   }
 
   if (title === 'Mental Health') {
@@ -122,7 +134,7 @@ export const conditionCatalogDefinitions: ConditionCatalogEntry[] = [
   {
     title: 'Mental Health',
     category: 'Mental Health',
-    description: 'All mental health symptoms — anxiety, depression, panic, nightmares, and daily impact in one log.',
+    description: 'All mental health symptoms: anxiety, depression, panic, nightmares, and daily impact in one log.',
     vaFocus: mentalHealthFocus,
     tip: mentalHealthTip('Mental Health')
   },
@@ -396,6 +408,21 @@ export function pickRandomHomeVisitTip(conditions: ConditionCatalogItem[]): { ti
   pool.push({
     title: 'Mental health tip',
     text: VA_MENTAL_HEALTH_COMBINED_TIP
+  })
+
+  pool.push({
+    title: 'Severity tip',
+    text: VA_MENTAL_HEALTH_SEVERITY_TIP
+  })
+
+  pool.push({
+    title: 'Worst day tip',
+    text: VA_MENTAL_HEALTH_WORST_DAY_TIP
+  })
+
+  pool.push({
+    title: 'Crisis support',
+    text: VA_MENTAL_HEALTH_CRISIS_TIP
   })
 
   if (!pool.length) {

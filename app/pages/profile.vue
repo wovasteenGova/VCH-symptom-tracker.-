@@ -500,7 +500,6 @@
         </div>
 
         <StickyActionBar tone="dark">
-          <p v-if="pageMessage" class="mb-3 text-center text-sm font-medium text-slate-300">{{ pageMessage }}</p>
           <p v-if="pageError" class="mb-3 text-center text-sm font-medium text-red-300">{{ pageError }}</p>
 
           <button
@@ -722,6 +721,7 @@ const {
   toggleSupporterProfile,
   deleteSupporterProfile
 } = useUserProfiles()
+const { showSubmissionToast } = useSubmissionToast()
 const { createEntry, listEntries, deleteAllEntries } = useSymptomEntries()
 const {
   listDeletedEntries,
@@ -784,7 +784,6 @@ const createdLink = ref('')
 const createdLinkCopied = ref(false)
 const linkedEntryId = ref<string | null>(null)
 const linkedEntryContext = ref<null | { summary: string, condition: string }>(null)
-const pageMessage = ref('')
 const pageError = ref('')
 const isSavingProfile = ref(false)
 const isCreatingSupporter = ref(false)
@@ -888,7 +887,6 @@ async function loadProfilePage() {
 
 async function saveProfile() {
   isSavingProfile.value = true
-  pageMessage.value = ''
   pageError.value = ''
 
   try {
@@ -896,7 +894,7 @@ async function saveProfile() {
       full_name: profileForm.value.full_name,
       display_name: profileForm.value.full_name
     })
-    pageMessage.value = 'Profile saved.'
+    showSubmissionToast('Profile saved.')
   } catch (error) {
     pageError.value = getErrorMessage(error)
   } finally {
@@ -909,9 +907,9 @@ async function saveLoggingCadence(cadence: LoggingCadence) {
 
   try {
     await updateLoggingCadence(cadence, weeklyLogDay.value)
-    pageMessage.value = cadence === 'weekly'
+    showSubmissionToast(cadence === 'weekly'
       ? 'Updated to weekly logging.'
-      : 'Updated to daily logging.'
+      : 'Updated to daily logging.')
   } catch (error) {
     pageError.value = getErrorMessage(error)
   }
@@ -922,14 +920,13 @@ async function saveWeeklyLogDay(day: number) {
 
   try {
     await updateLoggingCadence('weekly', day)
-    pageMessage.value = 'Preferred log day updated.'
+    showSubmissionToast('Preferred log day updated.')
   } catch (error) {
     pageError.value = getErrorMessage(error)
   }
 }
 
 async function createSupporter() {
-  pageMessage.value = ''
   pageError.value = ''
   createdLink.value = ''
 
@@ -961,6 +958,7 @@ async function createSupporter() {
     linkedEntryId.value = null
     linkedEntryContext.value = null
     await loadProfilePage()
+    showSubmissionToast('Supporter link created.')
   } catch (error) {
     pageError.value = getErrorMessage(error)
   } finally {
@@ -986,12 +984,14 @@ async function copyCreatedLink() {
 
   const copied = await copyToClipboard(createdLink.value)
   createdLinkCopied.value = copied
+  if (copied) {
+    showSubmissionToast('Private link copied.')
+  }
   pageError.value = copied ? '' : 'Could not copy link. Copy it manually.'
 }
 
 async function copyExistingSupporterLink(profile: any) {
   pageError.value = ''
-  pageMessage.value = ''
   copiedSupporterId.value = null
   isCopyingSupporterId.value = profile.id
 
@@ -1002,7 +1002,7 @@ async function copyExistingSupporterLink(profile: any) {
 
     if (copied) {
       copiedSupporterId.value = profile.id
-      pageMessage.value = 'Private link copied.'
+      showSubmissionToast('Private link copied.')
     } else {
       pageError.value = 'Could not copy link. Copy it manually.'
       createdLink.value = link
@@ -1037,7 +1037,7 @@ async function confirmDeleteSupporter() {
   try {
     await deleteSupporterProfile(pendingDeleteSupporter.value.id)
     pendingDeleteSupporter.value = null
-    pageMessage.value = 'Supporter link deleted.'
+    showSubmissionToast('Supporter link deleted.')
     await loadProfilePage()
   } catch (error) {
     pageError.value = getErrorMessage(error)
@@ -1052,7 +1052,6 @@ async function restoreDeletedEntry(entryId: string) {
   }
 
   pageError.value = ''
-  pageMessage.value = ''
   isRestoringEntryId.value = entryId
 
   const archivedEntry = takeDeletedEntry(user.value.id, entryId)
@@ -1083,7 +1082,7 @@ async function restoreDeletedEntry(entryId: string) {
     })
 
     loadDeletedEntries()
-    pageMessage.value = 'Entry restored.'
+    showSubmissionToast('Entry restored.')
   } catch (error) {
     pageError.value = getErrorMessage(error)
   } finally {
@@ -1115,7 +1114,7 @@ function confirmPurgeDeletedEntry() {
   removeDeletedEntry(user.value.id, pendingPurgeEntry.value.id)
   pendingPurgeEntry.value = null
   loadDeletedEntries()
-  pageMessage.value = 'Deleted entry removed permanently.'
+  showSubmissionToast('Deleted entry removed permanently.')
 }
 
 function openDeleteAllLogsModal() {
@@ -1143,7 +1142,6 @@ async function confirmDeleteAllLogs() {
 
   deleteAllLogsError.value = ''
   isDeletingAllLogs.value = true
-  pageMessage.value = ''
   pageError.value = ''
 
   try {
@@ -1159,7 +1157,7 @@ async function confirmDeleteAllLogs() {
     loadDeletedEntries()
     activeLogCount.value = 0
     closeDeleteAllLogsModal()
-    pageMessage.value = 'All logs deleted.'
+    showSubmissionToast('All logs deleted.')
   } catch (error) {
     deleteAllLogsError.value = getErrorMessage(error)
   } finally {
@@ -1191,13 +1189,16 @@ async function handleAuthSubmit() {
   try {
     if (authMode.value === 'login') {
       await signIn(authEmail.value, authPassword.value)
+      showSubmissionToast('Signed in.')
     } else {
       const data = await signUp(authEmail.value, authPassword.value, authName.value.trim())
 
       if (data.user) {
-        authMessage.value = data.session
-          ? 'Account created. You are signed in.'
-          : 'Account created. Check your email to confirm before signing in.'
+        if (data.session) {
+          showSubmissionToast('Account created. You are signed in.')
+        } else {
+          showSubmissionToast('Check your email to confirm your account.')
+        }
       } else {
         authMessage.value = 'Signup did not return a user. Check Supabase Auth settings and try again.'
       }
@@ -1214,6 +1215,9 @@ async function handleGoogleSignIn() {
   authMessage.value = ''
 
   try {
+    if (import.meta.client) {
+      window.sessionStorage.setItem('symptom-tracker-auth-success', 'google')
+    }
     await signInWithGoogle()
   } catch {
     // useSupabaseAuth exposes the message in authError.
@@ -1224,7 +1228,6 @@ async function handleGoogleSignIn() {
 
 async function handleSignOut() {
   isAuthSubmitting.value = true
-  pageMessage.value = ''
 
   try {
     await signOut()

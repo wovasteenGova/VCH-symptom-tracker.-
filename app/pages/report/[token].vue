@@ -14,38 +14,6 @@
         />
       </header>
 
-      <Transition
-        enter-active-class="transition duration-300 ease-out"
-        enter-from-class="-translate-y-3 opacity-0"
-        enter-to-class="translate-y-0 opacity-100"
-        leave-active-class="transition duration-200 ease-in"
-        leave-from-class="translate-y-0 opacity-100"
-        leave-to-class="-translate-y-3 opacity-0"
-      >
-        <div
-          v-if="pageMessage"
-          class="sticky top-[5.25rem] z-30 mt-4 flex items-start gap-3 rounded-3xl border border-emerald-200 bg-emerald-50 p-4 shadow-xl shadow-emerald-950/10 dark:border-emerald-900/70 dark:bg-emerald-950/40 dark:shadow-black/20"
-        >
-          <span class="grid size-10 shrink-0 place-items-center rounded-full bg-emerald-600 text-white">
-            <UIcon name="i-lucide-circle-check" class="size-5" />
-          </span>
-          <div class="min-w-0 flex-1">
-            <p class="font-bold text-emerald-950 dark:text-emerald-100">{{ pageMessage }}</p>
-            <p class="mt-1 text-[0.875rem] leading-6 text-emerald-900/80 dark:text-emerald-100/80">
-              Your observation was sent to the veteran for review.
-            </p>
-          </div>
-          <button
-            type="button"
-            class="grid size-8 shrink-0 place-items-center rounded-full text-emerald-800 transition hover:bg-emerald-100 dark:text-emerald-100 dark:hover:bg-emerald-900/60"
-            aria-label="Dismiss submission confirmation"
-            @click="pageMessage = ''"
-          >
-            <UIcon name="i-lucide-x" class="size-4" />
-          </button>
-        </div>
-      </Transition>
-
       <div
         v-if="!supporterProfile?.entry_context_summary"
         class="mt-5 rounded-4xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
@@ -490,6 +458,7 @@ const relationshipSuggestions = [
 
 const route = useRoute()
 const supabase = useSupabaseClient()
+const { showSubmissionToast } = useSubmissionToast()
 const token = String(route.params.token || '')
 
 const supporterProfile = ref<null | {
@@ -507,7 +476,6 @@ const signatureManuallyEdited = ref(false)
 const severityValue = ref(5)
 const pageError = ref('')
 const submitError = ref('')
-const pageMessage = ref('')
 const form = ref({
   first_name: '',
   last_name: '',
@@ -783,7 +751,6 @@ async function submitObservation() {
 
   isSubmitting.value = true
   submitError.value = ''
-  pageMessage.value = ''
 
   const { error } = await supabase.rpc('submit_supporter_observation', {
     link_token: token,
@@ -804,7 +771,10 @@ async function submitObservation() {
   if (error) {
     submitError.value = error.message
   } else {
-    pageMessage.value = 'Observation submitted. Thank you.'
+    showSubmissionToast({
+      message: 'Observation submitted. Thank you.',
+      highlight: '✓'
+    })
     form.value.impact = ''
     form.value.notes = ''
     severityValue.value = 5

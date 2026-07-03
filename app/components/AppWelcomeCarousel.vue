@@ -98,7 +98,7 @@ async function finishWelcome() {
 
       <div class="min-h-0 flex-1 overflow-y-auto no-scrollbar px-5 py-5">
         <div v-if="activeStep === 0">
-          <h2 class="text-2xl font-bold text-slate-950 dark:text-white">Install on your phone</h2>
+          <h2 class="text-2xl font-bold text-slate-950 dark:text-white">Use it like a mobile app</h2>
           <p class="mt-3 leading-6 text-teal-950/90 dark:text-teal-50/90">
             {{ installInstructionText }}
           </p>
@@ -206,7 +206,7 @@ async function finishWelcome() {
               If you are in crisis, call 988 and press 1, text 838255, or visit veteranscrisisline.net.
             </p>
             <p>
-              PDF exports can include a note when you enter past dates on the same day so raters understand you transferred older notes into the app.
+              Backdated entries in PDF exports include a short yellow note so raters know when a symptom date differs from the day you logged it.
             </p>
           </div>
 

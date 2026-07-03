@@ -33,7 +33,8 @@ export const episodeTypePresets: EntryFieldPreset[] = [
   { label: 'Nightmare', value: 'Nightmare' },
   { label: 'Flashback', value: 'Flashback' },
   { label: 'Isolation', value: 'Isolation' },
-  { label: 'Irritability', value: 'Irritability' }
+  { label: 'Irritability', value: 'Irritability' },
+  { label: 'Suicidal thoughts', value: 'Suicidal thoughts' }
 ]
 
 export const mentalHealthSymptomPresets: EntryFieldPreset[] = [
@@ -43,7 +44,8 @@ export const mentalHealthSymptomPresets: EntryFieldPreset[] = [
   { label: 'Avoidance', value: 'Avoidance' },
   { label: 'Panic', value: 'Panic' },
   { label: 'Irritability', value: 'Irritability' },
-  { label: 'Isolation', value: 'Isolation' }
+  { label: 'Isolation', value: 'Isolation' },
+  { label: 'Suicidal thoughts', value: 'Suicidal thoughts' }
 ]
 
 export const backJointSymptomPresets: EntryFieldPreset[] = [
@@ -137,7 +139,22 @@ export const chronicPainSymptomPresets: EntryFieldPreset[] = [
   { label: 'Post-exertion crash', value: 'Post-exertion crash' }
 ]
 
+export const dailyImpactPresets: EntryFieldPreset[] = [
+  { label: 'Missed work', value: 'Missed work' },
+  { label: 'Left early', value: 'Left work early' },
+  { label: 'Called out', value: 'Called out of work' },
+  { label: 'Poor sleep', value: 'Poor sleep' },
+  { label: 'Cancelled plans', value: 'Cancelled plans' },
+  { label: 'Could not drive', value: 'Could not drive' },
+  { label: 'Stayed home', value: 'Could not leave home' },
+  { label: 'Skipped chores', value: 'Skipped chores or self-care' },
+  { label: 'Avoided people', value: 'Avoided people or social plans' },
+  { label: 'Hard to focus', value: 'Hard to focus or finish tasks' }
+]
+
 const multiSelectPresetFields = new Set([
+  'Episode type',
+  'Daily impact',
   'Symptoms noticed',
   'Joint symptoms',
   'Pain and fatigue symptoms',
@@ -198,6 +215,8 @@ export function getEntryFieldPresets(fieldLabel: string): EntryFieldPreset[] {
       return sleepLimitPresets
     case 'Episode type':
       return episodeTypePresets
+    case 'Daily impact':
+      return dailyImpactPresets
     case 'Symptoms noticed':
       return mentalHealthSymptomPresets
     case 'Joint symptoms':

@@ -1,5 +1,9 @@
 import type { jsPDF } from 'jspdf'
 import { drawSectionTitle } from './symptomReportCharts'
+import {
+  getEntryBackdateNote,
+  type BackdateReportContext
+} from './reportBackfillNote'
 
 export type ReportEntryRecord = {
   condition_label: string
@@ -18,6 +22,9 @@ const slate700 = [51, 65, 85] as const
 const slate500 = [100, 116, 139] as const
 const slate200 = [226, 232, 240] as const
 const slate50 = [248, 250, 252] as const
+const amber200 = [251, 191, 36] as const
+const amber50 = [255, 251, 235] as const
+const amber900 = [120, 53, 15] as const
 
 const skippedDetailKeys = new Set([
   'date_and_time',
@@ -178,11 +185,127 @@ function measureBlockHeight(block: EntryBlock, lineHeight: number, labelHeight: 
   return labelHeight + block.lines.length * lineHeight + gapAfter
 }
 
-function measureEntryHeight(blocks: EntryBlock[]) {
+const backdateNotePaddingX = 12
+const backdateNotePaddingTop = 10
+const backdateNotePaddingBottom = 10
+const backdateNoteSectionGap = 6
+const backdateNoteLineHeight = 11
+const backdateNoteEnteredLineHeight = 12
+const backdateNoteEnteredFontSize = 9
+
+type BackdateNoteLayout = {
+  noteLines: string[]
+  enteredLines: string[]
+  boxHeight: number
+}
+
+function buildBackdateNoteLayout(
+  doc: jsPDF,
+  note: string,
+  enteredAt: string,
+  innerWidth: number
+): BackdateNoteLayout {
+  const textWidth = innerWidth - backdateNotePaddingX * 2
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(8.5)
+  const noteLines = doc.splitTextToSize(note, textWidth) as string[]
+
+  doc.setFontSize(backdateNoteEnteredFontSize)
+  const enteredLines = doc.splitTextToSize(
+    `Entered: ${formatReportEntryDate(enteredAt)}`,
+    textWidth
+  ) as string[]
+
+  const boxHeight = backdateNotePaddingTop
+    + noteLines.length * backdateNoteLineHeight
+    + backdateNoteSectionGap
+    + enteredLines.length * backdateNoteEnteredLineHeight
+    + backdateNotePaddingBottom
+
+  return {
+    noteLines,
+    enteredLines,
+    boxHeight
+  }
+}
+
+function measureBackdateNoteHeight(
+  doc: jsPDF,
+  note: string,
+  enteredAt: string,
+  innerWidth: number
+) {
+  return buildBackdateNoteLayout(doc, note, enteredAt, innerWidth).boxHeight + 8
+}
+
+function drawBackdateNote(
+  ctx: LayoutContext,
+  note: string,
+  enteredAt: string,
+  innerX: number,
+  innerWidth: number
+) {
+  const layout = buildBackdateNoteLayout(ctx.doc, note, enteredAt, innerWidth)
+  const textX = innerX + backdateNotePaddingX
+  const boxTop = ctx.y
+
+  setStroke(ctx.doc, amber200)
+  setFill(ctx.doc, amber50)
+  ctx.doc.roundedRect(innerX, boxTop, innerWidth, layout.boxHeight, 8, 8, 'FD')
+
+  let textY = boxTop + backdateNotePaddingTop + 7
+
+  ctx.doc.setFont('helvetica', 'normal')
+  ctx.doc.setFontSize(8.5)
+  setText(ctx.doc, amber900)
+  layout.noteLines.forEach((line) => {
+    ctx.doc.text(line, textX, textY)
+    textY += backdateNoteLineHeight
+  })
+
+  textY += backdateNoteSectionGap
+
+  ctx.doc.setFont('helvetica', 'normal')
+  ctx.doc.setFontSize(backdateNoteEnteredFontSize)
+  setText(ctx.doc, amber900)
+  layout.enteredLines.forEach((line) => {
+    ctx.doc.text(line, textX, textY)
+    textY += backdateNoteEnteredLineHeight
+  })
+
+  ctx.y = boxTop + layout.boxHeight + 8
+}
+
+function measureEntryHeight(
+  blocks: EntryBlock[],
+  options: {
+    backdateNote?: string | null
+    enteredAt?: string | null
+    doc?: jsPDF
+    innerWidth?: number
+    edited?: boolean
+  } = {}
+) {
   const padding = 18
   const primaryBlocks = blocks.filter((block) => block.kind === 'primary')
   const detailBlocks = blocks.filter((block) => block.kind === 'detail')
-  let height = padding + 34 + 14 + 12 + padding
+  let height = padding + 34 + 12 + padding
+
+  if (options.edited) {
+    height += 13
+  }
+
+  if (options.backdateNote && options.enteredAt && options.doc && options.innerWidth) {
+    height += measureBackdateNoteHeight(
+      options.doc,
+      options.backdateNote,
+      options.enteredAt,
+      options.innerWidth
+    )
+  } else {
+    height += 14
+  }
 
   primaryBlocks.forEach((block, index) => {
     height += measureBlockHeight(block, 15, 12, index === primaryBlocks.length - 1 && !detailBlocks.length ? 0 : 10)
@@ -247,14 +370,27 @@ function drawBlockLines(
   })
 }
 
-function drawEntryCard(ctx: LayoutContext, entry: ReportEntryRecord, index: number) {
+function drawEntryCard(
+  ctx: LayoutContext,
+  entry: ReportEntryRecord,
+  index: number,
+  backdateContext: BackdateReportContext = {}
+) {
   const padding = 18
   const innerX = ctx.x + padding
   const innerWidth = ctx.width - padding * 2
   const blocks = buildEntryBlocks(ctx.doc, entry, innerWidth)
   const primaryBlocks = blocks.filter((block) => block.kind === 'primary')
   const detailBlocks = blocks.filter((block) => block.kind === 'detail')
-  const cardHeight = measureEntryHeight(blocks)
+  const backdateNote = getEntryBackdateNote(entry, backdateContext)
+  const edited = wasEntryEdited(entry)
+  const cardHeight = measureEntryHeight(blocks, {
+    backdateNote,
+    enteredAt: entry.created_at,
+    doc: ctx.doc,
+    innerWidth,
+    edited
+  })
 
   ensureSpace(ctx, cardHeight + 14)
 
@@ -289,7 +425,7 @@ function drawEntryCard(ctx: LayoutContext, entry: ReportEntryRecord, index: numb
   setText(ctx.doc, slate500)
   ctx.doc.text(`${severityLabel} · ${sourceLabel} · Entry ${index + 1}`, innerX, ctx.y)
 
-  if (wasEntryEdited(entry)) {
+  if (edited) {
     ctx.y += 13
     ctx.doc.setFont('helvetica', 'italic')
     ctx.doc.setFontSize(9)
@@ -297,7 +433,13 @@ function drawEntryCard(ctx: LayoutContext, entry: ReportEntryRecord, index: numb
     ctx.doc.text(`Edited ${formatReportEntryDate(entry.updated_at)}`, innerX, ctx.y)
   }
 
-  ctx.y += 14
+  if (backdateNote && entry.created_at) {
+    ctx.y += 10
+    drawBackdateNote(ctx, backdateNote, entry.created_at, innerX, innerWidth)
+  } else {
+    ctx.y += 14
+  }
+
   drawDivider(ctx, innerX, innerWidth)
 
   primaryBlocks.forEach((block, blockIndex) => {
@@ -356,7 +498,8 @@ export function drawEntryLogSection(
   y: number,
   width: number,
   margin: number,
-  pageHeight: number
+  pageHeight: number,
+  backdateContext: BackdateReportContext = {}
 ) {
   const bottomLimit = pageHeight - 48
   const ctx: LayoutContext = {
@@ -384,7 +527,7 @@ export function drawEntryLogSection(
   )
 
   sortedEntries.forEach((entry, index) => {
-    drawEntryCard(ctx, entry, index)
+    drawEntryCard(ctx, entry, index, backdateContext)
   })
 
   return ctx.y

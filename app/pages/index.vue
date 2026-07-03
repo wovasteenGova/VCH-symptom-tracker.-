@@ -695,7 +695,21 @@
                               {{ preset.label }}
                             </button>
                           </div>
+                          <p
+                            v-if="field.label === 'Daily impact' && activeEntryIsMentalHealth"
+                            class="text-xs leading-5 text-slate-500 dark:text-slate-400"
+                          >
+                            {{ VA_CRISIS_LINE_SHORT }}
+                          </p>
+                          <textarea
+                            v-if="field.type === 'textarea'"
+                            v-model="entryForm[fieldKey(field.label)]"
+                            :placeholder="field.placeholder"
+                            rows="4"
+                            class="w-full resize-none border-0 border-b border-slate-300/80 bg-transparent px-0 py-4 text-base font-medium leading-7 text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-700 dark:text-white dark:focus:border-slate-400"
+                          />
                           <input
+                            v-else
                             v-model="entryForm[fieldKey(field.label)]"
                             type="text"
                             :placeholder="field.placeholder"
@@ -880,15 +894,21 @@
                             v-if="homeVisitTip"
                             class="mt-8 min-h-[5.25rem] overflow-hidden"
                           >
-                            <div>
-                              <p class="text-xs font-bold uppercase tracking-[0.14em] text-sky-700 dark:text-sky-300">
-                                {{ homeVisitTip.title }}
-                              </p>
-                              <p class="mt-1.5 leading-6 text-slate-600 dark:text-slate-300">
-                                {{ homeVisitTip.text }}
-                              </p>
-                            </div>
+                            <Transition name="home-tip" mode="out-in">
+                              <div :key="`${homeVisitTip.title}-${homeVisitTip.text}`">
+                                <p class="text-xs font-bold uppercase tracking-[0.14em] text-sky-700 dark:text-sky-300">
+                                  {{ homeVisitTip.title }}
+                                </p>
+                                <p class="mt-1.5 leading-6 text-slate-600 dark:text-slate-300">
+                                  {{ homeVisitTip.text }}
+                                </p>
+                              </div>
+                            </Transition>
                           </div>
+
+                          <p class="mt-4 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                            {{ VA_CRISIS_LINE_SHORT }}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -1052,7 +1072,7 @@
                   data-history-interactive
                   class="inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-slate-600 transition hover:text-slate-950 disabled:opacity-40 dark:text-slate-300 dark:hover:text-white"
                   :disabled="!savedEntries.length || isExportingPdf"
-                  @click="exportEntriesPdf()"
+                  @click="openPdfExportModal(null)"
                 >
                   <UIcon name="i-lucide-download" class="size-4" />
                   {{ isExportingPdf ? 'Exporting...' : 'PDF' }}
@@ -1445,6 +1465,66 @@
     leave-to-class="opacity-0"
   >
     <div
+      v-if="isPdfExportModalOpen"
+      class="fixed inset-0 z-[70] flex items-end justify-center bg-slate-950/70 p-4 sm:items-center"
+      @click.self="closePdfExportModal"
+    >
+      <div class="w-full max-w-md rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+        <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+          Sign before download
+        </p>
+        <h3 class="mt-2 text-xl font-bold text-slate-950 dark:text-white">
+          {{ pdfExportModalTitle }}
+        </h3>
+        <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+          Your full name from Account Settings will appear as your electronic signature on the PDF.
+        </p>
+
+        <label class="mt-5 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 dark:border-amber-900/60 dark:bg-amber-950/30">
+          <input
+            v-model="pdfExportAcknowledged"
+            type="checkbox"
+            class="mt-1 size-4 rounded border-slate-300 text-slate-950 focus:ring-slate-400 dark:border-slate-600 dark:bg-slate-900"
+          >
+          <span class="text-sm leading-6 text-amber-950 dark:text-amber-100">
+            {{ PDF_EXPORT_ACKNOWLEDGMENT_LABEL }}
+          </span>
+        </label>
+
+        <p v-if="exportError" class="mt-4 text-center text-sm font-medium text-red-600 dark:text-red-300">
+          {{ exportError }}
+        </p>
+
+        <div class="mt-5 grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            class="rounded-2xl bg-slate-100 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
+            @click="closePdfExportModal"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:opacity-40 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+            :disabled="!pdfExportAcknowledged || isExportingPdf"
+            @click="confirmPdfExport"
+          >
+            {{ isExportingPdf ? 'Preparing...' : 'Download PDF' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </Transition>
+
+  <Transition
+    enter-active-class="transition duration-200 ease-out"
+    enter-from-class="opacity-0"
+    enter-to-class="opacity-100"
+    leave-active-class="transition duration-150 ease-in"
+    leave-from-class="opacity-100"
+    leave-to-class="opacity-0"
+  >
+    <div
       v-if="isConditionSlotOpen"
       class="fixed inset-0 z-[70] flex items-end justify-center bg-slate-950/70 p-4 sm:items-center"
       @click.self="closeConditionSlotModal"
@@ -1503,6 +1583,7 @@ import { useTrackedConditions } from '../composables/useTrackedConditions'
 import { FREE_CONDITION_LIMIT, formatConditionKeyLabel, conditionKeyFromLabel } from '../utils/subscription'
 import { mapEntryHistoryItem } from '../utils/entryDisplay'
 import { copyToClipboard } from '../utils/copyToClipboard'
+import { PDF_EXPORT_ACKNOWLEDGMENT_LABEL } from '../utils/pdfExportCertification'
 import {
   calendarDateToDateString,
   clampTime24ToMax,
@@ -1536,7 +1617,7 @@ import { reportBranding } from '../utils/reportBranding'
 import { androidAddToHomeScreenVideoUrl, iosAddToHomeScreenVideoUrl } from '../utils/installGuide'
 import { filterAndRankConditions } from '../utils/conditionSearch'
 import { getWeeklyLogCaution, type WeeklyLogCaution } from '../utils/loggingCadence'
-import { conditionCatalog, pickRandomHomeVisitTip, resolveCatalogConditionByStoredKey } from '../utils/conditionCatalog'
+import { conditionCatalog, pickRandomHomeVisitTip, resolveCatalogConditionByStoredKey, VA_CRISIS_LINE_SHORT } from '../utils/conditionCatalog'
 import { conditionImageAssets } from '../utils/conditionImages'
 import { getSeverityGuidance, severityQuickPresets } from '../utils/severityGuidance'
 import { CalendarDate } from '@internationalized/date'
@@ -1585,6 +1666,7 @@ const {
   completeOnboarding,
   updateTrackedConditions
 } = useTrackedConditions()
+const { showSubmissionToast } = useSubmissionToast()
 
 const profileDisplayName = ref('')
 const homeGreetingWord = ref<'Hello' | 'Hey'>(Math.random() < 0.5 ? 'Hello' : 'Hey')
@@ -1620,13 +1702,15 @@ const savedEntries = ref<any[]>([])
 const isExportingPdf = ref(false)
 const exportError = ref('')
 const exportNotice = ref('')
+const isPdfExportModalOpen = ref(false)
+const pendingPdfExportKey = ref<string | null>(null)
+const pdfExportAcknowledged = ref(false)
 const transitionDirection = ref('next')
 const installPlatform = ref<'ios' | 'android' | 'desktop'>('desktop')
 const deferredInstallPrompt = ref<any>(null)
 const historyExpanded = ref(false)
 const historyScrollEl = ref<HTMLElement | null>(null)
 const homeVisitTip = ref<{ title: string, text: string } | null>(null)
-const homeVisitTipKeysSignature = ref('')
 const homeSortUsesEntryDates = ref(false)
 const isDesktopLayout = useMediaQuery('(min-width: 768px)')
 const isMobileLayout = computed(() => !isDesktopLayout.value)
@@ -1857,21 +1941,14 @@ function trackedConditionKeysSignature(keys: string[]) {
   return [...keys].sort().join('|')
 }
 
-function refreshHomeVisitTip(force = false) {
+function refreshHomeVisitTip() {
   if (showConditionBrowser.value || !homeConditions.value.length) {
     if (!homeConditions.value.length) {
       homeVisitTip.value = null
-      homeVisitTipKeysSignature.value = ''
     }
     return
   }
 
-  const signature = trackedConditionKeysSignature(trackedConditionKeys.value)
-  if (!force && signature === homeVisitTipKeysSignature.value && homeVisitTip.value) {
-    return
-  }
-
-  homeVisitTipKeysSignature.value = signature
   homeVisitTip.value = pickRandomHomeVisitTip(homeConditions.value)
 }
 
@@ -2113,6 +2190,17 @@ const exportableConditions = computed((): ExportableCondition[] => {
 
 const hasMultipleExportConditions = computed(() => exportableConditions.value.length > 1)
 
+const pdfExportModalTitle = computed(() => {
+  if (pendingPdfExportKey.value) {
+    const condition = exportableConditions.value.find((item) => item.key === pendingPdfExportKey.value)
+    return condition?.label ? `Export ${condition.label} PDF` : 'Export condition PDF'
+  }
+
+  return hasMultipleExportConditions.value
+    ? 'Export all conditions PDF'
+    : 'Export symptom PDF'
+})
+
 const pdfExportMenuItems = computed(() => {
   const conditions = exportableConditions.value
 
@@ -2122,7 +2210,7 @@ const pdfExportMenuItems = computed(() => {
 
   const conditionItems = conditions.map((condition) => ({
     label: `${condition.label} (${condition.entryCount})`,
-    onSelect: () => exportEntriesPdf(condition.key)
+    onSelect: () => openPdfExportModal(condition.key)
   }))
 
   if (conditions.length <= 1) {
@@ -2132,7 +2220,7 @@ const pdfExportMenuItems = computed(() => {
   return [
     {
       label: `All conditions (${savedEntries.value.length})`,
-      onSelect: () => exportEntriesPdf(null)
+      onSelect: () => openPdfExportModal(null)
     },
     { type: 'separator' as const },
     ...conditionItems
@@ -2220,6 +2308,14 @@ const entryProgressWidth = computed(() => {
   }
 
   return `${((entryStep.value + 1) / entrySteps.value.length) * 100}%`
+})
+
+const activeEntryIsMentalHealth = computed(() => {
+  const category = selectedSearchCondition.value?.category
+    || activeCondition.value?.category
+    || ''
+
+  return category.toLowerCase().includes('mental')
 })
 const slideEnterActiveClass = computed(() => {
   if (transitionDirection.value === 'expand') {
@@ -2397,12 +2493,26 @@ watch(needsOnboarding, (needsOnboardingNow) => {
   }
 }, { immediate: true })
 
+watch(isHomeOverviewSlide, (isOverview) => {
+  if (isOverview) {
+    refreshHomeVisitTip()
+  }
+}, { immediate: true })
+
+watch(isEntryOpen, (open) => {
+  if (!open && isHomeOverviewSlide.value) {
+    refreshHomeVisitTip()
+  }
+})
+
 watch(trackedConditionKeys, () => {
-  refreshHomeVisitTip()
-}, { deep: true, immediate: true })
+  if (isHomeOverviewSlide.value) {
+    refreshHomeVisitTip()
+  }
+}, { deep: true })
 
 watch(showConditionBrowser, (isOpen) => {
-  if (!isOpen) {
+  if (!isOpen && isHomeOverviewSlide.value) {
     refreshHomeVisitTip()
   }
 })
@@ -2665,7 +2775,9 @@ async function exportEntriesPdf(exportConditionKey: string | null = null) {
       veteranName: veteranName || null,
       veteranEmail: user.value?.email || null,
       includeCharts: isPro.value,
-      conditionLabel
+      conditionLabel,
+      loggingCadence: loggingCadence.value,
+      weeklyLogDay: weeklyLogDay.value
     })
 
     if (!isPro.value) {
@@ -2675,6 +2787,37 @@ async function exportEntriesPdf(exportConditionKey: string | null = null) {
     exportError.value = getErrorMessage(error)
   } finally {
     isExportingPdf.value = false
+  }
+}
+
+function openPdfExportModal(exportConditionKey: string | null = null) {
+  exportError.value = ''
+  pendingPdfExportKey.value = exportConditionKey
+  pdfExportAcknowledged.value = false
+  isPdfExportModalOpen.value = true
+}
+
+function closePdfExportModal() {
+  if (isExportingPdf.value) {
+    return
+  }
+
+  isPdfExportModalOpen.value = false
+  pendingPdfExportKey.value = null
+  pdfExportAcknowledged.value = false
+}
+
+async function confirmPdfExport() {
+  if (!pdfExportAcknowledged.value || isExportingPdf.value) {
+    return
+  }
+
+  await exportEntriesPdf(pendingPdfExportKey.value)
+
+  if (!exportError.value) {
+    isPdfExportModalOpen.value = false
+    pendingPdfExportKey.value = null
+    pdfExportAcknowledged.value = false
   }
 }
 
@@ -2792,7 +2935,6 @@ async function syncHomeConditionsAfterEntrySave(savedConditionKey: string) {
   if (isPro.value) {
     if (!trackedConditionKeys.value.includes(key)) {
       await updateTrackedConditions([...trackedConditionKeys.value, key])
-      refreshHomeVisitTip()
     }
     return
   }
@@ -2800,7 +2942,6 @@ async function syncHomeConditionsAfterEntrySave(savedConditionKey: string) {
   const trackedAlreadyMatches = trackedConditionKeys.value.length === 1 && trackedConditionKeys.value[0] === key
   if (!trackedAlreadyMatches) {
     await updateTrackedConditions([key])
-    refreshHomeVisitTip()
   }
 
   await syncFreeConditionKey(key)
@@ -2813,7 +2954,6 @@ async function confirmConditionOnboarding() {
   try {
     await completeOnboarding(draftSelectedKeys.value)
     await syncFreeConditionWithTrackedKeys(draftSelectedKeys.value)
-    refreshHomeVisitTip()
     isConditionBrowserOpen.value = false
   } catch (error) {
     trackedConditionsError.value = getErrorMessage(error)
@@ -2829,7 +2969,6 @@ async function finishConditionBrowser() {
   try {
     await updateTrackedConditions(draftSelectedKeys.value)
     await syncFreeConditionWithTrackedKeys(draftSelectedKeys.value)
-    refreshHomeVisitTip()
     isConditionBrowserOpen.value = false
   } catch (error) {
     trackedConditionsError.value = getErrorMessage(error)
@@ -3005,6 +3144,7 @@ async function saveEntry() {
   entryError.value = ''
 
   try {
+    const wasEditing = Boolean(editingEntryId.value)
     const { createEntry, updateEntry } = useSymptomEntries()
     const details = { ...entryForm.value }
     const occurredAt = entryForm.value.date_and_time
@@ -3031,6 +3171,10 @@ async function saveEntry() {
     await loadEntries()
     await syncHomeConditionsAfterEntrySave(payload.condition_key)
     await loadEntitlements()
+    showSubmissionToast({
+      message: wasEditing ? 'Entry updated.' : 'Entry saved.',
+      highlight: wasEditing ? undefined : '+1'
+    })
   } catch (error) {
     entryError.value = getErrorMessage(error)
   } finally {
@@ -3221,13 +3365,18 @@ async function handleAuthSubmit() {
   try {
     if (authMode.value === 'login') {
       await signIn(authEmail.value, authPassword.value)
+      showSubmissionToast('Signed in.')
+      isAuthPanelOpen.value = false
     } else {
       const data = await signUp(authEmail.value, authPassword.value, authName.value.trim())
 
       if (data.user) {
-        authMessage.value = data.session
-          ? 'Account created. You are signed in.'
-          : 'Account created. Check your email to confirm before signing in.'
+        if (data.session) {
+          showSubmissionToast('Account created. You are signed in.')
+          isAuthPanelOpen.value = false
+        } else {
+          showSubmissionToast('Check your email to confirm your account.')
+        }
       } else {
         authMessage.value = 'Signup did not return a user. Check Supabase Auth settings and try again.'
       }
@@ -3244,6 +3393,9 @@ async function handleGoogleSignIn() {
   authMessage.value = ''
 
   try {
+    if (import.meta.client) {
+      window.sessionStorage.setItem('symptom-tracker-auth-success', 'google')
+    }
     await signInWithGoogle()
   } catch {
     // useSupabaseAuth exposes the message in authError.
@@ -3263,7 +3415,7 @@ async function handleForgotPassword() {
 
   try {
     await sendPasswordReset(authEmail.value)
-    authMessage.value = 'Password reset email sent.'
+    showSubmissionToast('Password reset email sent.')
   } catch {
     // useSupabaseAuth exposes the message in authError.
   } finally {
@@ -4007,6 +4159,7 @@ async function handleWelcomeComplete(payload: {
 }) {
   try {
     await completeAppWelcome(payload)
+    showSubmissionToast('Welcome! You are all set.')
   } catch (error) {
     console.error(error)
   }
@@ -4149,6 +4302,21 @@ function handleEntryPrimaryAction() {
 .severity-guide-leave-to {
   opacity: 0;
   transform: translateY(-0.35rem);
+}
+
+.home-tip-enter-active,
+.home-tip-leave-active {
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.home-tip-enter-from {
+  opacity: 0;
+  transform: translateY(0.5rem);
+}
+
+.home-tip-leave-to {
+  opacity: 0;
+  transform: translateY(-0.5rem);
 }
 
 .submission-flash {

@@ -1,7 +1,20 @@
-type ReportEntry = {
+import type { LoggingCadence } from './loggingCadence'
+
+export type ReportEntry = {
   occurred_at?: string | null
   created_at?: string | null
 }
+
+export type BackdateReportContext = {
+  loggingCadence?: LoggingCadence
+  weeklyLogDay?: number
+}
+
+export const WEEKLY_CADENCE_BACKDATE_NOTE =
+  'Logged on weekly review day; symptom occurred earlier that week.'
+
+export const GENERAL_BACKDATE_NOTE =
+  'Backdated entry — symptom date is earlier than the log date.'
 
 function toLocalDateKey(value: string | null | undefined) {
   if (!value) {
@@ -17,63 +30,63 @@ function toLocalDateKey(value: string | null | undefined) {
   return date.toLocaleDateString('en-CA')
 }
 
-export function shouldIncludeBackfillReportNote(entries: ReportEntry[]) {
-  if (entries.length < 2) {
-    return entries.some((entry) => {
-      const createdKey = toLocalDateKey(entry.created_at)
-      const occurredKey = toLocalDateKey(entry.occurred_at || entry.created_at)
-      return Boolean(createdKey && occurredKey && createdKey !== occurredKey)
-    })
-  }
-
-  const occurredDatesByCreatedDay = new Map<string, Set<string>>()
-  let hasBackdatedEntry = false
-
-  for (const entry of entries) {
-    const createdKey = toLocalDateKey(entry.created_at)
-    const occurredKey = toLocalDateKey(entry.occurred_at || entry.created_at)
-
-    if (!createdKey || !occurredKey) {
-      continue
-    }
-
-    if (createdKey !== occurredKey) {
-      hasBackdatedEntry = true
-    }
-
-    if (!occurredDatesByCreatedDay.has(createdKey)) {
-      occurredDatesByCreatedDay.set(createdKey, new Set())
-    }
-
-    occurredDatesByCreatedDay.get(createdKey)!.add(occurredKey)
-  }
-
-  const hasSameDayBatchTransfer = [...occurredDatesByCreatedDay.values()].some((dates) => dates.size >= 2)
-
-  return hasBackdatedEntry || hasSameDayBatchTransfer
+function getWeekStartKey(date: Date) {
+  const normalized = new Date(date)
+  normalized.setHours(12, 0, 0, 0)
+  normalized.setDate(normalized.getDate() - normalized.getDay())
+  return normalized.toLocaleDateString('en-CA')
 }
 
-export function buildBackfillReportNote(entries: ReportEntry[]) {
-  if (!shouldIncludeBackfillReportNote(entries)) {
+function isSameCalendarWeek(leftValue: string, rightValue: string) {
+  const left = new Date(leftValue)
+  const right = new Date(rightValue)
+
+  if (Number.isNaN(left.getTime()) || Number.isNaN(right.getTime())) {
+    return false
+  }
+
+  return getWeekStartKey(left) === getWeekStartKey(right)
+}
+
+export function isBackdatedEntry(entry: ReportEntry) {
+  const createdKey = toLocalDateKey(entry.created_at)
+  const occurredKey = toLocalDateKey(entry.occurred_at || entry.created_at)
+
+  return Boolean(createdKey && occurredKey && createdKey !== occurredKey)
+}
+
+export function getEntryBackdateNote(
+  entry: ReportEntry,
+  context: BackdateReportContext = {}
+) {
+  if (!isBackdatedEntry(entry) || !entry.created_at) {
     return null
   }
 
-  const createdDays = [...new Set(entries.map((entry) => toLocalDateKey(entry.created_at)).filter(Boolean))] as string[]
-  const formattedCreatedDays = createdDays
-    .slice(0, 3)
-    .map((day) => new Date(`${day}T12:00:00`).toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric'
-    }))
+  const occurredAt = entry.occurred_at || entry.created_at
+  const loggingCadence = context.loggingCadence ?? 'weekly'
+  const weeklyLogDay = context.weeklyLogDay ?? 0
+  const createdOnWeeklyLogDay = new Date(entry.created_at).getDay() === weeklyLogDay
+  const occurredBeforeCreated = new Date(occurredAt).getTime() < new Date(entry.created_at).getTime()
+  const sameWeekBackdate = isSameCalendarWeek(occurredAt, entry.created_at)
 
-  const createdDayText = formattedCreatedDays.length === 1
-    ? formattedCreatedDays[0]
-    : `${formattedCreatedDays.slice(0, -1).join(', ')} and ${formattedCreatedDays.at(-1)}`
+  if (
+    loggingCadence === 'weekly'
+    && createdOnWeeklyLogDay
+    && occurredBeforeCreated
+    && sameWeekBackdate
+  ) {
+    return WEEKLY_CADENCE_BACKDATE_NOTE
+  }
 
-  return [
-    'Note to rater: Some entries in this report describe symptoms or events that occurred on earlier dates.',
-    `The veteran entered or transferred these records on ${createdDayText} while moving prior notes into this tracker.`,
-    'Each entry shows the date the symptom or event occurred — not necessarily the date it was logged in the app.'
-  ].join(' ')
+  return GENERAL_BACKDATE_NOTE
+}
+
+export function shouldIncludeBackfillReportNote(entries: ReportEntry[]) {
+  return entries.some((entry) => isBackdatedEntry(entry))
+}
+
+/** @deprecated Global PDF banner removed — notes render per backdated entry instead. */
+export function buildBackfillReportNote(_entries: ReportEntry[]) {
+  return null
 }
