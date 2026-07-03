@@ -1072,7 +1072,11 @@
               <div>
                 <h2 class="text-2xl font-bold text-slate-950 dark:text-white">History</h2>
               </div>
-              <div class="flex shrink-0 items-center gap-2">
+              <div class="relative flex shrink-0 items-center gap-2">
+                <MonthlyBackupReminderTip
+                  :open="isMonthlyBackupReminderVisible"
+                  @dismiss="dismissMonthlyBackupReminder"
+                />
                 <NuxtLink
                   v-if="user && !isPro"
                   to="/upgrade"
@@ -1781,6 +1785,14 @@ const selectedSearchCondition = ref<null | {
 
 const { downloadEntriesPdf } = useSymptomPdfExport()
 const { archiveDeletedEntry } = useDeletedEntryArchive()
+const {
+  isMonthlyBackupReminderVisible,
+  dismissMonthlyBackupReminder,
+  refreshMonthlyBackupReminder
+} = useMonthlyBackupReminder(
+  () => user.value?.id,
+  () => savedEntries.value.length > 0
+)
 
 const initialEntryDateTime = splitEntryDateTimeLocal(getMaxEntryDateTimeLocal())
 const initialEntryTimeParts = parseTime24ToParts(initialEntryDateTime.time)
@@ -2875,6 +2887,7 @@ async function exportEntriesPdf(exportConditionKey: string | null = null) {
 
 function openPdfExportModal(exportConditionKey: string | null = null) {
   exportError.value = ''
+  dismissMonthlyBackupReminder()
   pendingPdfExportKey.value = exportConditionKey
   pdfExportAcknowledged.value = false
   isPdfExportModalOpen.value = true
@@ -3077,6 +3090,7 @@ async function loadEntries() {
     const { listEntries } = useSymptomEntries()
     savedEntries.value = await listEntries()
     updateSubmissionHighlights(savedEntries.value)
+    refreshMonthlyBackupReminder()
     await refreshTrackedConditions()
   } catch (error) {
     entriesError.value = getErrorMessage(error)
