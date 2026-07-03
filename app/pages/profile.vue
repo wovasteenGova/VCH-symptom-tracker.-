@@ -149,8 +149,26 @@
           </div>
 
           <p v-if="!isPro" class="mt-3 text-xs leading-5 text-slate-400">
-            Free plan: {{ veteranEntryCount }} of {{ FREE_ENTRY_LIMIT }} entries used. Upgrade for unlimited logs, family reporting, and PDF exports.
+            Free plan: 1 condition with unlimited entries. Entries only — upgrade for about $1.08/month to unlock Charts, PDF exports, and more conditions.
           </p>
+          <div v-if="!isPro" class="mt-4 rounded-3xl border border-slate-800 bg-slate-950/60 p-4">
+            <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Your free conditions</p>
+            <p class="mt-1 text-xs leading-5 text-slate-500">
+              {{ freeConditionKeys.length }}/{{ FREE_CONDITION_LIMIT }} selected
+            </p>
+            <div v-if="freeConditionKeyLabels.length" class="mt-3 flex flex-wrap gap-2">
+              <span
+                v-for="label in freeConditionKeyLabels"
+                :key="label"
+                class="rounded-full bg-sky-950 px-3 py-1.5 text-xs font-semibold text-sky-200 ring-1 ring-sky-800"
+              >
+                {{ label }}
+              </span>
+            </div>
+            <p v-else class="mt-3 text-xs leading-5 text-slate-500">
+              Pick conditions when you start logging from the tracker home screen.
+            </p>
+          </div>
           <p v-else-if="renewalLabel && !isComped" class="mt-3 text-xs leading-5 text-amber-100/80">
             Pro renews on {{ renewalLabel }}.
           </p>
@@ -522,7 +540,8 @@ import { useSymptomEntries } from '../composables/useSymptomEntries'
 import { useDeletedEntryArchive } from '../composables/useDeletedEntryArchive'
 import { useEntitlements } from '../composables/useEntitlements'
 import {
-  FREE_ENTRY_LIMIT,
+  FREE_CONDITION_LIMIT,
+  formatConditionKeyLabel,
   PRO_ANNUAL_PRICE_LABEL,
   buildSupportEmailHref
 } from '../utils/subscription'
@@ -561,14 +580,18 @@ const {
 const {
   isPro,
   isComped,
-  veteranEntryCount,
+  freeConditionKeys,
   canUseFamilyReporting,
+  canTrackCondition,
   renewalLabel,
-  loadEntitlements,
-  canCreateEntry
+  loadEntitlements
 } = useEntitlements()
 
 const supportEmailHref = buildSupportEmailHref()
+
+const freeConditionKeyLabels = computed(() => {
+  return freeConditionKeys.value.map((key) => formatConditionKeyLabel(key))
+})
 
 const conditionOptions = [
   'PTSD / Mental Health',
@@ -844,10 +867,10 @@ async function restoreDeletedEntry(entryId: string) {
     const restoredEntry = { ...archivedEntry }
     delete restoredEntry.deleted_at
 
-    if (!canCreateEntry(false)) {
+    if (!canTrackCondition(restoredEntry.condition_key || 'unknown')) {
       archiveDeletedEntry(user.value.id, archivedEntry)
       loadDeletedEntries()
-      pageError.value = `Free plan includes ${FREE_ENTRY_LIMIT} entries. Upgrade to Pro to restore more logs.`
+      pageError.value = `Free plan includes ${FREE_CONDITION_LIMIT} conditions. Upgrade to Pro to restore entries for other conditions.`
       return
     }
 

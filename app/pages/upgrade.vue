@@ -73,7 +73,7 @@
         <section v-if="user && !isPro" class="rounded-3xl border border-slate-800 bg-slate-900/70 px-4 py-3">
           <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Your usage</p>
           <p class="mt-1 text-sm text-slate-200">
-            {{ veteranEntryCount }} of {{ FREE_ENTRY_LIMIT }} free entries used
+            Free: 1 condition · unlimited entries · Entries only
           </p>
         </section>
 
@@ -238,7 +238,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useSupabaseAuth } from '../composables/useSupabaseAuth'
 import { useEntitlements } from '../composables/useEntitlements'
 import {
-  FREE_ENTRY_LIMIT,
+  FREE_CONDITION_LIMIT,
   FREE_TIER_FEATURES,
   PRO_ANNUAL_PRICE_LABEL,
   PRO_TIER_FEATURES,
@@ -253,7 +253,6 @@ const router = useRouter()
 const { user, isAuthLoading } = useSupabaseAuth()
 const {
   entitlement,
-  veteranEntryCount,
   isPro,
   isComped,
   renewalLabel,

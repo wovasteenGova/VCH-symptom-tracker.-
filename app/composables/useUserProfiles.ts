@@ -1,8 +1,8 @@
 type UserProfilePayload = {
   full_name?: string | null
   display_name?: string | null
+  free_condition_keys?: string[]
 }
-
 type SupporterProfilePayload = {
   link_label?: string | null
   visible_conditions: string[]

@@ -1,5 +1,7 @@
 export const PRO_PRODUCT_KEY = 'symptom_tracker_pro'
-export const FREE_ENTRY_LIMIT = 2
+export const FREE_CONDITION_LIMIT = 1
+/** @deprecated Use FREE_CONDITION_LIMIT */
+export const FREE_ENTRY_LIMIT = FREE_CONDITION_LIMIT
 export const PRO_ANNUAL_PRICE = 12.99
 export const PRO_ANNUAL_PRICE_LABEL = '$12.99/year'
 export const VCH_HUB_URL = 'https://veteranscentralhub.us'
@@ -10,17 +12,32 @@ export const WHY_WE_CHARGE_COPY =
   'Pro subscriptions help fund our upcoming VCH Claim Maker — a separate tool for organizing service history, symptoms, and claim evidence into a stronger first draft. It is not live yet. This is a self-funded build, so symptom tracker Pro helps cover servers and development until Claim Maker ships.'
 
 export const FREE_TIER_FEATURES = [
-  'Up to 2 symptom entries',
-  'Basic history and editing',
-  'Sign in and sync across devices'
+  'Pick 1 condition to track',
+  'Unlimited entries within those conditions',
+  'Entries list and editing'
 ] as const
 
 export const PRO_TIER_FEATURES = [
-  'Unlimited symptom entries',
+  'Unlimited conditions',
+  'Advanced Charts view',
   'Family reporting links for supporters',
-  'Signed PDF exports for claims evidence',
-  'Priority access to new VA-informed fields'
+  'Signed PDF exports with advanced charts'
 ] as const
+
+export function conditionKeyFromLabel(label: string) {
+  return label
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_|_$/g, '')
+}
+
+export function formatConditionKeyLabel(conditionKey: string) {
+  return conditionKey
+    .split('_')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+}
 
 export function isActiveEntitlementStatus(status: string | null | undefined) {
   return status === 'active' || status === 'comped'

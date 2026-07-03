@@ -814,16 +814,15 @@
             class="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden"
           >
         <div
-          class="shrink-0 px-4 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
-          :class="historyExpanded ? 'pb-1' : 'pb-2'"
+          class="flex min-h-0 flex-col px-4 transition-[flex] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+          :class="historyExpanded ? 'flex-[1] pb-1' : 'flex-[4] pb-2'"
           @wheel.passive="handleConditionWheel"
           @touchstart.passive="handleConditionTouchStart"
           @touchmove.passive="handleConditionTouchMove"
         >
-          <div class="relative flex min-h-0 flex-col">
+          <div class="relative flex min-h-0 flex-1 flex-col">
             <div
-              class="relative w-full shrink-0 overflow-hidden rounded-[1.75rem] transition-[height,max-height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
-              :class="historyExpanded ? 'h-[40dvh]' : 'h-[55dvh]'"
+              class="relative min-h-0 w-full flex-1 overflow-hidden rounded-[1.75rem] transition-[flex] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
             >
               <Transition
                 :enter-active-class="slideEnterActiveClass"
@@ -902,10 +901,10 @@
 
                     <div
                       v-if="filteredConditionResults.length > 2 && !showConditionSearchEmptyState"
-                      class="pointer-events-none absolute inset-x-0 bottom-3 flex h-10 items-end justify-center bg-linear-to-t from-white via-white/75 to-transparent pb-1.5 transition-opacity duration-200 dark:from-slate-950 dark:via-slate-950/75"
+                      class="pointer-events-none absolute inset-x-0 bottom-3 flex h-10 items-end justify-center pb-1.5 transition-opacity duration-200"
                       :class="isConditionScrolling ? 'opacity-0' : 'opacity-100'"
                     >
-                      <span class="rounded-full bg-slate-950/85 px-3 py-1 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-white shadow-lg shadow-slate-950/20 ring-1 ring-white/40 dark:bg-white/90 dark:text-slate-950 dark:shadow-black/30 dark:ring-slate-700/40">
+                      <span class="text-[0.68rem] font-bold uppercase tracking-[0.14em] text-slate-600 dark:text-slate-300">
                         Scroll for more
                       </span>
                     </div>
@@ -1009,16 +1008,25 @@
         </div>
 
         <section
-          class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-t-[1.75rem] border-t border-slate-200/80 bg-white transition-[flex] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] dark:border-slate-800 dark:bg-slate-900"
+          class="flex min-h-0 flex-col overflow-hidden rounded-t-[1.75rem] border-t border-slate-200/80 bg-white transition-[flex] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] dark:border-slate-800 dark:bg-slate-900"
+          :class="historyExpanded ? 'flex-[4]' : 'flex-[1]'"
         >
-          <button
-            type="button"
-            class="flex w-full shrink-0 justify-center py-2.5"
-            :aria-label="historyExpanded ? 'Collapse history' : 'Expand history'"
-            @click="toggleHistoryExpanded"
+          <div
+            class="flex w-full shrink-0 touch-none select-none flex-col items-center py-2.5"
+            @touchstart.passive="handleSheetDragStart"
+            @touchmove.passive="handleSheetDragMove"
+            @touchend="handleSheetDragEnd"
+            @touchcancel="handleSheetDragEnd"
           >
-            <span class="h-1 w-10 rounded-full bg-slate-300 dark:bg-slate-600" />
-          </button>
+            <button
+              type="button"
+              class="flex w-full justify-center py-1"
+              :aria-label="historyExpanded ? 'Collapse history' : 'Expand history'"
+              @click="toggleHistoryExpanded"
+            >
+              <span class="h-1.5 w-12 rounded-full bg-slate-300 dark:bg-slate-600" />
+            </button>
+          </div>
 
           <div class="shrink-0 px-4">
             <div class="flex items-start justify-between gap-3">
@@ -1028,7 +1036,13 @@
                   v-if="user && !isPro"
                   class="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400"
                 >
-                  {{ veteranEntryCount }} of {{ FREE_ENTRY_LIMIT }} free entries used
+                  Free: 1 condition · unlimited entries · Entries only
+                </p>
+                <p
+                  v-if="user && !isPro && freeConditionKeys.length"
+                  class="mt-0.5 text-xs text-slate-500 dark:text-slate-400"
+                >
+                  Your conditions: {{ freeConditionLabels.join(', ') }}
                 </p>
               </div>
               <div class="flex shrink-0 items-center gap-2">
@@ -1061,11 +1075,16 @@
                   v-for="tab in historyTabs"
                   :key="tab"
                   type="button"
-                  class="rounded-full px-4 py-3 text-sm font-semibold transition"
+                  class="relative rounded-full px-4 py-3 text-sm font-semibold transition"
                   :class="activeHistoryTab === tab ? 'bg-white text-slate-950 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 dark:text-slate-400'"
-                  @click="activeHistoryTab = tab"
+                  @click="selectHistoryTab(tab)"
                 >
                   {{ tab }}
+                  <UIcon
+                    v-if="tab === 'Charts' && !canUseCharts"
+                    name="i-lucide-lock"
+                    class="ml-1 inline-block size-3.5 align-[-2px] text-amber-500"
+                  />
                 </button>
               </div>
             </div>
@@ -1184,7 +1203,22 @@
               </article>
             </div>
 
-            <div v-else class="py-1">
+            <div v-else-if="activeHistoryTab === 'Charts' && !canUseCharts" class="py-8 text-center">
+              <UIcon name="i-lucide-lock" class="mx-auto size-7 text-amber-400" />
+              <p class="mt-4 font-bold text-slate-950 dark:text-white">Charts are a Pro feature</p>
+              <p class="mt-2 px-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                Pro users get access to advanced charts. Free includes entries only.
+              </p>
+              <button
+                type="button"
+                class="mt-5 rounded-2xl bg-amber-400 px-5 py-3 text-sm font-bold text-slate-950"
+                @click="openUpgradePrompt('Charts are a Pro feature', 'Pro users get access to advanced charts. Your entries are always saved on Free.')"
+              >
+                Upgrade for Charts
+              </button>
+            </div>
+
+            <div v-else-if="activeHistoryTab === 'Charts'" class="py-1">
               <div class="flex items-center justify-between">
                 <button
                   type="button"
@@ -1240,7 +1274,7 @@
             </div>
 
             <p class="mt-4 text-center text-xs leading-5 text-slate-500">
-              Swipe up on history to expand.
+              Drag the handle or swipe to expand history.
             </p>
             <div class="mt-2 flex items-center justify-center gap-3 pb-1 text-xs font-semibold text-slate-500">
               <NuxtLink to="/install" class="hover:text-slate-700 dark:hover:text-slate-300">Install</NuxtLink>
@@ -1386,6 +1420,53 @@
     @close="closeUpgradePrompt"
     @upgrade="handleUpgradeCheckout"
   />
+
+  <Transition
+    enter-active-class="transition duration-200 ease-out"
+    enter-from-class="opacity-0"
+    enter-to-class="opacity-100"
+    leave-active-class="transition duration-150 ease-in"
+    leave-from-class="opacity-100"
+    leave-to-class="opacity-0"
+  >
+    <div
+      v-if="isConditionSlotOpen"
+      class="fixed inset-0 z-[70] flex items-end justify-center bg-slate-950/70 p-4 sm:items-center"
+      @click.self="closeConditionSlotModal"
+    >
+      <div class="w-full max-w-md rounded-[1.75rem] border border-slate-800 bg-slate-900 p-5 shadow-2xl">
+        <p class="text-xs font-bold uppercase tracking-[0.16em] text-sky-300">Free plan</p>
+        <h3 class="mt-2 text-xl font-bold text-white">Use {{ pendingConditionSlotLabel }}?</h3>
+        <p class="mt-3 text-sm leading-6 text-slate-300">
+          Free includes {{ FREE_CONDITION_LIMIT }} conditions with unlimited entries in each.
+          <span v-if="freeConditionSlotsRemaining === FREE_CONDITION_LIMIT">Pick one condition to start.</span>
+          <span v-else-if="freeConditionSlotsRemaining === 1">This will use your free condition slot.</span>
+          <span v-else>Your free condition slot is already used.</span>
+        </p>
+        <p v-if="freeConditionKeys.length" class="mt-3 text-xs leading-5 text-slate-400">
+          Current: {{ freeConditionLabels.join(', ') || 'None yet' }}
+        </p>
+        <p v-if="conditionSlotError" class="mt-3 text-sm font-medium text-red-300">{{ conditionSlotError }}</p>
+        <div class="mt-5 grid gap-3">
+          <button
+            type="button"
+            class="w-full rounded-2xl bg-white px-4 py-4 text-base font-bold text-slate-950"
+            :disabled="isConfirmingConditionSlot"
+            @click="confirmConditionSlot"
+          >
+            {{ isConfirmingConditionSlot ? 'Saving...' : `Use ${pendingConditionSlotLabel}` }}
+          </button>
+          <button
+            type="button"
+            class="w-full rounded-2xl bg-slate-800 px-4 py-3 text-sm font-bold text-white ring-1 ring-slate-700"
+            @click="closeConditionSlotModal"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  </Transition>
 </template>
 
 <script setup lang="ts">
@@ -1395,7 +1476,7 @@ import { useSymptomPdfExport } from '../composables/useSymptomPdfExport'
 import { useDeletedEntryArchive } from '../composables/useDeletedEntryArchive'
 import { useUserProfiles } from '../composables/useUserProfiles'
 import { useEntitlements } from '../composables/useEntitlements'
-import { FREE_ENTRY_LIMIT } from '../utils/subscription'
+import { FREE_CONDITION_LIMIT, formatConditionKeyLabel } from '../utils/subscription'
 import { mapEntryHistoryItem } from '../utils/entryDisplay'
 import { copyToClipboard } from '../utils/copyToClipboard'
 import {
@@ -1451,10 +1532,14 @@ const router = useRouter()
 const { getProfile } = useUserProfiles()
 const {
   isPro,
-  veteranEntryCount,
+  freeConditionKeys,
+  freeConditionSlotsRemaining,
+  canUseCharts,
   canUseFamilyReporting,
   canExportPdf,
-  canCreateEntry,
+  canTrackCondition,
+  canAddFreeCondition,
+  addFreeCondition,
   loadEntitlements,
   startCheckout
 } = useEntitlements()
@@ -1613,7 +1698,7 @@ const entryPickerDays = computed(() => {
   return days
 })
 
-const historyTabs = ['Entries', 'Calendar']
+const historyTabs = ['Entries', 'Charts']
 const installDismissedKey = 'symptom-tracker-install-dismissed'
 const submissionHighlightDurationMs = 1_400
 
@@ -1633,6 +1718,20 @@ const isUpgradePromptOpen = ref(false)
 const upgradePromptTitle = ref('Upgrade to Pro')
 const upgradePromptDescription = ref('')
 const isUpgradeCheckoutLoading = ref(false)
+const isConditionSlotOpen = ref(false)
+const pendingConditionSlotKey = ref('')
+const pendingConditionSlotLabel = ref('')
+const pendingEntryPanelOptions = ref<{
+  prefillCustomCondition?: string
+  condition?: {
+    title: string
+    category: string
+    description: string
+    image: string
+  }
+} | null>(null)
+const isConfirmingConditionSlot = ref(false)
+const conditionSlotError = ref('')
 
 const conditions = [...carouselConditions]
 
@@ -1947,6 +2046,12 @@ const homeGreetingLine = computed(() => {
     || 'there'
 
   return `${homeGreetingWord.value}, ${firstName}`
+})
+const freeConditionLabels = computed(() => {
+  return freeConditionKeys.value.map((key) => {
+    const matchedEntry = savedEntries.value.find((entry) => entry.condition_key === key)
+    return matchedEntry?.condition_label || formatConditionKeyLabel(key)
+  })
 })
 const isSearchSlide = computed(() => activeIndex.value === 0)
 const activeCondition = computed(() => conditions[Math.max(activeIndex.value - 1, 0)])
@@ -2445,8 +2550,8 @@ function validateEntryDateTimeStep() {
 async function exportEntriesPdf() {
   if (!canExportPdf.value) {
     openUpgradePrompt(
-      'PDF export is a Pro feature',
-      'Upgrade to export signed PDF reports for your VA claim evidence.'
+      'Advanced charts & PDF export',
+      'Pro users get access to advanced charts in PDF exports and the Charts view. Your entries are always saved on Free.'
     )
     return
   }
@@ -2660,16 +2765,27 @@ async function saveEntry() {
     return
   }
 
-  if (!canCreateEntry(Boolean(editingEntryId.value))) {
-    openUpgradePrompt(
-      'Free plan entry limit reached',
-      `Free accounts include ${FREE_ENTRY_LIMIT} entries. Upgrade to Pro for unlimited logging, family reporting, and PDF exports.`
-    )
+  if (!validateEntryDateTimeStep()) {
     return
   }
 
-  if (!validateEntryDateTimeStep()) {
-    return
+  const entryConditionKey = conditionKey(entryTitle.value)
+
+  if (!isPro.value && !editingEntryId.value && !canTrackCondition(entryConditionKey)) {
+    if (canAddFreeCondition(entryConditionKey)) {
+      try {
+        await addFreeCondition(entryConditionKey)
+      } catch (error) {
+        entryError.value = getErrorMessage(error)
+        return
+      }
+    } else {
+      openUpgradePrompt(
+        'Free plan: 1 condition',
+        `Free lets you pick ${FREE_CONDITION_LIMIT} condition with unlimited entries. Upgrade to Pro for about $1.08/month to track more conditions, Charts, and PDF exports.`
+      )
+      return
+    }
   }
 
   isSavingEntry.value = true
@@ -3116,12 +3232,76 @@ function handleConditionTouchMove(event: TouchEvent) {
 }
 
 function toggleHistoryExpanded() {
+  if (sheetDidDrag) {
+    sheetDidDrag = false
+    return
+  }
+
   if (historyExpanded.value) {
     collapseHistorySheet()
     return
   }
 
   expandHistorySheet()
+}
+
+let sheetDragStartY = 0
+let sheetDidDrag = false
+
+function handleSheetDragStart(event: TouchEvent) {
+  sheetDragStartY = event.touches[0]?.clientY ?? 0
+  sheetDidDrag = false
+}
+
+function handleSheetDragMove(event: TouchEvent) {
+  const currentY = event.touches[0]?.clientY ?? 0
+  const deltaY = sheetDragStartY - currentY
+
+  if (Math.abs(deltaY) > 10) {
+    sheetDidDrag = true
+  }
+
+  if (!historyExpanded.value && deltaY > 28) {
+    expandHistorySheet()
+    return
+  }
+
+  if (historyExpanded.value && deltaY < -28) {
+    collapseHistorySheet()
+  }
+}
+
+function handleSheetDragEnd() {
+  window.setTimeout(() => {
+    sheetDidDrag = false
+  }, 0)
+}
+
+function selectHistoryTab(tab: string) {
+  if (tab === 'Charts' && !canUseCharts.value) {
+    openUpgradePrompt(
+      'Charts are a Pro feature',
+      'Pro users get access to advanced charts. Free includes entries only — your logs are always saved.'
+    )
+    return
+  }
+
+  activeHistoryTab.value = tab
+}
+
+function resolvePendingEntryConditionKey(options: {
+  prefillCustomCondition?: string
+  condition?: { title: string }
+} = {}) {
+  if (options.condition?.title) {
+    return conditionKey(options.condition.title)
+  }
+
+  if (options.prefillCustomCondition) {
+    return conditionKey(options.prefillCustomCondition)
+  }
+
+  return ''
 }
 
 function handleHistoryScroll(event: Event) {
@@ -3265,14 +3445,48 @@ function openEntryPanel(options: {
     return
   }
 
-  if (!canCreateEntry(false)) {
-    openUpgradePrompt(
-      'Free plan entry limit reached',
-      `You've used all ${FREE_ENTRY_LIMIT} free entries. Upgrade to Pro to keep logging symptoms without limits.`
-    )
+  if (isPro.value) {
+    openEntryPanelInner(options)
     return
   }
 
+  const pendingConditionKey = resolvePendingEntryConditionKey(options)
+  const pendingConditionLabel = options.condition?.title || options.prefillCustomCondition || ''
+
+  if (!pendingConditionKey) {
+    openEntryPanelInner(options)
+    return
+  }
+
+  if (canTrackCondition(pendingConditionKey)) {
+    openEntryPanelInner(options)
+    return
+  }
+
+  if (canAddFreeCondition(pendingConditionKey)) {
+    pendingEntryPanelOptions.value = options
+    pendingConditionSlotKey.value = pendingConditionKey
+    pendingConditionSlotLabel.value = pendingConditionLabel || formatConditionKeyLabel(pendingConditionKey)
+    conditionSlotError.value = ''
+    isConditionSlotOpen.value = true
+    return
+  }
+
+  openUpgradePrompt(
+    'Free plan: 1 condition',
+    `You already picked ${freeConditionLabels.value[0] || 'your free condition'}. Upgrade to Pro for about $1.08/month to track ${pendingConditionLabel || formatConditionKeyLabel(pendingConditionKey)} and more.`
+  )
+}
+
+function openEntryPanelInner(options: {
+  prefillCustomCondition?: string
+  condition?: {
+    title: string
+    category: string
+    description: string
+    image: string
+  }
+} = {}) {
   historyExpanded.value = false
   transitionDirection.value = 'expand'
   entryStep.value = 0
@@ -3292,6 +3506,34 @@ function openEntryPanel(options: {
   }
 
   isEntryOpen.value = true
+}
+
+function closeConditionSlotModal() {
+  isConditionSlotOpen.value = false
+  pendingEntryPanelOptions.value = null
+  pendingConditionSlotKey.value = ''
+  pendingConditionSlotLabel.value = ''
+  conditionSlotError.value = ''
+}
+
+async function confirmConditionSlot() {
+  if (!pendingConditionSlotKey.value || !pendingEntryPanelOptions.value) {
+    return
+  }
+
+  isConfirmingConditionSlot.value = true
+  conditionSlotError.value = ''
+
+  try {
+    await addFreeCondition(pendingConditionSlotKey.value)
+    const options = pendingEntryPanelOptions.value
+    closeConditionSlotModal()
+    openEntryPanelInner(options)
+  } catch (error) {
+    conditionSlotError.value = getErrorMessage(error)
+  } finally {
+    isConfirmingConditionSlot.value = false
+  }
 }
 
 function closeEntryPanel(clearDraft = false) {
