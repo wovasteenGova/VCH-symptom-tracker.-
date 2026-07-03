@@ -12,6 +12,9 @@ export type ConditionCatalogEntry = {
 export const EFFECTIVE_DATE_TIP =
   'If you\'re nearing an important filing deadline or effective date, consider filing your claim first. Additional evidence and symptom logs can be submitted later.'
 
+export const VA_MENTAL_HEALTH_COMBINED_TIP =
+  'The VA evaluates mental health as one combined rating. Log any mental health symptoms you have — even if you do not think they belong to your diagnosis. Anxiety, depression, panic, nightmares, and sleep issues all count.'
+
 const mentalHealthFocus = [
   'How often symptoms happen and how severe they are',
   'Work, relationship, and daily-life impact',
@@ -25,6 +28,10 @@ const mentalHealthTip = (title: string) => {
 
   if (title === 'Panic attacks') {
     return 'Log episodes as soon as you can while the physical symptoms are fresh—racing heart, shortness of breath, fear, and how long it took to recover.'
+  }
+
+  if (title === 'Mental Health') {
+    return VA_MENTAL_HEALTH_COMBINED_TIP
   }
 
   return 'Write down what happened, how long it lasted, and what you could not do afterward. Patterns over time matter more than one perfect entry.'
@@ -113,6 +120,27 @@ const chronicPainTip =
 
 export const conditionCatalogDefinitions: ConditionCatalogEntry[] = [
   {
+    title: 'Mental Health',
+    category: 'Mental Health',
+    description: 'All mental health symptoms — anxiety, depression, panic, nightmares, and daily impact in one log.',
+    vaFocus: mentalHealthFocus,
+    tip: mentalHealthTip('Mental Health')
+  },
+  {
+    title: 'Lower back pain',
+    category: 'Back, Neck, and Joint',
+    description: 'Pain level, flare-ups, limits sitting, standing, walking, and lifting.',
+    vaFocus: musculoskeletalFocus,
+    tip: musculoskeletalTip
+  },
+  {
+    title: 'PTSD',
+    category: 'Mental Health',
+    description: 'Nightmares, flashbacks, panic, isolation, irritability, and missed work.',
+    vaFocus: mentalHealthFocus,
+    tip: mentalHealthTip('PTSD')
+  },
+  {
     title: 'Migraine',
     category: 'Neurological',
     description: 'Frequency, duration, severity, triggers, and daily impact.',
@@ -125,6 +153,41 @@ export const conditionCatalogDefinitions: ConditionCatalogEntry[] = [
     description: 'Headache pattern, pain level, work impact, and medication use.',
     vaFocus: neurologicalFocus,
     tip: neurologicalTip('Tension headaches')
+  },
+  {
+    title: 'Anxiety',
+    category: 'Mental Health',
+    description: 'Triggers, panic symptoms, avoidance, sleep, and social impact.',
+    vaFocus: mentalHealthFocus,
+    tip: mentalHealthTip('Anxiety')
+  },
+  {
+    title: 'Neck pain',
+    category: 'Back, Neck, and Joint',
+    description: 'Range of motion, flare-ups, pain level, and activity limits.',
+    vaFocus: musculoskeletalFocus,
+    tip: musculoskeletalTip
+  },
+  {
+    title: 'Depression',
+    category: 'Mental Health',
+    description: 'Mood, motivation, hygiene, isolation, sleep, and daily functioning.',
+    vaFocus: mentalHealthFocus,
+    tip: mentalHealthTip('Depression')
+  },
+  {
+    title: 'Knee conditions',
+    category: 'Back, Neck, and Joint',
+    description: 'Pain, swelling, instability, walking limits, stairs, and missed activity.',
+    vaFocus: musculoskeletalFocus,
+    tip: musculoskeletalTip
+  },
+  {
+    title: 'Panic attacks',
+    category: 'Mental Health',
+    description: 'Immediate episode logs for panic symptoms, duration, and recovery.',
+    vaFocus: mentalHealthFocus,
+    tip: mentalHealthTip('Panic attacks')
   },
   {
     title: 'Vertigo / Dizziness',
@@ -141,60 +204,11 @@ export const conditionCatalogDefinitions: ConditionCatalogEntry[] = [
     tip: neurologicalTip('Seizures')
   },
   {
-    title: 'PTSD',
-    category: 'Mental Health',
-    description: 'Nightmares, flashbacks, panic, isolation, irritability, and missed work.',
-    vaFocus: mentalHealthFocus,
-    tip: mentalHealthTip('PTSD')
-  },
-  {
-    title: 'Anxiety',
-    category: 'Mental Health',
-    description: 'Triggers, panic symptoms, avoidance, sleep, and social impact.',
-    vaFocus: mentalHealthFocus,
-    tip: mentalHealthTip('Anxiety')
-  },
-  {
-    title: 'Depression',
-    category: 'Mental Health',
-    description: 'Mood, motivation, hygiene, isolation, sleep, and daily functioning.',
-    vaFocus: mentalHealthFocus,
-    tip: mentalHealthTip('Depression')
-  },
-  {
-    title: 'Panic attacks',
-    category: 'Mental Health',
-    description: 'Immediate episode logs for panic symptoms, duration, and recovery.',
-    vaFocus: mentalHealthFocus,
-    tip: mentalHealthTip('Panic attacks')
-  },
-  {
     title: 'Insomnia / Sleep disturbances',
     category: 'Sleep',
     description: 'Hours slept, wake-ups, nightmares, fatigue, and next-day effects.',
     vaFocus: sleepFocus,
     tip: sleepTip
-  },
-  {
-    title: 'Lower back pain',
-    category: 'Back, Neck, and Joint',
-    description: 'Pain level, flare-ups, limits sitting, standing, walking, and lifting.',
-    vaFocus: musculoskeletalFocus,
-    tip: musculoskeletalTip
-  },
-  {
-    title: 'Neck pain',
-    category: 'Back, Neck, and Joint',
-    description: 'Range of motion, flare-ups, pain level, and activity limits.',
-    vaFocus: musculoskeletalFocus,
-    tip: musculoskeletalTip
-  },
-  {
-    title: 'Knee conditions',
-    category: 'Back, Neck, and Joint',
-    description: 'Pain, swelling, instability, walking limits, stairs, and missed activity.',
-    vaFocus: musculoskeletalFocus,
-    tip: musculoskeletalTip
   },
   {
     title: 'Shoulder conditions',
@@ -377,6 +391,11 @@ export function pickRandomHomeVisitTip(conditions: ConditionCatalogItem[]): { ti
   pool.push({
     title: 'Effective date tip',
     text: EFFECTIVE_DATE_TIP
+  })
+
+  pool.push({
+    title: 'Mental health tip',
+    text: VA_MENTAL_HEALTH_COMBINED_TIP
   })
 
   if (!pool.length) {

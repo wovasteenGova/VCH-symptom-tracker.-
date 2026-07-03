@@ -82,3 +82,22 @@ html.dark .sym-entry-time-menu [data-reka-popper-content-wrapper] [role="listbox
 html.dark .sym-entry-time-menu [data-reka-popper-content-wrapper] [data-slot="content"] {
   background: #0f172a;
 }
+
+.sym-entry-time-select {
+  appearance: none;
+  border: 0;
+  border-radius: 1rem;
+  background: #f1f5f9;
+  padding: 0.85rem 0.5rem;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #020617;
+  box-shadow: inset 0 0 0 1px rgb(226 232 240);
+}
+
+html.dark .sym-entry-time-select {
+  background: #1e293b;
+  color: #ffffff;
+  box-shadow: inset 0 0 0 1px rgb(51 65 85);
+}

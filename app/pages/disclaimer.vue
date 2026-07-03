@@ -46,6 +46,29 @@
               guarantee any medical, legal, benefits, or VA outcome.
             </p>
           </div>
+
+          <div class="rounded-3xl border border-slate-800 bg-slate-950/60 p-4">
+            <p>
+              By using VCH Symptom Tracker, you agree to the
+              <a
+                :href="VCH_TERMS_URL"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="font-bold text-white underline underline-offset-2 hover:text-slate-200"
+              >
+                Veterans Central Hub terms of service
+              </a>
+              and
+              <a
+                :href="VCH_PRIVACY_URL"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="font-bold text-white underline underline-offset-2 hover:text-slate-200"
+              >
+                privacy policy
+              </a>.
+            </p>
+          </div>
         </section>
       </div>
 
@@ -61,3 +84,7 @@
     </section>
   </main>
 </template>
+
+<script setup lang="ts">
+import { VCH_PRIVACY_URL, VCH_TERMS_URL } from '../utils/subscription'
+</script>

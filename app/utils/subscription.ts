@@ -5,6 +5,8 @@ export const FREE_ENTRY_LIMIT = FREE_CONDITION_LIMIT
 export const PRO_ANNUAL_PRICE = 12.99
 export const PRO_ANNUAL_PRICE_LABEL = '$12.99/year'
 export const VCH_HUB_URL = 'https://veteranscentralhub.us'
+export const VCH_PRIVACY_URL = `${VCH_HUB_URL}/privacy`
+export const VCH_TERMS_URL = `${VCH_HUB_URL}/terms`
 export const VCH_CONTACT_URL = 'https://veteranscentralhub.us/contact'
 export const VCH_CLAIM_MAKER_URL = 'https://veteranscentralhub.us/claims-maker'
 

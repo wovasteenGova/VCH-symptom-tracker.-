@@ -38,9 +38,9 @@
 
               ? (showProLimit
 
-                ? 'Free includes 1 condition on your home screen. Upgrade to Pro for unlimited conditions.'
+                ? 'Free includes 1 condition. Tap one to select it, tap again to unselect, or tap another to switch.'
 
-                : 'Choose what you want on your home screen. You can change these anytime.')
+                : 'Pick the conditions you want quick access to on your home screen.')
 
               : (showProLimit
 
@@ -280,7 +280,7 @@
 
       >
 
-        {{ saving ? 'Saving...' : `Continue with ${selectedCount || 'your'} ${selectedCount === 1 ? 'condition' : 'conditions'}` }}
+        {{ continueButtonLabel }}
 
         <UIcon name="i-lucide-arrow-right" class="size-5" />
 
@@ -386,12 +386,35 @@ const lockedKeySet = computed(() => new Set(props.lockedKeys || []))
 
 const selectedCount = computed(() => props.selectedKeys.length)
 
+const continueButtonLabel = computed(() => {
+  if (props.saving) {
+    return 'Saving...'
+  }
 
+  if (selectedCount.value === 0) {
+    return 'Continue'
+  }
+
+  if (selectedCount.value === 1) {
+    const selectedKey = props.selectedKeys[0]
+    const title = props.conditions.find((condition) => condition.key === selectedKey)?.title
+
+    if (title) {
+      return `Continue with ${title}`
+    }
+  }
+
+  return `Continue with ${selectedCount.value} conditions`
+})
 
 const filteredConditions = computed(() => {
   const query = debouncedSearchQuery.value.trim()
 
   const results = filterAndRankConditions(props.conditions, query)
+
+  if (props.mode !== 'manage') {
+    return results
+  }
 
   const selectedOrder = new Map(props.selectedKeys.map((key, index) => [key, index]))
   const relevanceOrder = new Map(results.map((condition, index) => [condition.key, index]))

@@ -156,60 +156,6 @@
         </div>
       </header>
 
-      <section
-        v-if="showInstallCard && !needsAppWelcome && !isEntryOpen"
-        class="mx-4 mt-7 shrink-0 rounded-4xl border border-teal-200 bg-teal-50 p-4 shadow-lg shadow-teal-950/5 dark:border-teal-500/30 dark:bg-teal-950/30 dark:shadow-black/20"
-      >
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <p class="text-xs font-bold uppercase tracking-[0.2em] text-teal-700 dark:text-teal-200">Install on phone</p>
-            <h2 class="mt-1 text-lg font-bold text-slate-950 dark:text-white">Use this like an app</h2>
-          </div>
-
-          <button
-            type="button"
-            class="grid size-8 shrink-0 place-items-center rounded-full bg-white text-slate-600 ring-1 ring-slate-200 dark:bg-slate-900/80 dark:text-slate-300 dark:ring-0"
-            aria-label="Dismiss install instructions"
-            @click="dismissInstallCard"
-          >
-            <UIcon name="i-lucide-x" class="size-4" />
-          </button>
-        </div>
-
-        <p class="mt-3 text-sm leading-6 text-teal-950/90 dark:text-teal-50/90">
-          {{ installInstructionText }}
-        </p>
-
-        <div class="mt-4 flex flex-wrap gap-2">
-          <button
-            v-if="canPromptInstall"
-            type="button"
-            class="rounded-full bg-slate-950 px-4 py-2 text-sm font-bold text-white shadow-sm dark:bg-white dark:text-slate-950"
-            @click="promptInstall"
-          >
-            Install app
-          </button>
-
-          <a
-            v-if="installGuideVideoUrl"
-            :href="installGuideVideoUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-slate-950 ring-1 ring-teal-200 dark:bg-slate-900/80 dark:text-white dark:ring-teal-500/30"
-          >
-            <UIcon name="i-lucide-play" class="size-4" />
-            Watch how
-          </a>
-
-          <NuxtLink
-            to="/install"
-            class="rounded-full bg-white px-4 py-2 text-sm font-bold text-slate-950 ring-1 ring-teal-200 dark:bg-slate-900/80 dark:text-white dark:ring-teal-500/30"
-          >
-            Step-by-step guide
-          </NuxtLink>
-        </div>
-      </section>
-
       <Transition
         enter-active-class="transition duration-300 ease-out"
         enter-from-class="opacity-0"
@@ -545,6 +491,7 @@
                       leave-to-class="-translate-x-4 opacity-0"
                     >
                       <div
+                        ref="entryStepScrollEl"
                         :key="entryStep"
                         class="flex min-h-0 flex-1 flex-col"
                         :class="currentStepHasSliderField() && currentEntryStepFields.length === 1
@@ -552,6 +499,8 @@
                           : currentStepIsEpisodeDetailStep()
                             ? 'mt-8 justify-start space-y-12 overflow-y-auto no-scrollbar pt-2'
                             : 'mt-6 justify-start space-y-6 overflow-y-auto no-scrollbar'"
+                        :style="entryStepScrollStyle"
+                        @focusin="handleEntryFieldFocus"
                       >
                         <label
                           v-for="(field, fieldIndex) in currentEntryStepFields"
@@ -714,11 +663,55 @@
                               </div>
                             </div>
 
-                            <div class="mt-6 space-y-3">
+                            <div class="mt-6 space-y-3 pb-6">
                               <p class="text-center text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
                                 Time
                               </p>
-                              <div class="grid grid-cols-3 gap-3">
+                              <div v-if="isMobileLayout" class="grid grid-cols-3 gap-3">
+                                <select
+                                  v-model="entryTimeHour"
+                                  aria-label="Hour"
+                                  class="sym-entry-time-select w-full"
+                                  @change="onEntryTimePartsChange"
+                                >
+                                  <option
+                                    v-for="hour in entryHourOptions"
+                                    :key="hour"
+                                    :value="hour"
+                                  >
+                                    {{ hour }}
+                                  </option>
+                                </select>
+                                <select
+                                  v-model="entryTimeMinute"
+                                  aria-label="Minute"
+                                  class="sym-entry-time-select w-full"
+                                  @change="onEntryTimePartsChange"
+                                >
+                                  <option
+                                    v-for="minute in entryMinuteOptions"
+                                    :key="minute"
+                                    :value="minute"
+                                  >
+                                    {{ minute }}
+                                  </option>
+                                </select>
+                                <select
+                                  v-model="entryTimePeriod"
+                                  aria-label="AM or PM"
+                                  class="sym-entry-time-select w-full"
+                                  @change="onEntryTimePartsChange"
+                                >
+                                  <option
+                                    v-for="period in entryPeriodOptions"
+                                    :key="period"
+                                    :value="period"
+                                  >
+                                    {{ period }}
+                                  </option>
+                                </select>
+                              </div>
+                              <div v-else class="grid grid-cols-3 gap-3">
                                 <USelectMenu
                                   v-model="entryTimeHour"
                                   :items="entryHourOptions"
@@ -839,11 +832,11 @@
           <div
             v-else
             key="home-workspace"
-            class="mt-5 flex min-h-0 flex-1 flex-col overflow-hidden"
+            class="mt-5 flex min-h-0 flex-1 flex-col gap-4 overflow-hidden"
           >
         <div
           class="flex min-h-0 flex-col px-4 transition-[flex] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
-          :class="historyExpanded ? 'flex-[1] pb-1' : 'flex-[4] pb-2'"
+          :class="historyExpanded ? 'flex-[1] pb-1' : 'flex-1 pb-3'"
           @wheel.passive="handleConditionWheel"
           @touchstart.passive="handleConditionTouchStart"
           @touchmove.passive="handleConditionTouchMove"
@@ -1088,8 +1081,8 @@
         </div>
 
         <section
-          class="flex min-h-0 flex-col overflow-hidden rounded-t-[1.75rem] border-t border-slate-200/80 bg-white transition-[flex] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] dark:border-slate-800 dark:bg-slate-900"
-          :class="historyExpanded ? 'flex-[4]' : 'flex-[1]'"
+          class="flex min-h-0 flex-col overflow-hidden rounded-t-[1.75rem] border-t border-slate-200/80 bg-white transition-[flex,height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] dark:border-slate-800 dark:bg-slate-900"
+          :class="historyExpanded ? 'flex-[4]' : 'h-[5rem] shrink-0'"
           @pointerdown="handleHistoryPointerDown"
           @pointermove="handleHistoryPointerMove"
           @pointerup="handleHistoryPointerUp"
@@ -1626,7 +1619,7 @@ import { conditionImageAssets } from '../utils/conditionImages'
 import { getSeverityGuidance, severityQuickPresets } from '../utils/severityGuidance'
 import { CalendarDate } from '@internationalized/date'
 import { useMediaQuery } from '@vueuse/core'
-import { computed, nextTick, onBeforeMount, onMounted, ref, shallowRef, watch } from 'vue'
+import { computed, nextTick, onBeforeMount, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 const {
@@ -1706,7 +1699,6 @@ const isExportingPdf = ref(false)
 const exportError = ref('')
 const exportNotice = ref('')
 const transitionDirection = ref('next')
-const showInstallCard = ref(false)
 const installPlatform = ref<'ios' | 'android' | 'desktop'>('desktop')
 const deferredInstallPrompt = ref<any>(null)
 const historyExpanded = ref(false)
@@ -1753,6 +1745,48 @@ const entryTimeSelectUi = {
   base: 'w-full justify-center border-0 ring-0 shadow-none bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800',
   content: 'bg-white dark:bg-slate-900 ring-1 ring-slate-200 dark:ring-slate-700',
   item: 'dark:text-white'
+}
+
+const entryStepScrollEl = ref<HTMLElement | null>(null)
+const keyboardInset = ref(0)
+
+const entryStepScrollStyle = computed(() => {
+  if (keyboardInset.value <= 0) {
+    return undefined
+  }
+
+  return {
+    paddingBottom: `${keyboardInset.value + 24}px`
+  }
+})
+
+function updateKeyboardInset() {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  const viewport = window.visualViewport
+  if (!viewport) {
+    keyboardInset.value = 0
+    return
+  }
+
+  keyboardInset.value = Math.max(0, Math.round(window.innerHeight - viewport.height - viewport.offsetTop))
+}
+
+function handleEntryFieldFocus(event: FocusEvent) {
+  const target = event.target
+  if (!(target instanceof HTMLElement) || !entryStepScrollEl.value) {
+    return
+  }
+
+  if (!target.matches('input, textarea, select')) {
+    return
+  }
+
+  window.setTimeout(() => {
+    target.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  }, 250)
 }
 
 const maxEntryTimeInput = computed(() => {
@@ -1833,26 +1867,16 @@ const entryPickerDays = computed(() => {
 const historyTabs = ['Entries', 'Calendar']
 const installDismissedKey = 'symptom-tracker-install-dismissed'
 
-function readInstallCardState(): { show: boolean, platform: 'ios' | 'android' | 'desktop' } {
+function readInstallPlatform(): 'ios' | 'android' | 'desktop' {
   if (typeof window === 'undefined') {
-    return { show: false, platform: 'desktop' }
-  }
-
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-    || (navigator as Navigator & { standalone?: boolean }).standalone === true
-
-  if (isStandalone || window.localStorage.getItem(installDismissedKey) === 'true') {
-    return { show: false, platform: 'desktop' }
+    return 'desktop'
   }
 
   const userAgent = window.navigator.userAgent.toLowerCase()
   const isIos = /iphone|ipad|ipod/.test(userAgent)
   const isAndroid = /android/.test(userAgent)
 
-  return {
-    show: true,
-    platform: isIos ? 'ios' : isAndroid ? 'android' : 'desktop'
-  }
+  return isIos ? 'ios' : isAndroid ? 'android' : 'desktop'
 }
 
 const submissionHighlightDurationMs = 1_400
@@ -2130,6 +2154,10 @@ function isConditionProLocked(key: string) {
 
   if (draftSelectedKeys.value.includes(key)) {
     return false
+  }
+
+  if (needsOnboarding.value) {
+    return draftSelectedKeys.value.length >= FREE_CONDITION_LIMIT
   }
 
   if (freeConditionKeys.value.includes(key)) {
@@ -2496,12 +2524,14 @@ watch(isConditionPickerOpen, (open) => {
 })
 
 onBeforeMount(() => {
-  const state = readInstallCardState()
-  showInstallCard.value = state.show
-  installPlatform.value = state.platform
+  installPlatform.value = readInstallPlatform()
 })
 
 onMounted(async () => {
+  updateKeyboardInset()
+  window.visualViewport?.addEventListener('resize', updateKeyboardInset)
+  window.visualViewport?.addEventListener('scroll', updateKeyboardInset)
+
   setupInstallCard()
   await loadAppWelcomeState()
 
@@ -2516,6 +2546,11 @@ onMounted(async () => {
     loadEntitlements()
     loadEntries()
   }
+})
+
+onUnmounted(() => {
+  window.visualViewport?.removeEventListener('resize', updateKeyboardInset)
+  window.visualViewport?.removeEventListener('scroll', updateKeyboardInset)
 })
 
 watch(user, async (currentUser) => {
@@ -2844,22 +2879,12 @@ function setupInstallCard() {
     event.preventDefault()
     deferredInstallPrompt.value = event
     installPlatform.value = 'android'
-    showInstallCard.value = true
   })
 
   window.addEventListener('appinstalled', () => {
-    showInstallCard.value = false
     deferredInstallPrompt.value = null
     window.localStorage.setItem(installDismissedKey, 'true')
   })
-}
-
-function dismissInstallCard() {
-  showInstallCard.value = false
-
-  if (typeof window !== 'undefined') {
-    window.localStorage.setItem(installDismissedKey, 'true')
-  }
 }
 
 async function promptInstall() {
@@ -2892,13 +2917,25 @@ function toggleDraftCondition(key: string) {
   trackedConditionsError.value = ''
 
   if (draftSelectedKeys.value.includes(key)) {
-    if (draftSelectedKeys.value.length === 1) {
+    if (!needsOnboarding.value && draftSelectedKeys.value.length === 1) {
       trackedConditionsError.value = 'Keep at least one condition on your home screen.'
       return
     }
 
     draftSelectedKeys.value = draftSelectedKeys.value.filter((existingKey) => existingKey !== key)
     return
+  }
+
+  if (!isPro.value && draftSelectedKeys.value.length >= FREE_CONDITION_LIMIT) {
+    if (needsOnboarding.value || savedEntries.value.length === 0) {
+      draftSelectedKeys.value = [key]
+      return
+    }
+
+    if (isConditionProLocked(key)) {
+      handleLockedConditionSelect(key)
+      return
+    }
   }
 
   if (isConditionProLocked(key)) {
@@ -2910,6 +2947,11 @@ function toggleDraftCondition(key: string) {
 }
 
 function handleLockedConditionSelect(key: string) {
+  if (needsOnboarding.value) {
+    draftSelectedKeys.value = [key]
+    return
+  }
+
   const label = resolveCatalogConditionByStoredKey(key)?.title || formatConditionKeyLabel(key)
 
   openUpgradePrompt(
