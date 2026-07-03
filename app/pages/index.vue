@@ -850,7 +850,7 @@
         >
           <div class="relative flex min-h-0 flex-1 flex-col">
             <div
-              class="relative min-h-0 w-full flex-1 overflow-hidden rounded-[1.75rem] transition-[flex] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+              class="relative min-h-0 w-full flex-1 overflow-hidden rounded-[1.75rem]"
               @touchstart.passive="handleConditionSwipeStart"
               @touchend="handleConditionSwipeEnd"
             >
@@ -963,21 +963,16 @@
 
                           <div
                             v-if="homeVisitTip"
-                            class="mt-8 overflow-hidden"
+                            class="mt-8 min-h-[5.25rem] overflow-hidden"
                           >
-                            <Transition
-                              name="severity-guide"
-                              appear
-                            >
-                              <div :key="homeVisitTip.title">
-                                <p class="text-xs font-bold uppercase tracking-[0.14em] text-sky-700 dark:text-sky-300">
-                                  {{ homeVisitTip.title }}
-                                </p>
-                                <p class="mt-1.5 leading-6 text-slate-600 dark:text-slate-300">
-                                  {{ homeVisitTip.text }}
-                                </p>
-                              </div>
-                            </Transition>
+                            <div>
+                              <p class="text-xs font-bold uppercase tracking-[0.14em] text-sky-700 dark:text-sky-300">
+                                {{ homeVisitTip.title }}
+                              </p>
+                              <p class="mt-1.5 leading-6 text-slate-600 dark:text-slate-300">
+                                {{ homeVisitTip.text }}
+                              </p>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1611,7 +1606,7 @@ import { conditionImageAssets } from '../utils/conditionImages'
 import { getSeverityGuidance, severityQuickPresets } from '../utils/severityGuidance'
 import { CalendarDate } from '@internationalized/date'
 import { useMediaQuery } from '@vueuse/core'
-import { computed, nextTick, onMounted, ref, shallowRef, watch } from 'vue'
+import { computed, nextTick, onBeforeMount, onMounted, ref, shallowRef, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 const {
@@ -1690,6 +1685,8 @@ const deferredInstallPrompt = ref<any>(null)
 const historyExpanded = ref(false)
 const historyScrollEl = ref<HTMLElement | null>(null)
 const homeVisitTip = ref<{ title: string, text: string } | null>(null)
+const homeVisitTipKeysSignature = ref('')
+const homeSortUsesEntryDates = ref(false)
 const isDesktopLayout = useMediaQuery('(min-width: 768px)')
 const isMobileLayout = computed(() => !isDesktopLayout.value)
 const isConditionScrolling = ref(false)
@@ -1808,6 +1805,29 @@ const entryPickerDays = computed(() => {
 
 const historyTabs = ['Entries', 'Calendar']
 const installDismissedKey = 'symptom-tracker-install-dismissed'
+
+function readInstallCardState(): { show: boolean, platform: 'ios' | 'android' | 'desktop' } {
+  if (typeof window === 'undefined') {
+    return { show: false, platform: 'desktop' }
+  }
+
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    || (navigator as Navigator & { standalone?: boolean }).standalone === true
+
+  if (isStandalone || window.localStorage.getItem(installDismissedKey) === 'true') {
+    return { show: false, platform: 'desktop' }
+  }
+
+  const userAgent = window.navigator.userAgent.toLowerCase()
+  const isIos = /iphone|ipad|ipod/.test(userAgent)
+  const isAndroid = /android/.test(userAgent)
+
+  return {
+    show: true,
+    platform: isIos ? 'ios' : isAndroid ? 'android' : 'desktop'
+  }
+}
+
 const submissionHighlightDurationMs = 1_400
 
 const pendingDelete = ref<null | {
@@ -1882,9 +1902,11 @@ const homeConditions = computed(() => {
     .filter((condition): condition is HomeCondition => Boolean(condition))
 
   return conditions.sort((a, b) => {
-    const lastRecordedDiff = (lastRecordedAt.get(b.key) ?? 0) - (lastRecordedAt.get(a.key) ?? 0)
-    if (lastRecordedDiff !== 0) {
-      return lastRecordedDiff
+    if (homeSortUsesEntryDates.value) {
+      const lastRecordedDiff = (lastRecordedAt.get(b.key) ?? 0) - (lastRecordedAt.get(a.key) ?? 0)
+      if (lastRecordedDiff !== 0) {
+        return lastRecordedDiff
+      }
     }
 
     return (trackedOrder.get(a.key) ?? 0) - (trackedOrder.get(b.key) ?? 0)
@@ -1895,12 +1917,25 @@ const showConditionBrowser = computed(() => {
   return needsOnboarding.value || isConditionBrowserOpen.value
 })
 
-function refreshHomeVisitTip() {
+function trackedConditionKeysSignature(keys: string[]) {
+  return [...keys].sort().join('|')
+}
+
+function refreshHomeVisitTip(force = false) {
   if (showConditionBrowser.value || !homeConditions.value.length) {
-    homeVisitTip.value = null
+    if (!homeConditions.value.length) {
+      homeVisitTip.value = null
+      homeVisitTipKeysSignature.value = ''
+    }
     return
   }
 
+  const signature = trackedConditionKeysSignature(trackedConditionKeys.value)
+  if (!force && signature === homeVisitTipKeysSignature.value && homeVisitTip.value) {
+    return
+  }
+
+  homeVisitTipKeysSignature.value = signature
   homeVisitTip.value = pickRandomHomeVisitTip(homeConditions.value)
 }
 
@@ -2436,6 +2471,12 @@ watch(isConditionPickerOpen, (open) => {
   }
 })
 
+onBeforeMount(() => {
+  const state = readInstallCardState()
+  showInstallCard.value = state.show
+  installPlatform.value = state.platform
+})
+
 onMounted(async () => {
   setupInstallCard()
 
@@ -2773,20 +2814,6 @@ function setupInstallCard() {
     return
   }
 
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-    || (navigator as any).standalone === true
-
-  if (isStandalone || window.localStorage.getItem(installDismissedKey) === 'true') {
-    return
-  }
-
-  const userAgent = window.navigator.userAgent.toLowerCase()
-  const isIos = /iphone|ipad|ipod/.test(userAgent)
-  const isAndroid = /android/.test(userAgent)
-
-  installPlatform.value = isIos ? 'ios' : isAndroid ? 'android' : 'desktop'
-  showInstallCard.value = true
-
   window.addEventListener('beforeinstallprompt', (event) => {
     event.preventDefault()
     deferredInstallPrompt.value = event
@@ -2958,6 +2985,7 @@ async function finishConditionBrowser() {
 async function loadEntries() {
   if (!user.value) {
     savedEntries.value = []
+    homeSortUsesEntryDates.value = false
     isSubmissionDropdownOpen.value = false
     lastSeenSubmissionAt.value = ''
     highlightedSubmissionId.value = null
@@ -2976,6 +3004,7 @@ async function loadEntries() {
     entriesError.value = getErrorMessage(error)
   } finally {
     isLoadingEntries.value = false
+    homeSortUsesEntryDates.value = true
   }
 }
 

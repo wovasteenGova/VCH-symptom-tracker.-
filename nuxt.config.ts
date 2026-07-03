@@ -34,18 +34,19 @@ export default defineNuxtConfig({
         { property: 'og:title', content: 'Veteran Symptom Tracker' },
         { property: 'og:description', content: 'Track symptoms, daily impact, and signed supporter observations from your phone.' },
         { property: 'og:type', content: 'website' },
-        { property: 'og:image', content: '/pwa-512.png' },
+        { property: 'og:image', content: '/vch-logo.png' },
         { name: 'twitter:card', content: 'summary' }
       ],
       link: [
-        { rel: 'icon', type: 'image/svg+xml', href: '/icon.svg' },
-        { rel: 'icon', type: 'image/png', sizes: '48x48', href: '/favicon-48.png' },
-        { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' }
+        { rel: 'icon', type: 'image/png', href: '/vch-logo.png' },
+        { rel: 'shortcut icon', type: 'image/png', href: '/vch-logo.png' },
+        { rel: 'apple-touch-icon', href: '/vch-logo.png' }
       ]
     }
   },
   pwa: {
     registerType: 'autoUpdate',
+    includeAssets: ['vch-logo.png', 'apple-touch-icon.png', 'pwa-192.png', 'pwa-512.png'],
     manifest: {
       name: 'Veteran Symptom Tracker',
       short_name: 'Symptoms',
@@ -58,19 +59,13 @@ export default defineNuxtConfig({
       start_url: '/',
       icons: [
         {
-          src: '/pwa-192.png',
-          sizes: '192x192',
-          type: 'image/png',
-          purpose: 'any'
-        },
-        {
-          src: '/pwa-512.png',
+          src: '/vch-logo.png',
           sizes: '512x512',
           type: 'image/png',
           purpose: 'any'
         },
         {
-          src: '/pwa-512.png',
+          src: '/vch-logo.png',
           sizes: '512x512',
           type: 'image/png',
           purpose: 'maskable'
@@ -79,7 +74,7 @@ export default defineNuxtConfig({
       categories: ['health', 'productivity', 'utilities'],
       screenshots: [
         {
-          src: '/pwa-512.png',
+          src: '/vch-logo.png',
           sizes: '512x512',
           type: 'image/png',
           form_factor: 'narrow'

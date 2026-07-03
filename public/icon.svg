@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
-  <title id="title">Veteran Symptom Tracker icon</title>
-  <desc id="desc">A shield with a health pulse line on a dark background.</desc>
-  <rect width="512" height="512" rx="116" fill="#020617"/>
-  <circle cx="256" cy="256" r="204" fill="#0f172a"/>
-  <path d="M256 92 376 142v94c0 89-50 151-120 184-70-33-120-95-120-184v-94l120-50Z" fill="#ffffff"/>
-  <path d="M256 126 344 163v73c0 65-34 111-88 140-54-29-88-75-88-140v-73l88-37Z" fill="#14b8a6"/>
-  <path d="M145 266h58l23-54 48 108 31-74h62" fill="none" stroke="#ffffff" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
