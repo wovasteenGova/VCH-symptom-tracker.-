@@ -9,6 +9,7 @@ import {
   drawVerticalBarChart
 } from '../utils/symptomReportCharts'
 import { drawEntryLogSection } from '../utils/symptomReportEntryLog'
+import { buildBackfillReportNote } from '../utils/reportBackfillNote'
 import { getLogoFormat, loadReportLogoDataUrl, reportBranding } from '../utils/reportBranding'
 
 type SymptomEntryRecord = {
@@ -56,6 +57,33 @@ function drawPageFooter(doc: jsPDF, pageNumber: number, totalPages: number, marg
   doc.setTextColor(100, 116, 139)
   doc.text(reportBranding.organizationName, margin, pageHeight - 24)
   doc.text(`Page ${pageNumber} of ${totalPages}`, pageWidth - margin, pageHeight - 24, { align: 'right' })
+}
+
+function drawReportNoticeSection(
+  doc: jsPDF,
+  y: number,
+  margin: number,
+  contentWidth: number,
+  noticeText: string
+) {
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(10)
+  doc.setTextColor(180, 83, 9)
+  doc.text('Report note for raters', margin, y)
+  y += 14
+
+  doc.setDrawColor(251, 191, 36)
+  doc.setFillColor(255, 251, 235)
+  const wrapped = doc.splitTextToSize(noticeText, contentWidth - 28) as string[]
+  const boxHeight = wrapped.length * 12 + 24
+  doc.roundedRect(margin, y, contentWidth, boxHeight, 10, 10, 'FD')
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9)
+  doc.setTextColor(120, 53, 15)
+  doc.text(wrapped, margin + 14, y + 18)
+
+  return y + boxHeight + 16
 }
 
 function drawVeteranElectronicSignatureSection(
@@ -209,6 +237,12 @@ export function useSymptomPdfExport() {
       { label: 'Peak severity', value: String(metrics.peakSeverity) },
       { label: 'Conditions', value: String(metrics.conditionCount) }
     ]) + 18
+
+    const backfillReportNote = buildBackfillReportNote(entries)
+
+    if (backfillReportNote) {
+      y = drawReportNoticeSection(doc, y, margin, contentWidth, backfillReportNote)
+    }
 
     if (includeCharts) {
       drawSectionTitle(doc, 'Severity trend', margin, y)

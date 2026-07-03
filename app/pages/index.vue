@@ -157,7 +157,7 @@
       </header>
 
       <section
-        v-if="showInstallCard && !isEntryOpen"
+        v-if="showInstallCard && !needsAppWelcome && !isEntryOpen"
         class="mx-4 mt-7 shrink-0 rounded-4xl border border-teal-200 bg-teal-50 p-4 shadow-lg shadow-teal-950/5 dark:border-teal-500/30 dark:bg-teal-950/30 dark:shadow-black/20"
       >
         <div class="flex items-start justify-between gap-3">
@@ -1495,6 +1495,23 @@
     </div>
   </Transition>
 
+  <AppWelcomeCarousel
+    v-if="needsAppWelcome && !isEntryOpen"
+    :install-platform="installPlatform"
+    :install-instruction-text="installInstructionText"
+    :install-guide-video-url="installGuideVideoUrl"
+    :can-prompt-install="canPromptInstall"
+    @complete="handleWelcomeComplete"
+    @prompt-install="promptInstall"
+  />
+
+  <LoggingCadencePrompt
+    :open="isLoggingCadencePromptOpen"
+    :caution="weeklyLogCaution"
+    @close="closeLoggingCadencePrompt"
+    @continue="confirmLoggingCadencePrompt"
+  />
+
   <UpgradePromptModal
     :open="isUpgradePromptOpen"
     :title="upgradePromptTitle"
@@ -1566,6 +1583,7 @@ import { useSymptomPdfExport } from '../composables/useSymptomPdfExport'
 import { useDeletedEntryArchive } from '../composables/useDeletedEntryArchive'
 import { useUserProfiles } from '../composables/useUserProfiles'
 import { useEntitlements } from '../composables/useEntitlements'
+import { useAppWelcome } from '../composables/useAppWelcome'
 import { useTrackedConditions } from '../composables/useTrackedConditions'
 import { FREE_CONDITION_LIMIT, formatConditionKeyLabel, conditionKeyFromLabel } from '../utils/subscription'
 import { mapEntryHistoryItem } from '../utils/entryDisplay'
@@ -1601,6 +1619,8 @@ import {
 } from '../utils/vaConditionFields'
 import { reportBranding } from '../utils/reportBranding'
 import { androidAddToHomeScreenVideoUrl, iosAddToHomeScreenVideoUrl } from '../utils/installGuide'
+import { filterAndRankConditions } from '../utils/conditionSearch'
+import { getWeeklyLogCaution, type WeeklyLogCaution } from '../utils/loggingCadence'
 import { conditionCatalog, pickRandomHomeVisitTip, resolveCatalogConditionByStoredKey } from '../utils/conditionCatalog'
 import { conditionImageAssets } from '../utils/conditionImages'
 import { getSeverityGuidance, severityQuickPresets } from '../utils/severityGuidance'
@@ -1635,6 +1655,13 @@ const {
   loadEntitlements,
   startCheckout
 } = useEntitlements()
+const {
+  needsAppWelcome,
+  loggingCadence,
+  weeklyLogDay,
+  loadAppWelcomeState,
+  completeAppWelcome
+} = useAppWelcome()
 const {
   trackedConditionKeys,
   needsOnboarding,
@@ -1860,6 +1887,17 @@ const pendingEntryPanelOptions = ref<{
   }
 } | null>(null)
 const isConfirmingConditionSlot = ref(false)
+const isLoggingCadencePromptOpen = ref(false)
+const weeklyLogCaution = ref<WeeklyLogCaution | null>(null)
+const pendingCadenceEntryOptions = ref<{
+  prefillCustomCondition?: string
+  condition?: {
+    title: string
+    category: string
+    description: string
+    image: string
+  }
+} | null>(null)
 const conditionSlotError = ref('')
 const isConditionBrowserOpen = ref(false)
 const draftSelectedKeys = ref<string[]>([])
@@ -2384,21 +2422,7 @@ const slideLeaveToClass = computed(() => {
   return '-translate-y-3 opacity-0'
 })
 function filterConditionResults(query: string) {
-  const normalized = query.trim().toLowerCase()
-
-  if (!normalized) {
-    return conditionResults
-  }
-
-  return conditionResults.filter((condition) => {
-    const searchableText = [
-      condition.title,
-      condition.category,
-      condition.description
-    ].join(' ').toLowerCase()
-
-    return searchableText.includes(normalized)
-  })
+  return filterAndRankConditions(conditionResults, query)
 }
 
 const filteredConditionResults = computed(() => filterConditionResults(debouncedSearchQuery.value))
@@ -2479,6 +2503,7 @@ onBeforeMount(() => {
 
 onMounted(async () => {
   setupInstallCard()
+  await loadAppWelcomeState()
 
   if (!entryCalendarDate.value) {
     syncEntryInputsFromForm()
@@ -2498,6 +2523,7 @@ watch(user, async (currentUser) => {
     isAuthPanelOpen.value = false
     loadProfileDisplayName()
     loadEntitlements()
+    await loadAppWelcomeState()
     await loadEntries()
     await refreshTrackedConditions()
     return
@@ -4094,7 +4120,7 @@ function openEntryPanel(options: {
   }
 
   if (isPro.value) {
-    openEntryPanelInner(options)
+    requestEntryPanelOpen(options)
     return
   }
 
@@ -4102,12 +4128,57 @@ function openEntryPanel(options: {
   const pendingConditionLabel = options.condition?.title || options.prefillCustomCondition || ''
 
   if (!pendingConditionKey) {
-    openEntryPanelInner(options)
+    requestEntryPanelOpen(options)
     return
   }
 
   if (ensureFreeConditionAccess(pendingConditionKey, pendingConditionLabel || formatConditionKeyLabel(pendingConditionKey), options)) {
-    openEntryPanelInner(options)
+    requestEntryPanelOpen(options)
+  }
+}
+
+function requestEntryPanelOpen(options: {
+  prefillCustomCondition?: string
+  condition?: {
+    title: string
+    category: string
+    description: string
+    image: string
+  }
+} = {}) {
+  const caution = getWeeklyLogCaution(weeklyLogDay.value, loggingCadence.value)
+
+  if (caution) {
+    pendingCadenceEntryOptions.value = options
+    weeklyLogCaution.value = caution
+    isLoggingCadencePromptOpen.value = true
+    return
+  }
+
+  openEntryPanelInner(options)
+}
+
+function closeLoggingCadencePrompt() {
+  isLoggingCadencePromptOpen.value = false
+  weeklyLogCaution.value = null
+  pendingCadenceEntryOptions.value = null
+}
+
+function confirmLoggingCadencePrompt() {
+  const options = pendingCadenceEntryOptions.value || {}
+  closeLoggingCadencePrompt()
+  openEntryPanelInner(options)
+}
+
+async function handleWelcomeComplete(payload: {
+  loggingCadence: 'daily' | 'weekly'
+  weeklyLogDay: number
+  termsAcceptedAt: string
+}) {
+  try {
+    await completeAppWelcome(payload)
+  } catch (error) {
+    console.error(error)
   }
 }
 

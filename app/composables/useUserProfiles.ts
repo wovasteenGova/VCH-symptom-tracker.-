@@ -4,6 +4,10 @@ type UserProfilePayload = {
   free_condition_keys?: string[]
   tracked_condition_keys?: string[]
   conditions_onboarding_completed?: boolean
+  app_welcome_completed?: boolean
+  logging_cadence?: 'daily' | 'weekly'
+  weekly_log_day?: number
+  terms_accepted_at?: string | null
 }
 type SupporterProfilePayload = {
   link_label?: string | null

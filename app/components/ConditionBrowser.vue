@@ -298,6 +298,8 @@
 
 import { computed, ref, watch } from 'vue'
 
+import { filterAndRankConditions } from '../utils/conditionSearch'
+
 
 
 type ConditionOption = {
@@ -387,19 +389,12 @@ const selectedCount = computed(() => props.selectedKeys.length)
 
 
 const filteredConditions = computed(() => {
-  const query = debouncedSearchQuery.value.trim().toLowerCase()
+  const query = debouncedSearchQuery.value.trim()
 
-  let results = props.conditions
-
-  if (query) {
-    results = props.conditions.filter((condition) => {
-      return condition.title.toLowerCase().includes(query)
-        || condition.category.toLowerCase().includes(query)
-        || condition.description.toLowerCase().includes(query)
-    })
-  }
+  const results = filterAndRankConditions(props.conditions, query)
 
   const selectedOrder = new Map(props.selectedKeys.map((key, index) => [key, index]))
+  const relevanceOrder = new Map(results.map((condition, index) => [condition.key, index]))
 
   return [...results].sort((a, b) => {
     const aSelected = selectedOrder.has(a.key)
@@ -417,7 +412,7 @@ const filteredConditions = computed(() => {
       return 1
     }
 
-    return props.conditions.indexOf(a) - props.conditions.indexOf(b)
+    return (relevanceOrder.get(a.key) ?? 0) - (relevanceOrder.get(b.key) ?? 0)
   })
 })
 

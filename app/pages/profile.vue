@@ -202,6 +202,58 @@
           </div>
         </section>
 
+        <section class="rounded-4xl border border-slate-800 bg-slate-900 p-5">
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Logging rhythm</p>
+          <h2 class="mt-1 text-xl font-bold text-white">When you log symptoms</h2>
+          <p class="mt-2 text-sm leading-6 text-slate-400">
+            Weekly logging is recommended for PTSD and mental health so you are not revisiting painful events every day.
+          </p>
+
+          <div class="mt-4 grid gap-3">
+            <button
+              type="button"
+              class="rounded-3xl border px-4 py-4 text-left transition"
+              :class="loggingCadence === 'weekly'
+                ? 'border-white bg-slate-800'
+                : 'border-slate-700 bg-slate-800/50'"
+              @click="saveLoggingCadence('weekly')"
+            >
+              <span class="block font-bold text-white">End of the week</span>
+              <span class="mt-1 block text-sm leading-6 text-slate-400">Log once and capture the week together.</span>
+            </button>
+
+            <button
+              type="button"
+              class="rounded-3xl border px-4 py-4 text-left transition"
+              :class="loggingCadence === 'daily'
+                ? 'border-white bg-slate-800'
+                : 'border-slate-700 bg-slate-800/50'"
+              @click="saveLoggingCadence('daily')"
+            >
+              <span class="block font-bold text-white">Every day</span>
+              <span class="mt-1 block text-sm leading-6 text-slate-400">Best when you want details while they are fresh.</span>
+            </button>
+          </div>
+
+          <div v-if="loggingCadence === 'weekly'" class="mt-4">
+            <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Preferred log day</p>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <button
+                v-for="option in weeklyLogDayOptions"
+                :key="option.value"
+                type="button"
+                class="rounded-full px-3 py-2 text-sm font-bold transition"
+                :class="weeklyLogDay === option.value
+                  ? 'bg-white text-slate-950'
+                  : 'bg-slate-800 text-slate-300 ring-1 ring-slate-700'"
+                @click="saveWeeklyLogDay(option.value)"
+              >
+                {{ option.label }}
+              </button>
+            </div>
+          </div>
+        </section>
+
         <section class="rounded-4xl border border-slate-800 bg-slate-900 p-4">
           <div>
             <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Supporter Links</p>
@@ -636,12 +688,14 @@ import { useUserProfiles } from '../composables/useUserProfiles'
 import { useSymptomEntries } from '../composables/useSymptomEntries'
 import { useDeletedEntryArchive } from '../composables/useDeletedEntryArchive'
 import { useEntitlements } from '../composables/useEntitlements'
+import { useAppWelcome } from '../composables/useAppWelcome'
 import {
   FREE_CONDITION_LIMIT,
   formatConditionKeyLabel,
   PRO_ANNUAL_PRICE_LABEL,
   buildSupportEmailHref
 } from '../utils/subscription'
+import { WEEKLY_LOG_DAY_OPTIONS, type LoggingCadence } from '../utils/loggingCadence'
 import { mapEntryHistoryItem } from '../utils/entryDisplay'
 import { copyToClipboard } from '../utils/copyToClipboard'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -685,6 +739,14 @@ const {
   renewalLabel,
   loadEntitlements
 } = useEntitlements()
+const {
+  loggingCadence,
+  weeklyLogDay,
+  loadAppWelcomeState,
+  updateLoggingCadence
+} = useAppWelcome()
+
+const weeklyLogDayOptions = WEEKLY_LOG_DAY_OPTIONS
 
 const supportEmailHref = buildSupportEmailHref()
 
@@ -814,6 +876,7 @@ async function loadProfilePage() {
     ])
 
     await loadEntitlements()
+    await loadAppWelcomeState()
 
     activeLogCount.value = entries.length
     profileForm.value.full_name = profile?.full_name || user.value?.user_metadata?.full_name || ''
@@ -838,6 +901,30 @@ async function saveProfile() {
     pageError.value = getErrorMessage(error)
   } finally {
     isSavingProfile.value = false
+  }
+}
+
+async function saveLoggingCadence(cadence: LoggingCadence) {
+  pageError.value = ''
+
+  try {
+    await updateLoggingCadence(cadence, weeklyLogDay.value)
+    pageMessage.value = cadence === 'weekly'
+      ? 'Updated to weekly logging.'
+      : 'Updated to daily logging.'
+  } catch (error) {
+    pageError.value = getErrorMessage(error)
+  }
+}
+
+async function saveWeeklyLogDay(day: number) {
+  pageError.value = ''
+
+  try {
+    await updateLoggingCadence('weekly', day)
+    pageMessage.value = 'Preferred log day updated.'
+  } catch (error) {
+    pageError.value = getErrorMessage(error)
   }
 }
 
