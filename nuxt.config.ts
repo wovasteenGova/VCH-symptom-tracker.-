@@ -10,9 +10,15 @@ export default defineNuxtConfig({
     classSuffix: ''
   },
   runtimeConfig: {
+    stripeSecretKey: process.env.STRIPE_SECRET_KEY || '',
+    stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
+    stripeProPriceId: process.env.STRIPE_PRO_PRICE_ID || '',
+    supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
     public: {
       supabaseUrl: process.env.SUPABASE_URL || process.env.NUXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      supabasePublishableKey: process.env.SUPABASE_ANON_KEY || process.env.NUXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || ''
+      supabasePublishableKey: process.env.SUPABASE_ANON_KEY || process.env.NUXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '',
+      stripePublishableKey: process.env.STRIPE_PUBLIC_KEY || process.env.NUXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
+      siteUrl: process.env.APP_URL || process.env.NUXT_PUBLIC_SITE_URL || ''
     }
   },
   app: {
@@ -85,5 +91,9 @@ export default defineNuxtConfig({
     preset: 'netlify',
     compatibilityDate: '2025-07-15',
     compressPublicAssets: true
+  },
+  routeRules: {
+    '/upgrade': { ssr: false },
+    '/upgrade/**': { ssr: false }
   }
 })

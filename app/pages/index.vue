@@ -331,18 +331,23 @@
         </div>
       </Transition>
 
-      <section v-if="isEntryOpen" class="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden">
-        <div class="flex min-h-0 flex-1 flex-col overflow-hidden px-5">
-          <Transition
-            :enter-active-class="slideEnterActiveClass"
-            :enter-from-class="slideEnterFromClass"
-            enter-to-class="translate-y-0 opacity-100"
-            :leave-active-class="slideLeaveActiveClass"
-            leave-from-class="translate-y-0 opacity-100"
-            :leave-to-class="slideLeaveToClass"
+      <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <Transition
+          mode="out-in"
+          enter-active-class="transition duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+          enter-from-class="translate-y-6 opacity-0"
+          enter-to-class="translate-y-0 opacity-100"
+          leave-active-class="transition duration-350 ease-[cubic-bezier(0.55,0,1,0.45)]"
+          leave-from-class="translate-y-0 opacity-100"
+          leave-to-class="translate-y-4 opacity-0"
+        >
+          <section
+            v-if="isEntryOpen"
+            key="entry-workspace"
+            class="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden"
           >
+        <div class="flex min-h-0 flex-1 flex-col overflow-hidden px-5">
             <div
-              key="entry"
               class="flex min-h-0 flex-1 flex-col overflow-hidden"
             >
               <div class="mb-6 shrink-0 flex items-center gap-4">
@@ -800,14 +805,14 @@
               </StickyActionBar>
               </div>
             </div>
-          </Transition>
         </div>
       </section>
 
-      <div
-        v-else
-        class="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden"
-      >
+          <div
+            v-else
+            key="home-workspace"
+            class="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden"
+          >
         <div
           class="shrink-0 px-4 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
           :class="historyExpanded ? 'pb-1' : 'pb-2'"
@@ -1017,16 +1022,34 @@
 
           <div class="shrink-0 px-4">
             <div class="flex items-start justify-between gap-3">
-              <h2 class="text-2xl font-bold text-slate-950 dark:text-white">History</h2>
-              <button
-                type="button"
-                class="inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-slate-600 transition hover:text-slate-950 disabled:opacity-40 dark:text-slate-300 dark:hover:text-white"
-                :disabled="!savedEntries.length || isExportingPdf"
-                @click="exportEntriesPdf"
-              >
-                <UIcon name="i-lucide-download" class="size-4" />
-                {{ isExportingPdf ? 'Exporting...' : 'PDF' }}
-              </button>
+              <div>
+                <h2 class="text-2xl font-bold text-slate-950 dark:text-white">History</h2>
+                <p
+                  v-if="user && !isPro"
+                  class="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400"
+                >
+                  {{ veteranEntryCount }} of {{ FREE_ENTRY_LIMIT }} free entries used
+                </p>
+              </div>
+              <div class="flex shrink-0 items-center gap-2">
+                <NuxtLink
+                  v-if="user && !isPro"
+                  to="/upgrade"
+                  class="inline-flex items-center gap-1 rounded-full bg-amber-400/15 px-3 py-2 text-xs font-bold text-amber-700 ring-1 ring-amber-400/40 dark:text-amber-200"
+                >
+                  <UIcon name="i-lucide-crown" class="size-3.5" />
+                  Pro
+                </NuxtLink>
+                <button
+                  type="button"
+                  class="inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-slate-600 transition hover:text-slate-950 disabled:opacity-40 dark:text-slate-300 dark:hover:text-white"
+                  :disabled="!savedEntries.length || isExportingPdf"
+                  @click="exportEntriesPdf"
+                >
+                  <UIcon name="i-lucide-download" class="size-4" />
+                  {{ isExportingPdf ? 'Exporting...' : 'PDF' }}
+                </button>
+              </div>
             </div>
             <p v-if="exportError" class="mt-2 text-sm font-medium text-red-600 dark:text-red-300">
               {{ exportError }}
@@ -1139,11 +1162,14 @@
                   <button
                     v-if="entry.source === 'Veteran'"
                     type="button"
-                    class="grid size-10 shrink-0 place-items-center rounded-full text-slate-400 transition hover:bg-sky-50 hover:text-sky-600 dark:hover:bg-sky-950/40 dark:hover:text-sky-300"
-                    :aria-label="`Create private link for ${entry.title}`"
+                    class="grid size-10 shrink-0 place-items-center rounded-full transition"
+                    :class="canUseFamilyReporting
+                      ? 'text-slate-400 hover:bg-sky-50 hover:text-sky-600 dark:hover:bg-sky-950/40 dark:hover:text-sky-300'
+                      : 'text-amber-500/80 hover:bg-amber-50 hover:text-amber-600 dark:hover:bg-amber-950/30 dark:hover:text-amber-300'"
+                    :aria-label="canUseFamilyReporting ? `Create private link for ${entry.title}` : 'Family reporting requires Pro'"
                     @click.stop="openShareLinkForEntry(entry.id)"
                   >
-                    <UIcon name="i-lucide-link" class="size-4" />
+                    <UIcon :name="canUseFamilyReporting ? 'i-lucide-link' : 'i-lucide-lock'" class="size-4" />
                   </button>
 
                   <button
@@ -1223,6 +1249,8 @@
             </div>
           </div>
         </section>
+      </div>
+        </Transition>
       </div>
     </section>
   </main>
@@ -1349,6 +1377,15 @@
       </div>
     </div>
   </Transition>
+
+  <UpgradePromptModal
+    :open="isUpgradePromptOpen"
+    :title="upgradePromptTitle"
+    :description="upgradePromptDescription"
+    :is-checkout-loading="isUpgradeCheckoutLoading"
+    @close="closeUpgradePrompt"
+    @upgrade="handleUpgradeCheckout"
+  />
 </template>
 
 <script setup lang="ts">
@@ -1357,6 +1394,8 @@ import { useSymptomEntries } from '../composables/useSymptomEntries'
 import { useSymptomPdfExport } from '../composables/useSymptomPdfExport'
 import { useDeletedEntryArchive } from '../composables/useDeletedEntryArchive'
 import { useUserProfiles } from '../composables/useUserProfiles'
+import { useEntitlements } from '../composables/useEntitlements'
+import { FREE_ENTRY_LIMIT } from '../utils/subscription'
 import { mapEntryHistoryItem } from '../utils/entryDisplay'
 import { copyToClipboard } from '../utils/copyToClipboard'
 import {
@@ -1410,6 +1449,15 @@ const {
 } = useSupabaseAuth()
 const router = useRouter()
 const { getProfile } = useUserProfiles()
+const {
+  isPro,
+  veteranEntryCount,
+  canUseFamilyReporting,
+  canExportPdf,
+  canCreateEntry,
+  loadEntitlements,
+  startCheckout
+} = useEntitlements()
 
 const profileDisplayName = ref('')
 const homeGreetingWord = ref<'Hello' | 'Hey'>(Math.random() < 0.5 ? 'Hello' : 'Hey')
@@ -1581,6 +1629,10 @@ const shareLinkCreatedUrl = ref('')
 const shareLinkCopied = ref(false)
 const shareLinkError = ref('')
 const isCreatingShareLink = ref(false)
+const isUpgradePromptOpen = ref(false)
+const upgradePromptTitle = ref('Upgrade to Pro')
+const upgradePromptDescription = ref('')
+const isUpgradeCheckoutLoading = ref(false)
 
 const conditions = [...carouselConditions]
 
@@ -2026,15 +2078,15 @@ const slideEnterActiveClass = computed(() => {
   return 'transition duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]'
 })
 const slideLeaveActiveClass = computed(() => {
-  if (transitionDirection.value === 'expand') {
-    return 'transition duration-0'
+  if (transitionDirection.value === 'expand' || transitionDirection.value === 'collapse') {
+    return 'transition duration-350 ease-[cubic-bezier(0.55,0,1,0.45)]'
   }
 
   return 'transition duration-300 ease-[cubic-bezier(0.55,0,1,0.45)]'
 })
 const slideEnterFromClass = computed(() => {
   if (transitionDirection.value === 'expand') {
-    return 'translate-y-0 opacity-100'
+    return 'translate-y-5 opacity-0'
   }
 
   if (transitionDirection.value === 'previous') {
@@ -2053,7 +2105,7 @@ const slideEnterFromClass = computed(() => {
 })
 const slideLeaveToClass = computed(() => {
   if (transitionDirection.value === 'expand') {
-    return 'translate-y-0 opacity-0'
+    return 'translate-y-3 opacity-0'
   }
 
   if (transitionDirection.value === 'previous') {
@@ -2156,6 +2208,7 @@ onMounted(() => {
 
   if (user.value) {
     loadProfileDisplayName()
+    loadEntitlements()
     loadEntries()
   }
 })
@@ -2164,6 +2217,7 @@ watch(user, (currentUser) => {
   if (currentUser) {
     isAuthPanelOpen.value = false
     loadProfileDisplayName()
+    loadEntitlements()
     loadEntries()
     return
   }
@@ -2389,6 +2443,14 @@ function validateEntryDateTimeStep() {
 }
 
 async function exportEntriesPdf() {
+  if (!canExportPdf.value) {
+    openUpgradePrompt(
+      'PDF export is a Pro feature',
+      'Upgrade to export signed PDF reports for your VA claim evidence.'
+    )
+    return
+  }
+
   isExportingPdf.value = true
   exportError.value = ''
 
@@ -2598,6 +2660,14 @@ async function saveEntry() {
     return
   }
 
+  if (!canCreateEntry(Boolean(editingEntryId.value))) {
+    openUpgradePrompt(
+      'Free plan entry limit reached',
+      `Free accounts include ${FREE_ENTRY_LIMIT} entries. Upgrade to Pro for unlimited logging, family reporting, and PDF exports.`
+    )
+    return
+  }
+
   if (!validateEntryDateTimeStep()) {
     return
   }
@@ -2630,6 +2700,7 @@ async function saveEntry() {
     hasActiveDraft.value = false
     closeEntryPanel(true)
     await loadEntries()
+    await loadEntitlements()
   } catch (error) {
     entryError.value = getErrorMessage(error)
   } finally {
@@ -2692,6 +2763,14 @@ async function confirmDeleteEntry() {
 function openShareLinkForEntry(entryId: string) {
   if (!user.value) {
     isAuthPanelOpen.value = true
+    return
+  }
+
+  if (!canUseFamilyReporting.value) {
+    openUpgradePrompt(
+      'Family reporting is a Pro feature',
+      'Create private links so spouses, caregivers, or family can submit signed observations for your claim.'
+    )
     return
   }
 
@@ -2762,24 +2841,58 @@ function getErrorMessage(error: unknown) {
   return 'Something went wrong. Please try again.'
 }
 
+function openUpgradePrompt(title: string, description: string) {
+  upgradePromptTitle.value = title
+  upgradePromptDescription.value = description
+  isUpgradePromptOpen.value = true
+}
+
+function closeUpgradePrompt() {
+  isUpgradePromptOpen.value = false
+}
+
+async function handleUpgradeCheckout() {
+  isUpgradeCheckoutLoading.value = true
+
+  try {
+    await startCheckout()
+  } catch (error) {
+    exportError.value = getErrorMessage(error)
+    isUpgradePromptOpen.value = false
+  } finally {
+    isUpgradeCheckoutLoading.value = false
+  }
+}
+
 function toggleAuthPanel() {
   isAuthPanelOpen.value = !isAuthPanelOpen.value
 }
 
 async function handleAuthSubmit() {
-  isAuthSubmitting.value = true
   authMessage.value = ''
+
+  if (authMode.value === 'signup' && !authName.value.trim()) {
+    authMessage.value = 'Enter your full name.'
+    return
+  }
+
+  if (authMode.value === 'signup' && authPassword.value.length < 6) {
+    authMessage.value = 'Password must be at least 6 characters.'
+    return
+  }
+
+  if (authMode.value === 'signup' && authPassword.value !== authConfirmPassword.value) {
+    authMessage.value = 'Passwords do not match.'
+    return
+  }
+
+  isAuthSubmitting.value = true
 
   try {
     if (authMode.value === 'login') {
       await signIn(authEmail.value, authPassword.value)
     } else {
-      if (authPassword.value !== authConfirmPassword.value) {
-        authMessage.value = 'Passwords do not match.'
-        return
-      }
-
-      const data = await signUp(authEmail.value, authPassword.value, authName.value)
+      const data = await signUp(authEmail.value, authPassword.value, authName.value.trim())
 
       if (data.user) {
         authMessage.value = data.session
@@ -3149,6 +3262,14 @@ function openEntryPanel(options: {
 } = {}) {
   if (!user.value) {
     isAuthPanelOpen.value = true
+    return
+  }
+
+  if (!canCreateEntry(false)) {
+    openUpgradePrompt(
+      'Free plan entry limit reached',
+      `You've used all ${FREE_ENTRY_LIMIT} free entries. Upgrade to Pro to keep logging symptoms without limits.`
+    )
     return
   }
 

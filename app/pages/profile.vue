@@ -23,7 +23,7 @@
         </p>
       </section>
 
-      <div v-else-if="!user" class="mt-6 flex min-h-0 flex-1 flex-col">
+      <form v-else-if="!user" class="mt-6 flex min-h-0 flex-1 flex-col" @submit.prevent="handleAuthSubmit">
         <div class="flex-1 overflow-y-auto no-scrollbar">
           <section class="rounded-4xl border border-slate-800 bg-slate-900 p-5">
             <h2 class="text-xl font-bold text-white">
@@ -39,10 +39,11 @@
                 <input
                   v-model="authName"
                   type="text"
+                  name="name"
                   autocomplete="name"
                   class="w-full rounded-3xl border border-slate-600/70 bg-slate-800/70 px-4 py-4 text-base font-medium text-white outline-none placeholder:text-slate-400 focus:border-slate-400"
                   placeholder="Your full name"
-                  required
+                  :required="authMode === 'signup'"
                 >
               </label>
 
@@ -51,7 +52,10 @@
                 <input
                   v-model="authEmail"
                   type="email"
+                  name="email"
                   autocomplete="email"
+                  inputmode="email"
+                  autocapitalize="none"
                   class="w-full rounded-3xl border border-slate-600/70 bg-slate-800/70 px-4 py-4 text-base font-medium text-white outline-none placeholder:text-slate-400 focus:border-slate-400"
                   placeholder="you@example.com"
                   required
@@ -63,10 +67,11 @@
                 <input
                   v-model="authConfirmPassword"
                   type="password"
+                  name="confirm-password"
                   autocomplete="new-password"
                   class="w-full rounded-3xl border border-slate-600/70 bg-slate-800/70 px-4 py-4 text-base font-medium text-white outline-none placeholder:text-slate-400 focus:border-slate-400"
                   placeholder="Re-enter password"
-                  required
+                  :required="authMode === 'signup'"
                 >
               </label>
 
@@ -75,9 +80,11 @@
                 <input
                   v-model="authPassword"
                   type="password"
-                  autocomplete="current-password"
+                  name="password"
+                  :autocomplete="authMode === 'signup' ? 'new-password' : 'current-password'"
                   class="w-full rounded-3xl border border-slate-600/70 bg-slate-800/70 px-4 py-4 text-base font-medium text-white outline-none placeholder:text-slate-400 focus:border-slate-400"
                   placeholder="At least 6 characters"
+                  minlength="6"
                   required
                 >
               </label>
@@ -98,17 +105,16 @@
           <p v-if="authError" class="mb-3 text-center text-sm font-medium text-red-300">{{ authError }}</p>
 
           <button
-            type="button"
-            class="w-full rounded-2xl bg-white px-5 py-4 text-base font-bold text-slate-950 shadow-lg transition hover:bg-slate-200"
+            type="submit"
+            class="w-full rounded-2xl bg-white px-5 py-4 text-base font-bold text-slate-950 shadow-lg transition hover:bg-slate-200 disabled:opacity-60"
             :disabled="isAuthSubmitting"
-            @click="handleAuthSubmit"
           >
             {{ isAuthSubmitting ? 'Working...' : authMode === 'login' ? 'Sign in' : 'Create account' }}
           </button>
 
           <button
             type="button"
-            class="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-800 px-4 py-4 text-base font-bold text-white ring-1 ring-slate-700 transition hover:bg-slate-700"
+            class="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-800 px-4 py-4 text-base font-bold text-white ring-1 ring-slate-700 transition hover:bg-slate-700 disabled:opacity-60"
             :disabled="isAuthSubmitting"
             @click="handleGoogleSignIn"
           >
@@ -116,7 +122,7 @@
             Continue with Google
           </button>
         </StickyActionBar>
-      </div>
+      </form>
 
       <div v-else class="mt-6 flex min-h-0 flex-1 flex-col">
         <div class="flex-1 space-y-5 overflow-y-auto no-scrollbar pb-4">
@@ -129,22 +135,41 @@
 
             <span
               class="inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.12em] ring-1"
-              :class="isPremiumUser
+              :class="isPro
                 ? 'bg-amber-500/20 text-amber-100 ring-amber-400/80 shadow-sm shadow-amber-500/20'
                 : 'bg-sky-950 text-sky-200 ring-sky-600/70'"
             >
               <UIcon
-                :name="isPremiumUser ? 'i-lucide-crown' : 'i-lucide-sparkles'"
+                :name="isPro ? 'i-lucide-crown' : 'i-lucide-sparkles'"
                 class="size-3.5"
-                :class="isPremiumUser ? 'text-amber-300' : 'text-sky-300'"
+                :class="isPro ? 'text-amber-300' : 'text-sky-300'"
               />
-              {{ isPremiumUser ? 'Pro' : 'Free' }}
+              {{ isPro ? 'Pro' : 'Free' }}
             </span>
           </div>
 
-          <p v-if="!isPremiumUser" class="mt-3 text-xs leading-5 text-slate-400">
-            Upgrade to Pro for signed PDF exports, advanced reports, and more.
+          <p v-if="!isPro" class="mt-3 text-xs leading-5 text-slate-400">
+            Free plan: {{ veteranEntryCount }} of {{ FREE_ENTRY_LIMIT }} entries used. Upgrade for unlimited logs, family reporting, and PDF exports.
           </p>
+          <p v-else-if="renewalLabel && !isComped" class="mt-3 text-xs leading-5 text-amber-100/80">
+            Pro renews on {{ renewalLabel }}.
+          </p>
+          <p v-else-if="isComped" class="mt-3 text-xs leading-5 text-amber-100/80">
+            Pro access granted at no cost. Thank you for using the tracker.
+          </p>
+
+          <div class="mt-4 flex flex-wrap gap-2">
+            <NuxtLink
+              to="/upgrade"
+              class="inline-flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold transition"
+              :class="isPro
+                ? 'bg-slate-800 text-white ring-1 ring-slate-700'
+                : 'bg-amber-400 text-slate-950 hover:bg-amber-300'"
+            >
+              <UIcon :name="isPro ? 'i-lucide-receipt' : 'i-lucide-crown'" class="size-4" />
+              {{ isPro ? 'Payment center' : `Upgrade — ${PRO_ANNUAL_PRICE_LABEL}` }}
+            </NuxtLink>
+          </div>
 
           <div class="mt-5 space-y-4">
             <label class="block">
@@ -167,6 +192,35 @@
               Create a private link for someone you trust. They enter their own contact info on each report. You can also create a link from a saved entry in your history.
             </p>
           </div>
+
+          <div
+            v-if="!canUseFamilyReporting"
+            class="mt-4 rounded-3xl border border-amber-900/50 bg-amber-950/20 p-4"
+          >
+            <div class="flex items-start gap-3">
+              <UIcon name="i-lucide-lock" class="mt-0.5 size-5 shrink-0 text-amber-300" />
+              <div>
+                <p class="font-semibold text-amber-100">Pro feature</p>
+                <p class="mt-1 text-sm leading-6 text-amber-50/90">
+                  Family reporting links are included with Pro so supporters can submit signed observations for your claim.
+                </p>
+                <NuxtLink
+                  to="/upgrade"
+                  class="mt-3 inline-flex items-center gap-2 rounded-2xl bg-amber-400 px-4 py-3 text-sm font-bold text-slate-950"
+                >
+                  Unlock family reporting
+                </NuxtLink>
+                <a
+                  :href="supportEmailHref"
+                  class="mt-3 block text-xs font-semibold text-amber-100/80 underline-offset-2 hover:underline"
+                >
+                  Can't pay? Email us for free access
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <template v-else>
 
           <div v-if="linkedEntryContext" class="mt-4 rounded-3xl border border-sky-900/60 bg-sky-950/30 p-4">
             <p class="text-xs font-bold uppercase tracking-[0.14em] text-sky-300">Linked entry</p>
@@ -226,6 +280,7 @@
               {{ createdLinkCopied ? 'Copied to clipboard' : 'Copy link' }}
             </button>
           </div>
+          </template>
         </section>
 
         <section class="space-y-3">
@@ -465,6 +520,12 @@ import { useSupabaseAuth } from '../composables/useSupabaseAuth'
 import { useUserProfiles } from '../composables/useUserProfiles'
 import { useSymptomEntries } from '../composables/useSymptomEntries'
 import { useDeletedEntryArchive } from '../composables/useDeletedEntryArchive'
+import { useEntitlements } from '../composables/useEntitlements'
+import {
+  FREE_ENTRY_LIMIT,
+  PRO_ANNUAL_PRICE_LABEL,
+  buildSupportEmailHref
+} from '../utils/subscription'
 import { mapEntryHistoryItem } from '../utils/entryDisplay'
 import { copyToClipboard } from '../utils/copyToClipboard'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -494,8 +555,20 @@ const { createEntry } = useSymptomEntries()
 const {
   listDeletedEntries,
   removeDeletedEntry,
-  takeDeletedEntry
+  takeDeletedEntry,
+  archiveDeletedEntry
 } = useDeletedEntryArchive()
+const {
+  isPro,
+  isComped,
+  veteranEntryCount,
+  canUseFamilyReporting,
+  renewalLabel,
+  loadEntitlements,
+  canCreateEntry
+} = useEntitlements()
+
+const supportEmailHref = buildSupportEmailHref()
 
 const conditionOptions = [
   'PTSD / Mental Health',
@@ -517,7 +590,6 @@ const isAuthSubmitting = ref(false)
 const profileForm = ref({
   full_name: ''
 })
-const isPremiumUser = ref(false)
 const supporterForm = ref({
   link_label: '',
   visible_conditions: [] as string[]
@@ -608,6 +680,8 @@ async function loadProfilePage() {
       listSupporterProfiles()
     ])
 
+    await loadEntitlements()
+
     profileForm.value.full_name = profile?.full_name || user.value?.user_metadata?.full_name || ''
     supporterProfiles.value = supporters
   } catch (error) {
@@ -637,6 +711,11 @@ async function createSupporter() {
   pageMessage.value = ''
   pageError.value = ''
   createdLink.value = ''
+
+  if (!canUseFamilyReporting.value) {
+    pageError.value = 'Family reporting requires Pro. Visit Payment center to upgrade.'
+    return
+  }
 
   if (!supporterForm.value.visible_conditions.length) {
     pageError.value = 'Choose at least one visible condition.'
@@ -765,6 +844,13 @@ async function restoreDeletedEntry(entryId: string) {
     const restoredEntry = { ...archivedEntry }
     delete restoredEntry.deleted_at
 
+    if (!canCreateEntry(false)) {
+      archiveDeletedEntry(user.value.id, archivedEntry)
+      loadDeletedEntries()
+      pageError.value = `Free plan includes ${FREE_ENTRY_LIMIT} entries. Upgrade to Pro to restore more logs.`
+      return
+    }
+
     await createEntry({
       condition_key: restoredEntry.condition_key,
       condition_label: restoredEntry.condition_label,
@@ -812,19 +898,31 @@ function confirmPurgeDeletedEntry() {
 }
 
 async function handleAuthSubmit() {
-  isAuthSubmitting.value = true
   authMessage.value = ''
+  authError.value = ''
+
+  if (authMode.value === 'signup' && !authName.value.trim()) {
+    authMessage.value = 'Enter your full name.'
+    return
+  }
+
+  if (authMode.value === 'signup' && authPassword.value.length < 6) {
+    authMessage.value = 'Password must be at least 6 characters.'
+    return
+  }
+
+  if (authMode.value === 'signup' && authPassword.value !== authConfirmPassword.value) {
+    authMessage.value = 'Passwords do not match.'
+    return
+  }
+
+  isAuthSubmitting.value = true
 
   try {
     if (authMode.value === 'login') {
       await signIn(authEmail.value, authPassword.value)
     } else {
-      if (authPassword.value !== authConfirmPassword.value) {
-        authMessage.value = 'Passwords do not match.'
-        return
-      }
-
-      const data = await signUp(authEmail.value, authPassword.value, authName.value)
+      const data = await signUp(authEmail.value, authPassword.value, authName.value.trim())
 
       if (data.user) {
         authMessage.value = data.session
