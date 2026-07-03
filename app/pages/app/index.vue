@@ -1352,12 +1352,21 @@
       </div>
     </section>
 
-    <div
-      v-if="isEmbeddedPreview && isEmbedProfileOpen"
-      class="absolute inset-0 z-[100] flex min-h-0 flex-col overflow-hidden bg-slate-950"
+    <Transition
+      enter-active-class="transition duration-250 ease-out"
+      enter-from-class="translate-x-full opacity-0"
+      enter-to-class="translate-x-0 opacity-100"
+      leave-active-class="transition duration-200 ease-in"
+      leave-from-class="translate-x-0 opacity-100"
+      leave-to-class="translate-x-full opacity-0"
     >
-      <ProfilePage />
-    </div>
+      <div
+        v-if="isEmbeddedPreview && isEmbedProfileOpen"
+        class="absolute inset-0 z-[100] flex min-h-0 flex-col overflow-hidden bg-slate-950"
+      >
+        <ProfilePage />
+      </div>
+    </Transition>
   </main>
 
   <Transition
@@ -1718,6 +1727,7 @@ const {
   trackedConditionKeys,
   needsOnboarding,
   trackedConditionCount,
+  hasLoadedTrackedConditions,
   loadTrackedConditions,
   completeOnboarding,
   updateTrackedConditions
@@ -1774,6 +1784,8 @@ const isEmbedProfileOpen = ref(false)
 
 function closeEmbedProfile() {
   isEmbedProfileOpen.value = false
+  isConditionBrowserOpen.value = false
+  activeIndex.value = 0
 }
 
 function openEmbedProfile() {
@@ -2019,6 +2031,10 @@ const homeConditions = computed(() => {
 })
 
 const showConditionBrowser = computed(() => {
+  if (!hasLoadedTrackedConditions.value && !trackedConditionKeys.value.length) {
+    return false
+  }
+
   return needsOnboarding.value || isConditionBrowserOpen.value
 })
 

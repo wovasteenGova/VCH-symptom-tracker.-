@@ -52,7 +52,9 @@ export default defineNuxtConfig({
       supabaseKey: supabaseAnonKey,
       supabasePublishableKey: supabaseAnonKey,
       stripePublishableKey: env('STRIPE_PUBLIC_KEY') || env('STRIPE_PUBLISHABLE_KEY') || env('NUXT_PUBLIC_STRIPE_PUBLISHABLE_KEY'),
-      siteUrl: env('APP_URL') || env('NUXT_PUBLIC_SITE_URL')
+      siteUrl: env('APP_URL')
+        || env('NUXT_PUBLIC_SITE_URL')
+        || (isProduction ? 'https://tracker.veteranscentralhub.us' : '')
     }
   },
   app: {

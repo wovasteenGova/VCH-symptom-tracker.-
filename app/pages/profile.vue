@@ -3,16 +3,11 @@
     class="flex h-dvh min-h-0 flex-col overflow-hidden bg-slate-950 text-white"
   >
     <section class="mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col px-4 pt-4 sm:max-w-lg">
-      <header class="sticky top-0 z-40 -mx-4 flex shrink-0 items-center justify-between gap-3 border-b border-slate-800 bg-slate-950/95 px-4 pb-4 pt-4 backdrop-blur-md">
-        <div>
-          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Profile</p>
-          <h1 class="mt-1 text-2xl font-bold tracking-tight text-white">Account Settings</h1>
-        </div>
-
+      <header class="sticky top-0 z-40 -mx-4 flex shrink-0 items-center gap-3 border-b border-slate-800 bg-slate-950/95 px-4 pb-4 pt-4 backdrop-blur-md">
         <button
           v-if="closeEmbedProfile"
           type="button"
-          class="grid size-10 place-items-center rounded-full bg-slate-900 text-white shadow-sm ring-1 ring-slate-800 transition hover:bg-slate-800"
+          class="grid size-10 shrink-0 place-items-center rounded-full bg-slate-900 text-white shadow-sm ring-1 ring-slate-800 transition hover:bg-slate-800"
           aria-label="Back to tracker"
           @click="closeEmbedProfile()"
         >
@@ -21,11 +16,25 @@
         <NuxtLink
           v-else
           to="/app"
-          class="grid size-10 place-items-center rounded-full bg-slate-900 text-white shadow-sm ring-1 ring-slate-800 transition hover:bg-slate-800"
+          class="grid size-10 shrink-0 place-items-center rounded-full bg-slate-900 text-white shadow-sm ring-1 ring-slate-800 transition hover:bg-slate-800"
           aria-label="Back to tracker"
         >
           <UIcon name="i-lucide-arrow-left" class="size-5" />
         </NuxtLink>
+
+        <div class="min-w-0 flex-1">
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Profile</p>
+          <h1 class="mt-1 truncate text-xl font-bold tracking-tight text-white">Account Settings</h1>
+        </div>
+
+        <p
+          v-if="user && autoSaveLabel"
+          class="shrink-0 text-xs font-semibold"
+          :class="autoSaveState === 'error' ? 'text-red-300' : 'text-slate-400'"
+          aria-live="polite"
+        >
+          {{ autoSaveLabel }}
+        </p>
       </header>
 
       <section v-if="isAuthLoading" class="mt-6 shrink-0 rounded-4xl border border-slate-800 bg-slate-900 p-5">
@@ -155,7 +164,7 @@
       </form>
 
       <div v-else class="mt-6 flex min-h-0 flex-1 flex-col">
-        <div class="flex-1 space-y-5 overflow-y-auto no-scrollbar pb-4">
+        <div class="flex-1 space-y-5 overflow-y-auto no-scrollbar pb-8">
         <section class="rounded-4xl border border-slate-800 bg-slate-900 p-4">
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
@@ -281,30 +290,6 @@
                 {{ option.label }}
               </button>
             </div>
-          </div>
-        </section>
-
-        <section class="rounded-4xl border border-slate-800 bg-slate-900 p-5">
-          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Display</p>
-          <h2 class="mt-1 text-xl font-bold text-white">Tracker layout</h2>
-          <p class="mt-2 text-sm leading-6 text-slate-400">
-            Auto hides arrow controls on small screens. Choose desktop to keep arrows and the wide layout on a tablet or narrow window.
-          </p>
-
-          <div class="mt-4 grid gap-3">
-            <button
-              v-for="option in layoutOptions"
-              :key="option.value"
-              type="button"
-              class="rounded-3xl border px-4 py-4 text-left transition"
-              :class="layoutMode === option.value
-                ? 'border-white bg-slate-800'
-                : 'border-slate-700 bg-slate-800/50'"
-              @click="setLayoutMode(option.value)"
-            >
-              <span class="block font-bold text-white">{{ option.label }}</span>
-              <span class="mt-1 block text-sm leading-6 text-slate-400">{{ option.copy }}</span>
-            </button>
           </div>
         </section>
 
@@ -477,6 +462,30 @@
           </article>
         </section>
 
+        <section class="rounded-4xl border border-slate-800 bg-slate-900 p-5">
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Display</p>
+          <h2 class="mt-1 text-xl font-bold text-white">Tracker layout</h2>
+          <p class="mt-2 text-sm leading-6 text-slate-400">
+            Auto hides arrow controls on small screens. Choose desktop to keep arrows and the wide layout on a tablet or narrow window.
+          </p>
+
+          <div class="mt-4 grid gap-3">
+            <button
+              v-for="option in layoutOptions"
+              :key="option.value"
+              type="button"
+              class="rounded-3xl border px-4 py-4 text-left transition"
+              :class="layoutMode === option.value
+                ? 'border-white bg-slate-800'
+                : 'border-slate-700 bg-slate-800/50'"
+              @click="chooseLayoutMode(option.value)"
+            >
+              <span class="block font-bold text-white">{{ option.label }}</span>
+              <span class="mt-1 block text-sm leading-6 text-slate-400">{{ option.copy }}</span>
+            </button>
+          </div>
+        </section>
+
         <section class="rounded-4xl border border-slate-800 bg-slate-900 p-4">
           <div>
             <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Deleted Entries</p>
@@ -551,29 +560,29 @@
             Delete all logs
           </button>
         </section>
-        </div>
-
-        <StickyActionBar tone="dark">
-          <p v-if="pageError" class="mb-3 text-center text-sm font-medium text-red-300">{{ pageError }}</p>
-
-          <button
-            type="button"
-            class="w-full rounded-2xl bg-white px-5 py-4 text-base font-bold text-slate-950 shadow-lg transition hover:bg-slate-200"
-            :disabled="isSavingProfile"
-            @click="saveProfile"
-          >
-            {{ isSavingProfile ? 'Saving...' : 'Save Profile' }}
-          </button>
+        <section class="rounded-4xl border border-slate-800 bg-slate-900 p-4">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Session</p>
+            <h2 class="mt-1 text-xl font-bold text-white">Sign out</h2>
+            <p class="mt-2 text-sm leading-6 text-slate-400">
+              End your session on this device. Your saved logs and settings stay on your account.
+            </p>
+          </div>
 
           <button
             type="button"
-            class="mt-3 w-full rounded-2xl bg-slate-800 px-4 py-3 text-sm font-bold text-white ring-1 ring-slate-700"
+            class="mt-5 w-full rounded-2xl bg-slate-800 px-4 py-3 text-sm font-bold text-white ring-1 ring-slate-700 transition hover:bg-slate-700 disabled:opacity-60"
             :disabled="isAuthSubmitting"
             @click="handleSignOut"
           >
             {{ isAuthSubmitting ? 'Signing out...' : 'Sign out' }}
           </button>
-        </StickyActionBar>
+        </section>
+
+        <p v-if="pageError" class="rounded-3xl border border-red-900/60 bg-red-950/30 px-4 py-3 text-sm font-medium text-red-200">
+          {{ pageError }}
+        </p>
+        </div>
       </div>
     </section>
 
@@ -751,7 +760,7 @@ import { WEEKLY_LOG_DAY_OPTIONS, type LoggingCadence } from '../utils/loggingCad
 import { useTrackerLayout, TRACKER_CLOSE_EMBED_PROFILE_KEY, type TrackerLayoutMode } from '../composables/useTrackerLayout'
 import { mapEntryHistoryItem } from '../utils/entryDisplay'
 import { copyToClipboard } from '../utils/copyToClipboard'
-import { computed, inject, onMounted, ref, watch } from 'vue'
+import { computed, inject, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
@@ -863,6 +872,26 @@ const linkedEntryId = ref<string | null>(null)
 const linkedEntryContext = ref<null | { summary: string, condition: string }>(null)
 const pageError = ref('')
 const isSavingProfile = ref(false)
+const profileInitialized = ref(false)
+const autoSaveState = ref<'idle' | 'saving' | 'saved' | 'error'>('idle')
+const autoSaveLabel = computed(() => {
+  if (autoSaveState.value === 'saving') {
+    return 'Saving...'
+  }
+
+  if (autoSaveState.value === 'saved') {
+    return 'Saved'
+  }
+
+  if (autoSaveState.value === 'error') {
+    return 'Save failed'
+  }
+
+  return ''
+})
+
+let profileSaveTimer: ReturnType<typeof setTimeout> | undefined
+let savedLabelTimer: ReturnType<typeof setTimeout> | undefined
 const isCreatingSupporter = ref(false)
 const isRestoringEntryId = ref<string | null>(null)
 const isDeletingSupporterId = ref<string | null>(null)
@@ -940,8 +969,14 @@ function loadDeletedEntries() {
   deletedEntries.value = listDeletedEntries(user.value.id)
 }
 
+function chooseLayoutMode(mode: TrackerLayoutMode) {
+  setLayoutMode(mode)
+  markAutoSaveSaved()
+}
+
 async function loadProfilePage() {
   pageError.value = ''
+  profileInitialized.value = false
   loadDeletedEntries()
 
   try {
@@ -959,8 +994,61 @@ async function loadProfilePage() {
     supporterProfiles.value = supporters
   } catch (error) {
     pageError.value = getErrorMessage(error)
+  } finally {
+    profileInitialized.value = true
   }
 }
+
+function markAutoSavePending() {
+  autoSaveState.value = 'saving'
+}
+
+function markAutoSaveSaved() {
+  autoSaveState.value = 'saved'
+
+  if (savedLabelTimer) {
+    clearTimeout(savedLabelTimer)
+  }
+
+  savedLabelTimer = setTimeout(() => {
+    if (autoSaveState.value === 'saved') {
+      autoSaveState.value = 'idle'
+    }
+  }, 2000)
+}
+
+function scheduleProfileAutoSave() {
+  if (!user.value || !profileInitialized.value) {
+    return
+  }
+
+  markAutoSavePending()
+
+  if (profileSaveTimer) {
+    clearTimeout(profileSaveTimer)
+  }
+
+  profileSaveTimer = setTimeout(() => {
+    saveProfile()
+  }, 650)
+}
+
+watch(
+  () => profileForm.value.full_name,
+  () => {
+    scheduleProfileAutoSave()
+  }
+)
+
+onUnmounted(() => {
+  if (profileSaveTimer) {
+    clearTimeout(profileSaveTimer)
+  }
+
+  if (savedLabelTimer) {
+    clearTimeout(savedLabelTimer)
+  }
+})
 
 async function saveProfile() {
   isSavingProfile.value = true
@@ -971,8 +1059,9 @@ async function saveProfile() {
       full_name: profileForm.value.full_name,
       display_name: profileForm.value.full_name
     })
-    showSubmissionToast('Profile saved.')
+    markAutoSaveSaved()
   } catch (error) {
+    autoSaveState.value = 'error'
     pageError.value = getErrorMessage(error)
   } finally {
     isSavingProfile.value = false
@@ -981,24 +1070,26 @@ async function saveProfile() {
 
 async function saveLoggingCadence(cadence: LoggingCadence) {
   pageError.value = ''
+  markAutoSavePending()
 
   try {
     await updateLoggingCadence(cadence, weeklyLogDay.value)
-    showSubmissionToast(cadence === 'weekly'
-      ? 'Updated to weekly logging.'
-      : 'Updated to daily logging.')
+    markAutoSaveSaved()
   } catch (error) {
+    autoSaveState.value = 'error'
     pageError.value = getErrorMessage(error)
   }
 }
 
 async function saveWeeklyLogDay(day: number) {
   pageError.value = ''
+  markAutoSavePending()
 
   try {
     await updateLoggingCadence('weekly', day)
-    showSubmissionToast('Preferred log day updated.')
+    markAutoSaveSaved()
   } catch (error) {
+    autoSaveState.value = 'error'
     pageError.value = getErrorMessage(error)
   }
 }
@@ -1367,6 +1458,10 @@ async function handleSignOut() {
 
   try {
     await signOut()
+
+    if (closeEmbedProfile) {
+      closeEmbedProfile()
+    }
   } catch {
     pageError.value = authError.value
   } finally {

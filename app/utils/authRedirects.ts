@@ -1,3 +1,5 @@
+import { TRACKER_PUBLIC_ORIGIN } from './reportBranding'
+
 function isLocalOrigin(value: string) {
   try {
     const hostname = new URL(value).hostname
@@ -21,14 +23,21 @@ export function resolveAuthSiteOrigin(configuredSiteUrl?: string | null) {
       return stripTrailingSlash(configured)
     }
 
-    return stripTrailingSlash(window.location.origin)
+    const origin = stripTrailingSlash(window.location.origin)
+
+    // Auth emails must never point at localhost in production builds.
+    if (isLocalOrigin(origin)) {
+      return TRACKER_PUBLIC_ORIGIN
+    }
+
+    return origin
   }
 
-  if (configured) {
+  if (configured && !isLocalOrigin(configured)) {
     return stripTrailingSlash(configured)
   }
 
-  return 'https://tracker.veteranscentralhub.us'
+  return TRACKER_PUBLIC_ORIGIN
 }
 
 export function resolveAuthRedirectUrl(path: string, configuredSiteUrl?: string | null) {

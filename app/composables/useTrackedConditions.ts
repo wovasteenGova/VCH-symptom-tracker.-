@@ -43,9 +43,12 @@ function writeLocalState(keys: string[], completed: boolean) {
 export function useTrackedConditions() {
   const supabase = useSupabaseClient()
   const trackerDb = useTrackerDb()
-  const trackedConditionKeys = ref<string[]>([])
-  const onboardingCompleted = ref(false)
+  const initialStoredKeys = readStoredKeys()
+  const initialOnboardingCompleted = readStoredOnboardingCompleted() || initialStoredKeys.length > 0
+  const trackedConditionKeys = ref<string[]>(normalizeTrackedConditionKeys(initialStoredKeys))
+  const onboardingCompleted = ref(initialOnboardingCompleted)
   const isLoading = ref(false)
+  const hasLoadedTrackedConditions = ref(false)
   const loadError = ref('')
 
   const needsOnboarding = computed(() => !onboardingCompleted.value)
@@ -167,6 +170,7 @@ export function useTrackedConditions() {
       onboardingCompleted.value = readStoredOnboardingCompleted()
     } finally {
       isLoading.value = false
+      hasLoadedTrackedConditions.value = true
     }
   }
 
@@ -196,6 +200,7 @@ export function useTrackedConditions() {
     needsOnboarding,
     trackedConditionCount,
     isLoading,
+    hasLoadedTrackedConditions,
     loadError,
     loadTrackedConditions,
     completeOnboarding,
