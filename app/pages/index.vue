@@ -904,7 +904,7 @@
                       class="pointer-events-none absolute inset-x-0 bottom-3 flex h-10 items-end justify-center pb-1.5 transition-opacity duration-200"
                       :class="isConditionScrolling ? 'opacity-0' : 'opacity-100'"
                     >
-                      <span class="text-[0.68rem] font-bold uppercase tracking-[0.14em] text-slate-600 dark:text-slate-300">
+                      <span class="rounded-full bg-slate-950/85 px-3 py-1 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-white shadow-lg shadow-slate-950/20 ring-1 ring-white/40 dark:bg-white/90 dark:text-slate-950 dark:shadow-black/30 dark:ring-slate-700/40">
                         Scroll for more
                       </span>
                     </div>
@@ -1020,11 +1020,14 @@
           >
             <button
               type="button"
-              class="flex w-full justify-center py-1"
+              class="flex w-full justify-center py-1 text-slate-400 transition hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
               :aria-label="historyExpanded ? 'Collapse history' : 'Expand history'"
               @click="toggleHistoryExpanded"
             >
-              <span class="h-1.5 w-12 rounded-full bg-slate-300 dark:bg-slate-600" />
+              <UIcon
+                :name="historyExpanded ? 'i-lucide-chevron-down' : 'i-lucide-chevron-up'"
+                class="size-5"
+              />
             </button>
           </div>
 
@@ -1068,6 +1071,15 @@
             <p v-if="exportError" class="mt-2 text-sm font-medium text-red-600 dark:text-red-300">
               {{ exportError }}
             </p>
+            <p v-if="exportNotice" class="mt-2 flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100">
+              <UIcon name="i-lucide-crown" class="mt-0.5 size-3.5 shrink-0 text-amber-600 dark:text-amber-300" />
+              <span>
+                {{ exportNotice }}
+                <NuxtLink to="/upgrade" class="font-bold underline decoration-amber-600/60 underline-offset-2 hover:text-amber-800 dark:decoration-amber-300/60 dark:hover:text-amber-50">
+                  Get Pro now
+                </NuxtLink>
+              </span>
+            </p>
 
             <div class="mt-4 rounded-full bg-slate-100 p-1 dark:bg-slate-800/80">
               <div class="grid grid-cols-2 gap-1">
@@ -1077,14 +1089,9 @@
                   type="button"
                   class="relative rounded-full px-4 py-3 text-sm font-semibold transition"
                   :class="activeHistoryTab === tab ? 'bg-white text-slate-950 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 dark:text-slate-400'"
-                  @click="selectHistoryTab(tab)"
+                  @click="activeHistoryTab = tab"
                 >
                   {{ tab }}
-                  <UIcon
-                    v-if="tab === 'Charts' && !canUseCharts"
-                    name="i-lucide-lock"
-                    class="ml-1 inline-block size-3.5 align-[-2px] text-amber-500"
-                  />
                 </button>
               </div>
             </div>
@@ -1203,22 +1210,7 @@
               </article>
             </div>
 
-            <div v-else-if="activeHistoryTab === 'Charts' && !canUseCharts" class="py-8 text-center">
-              <UIcon name="i-lucide-lock" class="mx-auto size-7 text-amber-400" />
-              <p class="mt-4 font-bold text-slate-950 dark:text-white">Charts are a Pro feature</p>
-              <p class="mt-2 px-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                Pro users get access to advanced charts. Free includes entries only.
-              </p>
-              <button
-                type="button"
-                class="mt-5 rounded-2xl bg-amber-400 px-5 py-3 text-sm font-bold text-slate-950"
-                @click="openUpgradePrompt('Charts are a Pro feature', 'Pro users get access to advanced charts. Your entries are always saved on Free.')"
-              >
-                Upgrade for Charts
-              </button>
-            </div>
-
-            <div v-else-if="activeHistoryTab === 'Charts'" class="py-1">
+            <div v-else class="py-1">
               <div class="flex items-center justify-between">
                 <button
                   type="button"
@@ -1534,9 +1526,7 @@ const {
   isPro,
   freeConditionKeys,
   freeConditionSlotsRemaining,
-  canUseCharts,
   canUseFamilyReporting,
-  canExportPdf,
   canTrackCondition,
   canAddFreeCondition,
   addFreeCondition,
@@ -1577,6 +1567,7 @@ const entriesError = ref('')
 const savedEntries = ref<any[]>([])
 const isExportingPdf = ref(false)
 const exportError = ref('')
+const exportNotice = ref('')
 const transitionDirection = ref('next')
 const showInstallCard = ref(false)
 const installPlatform = ref<'ios' | 'android' | 'desktop'>('desktop')
@@ -1698,7 +1689,7 @@ const entryPickerDays = computed(() => {
   return days
 })
 
-const historyTabs = ['Entries', 'Charts']
+const historyTabs = ['Entries', 'Calendar']
 const installDismissedKey = 'symptom-tracker-install-dismissed'
 const submissionHighlightDurationMs = 1_400
 
@@ -2548,16 +2539,9 @@ function validateEntryDateTimeStep() {
 }
 
 async function exportEntriesPdf() {
-  if (!canExportPdf.value) {
-    openUpgradePrompt(
-      'Advanced charts & PDF export',
-      'Pro users get access to advanced charts in PDF exports and the Charts view. Your entries are always saved on Free.'
-    )
-    return
-  }
-
   isExportingPdf.value = true
   exportError.value = ''
+  exportNotice.value = ''
 
   try {
     const profile = await getProfile()
@@ -2568,8 +2552,13 @@ async function exportEntriesPdf() {
 
     await downloadEntriesPdf(savedEntries.value, {
       veteranName: veteranName || null,
-      veteranEmail: user.value?.email || null
+      veteranEmail: user.value?.email || null,
+      includeCharts: isPro.value
     })
+
+    if (!isPro.value) {
+      exportNotice.value = 'PDF downloaded with your entries. Pro users get access to advanced charts in PDF exports. '
+    }
   } catch (error) {
     exportError.value = getErrorMessage(error)
   } finally {
@@ -2782,7 +2771,7 @@ async function saveEntry() {
     } else {
       openUpgradePrompt(
         'Free plan: 1 condition',
-        `Free lets you pick ${FREE_CONDITION_LIMIT} condition with unlimited entries. Upgrade to Pro for about $1.08/month to track more conditions, Charts, and PDF exports.`
+        `Free lets you pick ${FREE_CONDITION_LIMIT} condition with unlimited entries. Upgrade to Pro for about $1.08/month to track more conditions, family reporting, and advanced charts in PDF exports.`
       )
       return
     }
@@ -3275,18 +3264,6 @@ function handleSheetDragEnd() {
   window.setTimeout(() => {
     sheetDidDrag = false
   }, 0)
-}
-
-function selectHistoryTab(tab: string) {
-  if (tab === 'Charts' && !canUseCharts.value) {
-    openUpgradePrompt(
-      'Charts are a Pro feature',
-      'Pro users get access to advanced charts. Free includes entries only — your logs are always saved.'
-    )
-    return
-  }
-
-  activeHistoryTab.value = tab
 }
 
 function resolvePendingEntryConditionKey(options: {

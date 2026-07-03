@@ -13,15 +13,14 @@ export const WHY_WE_CHARGE_COPY =
 
 export const FREE_TIER_FEATURES = [
   'Pick 1 condition to track',
-  'Unlimited entries within those conditions',
-  'Entries list and editing'
+  'Unlimited entries within that condition',
+  'Entries list, calendar view, and entry PDF exports'
 ] as const
 
 export const PRO_TIER_FEATURES = [
   'Unlimited conditions',
-  'Advanced Charts view',
   'Family reporting links for supporters',
-  'Signed PDF exports with advanced charts'
+  'Advanced charts in PDF exports'
 ] as const
 
 export function conditionKeyFromLabel(label: string) {

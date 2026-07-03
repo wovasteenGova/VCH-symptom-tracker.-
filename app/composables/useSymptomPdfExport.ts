@@ -29,6 +29,10 @@ type VeteranSignatureInfo = {
   veteranEmail?: string | null
 }
 
+type PdfExportOptions = VeteranSignatureInfo & {
+  includeCharts?: boolean
+}
+
 function resolveTypedSignatureName(signatureInfo: VeteranSignatureInfo) {
   return signatureInfo.veteranName?.trim() || null
 }
@@ -122,7 +126,13 @@ function drawVeteranElectronicSignatureSection(
 }
 
 export function useSymptomPdfExport() {
-  async function downloadEntriesPdf(entries: SymptomEntryRecord[], signatureInfo: VeteranSignatureInfo = {}) {
+  async function downloadEntriesPdf(
+    entries: SymptomEntryRecord[],
+    options: PdfExportOptions = {}
+  ) {
+    const { includeCharts = true, veteranName = null, veteranEmail = null } = options
+    const signatureInfo = { veteranName, veteranEmail }
+
     if (!entries.length) {
       throw new Error('Add at least one symptom entry before exporting.')
     }
@@ -195,80 +205,82 @@ export function useSymptomPdfExport() {
       { label: 'Conditions', value: String(metrics.conditionCount) }
     ]) + 18
 
-    drawSectionTitle(doc, 'Severity trend', margin, y)
-    y += 10
-    y = drawLineChart(doc, margin, y, contentWidth, 148, metrics.trend) + 16
+    if (includeCharts) {
+      drawSectionTitle(doc, 'Severity trend', margin, y)
+      y += 10
+      y = drawLineChart(doc, margin, y, contentWidth, 148, metrics.trend) + 16
 
-    const columnGap = 14
-    const columnWidth = (contentWidth - columnGap) / 2
+      const columnGap = 14
+      const columnWidth = (contentWidth - columnGap) / 2
 
-    drawSectionTitle(doc, 'Entries by condition', margin, y)
-    drawSectionTitle(doc, 'Severity bands', margin + columnWidth + columnGap, y)
-    y += 10
+      drawSectionTitle(doc, 'Entries by condition', margin, y)
+      drawSectionTitle(doc, 'Severity bands', margin + columnWidth + columnGap, y)
+      y += 10
 
-    drawHorizontalBarChart(
-      doc,
-      margin,
-      y,
-      columnWidth,
-      148,
-      metrics.conditionBreakdown,
-      chartColors
-    )
+      drawHorizontalBarChart(
+        doc,
+        margin,
+        y,
+        columnWidth,
+        148,
+        metrics.conditionBreakdown,
+        chartColors
+      )
 
-    drawVerticalBarChart(
-      doc,
-      margin + columnWidth + columnGap,
-      y,
-      columnWidth,
-      148,
-      [
-        { label: 'Mild', value: metrics.severityBands.mild },
-        { label: 'Mod', value: metrics.severityBands.moderate },
-        { label: 'Severe', value: metrics.severityBands.severe }
-      ],
-      [[16, 185, 129], [245, 158, 11], [249, 115, 22]]
-    )
+      drawVerticalBarChart(
+        doc,
+        margin + columnWidth + columnGap,
+        y,
+        columnWidth,
+        148,
+        [
+          { label: 'Mild', value: metrics.severityBands.mild },
+          { label: 'Mod', value: metrics.severityBands.moderate },
+          { label: 'Severe', value: metrics.severityBands.severe }
+        ],
+        [[16, 185, 129], [245, 158, 11], [249, 115, 22]]
+      )
 
-    doc.addPage()
-    y = margin
-
-    drawSectionTitle(doc, 'Monthly activity', margin, y)
-    y += 10
-    y = drawVerticalBarChart(doc, margin, y, contentWidth, 156, metrics.monthActivity, chartColors) + 16
-
-    drawSectionTitle(doc, 'Daily log density', margin, y)
-    y += 10
-    y = drawHeatmapCalendar(doc, margin, y, contentWidth, 188, metrics.monthLabel, metrics.dailyCounts) + 16
-
-    drawSectionTitle(doc, 'Report source mix', margin, y)
-    y += 10
-    drawHorizontalBarChart(
-      doc,
-      margin,
-      y,
-      contentWidth,
-      Math.max(92, metrics.sourceBreakdown.length * 28 + 24),
-      metrics.sourceBreakdown,
-      [[14, 165, 233], [139, 92, 246]]
-    )
-    y += Math.max(92, metrics.sourceBreakdown.length * 28 + 24) + 20
-
-    if (metrics.extendedConditionBreakdown.length) {
       doc.addPage()
       y = margin
 
-      drawSectionTitle(doc, 'Additional conditions tracked', margin, y)
+      drawSectionTitle(doc, 'Monthly activity', margin, y)
       y += 10
-      y = drawHorizontalBarChart(
+      y = drawVerticalBarChart(doc, margin, y, contentWidth, 156, metrics.monthActivity, chartColors) + 16
+
+      drawSectionTitle(doc, 'Daily log density', margin, y)
+      y += 10
+      y = drawHeatmapCalendar(doc, margin, y, contentWidth, 188, metrics.monthLabel, metrics.dailyCounts) + 16
+
+      drawSectionTitle(doc, 'Report source mix', margin, y)
+      y += 10
+      drawHorizontalBarChart(
         doc,
         margin,
         y,
         contentWidth,
-        Math.max(160, metrics.extendedConditionBreakdown.length * 28 + 36),
-        metrics.extendedConditionBreakdown,
-        chartColors
-      ) + 20
+        Math.max(92, metrics.sourceBreakdown.length * 28 + 24),
+        metrics.sourceBreakdown,
+        [[14, 165, 233], [139, 92, 246]]
+      )
+      y += Math.max(92, metrics.sourceBreakdown.length * 28 + 24) + 20
+
+      if (metrics.extendedConditionBreakdown.length) {
+        doc.addPage()
+        y = margin
+
+        drawSectionTitle(doc, 'Additional conditions tracked', margin, y)
+        y += 10
+        y = drawHorizontalBarChart(
+          doc,
+          margin,
+          y,
+          contentWidth,
+          Math.max(160, metrics.extendedConditionBreakdown.length * 28 + 36),
+          metrics.extendedConditionBreakdown,
+          chartColors
+        ) + 20
+      }
     }
 
     y = drawEntryLogSection(
