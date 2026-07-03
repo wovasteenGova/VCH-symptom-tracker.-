@@ -185,105 +185,38 @@ function measureBlockHeight(block: EntryBlock, lineHeight: number, labelHeight: 
   return labelHeight + block.lines.length * lineHeight + gapAfter
 }
 
-const backdateNotePaddingX = 12
-const backdateNotePaddingTop = 10
-const backdateNotePaddingBottom = 10
-const backdateNoteSectionGap = 6
-const backdateNoteLineHeight = 11
-const backdateNoteEnteredLineHeight = 12
-const backdateNoteEnteredFontSize = 9
+const backdateNoteHeight = 24
 
-type BackdateNoteLayout = {
-  noteLines: string[]
-  enteredLines: string[]
-  boxHeight: number
-}
-
-function buildBackdateNoteLayout(
-  doc: jsPDF,
-  note: string,
-  enteredAt: string,
-  innerWidth: number
-): BackdateNoteLayout {
-  const textWidth = innerWidth - backdateNotePaddingX * 2
-
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(8.5)
-  const noteLines = doc.splitTextToSize(note, textWidth) as string[]
-
-  doc.setFontSize(backdateNoteEnteredFontSize)
-  const enteredLines = doc.splitTextToSize(
-    `Entered: ${formatReportEntryDate(enteredAt)}`,
-    textWidth
-  ) as string[]
-
-  const boxHeight = backdateNotePaddingTop
-    + noteLines.length * backdateNoteLineHeight
-    + backdateNoteSectionGap
-    + enteredLines.length * backdateNoteEnteredLineHeight
-    + backdateNotePaddingBottom
-
-  return {
-    noteLines,
-    enteredLines,
-    boxHeight
-  }
-}
-
-function measureBackdateNoteHeight(
-  doc: jsPDF,
-  note: string,
-  enteredAt: string,
-  innerWidth: number
-) {
-  return buildBackdateNoteLayout(doc, note, enteredAt, innerWidth).boxHeight + 8
+function measureBackdateNoteHeight() {
+  return backdateNoteHeight + 8
 }
 
 function drawBackdateNote(
   ctx: LayoutContext,
   note: string,
-  enteredAt: string,
   innerX: number,
   innerWidth: number
 ) {
-  const layout = buildBackdateNoteLayout(ctx.doc, note, enteredAt, innerWidth)
-  const textX = innerX + backdateNotePaddingX
   const boxTop = ctx.y
 
   setStroke(ctx.doc, amber200)
   setFill(ctx.doc, amber50)
-  ctx.doc.roundedRect(innerX, boxTop, innerWidth, layout.boxHeight, 8, 8, 'FD')
-
-  let textY = boxTop + backdateNotePaddingTop + 7
+  ctx.doc.roundedRect(innerX, boxTop, innerWidth, backdateNoteHeight, 8, 8, 'FD')
 
   ctx.doc.setFont('helvetica', 'normal')
   ctx.doc.setFontSize(8.5)
   setText(ctx.doc, amber900)
-  layout.noteLines.forEach((line) => {
-    ctx.doc.text(line, textX, textY)
-    textY += backdateNoteLineHeight
+  ctx.doc.text(note, innerX + innerWidth / 2, boxTop + backdateNoteHeight / 2 + 3, {
+    align: 'center'
   })
 
-  textY += backdateNoteSectionGap
-
-  ctx.doc.setFont('helvetica', 'normal')
-  ctx.doc.setFontSize(backdateNoteEnteredFontSize)
-  setText(ctx.doc, amber900)
-  layout.enteredLines.forEach((line) => {
-    ctx.doc.text(line, textX, textY)
-    textY += backdateNoteEnteredLineHeight
-  })
-
-  ctx.y = boxTop + layout.boxHeight + 8
+  ctx.y = boxTop + backdateNoteHeight + 8
 }
 
 function measureEntryHeight(
   blocks: EntryBlock[],
   options: {
     backdateNote?: string | null
-    enteredAt?: string | null
-    doc?: jsPDF
-    innerWidth?: number
     edited?: boolean
   } = {}
 ) {
@@ -296,13 +229,8 @@ function measureEntryHeight(
     height += 13
   }
 
-  if (options.backdateNote && options.enteredAt && options.doc && options.innerWidth) {
-    height += measureBackdateNoteHeight(
-      options.doc,
-      options.backdateNote,
-      options.enteredAt,
-      options.innerWidth
-    )
+  if (options.backdateNote) {
+    height += measureBackdateNoteHeight()
   } else {
     height += 14
   }
@@ -386,9 +314,6 @@ function drawEntryCard(
   const edited = wasEntryEdited(entry)
   const cardHeight = measureEntryHeight(blocks, {
     backdateNote,
-    enteredAt: entry.created_at,
-    doc: ctx.doc,
-    innerWidth,
     edited
   })
 
@@ -433,9 +358,9 @@ function drawEntryCard(
     ctx.doc.text(`Edited ${formatReportEntryDate(entry.updated_at)}`, innerX, ctx.y)
   }
 
-  if (backdateNote && entry.created_at) {
+  if (backdateNote) {
     ctx.y += 10
-    drawBackdateNote(ctx, backdateNote, entry.created_at, innerX, innerWidth)
+    drawBackdateNote(ctx, backdateNote, innerX, innerWidth)
   } else {
     ctx.y += 14
   }

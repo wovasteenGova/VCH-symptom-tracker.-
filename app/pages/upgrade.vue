@@ -8,7 +8,7 @@
         </div>
 
         <NuxtLink
-          to="/"
+          to="/app"
           class="grid size-10 place-items-center rounded-full bg-slate-900 text-white shadow-sm ring-1 ring-slate-800 transition hover:bg-slate-800"
           aria-label="Back to tracker"
         >
@@ -218,7 +218,7 @@
 
         <NuxtLink
           v-else
-          to="/"
+          to="/app"
           class="block w-full rounded-2xl bg-white px-5 py-4 text-center text-base font-bold text-slate-950 shadow-lg transition hover:bg-slate-200"
         >
           Back to tracker

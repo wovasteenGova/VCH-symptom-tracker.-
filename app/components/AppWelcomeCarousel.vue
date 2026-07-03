@@ -206,7 +206,7 @@ async function finishWelcome() {
               If you are in crisis, call 988 and press 1, text 838255, or visit veteranscrisisline.net.
             </p>
             <p>
-              Backdated entries in PDF exports include a short yellow note so raters know when a symptom date differs from the day you logged it.
+              Backdated entries in PDF exports include a short yellow Backdated entry label.
             </p>
           </div>
 

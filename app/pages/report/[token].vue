@@ -1,10 +1,23 @@
 <template>
   <main class="app-shell overflow-hidden flex flex-col bg-slate-50 text-slate-950 transition-colors dark:bg-slate-950 dark:text-white">
-    <section class="mx-auto flex w-full max-w-md flex-1 flex-col px-4 pt-4 sm:max-w-lg">
-      <header class="sticky top-0 z-40 -mx-4 flex shrink-0 items-start justify-between gap-3 border-b border-slate-200 bg-slate-50/95 px-4 pb-4 pt-4 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/95">
-        <div>
-          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Supporter Report</p>
-          <h1 class="mt-1 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">Submit an observation</h1>
+    <section class="mx-auto flex h-full w-full max-w-md flex-col overflow-hidden px-4 pt-4 pb-0 sm:max-w-lg">
+      <header class="flex shrink-0 items-center justify-between gap-3 pb-4">
+        <div class="flex min-w-0 items-center gap-2.5">
+          <div class="size-10 shrink-0 overflow-hidden rounded-full ring-1 ring-slate-200 dark:ring-slate-700">
+            <img
+              src="/vch-logo.png"
+              alt="Veterans Central Hub"
+              class="size-10 object-cover object-center"
+            >
+          </div>
+          <div class="min-w-0">
+            <p class="text-[0.65rem] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+              Family observation
+            </p>
+            <h1 class="truncate text-lg font-bold text-slate-950 dark:text-white">
+              {{ supporterProfile?.display_name || 'Supporter report' }}
+            </h1>
+          </div>
         </div>
 
         <UColorModeSwitch
@@ -14,405 +27,446 @@
         />
       </header>
 
-      <div
-        v-if="!supporterProfile?.entry_context_summary"
-        class="mt-5 rounded-4xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
-      >
-        <p class="text-sm leading-6 text-slate-600 dark:text-slate-400">
-          Enter your information and what you observed. The veteran reviews these notes before using them.
-        </p>
-      </div>
-
-      <section v-if="isLoading" class="mt-5 rounded-4xl border border-slate-200 bg-white p-5 text-center text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+      <section v-if="isLoading" class="flex flex-1 items-center justify-center py-12 text-center text-slate-500 dark:text-slate-400">
         Loading link...
       </section>
 
-      <section v-else-if="pageError" class="mt-5 rounded-4xl border border-red-200 bg-red-50 p-5 text-center text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
-        {{ pageError }}
+      <section v-else-if="pageError" class="flex flex-1 items-center justify-center py-12">
+        <div class="rounded-3xl border border-red-200 bg-red-50 p-6 text-center text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
+          {{ pageError }}
+        </div>
       </section>
 
-      <template v-else>
-        <div class="mt-5 shrink-0 space-y-5">
-        <section
+      <div
+        v-else-if="isSubmitted"
+        class="flex min-h-0 flex-1 flex-col items-center justify-center px-2 py-10 text-center"
+      >
+        <span class="grid size-16 place-items-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-300">
+          <UIcon name="i-lucide-check-circle-2" class="size-9" />
+        </span>
+        <h2 class="mt-5 text-2xl font-bold text-slate-950 dark:text-white">Observation submitted</h2>
+        <p class="mt-3 max-w-sm text-base leading-7 text-slate-600 dark:text-slate-300">
+          Thank you. The veteran will review this note before deciding whether to use it in their records.
+        </p>
+        <button
+          type="button"
+          class="mt-8 w-full max-w-sm rounded-2xl bg-slate-950 px-5 py-4 text-base font-bold text-white transition hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600"
+          @click="startAnotherObservation"
+        >
+          Submit another observation
+        </button>
+      </div>
+
+      <form
+        v-else
+        class="flex min-h-0 flex-1 flex-col overflow-hidden"
+        @submit.prevent="handleObservationPrimaryAction"
+      >
+        <div
           v-if="supporterProfile?.entry_context_summary"
-          class="rounded-4xl border border-teal-200 bg-teal-50 p-4 dark:border-teal-500/30 dark:bg-teal-950/30"
+          class="mb-4 shrink-0 rounded-3xl border border-teal-200 bg-teal-50 p-4 dark:border-teal-500/30 dark:bg-teal-950/30"
         >
           <p class="text-xs font-bold uppercase tracking-[0.14em] text-teal-700 dark:text-teal-200">About this entry</p>
-          <p class="mt-2 text-sm leading-6 text-teal-950/90 dark:text-teal-50/90">
-            Entry context:
-            <span class="font-semibold text-slate-950 dark:text-white">{{ supporterProfile.entry_context_summary }}</span>.
+          <p class="mt-2 text-base leading-6 text-teal-950/90 dark:text-teal-50/90">
+            {{ supporterProfile.entry_context_summary }}
           </p>
-        </section>
         </div>
 
-        <form
-          class="mt-5 flex min-h-0 flex-1 flex-col overflow-hidden rounded-4xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900"
-          @submit.prevent="handleObservationPrimaryAction"
+        <p
+          v-else
+          class="mb-4 shrink-0 text-base leading-6 text-slate-600 dark:text-slate-400"
         >
-          <div class="sticky top-0 z-20 flex shrink-0 items-center justify-between gap-4 border-b border-slate-200 bg-white/95 px-4 py-4 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/95">
-            <button
-              type="button"
-              class="grid size-10 place-items-center rounded-full bg-slate-100 text-slate-950 transition hover:bg-slate-200 disabled:opacity-30 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
-              :disabled="observationStep === 0"
-              aria-label="Previous step"
-              @click="showPreviousObservationStep"
-            >
-              <UIcon name="i-lucide-chevron-left" class="size-5" />
-            </button>
+          Share what you personally observed. The veteran reviews these notes before using them.
+        </p>
 
-            <div class="min-w-0 flex-1">
-              <p class="text-center text-xs font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                Step {{ observationStep + 1 }} of {{ observationStepCount }}
-              </p>
-              <p class="mt-1 truncate text-center text-sm font-semibold text-slate-950 dark:text-white">
-                {{ currentStepTitle }}
-              </p>
-              <div class="mt-2.5 h-1.5 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
-                <div
-                  class="h-full rounded-full bg-slate-950 transition-all duration-300 dark:bg-slate-500"
-                  :style="{ width: observationProgressWidth }"
-                />
-              </div>
+        <div class="relative z-10 mb-4 shrink-0 flex items-center justify-between gap-4 px-1">
+          <button
+            type="button"
+            class="grid size-10 place-items-center rounded-full bg-slate-100 text-slate-950 transition hover:bg-slate-200 disabled:opacity-30 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
+            :disabled="observationStep === 0"
+            aria-label="Previous step"
+            @click="showPreviousObservationStep"
+          >
+            <UIcon name="i-lucide-chevron-left" class="size-5" />
+          </button>
+
+          <div class="min-w-0 flex-1">
+            <p class="text-center text-xs font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+              Step {{ observationStep + 1 }} of {{ observationStepCount }}
+            </p>
+            <p class="mt-1 truncate text-center text-base font-semibold text-slate-950 dark:text-white">
+              {{ currentStepTitle }}
+            </p>
+            <div class="mt-2.5 h-1.5 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+              <div
+                class="h-full rounded-full bg-slate-950 transition-all duration-300 dark:bg-white"
+                :style="{ width: observationProgressWidth }"
+              />
             </div>
-
-            <button
-              type="button"
-              class="grid size-10 place-items-center rounded-full bg-slate-100 text-slate-950 transition hover:bg-slate-200 disabled:opacity-30 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
-              :disabled="isLastObservationStep"
-              aria-label="Next step"
-              @click="tryAdvanceObservationStep"
-            >
-              <UIcon name="i-lucide-chevron-right" class="size-5" />
-            </button>
           </div>
 
-          <div class="flex min-h-[22rem] flex-col overflow-hidden">
-            <Transition
-              mode="out-in"
-              enter-active-class="transition duration-300 ease-out"
-              enter-from-class="translate-x-4 opacity-0"
-              enter-to-class="translate-x-0 opacity-100"
-              leave-active-class="transition duration-200 ease-in"
-              leave-from-class="translate-x-0 opacity-100"
-              leave-to-class="-translate-x-4 opacity-0"
+          <button
+            type="button"
+            class="grid size-10 place-items-center rounded-full bg-slate-100 text-slate-950 transition hover:bg-slate-200 disabled:opacity-30 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
+            :disabled="isLastObservationStep"
+            aria-label="Next step"
+            @click="tryAdvanceObservationStep"
+          >
+            <UIcon name="i-lucide-chevron-right" class="size-5" />
+          </button>
+        </div>
+
+        <div
+          class="flex min-h-0 flex-1 flex-col overflow-hidden"
+          @touchstart.passive="handleObservationSwipeStart"
+          @touchend="handleObservationSwipeEnd"
+        >
+          <Transition
+            mode="out-in"
+            enter-active-class="transition duration-300 ease-out"
+            enter-from-class="translate-x-4 opacity-0"
+            enter-to-class="translate-x-0 opacity-100"
+            leave-active-class="transition duration-200 ease-in"
+            leave-from-class="translate-x-0 opacity-100"
+            leave-to-class="-translate-x-4 opacity-0"
+          >
+            <div
+              ref="observationStepScrollEl"
+              :key="observationStep"
+              class="flex min-h-0 flex-1 flex-col overflow-y-auto no-scrollbar px-1"
+              :class="observationStep === 2
+                ? 'justify-center gap-5 py-6'
+                : 'justify-start space-y-6 py-2'"
+              :style="observationStepScrollStyle"
+              @focusin="handleObservationFieldFocus"
             >
-              <div
-                ref="observationStepScrollEl"
-                :key="observationStep"
-                class="flex min-h-0 flex-1 flex-col overflow-y-auto no-scrollbar px-4 pb-6"
-                :class="observationStep === 2 ? 'justify-center gap-5 py-8' : 'justify-start space-y-6 py-5'"
-                :style="observationStepScrollStyle"
-                @focusin="handleObservationFieldFocus"
-              >
-                <!-- Step 0: Your information -->
-                <template v-if="observationStep === 0">
-                  <div>
-                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Your information</p>
-                    <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                      This will appear on the report. Enter your own details — do not use someone else’s name.
-                    </p>
-                  </div>
+              <template v-if="observationStep === 0">
+                <div>
+                  <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Your information</p>
+                  <p class="mt-2 text-base leading-6 text-slate-600 dark:text-slate-400">
+                    This appears on the report as the person who observed it. Enter your own details.
+                  </p>
+                </div>
 
-                  <div class="grid grid-cols-2 gap-3">
-                    <label class="block">
-                      <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">First name</span>
-                      <input
-                        v-model="form.first_name"
-                        type="text"
-                        autocomplete="given-name"
-                        class="w-full rounded-3xl border border-slate-300 bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-600/70 dark:bg-slate-800/70 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-slate-400"
-                        placeholder="First name"
-                      >
-                    </label>
-
-                    <label class="block">
-                      <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Last name</span>
-                      <input
-                        v-model="form.last_name"
-                        type="text"
-                        autocomplete="family-name"
-                        class="w-full rounded-3xl border border-slate-300 bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-600/70 dark:bg-slate-800/70 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-slate-400"
-                        placeholder="Last name"
-                      >
-                    </label>
-                  </div>
-
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <label class="block">
-                    <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Email</span>
+                    <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">First name</span>
                     <input
-                      v-model="form.email"
-                      type="email"
-                      autocomplete="email"
-                      class="w-full rounded-3xl border border-slate-300 bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-600/70 dark:bg-slate-800/70 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-slate-400"
-                      placeholder="you@example.com"
-                    >
-                  </label>
-
-                  <label class="block">
-                    <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Phone</span>
-                    <input
-                      v-model="form.phone"
-                      type="tel"
-                      autocomplete="tel"
-                      class="w-full rounded-3xl border border-slate-300 bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-600/70 dark:bg-slate-800/70 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-slate-400"
-                      placeholder="(555) 555-5555"
-                    >
-                  </label>
-
-                  <label class="block">
-                    <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Relationship to veteran</span>
-                    <input
-                      v-model="form.relationship"
+                      v-model="form.first_name"
                       type="text"
+                      autocomplete="given-name"
                       class="w-full rounded-3xl border border-slate-300 bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-600/70 dark:bg-slate-800/70 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-slate-400"
-                      placeholder="Partner, spouse, parent, friend, caregiver"
+                      placeholder="First name"
                     >
-                    <div class="mt-3 flex flex-wrap gap-2 px-1">
-                      <button
-                        v-for="suggestion in relationshipSuggestions"
-                        :key="suggestion.label"
-                        type="button"
-                        class="rounded-full border px-3 py-1.5 text-xs font-bold transition"
-                        :class="relationshipChipClass(suggestion)"
-                        @click="form.relationship = suggestion.label"
-                      >
-                        {{ suggestion.label }}
-                      </button>
-                    </div>
-                  </label>
-                </template>
-
-                <!-- Step 1: Condition & time -->
-                <template v-else-if="observationStep === 1">
-                  <div>
-                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">What you observed</p>
-                    <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                      Choose the condition and when you noticed it.
-                    </p>
-                  </div>
-
-                  <label class="block">
-                    <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Condition</span>
-                    <select
-                      v-model="form.condition_label"
-                      class="w-full rounded-3xl border border-slate-300 bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none focus:border-slate-500 dark:border-slate-600/70 dark:bg-slate-800/70 dark:text-white dark:focus:border-slate-400 dark:[color-scheme:dark]"
-                    >
-                      <option value="" disabled>Select condition</option>
-                      <option
-                        v-for="condition in supporterProfile?.visible_conditions || []"
-                        :key="condition"
-                        :value="condition"
-                      >
-                        {{ condition }}
-                      </option>
-                    </select>
                   </label>
 
                   <label class="block">
-                    <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Date observed</span>
+                    <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Last name</span>
                     <input
-                      v-model="observedDate"
-                      type="date"
-                      :max="maxObservedDate"
-                      class="w-full rounded-3xl border border-slate-300 bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none focus:border-slate-500 dark:border-slate-600/70 dark:bg-slate-800/70 dark:text-white dark:focus:border-slate-400 dark:[color-scheme:dark]"
+                      v-model="form.last_name"
+                      type="text"
+                      autocomplete="family-name"
+                      class="w-full rounded-3xl border border-slate-300 bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-600/70 dark:bg-slate-800/70 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-slate-400"
+                      placeholder="Last name"
                     >
                   </label>
+                </div>
 
-                  <TimeOfDayPicker
-                    :hour="observedTimeHour"
-                    :minute="observedTimeMinute"
-                    :period="observedTimePeriod"
-                    @update:hour="observedTimeHour = $event"
-                    @update:minute="observedTimeMinute = $event"
-                    @update:period="observedTimePeriod = $event"
-                    @change="syncObservedAtFromParts"
-                  />
-                </template>
+                <label class="block">
+                  <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Email</span>
+                  <input
+                    v-model="form.email"
+                    type="email"
+                    autocomplete="email"
+                    class="w-full rounded-3xl border border-slate-300 bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-600/70 dark:bg-slate-800/70 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-slate-400"
+                    placeholder="you@example.com"
+                  >
+                </label>
 
-                <!-- Step 2: Severity -->
-                <template v-else-if="observationStep === 2">
-                  <div class="space-y-1 text-center">
-                    <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                      Severity you noticed
-                    </p>
-                    <p class="text-xs leading-5 text-slate-500 dark:text-slate-400">
-                      Slide between mild and severe based on what you saw.
-                    </p>
-                  </div>
+                <label class="block">
+                  <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Phone</span>
+                  <input
+                    v-model="form.phone"
+                    type="tel"
+                    autocomplete="tel"
+                    class="w-full rounded-3xl border border-slate-300 bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-600/70 dark:bg-slate-800/70 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-slate-400"
+                    placeholder="(555) 555-5555"
+                  >
+                </label>
 
-                  <div class="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
-                    <span>Mild</span>
-                    <span class="rounded-full bg-slate-950 px-3 py-1 text-xs font-bold text-white dark:bg-slate-700 dark:text-slate-100">
-                      {{ severityValue }}/10
-                    </span>
-                    <span>Severe</span>
-                  </div>
-
-                  <USlider
-                    v-model="severityValue"
-                    :min="0"
-                    :max="10"
-                    :step="1"
-                    size="xl"
-                    color="neutral"
-                    tooltip
-                  />
-
-                  <div class="flex flex-wrap justify-center gap-2">
+                <label class="block">
+                  <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">My relationship to them</span>
+                  <input
+                    v-model="form.relationship"
+                    type="text"
+                    class="w-full rounded-3xl border border-slate-300 bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-600/70 dark:bg-slate-800/70 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-slate-400"
+                    placeholder="Partner, spouse, parent, friend, caregiver"
+                  >
+                  <div class="mt-3 flex flex-wrap gap-2 px-1">
                     <button
-                      v-for="preset in severityQuickPresets"
-                      :key="preset.label"
+                      v-for="suggestion in relationshipSuggestions"
+                      :key="suggestion.label"
                       type="button"
                       class="rounded-full border px-3 py-1.5 text-xs font-bold transition"
-                      :class="severityValue === preset.value
-                        ? 'border-slate-950 bg-slate-950 text-white dark:border-slate-500 dark:bg-slate-700 dark:text-slate-100'
-                        : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-200 dark:hover:bg-slate-800'"
-                      @click="severityValue = preset.value"
+                      :class="relationshipChipClass(suggestion)"
+                      @click="form.relationship = suggestion.label"
+                    >
+                      {{ suggestion.label }}
+                    </button>
+                  </div>
+                </label>
+              </template>
+
+              <template v-else-if="observationStep === 1">
+                <div>
+                  <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">What I observed</p>
+                  <p class="mt-2 text-base leading-6 text-slate-600 dark:text-slate-400">
+                    Choose the condition and when I noticed it.
+                  </p>
+                </div>
+
+                <label class="block">
+                  <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Condition</span>
+                  <select
+                    v-model="form.condition_label"
+                    class="w-full rounded-3xl border border-slate-300 bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none focus:border-slate-500 dark:border-slate-600/70 dark:bg-slate-800/70 dark:text-white dark:focus:border-slate-400 dark:[color-scheme:dark]"
+                  >
+                    <option value="" disabled>Select condition</option>
+                    <option
+                      v-for="condition in supporterProfile?.visible_conditions || []"
+                      :key="condition"
+                      :value="condition"
+                    >
+                      {{ condition }}
+                    </option>
+                  </select>
+                </label>
+
+                <label class="block">
+                  <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Date I noticed this</span>
+                  <input
+                    v-model="observedDate"
+                    type="date"
+                    :max="maxObservedDate"
+                    class="w-full rounded-3xl border border-slate-300 bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none focus:border-slate-500 dark:border-slate-600/70 dark:bg-slate-800/70 dark:text-white dark:focus:border-slate-400 dark:[color-scheme:dark]"
+                  >
+                </label>
+
+                <TimeOfDayPicker
+                  :hour="observedTimeHour"
+                  :minute="observedTimeMinute"
+                  :period="observedTimePeriod"
+                  @update:hour="observedTimeHour = $event"
+                  @update:minute="observedTimeMinute = $event"
+                  @update:period="observedTimePeriod = $event"
+                  @change="syncObservedAtFromParts"
+                />
+              </template>
+
+              <template v-else-if="observationStep === 2">
+                <div class="space-y-1 text-center">
+                  <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                    How severe it seemed to me
+                  </p>
+                  <p class="text-xs leading-5 text-slate-500 dark:text-slate-400">
+                    Based on what I saw — not a medical rating.
+                  </p>
+                </div>
+
+                <div class="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
+                  <span>Mild</span>
+                  <span class="rounded-full bg-slate-950 px-3 py-1 text-xs font-bold text-white dark:bg-slate-700 dark:text-slate-100">
+                    {{ severityValue }}/10
+                  </span>
+                  <span>Severe</span>
+                </div>
+
+                <USlider
+                  v-model="severityValue"
+                  :min="0"
+                  :max="10"
+                  :step="1"
+                  size="xl"
+                  color="neutral"
+                  tooltip
+                />
+
+                <div class="flex flex-wrap justify-center gap-2">
+                  <button
+                    v-for="preset in supporterSeverityQuickPresets"
+                    :key="preset.label"
+                    type="button"
+                    class="rounded-full border px-3 py-1.5 text-xs font-bold transition"
+                    :class="severityValue === preset.value
+                      ? 'border-slate-950 bg-slate-950 text-white dark:border-slate-500 dark:bg-slate-700 dark:text-slate-100'
+                      : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-200 dark:hover:bg-slate-800'"
+                    @click="severityValue = preset.value"
+                  >
+                    {{ preset.label }}
+                  </button>
+                </div>
+
+                <div class="min-h-[5.25rem] overflow-hidden">
+                  <Transition name="severity-guide" mode="out-in">
+                    <div
+                      :key="severityValue"
+                      class="rounded-2xl bg-slate-100/80 px-5 py-4 dark:bg-slate-800/80"
+                    >
+                      <p class="text-center text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                        {{ severityGuidance.title }}
+                      </p>
+                      <p class="mt-2 text-center text-base leading-6 text-slate-600 dark:text-slate-300">
+                        {{ severityGuidance.text }}
+                      </p>
+                    </div>
+                  </Transition>
+                </div>
+              </template>
+
+              <template v-else-if="observationStep === 3">
+                <div>
+                  <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Impact I noticed</p>
+                  <p class="mt-2 text-base leading-6 text-slate-600 dark:text-slate-400">
+                    Describe how this seemed to affect their day — work, sleep, mood, chores, or activity.
+                  </p>
+                </div>
+
+                <div class="space-y-5">
+                  <div class="flex flex-wrap gap-2.5">
+                    <button
+                      v-for="preset in supporterImpactPresets"
+                      :key="preset.label"
+                      type="button"
+                      class="rounded-full px-3 py-1.5 text-xs font-bold transition"
+                      :class="supporterImpactPresetIsSelected(form.impact, preset.value)
+                        ? 'bg-slate-950 text-white dark:bg-white dark:text-slate-950'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'"
+                      @click="toggleImpactPreset(preset.value)"
                     >
                       {{ preset.label }}
                     </button>
                   </div>
 
-                  <div class="min-h-[5rem] overflow-hidden">
-                    <Transition
-                      name="severity-guide"
-                      mode="out-in"
-                    >
-                      <div
-                        :key="severityValue"
-                        class="rounded-2xl bg-slate-100/80 px-5 py-4 dark:bg-slate-800/80"
-                      >
-                        <p class="text-center text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                          {{ severityGuidance.title }}
-                        </p>
-                        <p class="mt-2 text-center text-sm leading-6 text-slate-600 dark:text-slate-300">
-                          {{ severityGuidance.text }}
-                        </p>
-                      </div>
-                    </Transition>
-                  </div>
-                </template>
-
-                <!-- Step 3: Impact & notes -->
-                <template v-else-if="observationStep === 3">
-                  <div>
-                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Impact & notes</p>
-                    <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                      Describe how this affected daily life, work, sleep, mood, or activity.
-                    </p>
-                  </div>
-
                   <label class="block">
-                    <span class="mb-4 block text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Impact you noticed</span>
+                    <span class="mb-4 block text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">What I noticed</span>
                     <textarea
                       v-model="form.impact"
                       rows="4"
                       class="w-full resize-none border-0 border-b border-slate-300/80 bg-transparent px-0 py-4 text-base font-medium leading-7 text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-600 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-slate-400"
-                      placeholder="What changed in work, sleep, mood, chores, walking, family time, etc.?"
+                      placeholder="I noticed they had trouble..., It seemed to affect..., They appeared to..."
                     />
                   </label>
 
                   <label class="block">
-                    <span class="mb-4 block text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Notes (optional)</span>
+                    <span class="mb-4 block text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Extra notes (optional)</span>
                     <textarea
                       v-model="form.notes"
                       rows="3"
                       class="w-full resize-none border-0 border-b border-slate-300/80 bg-transparent px-0 py-4 text-base font-medium leading-7 text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-600 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-slate-400"
-                      placeholder="Optional extra details"
+                      placeholder="Anything else I want to add"
                     />
                   </label>
-                </template>
+                </div>
+              </template>
 
-                <!-- Step 4: Declaration -->
-                <template v-else>
-                  <div>
-                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Sign & submit</p>
-                    <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                      Review the affirmation and sign with your full legal name.
-                    </p>
-                  </div>
+              <template v-else>
+                <div>
+                  <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Sign & submit</p>
+                  <p class="mt-2 text-base leading-6 text-slate-600 dark:text-slate-400">
+                    I review the affirmation below and sign with my full legal name.
+                  </p>
+                </div>
 
-                  <div class="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/50">
-                    <p class="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                      {{ declarationText }}
-                    </p>
+                <div class="rounded-3xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/50">
+                  <p class="text-base leading-6 text-slate-600 dark:text-slate-300">
+                    {{ declarationText }}
+                  </p>
 
-                    <p
-                      v-if="reporterFullName"
-                      class="mt-3 rounded-2xl border border-slate-200 bg-slate-100/80 px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200"
+                  <p
+                    v-if="reporterFullName"
+                    class="mt-3 rounded-2xl border border-slate-200 bg-slate-100/80 px-3 py-2 text-base text-slate-700 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200"
+                  >
+                    This report will list me as:
+                    <span class="font-bold text-slate-950 dark:text-white">{{ reporterFullName }}</span>
+                    <span v-if="form.email"> · {{ form.email }}</span>
+                    <span v-if="form.phone"> · {{ form.phone }}</span>
+                    <span v-if="form.relationship"> · {{ form.relationship }}</span>
+                  </p>
+
+                  <label class="mt-4 flex cursor-pointer items-start gap-3">
+                    <input
+                      v-model="hasAffirmedDeclaration"
+                      type="checkbox"
+                      class="mt-1 size-5 shrink-0 rounded border-slate-300 bg-white text-slate-950 focus:ring-slate-400 dark:border-slate-600 dark:bg-slate-800/70 dark:text-slate-200"
                     >
-                      Report will list:
-                      <span class="font-bold text-slate-950 dark:text-white">{{ reporterFullName }}</span>
-                      <span v-if="form.email"> · {{ form.email }}</span>
-                      <span v-if="form.phone"> · {{ form.phone }}</span>
-                      <span v-if="form.relationship"> · {{ form.relationship }}</span>
+                    <span class="text-base font-semibold leading-6 text-slate-950 dark:text-white">
+                      I affirm that this statement is true and accurate to the best of my knowledge, and I agree that my name and contact information above will appear on this report.
+                    </span>
+                  </label>
+
+                  <label class="mt-4 block">
+                    <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">My electronic signature</span>
+                    <input
+                      v-model="form.signature_name"
+                      type="text"
+                      autocomplete="name"
+                      class="w-full rounded-3xl border border-slate-300 bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-600/70 dark:bg-slate-800/70 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-slate-400"
+                      placeholder="Type my full legal name"
+                      @input="signatureManuallyEdited = true"
+                    >
+                    <p class="mt-2 px-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                      Include first and last name (capitalization does not matter).
                     </p>
+                  </label>
+                </div>
+              </template>
+            </div>
+          </Transition>
+        </div>
 
-                    <label class="mt-4 flex cursor-pointer items-start gap-3">
-                      <input
-                        v-model="hasAffirmedDeclaration"
-                        type="checkbox"
-                        class="mt-1 size-5 shrink-0 rounded border-slate-300 bg-white text-slate-950 focus:ring-slate-400 dark:border-slate-600 dark:bg-slate-800/70 dark:text-slate-200"
-                      >
-                      <span class="text-sm font-semibold leading-6 text-slate-950 dark:text-white">
-                        I affirm that this statement is true and accurate to the best of my knowledge, and I agree that my name and contact information above will appear on this report.
-                      </span>
-                    </label>
-
-                    <label class="mt-4 block">
-                      <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Electronic signature</span>
-                      <input
-                        v-model="form.signature_name"
-                        type="text"
-                        autocomplete="name"
-                        class="w-full rounded-3xl border border-slate-300 bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-600/70 dark:bg-slate-800/70 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-slate-400"
-                        placeholder="Type your full legal name"
-                        @input="signatureManuallyEdited = true"
-                      >
-                      <p class="mt-2 px-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
-                        Include your first and last name (capitalization does not matter).
-                      </p>
-                    </label>
-                  </div>
-                </template>
-              </div>
-            </Transition>
-          </div>
-
-          <div class="sticky bottom-0 z-30 shrink-0 border-t border-slate-200 bg-white/95 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/95">
-            <ul
-              v-if="showCurrentStepBlockers && currentStepBlockers.length && !isSubmitting"
-              class="mb-4 rounded-3xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/60 dark:bg-amber-950/30"
+        <div
+          class="shrink-0"
+          :style="{ minHeight: isObservationKeyboardOpen ? '0px' : `${observationActionBarHeight}px` }"
+        >
+        <StickyActionBar
+          class="-mx-4 rounded-none border-x-0 sm:-mx-0"
+          :keyboard-offset="observationKeyboardInset"
+        >
+          <ul
+            v-if="currentStepBlockers.length && !isSubmitting"
+            class="mb-4 rounded-3xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/60 dark:bg-amber-950/30"
+          >
+            <li
+              v-for="blocker in currentStepBlockers"
+              :key="blocker"
+              class="flex items-start gap-2 py-1 text-base text-amber-950 dark:text-amber-100"
             >
-              <li
-                v-for="blocker in currentStepBlockers"
-                :key="blocker"
-                class="flex items-start gap-2 py-1 text-sm text-amber-950 dark:text-amber-100"
-              >
-                <UIcon name="i-lucide-circle-dot" class="mt-0.5 size-4 shrink-0" />
-                <span>{{ blocker }}</span>
-              </li>
-            </ul>
+              <UIcon name="i-lucide-circle-dot" class="mt-0.5 size-4 shrink-0" />
+              <span>{{ blocker }}</span>
+            </li>
+          </ul>
 
-            <p v-if="submitError" class="mb-4 text-center text-sm font-medium text-red-600 dark:text-red-300">{{ submitError }}</p>
+          <p v-if="submitError" class="mb-4 text-center text-base font-medium text-red-600 dark:text-red-300">{{ submitError }}</p>
 
-            <button
-              type="submit"
-              class="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-4 text-base font-bold text-white shadow-lg transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600"
-              :disabled="isSubmitting || (isLastObservationStep && !canSubmit)"
-            >
-              {{ isSubmitting ? 'Submitting...' : isLastObservationStep ? 'Submit Observation' : 'Continue' }}
-              <UIcon :name="isLastObservationStep ? 'i-lucide-check' : 'i-lucide-arrow-right'" class="size-5" />
-            </button>
+          <button
+            type="submit"
+            class="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-4 text-base font-bold text-white shadow-lg transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600"
+            :disabled="isSubmitting || (isLastObservationStep && !canSubmit)"
+          >
+            {{ isSubmitting ? 'Submitting...' : isLastObservationStep ? 'Submit observation' : 'Continue' }}
+            <UIcon :name="isLastObservationStep ? 'i-lucide-check' : 'i-lucide-arrow-right'" class="size-5" />
+          </button>
+        </StickyActionBar>
+        </div>
+      </form>
 
-          </div>
-        </form>
-
-        <footer class="mt-6 flex shrink-0 items-center justify-center gap-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-2 text-xs font-semibold text-slate-500">
-          <NuxtLink to="/privacy" class="hover:text-slate-700 dark:hover:text-slate-300">Privacy</NuxtLink>
-          <NuxtLink to="/disclaimer" class="hover:text-slate-700 dark:hover:text-slate-300">Disclaimer</NuxtLink>
-        </footer>
-      </template>
+      <footer
+        v-if="!isLoading && !pageError"
+        class="flex shrink-0 items-center justify-center gap-3 py-4 text-xs font-semibold text-slate-500"
+      >
+        <NuxtLink to="/privacy" class="hover:text-slate-700 dark:hover:text-slate-300">Privacy</NuxtLink>
+        <NuxtLink to="/disclaimer" class="hover:text-slate-700 dark:hover:text-slate-300">Disclaimer</NuxtLink>
+      </footer>
     </section>
   </main>
 </template>
@@ -420,8 +474,14 @@
 <script setup lang="ts">
 import { useSupabaseClient } from '../../composables/useSupabaseClient'
 import { useKeyboardAwareScroll } from '../../composables/useKeyboardAwareScroll'
-import { getSeverityGuidance, severityQuickPresets } from '../../utils/severityGuidance'
 import { signatureMatchesReporter } from '../../utils/signatureMatch'
+import {
+  getSupporterSeverityGuidance,
+  supporterImpactPresetIsSelected,
+  supporterImpactPresets,
+  supporterSeverityQuickPresets,
+  toggleSupporterImpactPreset
+} from '../../utils/supporterObservationCopy'
 import {
   formatPartsToTime24,
   getMaxEntryDateLocal,
@@ -432,13 +492,13 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 const declarationText =
-  'By submitting this observation, you confirm that the information provided reflects what you personally observed and is submitted in good faith. Your name, email, phone number, and relationship will be stored on this report for the veteran’s review.'
+  'By submitting this observation, I confirm that the information reflects what I personally observed and is submitted in good faith. My name, email, phone number, and relationship will be stored on this report for the veteran’s review.'
 
 const observationStepTitles = [
   'Your information',
   'What you observed',
-  'Severity',
-  'Impact & notes',
+  'How severe it seemed',
+  'Impact you noticed',
   'Sign & submit'
 ]
 
@@ -471,6 +531,7 @@ const supporterProfile = ref<null | {
 const observationStep = ref(0)
 const isLoading = ref(true)
 const isSubmitting = ref(false)
+const isSubmitted = ref(false)
 const hasAffirmedDeclaration = ref(false)
 const signatureManuallyEdited = ref(false)
 const severityValue = ref(5)
@@ -496,13 +557,23 @@ const observedTimePeriod = ref<'AM' | 'PM'>('PM')
 const maxObservedDate = getMaxEntryDateLocal()
 
 const observationStepScrollEl = ref<HTMLElement | null>(null)
-const { scrollStyle: observationStepScrollStyle, handleFieldFocus: handleObservationFieldFocus } = useKeyboardAwareScroll(observationStepScrollEl)
+const observationActionBarHeight = 112
+const {
+  scrollStyle: observationStepScrollStyle,
+  handleFieldFocus: handleObservationFieldFocus,
+  keyboardInset: observationKeyboardInset,
+  isKeyboardOpen: isObservationKeyboardOpen
+} = useKeyboardAwareScroll(observationStepScrollEl, {
+  footerHeight: observationActionBarHeight
+})
+
+const observationSwipeStartX = ref<number | null>(null)
 
 const reporterFullName = computed(() => {
   return [form.value.first_name, form.value.last_name].filter(Boolean).join(' ').trim()
 })
 
-const severityGuidance = computed(() => getSeverityGuidance(severityValue.value))
+const severityGuidance = computed(() => getSupporterSeverityGuidance(severityValue.value))
 
 const currentStepTitle = computed(() => observationStepTitles[observationStep.value] || '')
 
@@ -582,9 +653,9 @@ function getAllSubmitBlockers() {
 
 const currentStepBlockers = computed(() => getStepBlockers(observationStep.value))
 
-const showCurrentStepBlockers = computed(() => {
-  return observationStep.value !== 3 || Boolean(submitError.value)
-})
+function toggleImpactPreset(presetValue: string) {
+  form.value.impact = toggleSupporterImpactPreset(form.value.impact, presetValue)
+}
 
 function relationshipChipClass(suggestion: typeof relationshipSuggestions[number]) {
   const isSelected = form.value.relationship === suggestion.label
@@ -602,6 +673,29 @@ function relationshipChipClass(suggestion: typeof relationshipSuggestions[number
   }
 
   return 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-200 dark:hover:bg-slate-800'
+}
+
+function handleObservationSwipeStart(event: TouchEvent) {
+  observationSwipeStartX.value = event.changedTouches[0]?.clientX ?? null
+}
+
+function handleObservationSwipeEnd(event: TouchEvent) {
+  const startX = observationSwipeStartX.value
+  const endX = event.changedTouches[0]?.clientX
+
+  if (startX === null || endX === undefined) {
+    return
+  }
+
+  const deltaX = endX - startX
+
+  if (deltaX <= -60) {
+    tryAdvanceObservationStep()
+  } else if (deltaX >= 60) {
+    showPreviousObservationStep()
+  }
+
+  observationSwipeStartX.value = null
 }
 
 watch(observedDate, () => {
@@ -666,6 +760,16 @@ function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())
 }
 
+function resetObservationForm() {
+  form.value.impact = ''
+  form.value.notes = ''
+  severityValue.value = 5
+  observationStep.value = 0
+  submitError.value = ''
+  resetReporterFields()
+  setDefaultObservedAt()
+}
+
 function resetReporterFields() {
   form.value.first_name = ''
   form.value.last_name = ''
@@ -675,6 +779,11 @@ function resetReporterFields() {
   form.value.signature_name = ''
   hasAffirmedDeclaration.value = false
   signatureManuallyEdited.value = false
+}
+
+function startAnotherObservation() {
+  isSubmitted.value = false
+  resetObservationForm()
 }
 
 function showPreviousObservationStep() {
@@ -775,12 +884,7 @@ async function submitObservation() {
       message: 'Observation submitted. Thank you.',
       highlight: '✓'
     })
-    form.value.impact = ''
-    form.value.notes = ''
-    severityValue.value = 5
-    observationStep.value = 0
-    resetReporterFields()
-    setDefaultObservedAt()
+    isSubmitted.value = true
   }
 
   isSubmitting.value = false

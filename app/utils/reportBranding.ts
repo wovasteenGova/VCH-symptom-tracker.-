@@ -1,3 +1,30 @@
+export const TRACKER_PUBLIC_ORIGIN = 'https://tracker.veteranscentralhub.us'
+
+function isLocalOrigin(value: string) {
+  try {
+    const hostname = new URL(value).hostname
+    return hostname === 'localhost'
+      || hostname === '127.0.0.1'
+      || hostname.endsWith('.local')
+  } catch {
+    return false
+  }
+}
+
+export function resolveTrackerPublicOrigin(configuredSiteUrl?: string | null) {
+  const trimmed = configuredSiteUrl?.trim()
+
+  if (trimmed && !isLocalOrigin(trimmed)) {
+    return trimmed.replace(/\/$/, '')
+  }
+
+  return TRACKER_PUBLIC_ORIGIN
+}
+
+export function resolveTrackerAppUrl(configuredSiteUrl?: string | null) {
+  return `${resolveTrackerPublicOrigin(configuredSiteUrl)}/app`
+}
+
 export const reportBranding = {
   organizationName: 'Veterans Central Hub',
   reportTitle: 'Symptom Tracker Report',

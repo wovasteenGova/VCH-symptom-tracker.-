@@ -27,7 +27,7 @@
 
         <div class="mt-6 space-y-3">
           <NuxtLink
-            to="/"
+            to="/app"
             class="block w-full rounded-2xl bg-white px-5 py-4 text-base font-bold text-slate-950 transition hover:bg-slate-200"
           >
             Start tracking

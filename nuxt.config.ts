@@ -56,7 +56,7 @@ export default defineNuxtConfig({
       display: 'standalone',
       orientation: 'portrait',
       scope: '/',
-      start_url: '/',
+      start_url: '/app',
       icons: [
         {
           src: '/vch-logo.png',

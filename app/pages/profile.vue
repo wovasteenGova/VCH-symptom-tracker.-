@@ -8,7 +8,7 @@
         </div>
 
         <NuxtLink
-          to="/"
+          to="/app"
           class="grid size-10 place-items-center rounded-full bg-slate-900 text-white shadow-sm ring-1 ring-slate-800 transition hover:bg-slate-800"
           aria-label="Back to tracker"
         >
@@ -251,6 +251,30 @@
                 {{ option.label }}
               </button>
             </div>
+          </div>
+        </section>
+
+        <section class="rounded-4xl border border-slate-800 bg-slate-900 p-5">
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Display</p>
+          <h2 class="mt-1 text-xl font-bold text-white">Tracker layout</h2>
+          <p class="mt-2 text-sm leading-6 text-slate-400">
+            Auto hides arrow controls on small screens. Choose desktop to keep arrows and the wide layout on a tablet or narrow window.
+          </p>
+
+          <div class="mt-4 grid gap-3">
+            <button
+              v-for="option in layoutOptions"
+              :key="option.value"
+              type="button"
+              class="rounded-3xl border px-4 py-4 text-left transition"
+              :class="layoutMode === option.value
+                ? 'border-white bg-slate-800'
+                : 'border-slate-700 bg-slate-800/50'"
+              @click="setLayoutMode(option.value)"
+            >
+              <span class="block font-bold text-white">{{ option.label }}</span>
+              <span class="mt-1 block text-sm leading-6 text-slate-400">{{ option.copy }}</span>
+            </button>
           </div>
         </section>
 
@@ -695,6 +719,7 @@ import {
   buildSupportEmailHref
 } from '../utils/subscription'
 import { WEEKLY_LOG_DAY_OPTIONS, type LoggingCadence } from '../utils/loggingCadence'
+import { useTrackerLayout, type TrackerLayoutMode } from '../composables/useTrackerLayout'
 import { mapEntryHistoryItem } from '../utils/entryDisplay'
 import { copyToClipboard } from '../utils/copyToClipboard'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -745,6 +770,25 @@ const {
   loadAppWelcomeState,
   updateLoggingCadence
 } = useAppWelcome()
+const { layoutMode, setLayoutMode } = useTrackerLayout()
+
+const layoutOptions: Array<{ value: TrackerLayoutMode, label: string, copy: string }> = [
+  {
+    value: 'auto',
+    label: 'Auto',
+    copy: 'Use mobile layout on small screens and desktop arrows on wider screens.'
+  },
+  {
+    value: 'desktop',
+    label: 'Desktop',
+    copy: 'Always show arrow controls and the wider carousel layout.'
+  },
+  {
+    value: 'mobile',
+    label: 'Mobile',
+    copy: 'Always use the compact phone layout, even on a large screen.'
+  }
+]
 
 const weeklyLogDayOptions = WEEKLY_LOG_DAY_OPTIONS
 
