@@ -1,5 +1,6 @@
 import type { User } from '@supabase/supabase-js'
 import { onMounted, onUnmounted } from 'vue'
+import { useTrackerAuthRedirects } from '../utils/authRedirects'
 
 type AuthFailure = {
   message?: string
@@ -25,6 +26,7 @@ function validateAuthEmail(email: string) {
 
 export function useSupabaseAuth() {
   const supabase = useSupabaseClient()
+  const authRedirects = useTrackerAuthRedirects()
   const user = useState<User | null>('tracker-auth-user', () => null)
   const isAuthLoading = useState('tracker-auth-loading', () => true)
   const authError = useState('tracker-auth-error', () => '')
@@ -163,7 +165,7 @@ export function useSupabaseAuth() {
     const normalizedEmail = requireAuthEmail(email)
 
     const emailRedirectTo = import.meta.client
-      ? `${window.location.origin}/app`
+      ? authRedirects.confirmUrl()
       : undefined
 
     let data
@@ -235,7 +237,7 @@ export function useSupabaseAuth() {
     const normalizedEmail = requireAuthEmail(email)
 
     const emailRedirectTo = import.meta.client
-      ? `${window.location.origin}/app`
+      ? authRedirects.confirmUrl()
       : undefined
 
     let error: unknown
@@ -263,7 +265,7 @@ export function useSupabaseAuth() {
     authError.value = ''
 
     const redirectTo = import.meta.client
-      ? `${window.location.origin}/app`
+      ? authRedirects.callbackUrl()
       : undefined
 
     let error: unknown
@@ -291,7 +293,7 @@ export function useSupabaseAuth() {
     const normalizedEmail = requireAuthEmail(email)
 
     const redirectTo = import.meta.client
-      ? window.location.origin
+      ? authRedirects.resetPasswordUrl()
       : undefined
 
     let error: unknown

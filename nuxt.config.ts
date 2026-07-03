@@ -125,6 +125,7 @@ export default defineNuxtConfig({
     '/app': { ssr: false },
     '/app/**': { ssr: false },
     '/profile': { ssr: false },
+    '/auth/**': { ssr: false },
     '/upgrade': { ssr: false },
     '/upgrade/**': { ssr: false },
     '/api/stripe/webhook': { cors: false }

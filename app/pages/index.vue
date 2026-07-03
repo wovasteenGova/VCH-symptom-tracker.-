@@ -157,6 +157,25 @@ const trackerAppUrl = computed(() => resolveTrackerAppUrl(config.public.siteUrl)
 const isDesktopLayout = useMediaQuery('(min-width: 768px)')
 
 onMounted(() => {
+  if (import.meta.client) {
+    const { hash, search } = window.location
+    const hashParams = new URLSearchParams(hash.replace(/^#/, ''))
+    const linkType = hashParams.get('type')
+    const hasAuthPayload = hashParams.has('access_token')
+      || search.includes('code=')
+      || search.includes('token_hash=')
+
+    if (hasAuthPayload) {
+      if (linkType === 'recovery') {
+        window.location.replace(`/auth/reset-password${search}${hash}`)
+        return
+      }
+
+      window.location.replace(`/auth/confirm${search}${hash}`)
+      return
+    }
+  }
+
   if (!isDesktopLayout.value) {
     navigateTo('/app', { replace: true })
   }
