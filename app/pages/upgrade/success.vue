@@ -52,7 +52,7 @@ import { useEntitlements } from '../../composables/useEntitlements'
 
 const route = useRoute()
 const { user, isAuthLoading } = useSupabaseAuth()
-const { isPro, loadEntitlements } = useEntitlements()
+const { isPro, loadEntitlements, confirmCheckoutSession } = useEntitlements()
 
 const pageError = ref('')
 const pollAttempts = ref(0)
@@ -75,6 +75,13 @@ async function refreshEntitlement() {
   pollAttempts.value += 1
 
   try {
+    const sessionId = typeof route.query.session_id === 'string' ? route.query.session_id : ''
+
+    if (sessionId && user.value && !isPro.value && pollAttempts.value <= 2) {
+      await confirmCheckoutSession(sessionId)
+      return
+    }
+
     await loadEntitlements()
   } catch (error) {
     pageError.value = error instanceof Error ? error.message : 'Could not refresh plan status.'

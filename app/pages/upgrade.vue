@@ -196,6 +196,12 @@
         <p v-if="pageError" class="text-center text-sm font-medium text-red-300">{{ pageError }}</p>
       </div>
 
+      <TrackerEmbeddedCheckout
+        :open="isCheckoutOpen"
+        @close="closeCheckout"
+        @error="handleCheckoutError"
+      />
+
       <StickyActionBar tone="dark">
         <button
           v-if="!user"
@@ -213,7 +219,7 @@
           :disabled="isCheckoutLoading"
           @click="handleUpgrade"
         >
-          {{ isCheckoutLoading ? 'Opening secure checkout...' : `Upgrade to Pro — ${PRO_ANNUAL_PRICE_LABEL}` }}
+          {{ isCheckoutLoading ? 'Loading checkout...' : `Upgrade to Pro — ${PRO_ANNUAL_PRICE_LABEL}` }}
         </button>
 
         <NuxtLink
@@ -257,11 +263,11 @@ const {
   isComped,
   renewalLabel,
   loadEntitlements,
-  startCheckout,
   openBillingPortal
 } = useEntitlements()
 
 const isCheckoutLoading = ref(false)
+const isCheckoutOpen = ref(false)
 const isPortalLoading = ref(false)
 const pageError = ref('')
 
@@ -271,7 +277,7 @@ const showCanceledNotice = computed(() => route.query.canceled === '1')
 const paymentSteps = [
   {
     title: 'Choose Pro',
-    body: "Tap upgrade and you'll go to Stripe's secure checkout — the same payment system used across Veterans Central Hub."
+    body: 'Tap upgrade and pay right here in the app with Stripe — no redirect to another site until you finish.'
   },
   {
     title: 'Pay once per year',
@@ -291,26 +297,68 @@ onMounted(async () => {
   if (user.value) {
     await loadEntitlements()
   }
+
+  if (route.query.checkout === '1' && user.value && !isPro.value) {
+    openCheckout()
+  }
+})
+
+watch(() => route.query.checkout, (value) => {
+  if (value === '1' && user.value && !isPro.value) {
+    openCheckout()
+  }
 })
 
 watch(user, async (currentUser) => {
   if (currentUser) {
     await loadEntitlements()
+
+    if (route.query.checkout === '1' && !isPro.value && !isCheckoutOpen.value) {
+      openCheckout()
+    }
   }
 })
 
 watch(isAuthLoading, async (loading) => {
   if (!loading && user.value) {
     await loadEntitlements()
+
+    if (route.query.checkout === '1' && !isPro.value && !isCheckoutOpen.value) {
+      openCheckout()
+    }
   }
 })
+
+async function openCheckout() {
+  pageError.value = ''
+
+  if (!user.value) {
+    await router.push('/profile')
+    return
+  }
+
+  isCheckoutOpen.value = true
+}
+
+function closeCheckout() {
+  isCheckoutOpen.value = false
+  isCheckoutLoading.value = false
+
+  if (route.query.checkout === '1') {
+    router.replace({ path: '/upgrade', query: {} })
+  }
+}
+
+function handleCheckoutError(message: string) {
+  pageError.value = message
+}
 
 async function handleUpgrade() {
   pageError.value = ''
   isCheckoutLoading.value = true
 
   try {
-    await startCheckout()
+    await openCheckout()
   } catch (error) {
     pageError.value = error instanceof Error ? error.message : 'Could not start checkout.'
   } finally {

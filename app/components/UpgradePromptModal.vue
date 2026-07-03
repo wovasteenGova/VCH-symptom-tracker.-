@@ -54,7 +54,7 @@
             :disabled="isCheckoutLoading"
             @click="emit('upgrade')"
           >
-            {{ isCheckoutLoading ? 'Opening checkout...' : `Upgrade — ${PRO_ANNUAL_PRICE_LABEL}` }}
+            {{ isCheckoutLoading ? 'Continue to checkout...' : `Upgrade — ${PRO_ANNUAL_PRICE_LABEL}` }}
           </button>
           <NuxtLink
             to="/upgrade"

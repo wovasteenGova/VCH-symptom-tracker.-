@@ -12,6 +12,7 @@ type SymptomEntryPayload = {
 
 export function useSymptomEntries() {
   const supabase = useSupabaseClient()
+  const trackerDb = useTrackerDb()
 
   async function getUserId() {
     const { data: userData, error: userError } = await supabase.auth.getUser()
@@ -30,7 +31,7 @@ export function useSymptomEntries() {
   async function listEntries() {
     const userId = await getUserId()
 
-    const { data, error } = await supabase
+    const { data, error } = await trackerDb
       .from('symptom_entries')
       .select('*')
       .eq('user_id', userId)
@@ -46,7 +47,7 @@ export function useSymptomEntries() {
   async function createEntry(payload: SymptomEntryPayload) {
     const userId = await getUserId()
 
-    const { data, error } = await supabase
+    const { data, error } = await trackerDb
       .from('symptom_entries')
       .insert({
         user_id: userId,
@@ -65,7 +66,7 @@ export function useSymptomEntries() {
   }
 
   async function updateEntry(id: string, payload: Partial<SymptomEntryPayload>) {
-    const { data, error } = await supabase
+    const { data, error } = await trackerDb
       .from('symptom_entries')
       .update({
         ...payload,
@@ -83,7 +84,7 @@ export function useSymptomEntries() {
   }
 
   async function deleteEntry(id: string) {
-    const { error } = await supabase
+    const { error } = await trackerDb
       .from('symptom_entries')
       .delete()
       .eq('id', id)
@@ -96,7 +97,7 @@ export function useSymptomEntries() {
   async function deleteAllEntries() {
     const userId = await getUserId()
 
-    const { error } = await supabase
+    const { error } = await trackerDb
       .from('symptom_entries')
       .delete()
       .eq('user_id', userId)

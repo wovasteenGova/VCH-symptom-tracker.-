@@ -12,7 +12,7 @@ export function getStripeClient() {
   }
 
   return new Stripe(config.stripeSecretKey, {
-    apiVersion: '2023-10-16'
+    apiVersion: Stripe.API_VERSION
   })
 }
 

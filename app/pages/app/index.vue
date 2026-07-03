@@ -176,7 +176,7 @@
                   {{ user ? 'Account' : authMode === 'login' ? 'Welcome back' : 'Create account' }}
                 </p>
                 <h2 class="mt-1 text-xl font-bold text-slate-950 dark:text-white">
-                  {{ user ? user.email : authMode === 'login' ? 'Sign in to save entries' : 'Start saving your tracker' }}
+                  {{ user ? user.email : authMode === 'login' ? 'Sign in to save entries' : 'Sign up to back up your logs' }}
                 </h2>
               </div>
 
@@ -245,26 +245,22 @@
 
             <label v-if="authMode === 'signup'" class="block">
               <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Confirm password</span>
-              <input
+              <PasswordInput
                 v-model="authConfirmPassword"
-                type="password"
                 autocomplete="new-password"
-                class="w-full rounded-3xl border border-slate-300 bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-600/70 dark:bg-slate-800/70 dark:text-white dark:focus:border-slate-400"
                 placeholder="Re-enter password"
                 required
-              >
+              />
             </label>
 
             <label class="block">
               <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Password</span>
-              <input
+              <PasswordInput
                 v-model="authPassword"
-                type="password"
-                autocomplete="current-password"
-                class="w-full rounded-3xl border border-slate-300 bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-600/70 dark:bg-slate-800/70 dark:text-white dark:focus:border-slate-400"
+                :autocomplete="authMode === 'signup' ? 'new-password' : 'current-password'"
                 placeholder="At least 6 characters"
                 required
-              >
+              />
             </label>
 
             <button
@@ -293,6 +289,16 @@
               @click="handleForgotPassword"
             >
               Forgot password?
+            </button>
+
+            <button
+              v-if="needsEmailConfirmation"
+              type="button"
+              class="w-full rounded-2xl px-4 py-2 text-sm font-semibold text-sky-300"
+              :disabled="isAuthSubmitting || !authEmail"
+              @click="handleResendConfirmation"
+            >
+              Resend confirmation email
             </button>
 
             <button
@@ -791,7 +797,7 @@
           >
         <div
           class="flex min-h-0 flex-col px-4 transition-[flex] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
-          :class="historyExpanded ? 'flex-[1] pb-1' : 'flex-1 pb-3'"
+          :class="carouselWorkspaceClass"
           @wheel.passive="handleConditionWheel"
           @touchstart.passive="handleConditionTouchStart"
           @touchmove.passive="handleConditionTouchMove"
@@ -834,7 +840,7 @@
                       v-if="isHomeOverviewSlide"
                       class="flex h-full min-h-0 flex-col overflow-hidden bg-slate-50 dark:bg-slate-950"
                     >
-                      <div class="shrink-0 px-4 pt-2 pb-1">
+                      <div class="shrink-0 px-4 pt-2 pb-5">
                         <div class="flex items-center justify-between gap-2">
                           <h2 class="text-lg font-bold text-slate-950 dark:text-white">
                             Your conditions
@@ -857,7 +863,7 @@
                       <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
                         <div
                           data-home-conditions-scroll
-                          class="no-scrollbar min-h-0 flex-1 overflow-y-auto px-2"
+                          class="no-scrollbar min-h-0 flex-1 overflow-y-auto px-2 pt-4"
                           @scroll="handleConditionScroll"
                         >
                           <div class="space-y-1">
@@ -898,7 +904,8 @@
                             </button>
                           </div>
 
-                          <div class="mt-4 px-2 pb-1">
+                          <!-- Overview only: dots → tip → crisis stay in scroll under conditions. DO NOT move to footer. -->
+                          <div class="mt-8 px-2 pb-1">
                             <div class="flex justify-center gap-2">
                               <button
                                 v-for="slideIndex in homeCarouselSlideCount"
@@ -913,7 +920,7 @@
                               />
                             </div>
 
-                            <div v-if="homeVisitTip" class="mt-5">
+                            <div v-if="homeVisitTip" class="mt-6">
                               <Transition name="home-tip" mode="out-in">
                                 <div :key="`${homeVisitTip.title}-${homeVisitTip.text}`">
                                   <p class="text-xs font-bold uppercase tracking-[0.14em] text-sky-700 dark:text-sky-300">
@@ -954,6 +961,7 @@
               v-if="homeConditions.length && !showConditionBrowser"
               class="shrink-0 pt-3"
             >
+              <!-- Condition slides only: dots → tip → crisis below the image. Overview chrome stays in scroll above. -->
               <template v-if="!isHomeOverviewSlide">
                 <div class="flex justify-center gap-2">
                   <button
@@ -969,7 +977,7 @@
                   />
                 </div>
 
-                <div v-if="homeVisitTip" class="mt-4">
+                <div v-if="homeVisitTip" class="mt-6">
                   <Transition name="home-tip" mode="out-in">
                     <div :key="`${homeVisitTip.title}-${homeVisitTip.text}`">
                       <p class="text-xs font-bold uppercase tracking-[0.14em] text-sky-700 dark:text-sky-300">
@@ -981,10 +989,14 @@
                     </div>
                   </Transition>
                 </div>
+
+                <p class="mt-3 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                  {{ VA_CRISIS_LINE_SHORT }}
+                </p>
               </template>
 
               <div
-                v-if="isDesktopLayout"
+                v-if="isDesktopLayout && !historyExpanded"
                 class="flex items-center justify-center gap-4"
                 :class="isHomeOverviewSlide ? '' : 'mt-4'"
               >
@@ -1045,7 +1057,7 @@
 
         <section
           class="flex min-h-0 flex-col overflow-hidden rounded-t-[1.75rem] border-t border-slate-200/80 bg-white transition-[flex,height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] dark:border-slate-800 dark:bg-slate-900"
-          :class="historyExpanded ? 'flex-[4]' : 'h-[5rem] shrink-0'"
+          :class="historyPanelClass"
           @pointerdown="handleHistoryPointerDown"
           @pointermove="handleHistoryPointerMove"
           @pointerup="handleHistoryPointerUp"
@@ -1660,6 +1672,7 @@ const {
   authError,
   signIn,
   signUp,
+  resendConfirmationEmail,
   signInWithGoogle,
   sendPasswordReset,
   signOut
@@ -1677,8 +1690,7 @@ const {
   canReplaceFreeCondition,
   replaceFreeCondition,
   syncFreeConditionKey,
-  loadEntitlements,
-  startCheckout
+  loadEntitlements
 } = useEntitlements()
 const {
   needsAppWelcome,
@@ -1698,7 +1710,7 @@ const {
 const { showSubmissionToast } = useSubmissionToast()
 
 const profileDisplayName = ref('')
-const homeGreetingWord = ref<'Hello' | 'Hey'>(Math.random() < 0.5 ? 'Hello' : 'Hey')
+const homeGreetingWord = ref<'Hello' | 'Hey'>('Hello')
 
 const activeIndex = ref(0)
 const activeHistoryTab = ref('Entries')
@@ -1713,6 +1725,7 @@ const authEmail = ref('')
 const authPassword = ref('')
 const authConfirmPassword = ref('')
 const authMessage = ref('')
+const needsEmailConfirmation = ref(false)
 const isAuthSubmitting = ref(false)
 const hasActiveDraft = ref(false)
 const entryStep = ref(0)
@@ -2145,6 +2158,26 @@ const calendarDays = computed(() => {
 
 const isHomeOverviewSlide = computed(() => activeIndex.value === 0)
 
+const carouselWorkspaceClass = computed(() => {
+  if (!historyExpanded.value) {
+    return 'flex-1 pb-3'
+  }
+
+  return isDesktopLayout.value ? 'flex-[7] pb-1' : 'flex-[1] pb-1'
+})
+
+const historyPanelClass = computed(() => {
+  if (!historyExpanded.value) {
+    return 'h-[5rem] shrink-0'
+  }
+
+  if (isDesktopLayout.value) {
+    return 'relative z-30 flex-[13]'
+  }
+
+  return 'relative z-30 flex-[4]'
+})
+
 const homeCarouselSlideCount = computed(() => homeConditions.value.length + 1)
 
 function isConditionLogLocked(key: string) {
@@ -2497,6 +2530,7 @@ onBeforeMount(() => {
 })
 
 onMounted(async () => {
+  homeGreetingWord.value = Math.random() < 0.5 ? 'Hello' : 'Hey'
   setupInstallCard()
   await loadAppWelcomeState()
 
@@ -3378,10 +3412,10 @@ async function handleUpgradeCheckout() {
   isUpgradeCheckoutLoading.value = true
 
   try {
-    await startCheckout()
+    closeUpgradePrompt()
+    await router.push('/upgrade?checkout=1')
   } catch (error) {
     exportError.value = getErrorMessage(error)
-    isUpgradePromptOpen.value = false
   } finally {
     isUpgradeCheckoutLoading.value = false
   }
@@ -3393,6 +3427,8 @@ function toggleAuthPanel() {
 
 async function handleAuthSubmit() {
   authMessage.value = ''
+  authError.value = ''
+  needsEmailConfirmation.value = false
 
   if (authMode.value === 'signup' && !authName.value.trim()) {
     authMessage.value = 'Enter your full name.'
@@ -3419,19 +3455,45 @@ async function handleAuthSubmit() {
     } else {
       const data = await signUp(authEmail.value, authPassword.value, authName.value.trim())
 
-      if (data.user) {
-        if (data.session) {
-          showSubmissionToast('Account created. You are signed in.')
-          isAuthPanelOpen.value = false
-        } else {
-          showSubmissionToast('Check your email to confirm your account.')
-        }
+      if (data.session || user.value) {
+        showSubmissionToast('Account created. You are signed in.')
+        isAuthPanelOpen.value = false
+      } else if (data.user) {
+        authMessage.value = 'Account created, but sign-in did not start. Try Sign in with the same password.'
       } else {
         authMessage.value = 'Signup did not return a user. Check Supabase Auth settings and try again.'
       }
     }
   } catch {
-    // useSupabaseAuth exposes the message in authError.
+    if (/already has a VCH account/i.test(authError.value)) {
+      authMode.value = 'login'
+    }
+    if (/confirm your email/i.test(authError.value)) {
+      needsEmailConfirmation.value = true
+    }
+    authMessage.value = authError.value || 'Could not sign in. Check your email and password.'
+  } finally {
+    isAuthSubmitting.value = false
+  }
+}
+
+async function handleResendConfirmation() {
+  if (!authEmail.value) {
+    authMessage.value = 'Enter your email first, then tap Resend confirmation email.'
+    return
+  }
+
+  isAuthSubmitting.value = true
+  authMessage.value = ''
+  authError.value = ''
+
+  try {
+    await resendConfirmationEmail(authEmail.value)
+    needsEmailConfirmation.value = true
+    authMessage.value = 'Confirmation email sent again. Check spam for mail from Supabase.'
+    showSubmissionToast('Confirmation email sent.')
+  } catch {
+    authMessage.value = authError.value || 'Could not resend the confirmation email.'
   } finally {
     isAuthSubmitting.value = false
   }
@@ -3447,26 +3509,28 @@ async function handleGoogleSignIn() {
     }
     await signInWithGoogle()
   } catch {
-    // useSupabaseAuth exposes the message in authError.
+    authMessage.value = authError.value || 'Could not sign in. Check your email and password.'
   } finally {
     isAuthSubmitting.value = false
   }
 }
 
 async function handleForgotPassword() {
-  if (!authEmail.value) {
+  authMessage.value = ''
+  authError.value = ''
+
+  if (!authEmail.value.trim()) {
     authMessage.value = 'Enter your email first, then tap Forgot password again.'
     return
   }
 
   isAuthSubmitting.value = true
-  authMessage.value = ''
 
   try {
     await sendPasswordReset(authEmail.value)
-    showSubmissionToast('Password reset email sent.')
+    showSubmissionToast('Password reset email sent. Check spam if it does not arrive.')
   } catch {
-    // useSupabaseAuth exposes the message in authError.
+    authMessage.value = authError.value || 'Could not send the reset email.'
   } finally {
     isAuthSubmitting.value = false
   }
@@ -3482,7 +3546,7 @@ async function handleSignOut() {
     hasActiveDraft.value = false
     closeEntryPanel(true)
   } catch {
-    // useSupabaseAuth exposes the message in authError.
+    authMessage.value = authError.value || 'Could not sign out.'
   } finally {
     isAuthSubmitting.value = false
   }

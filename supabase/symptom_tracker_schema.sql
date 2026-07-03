@@ -1,5 +1,5 @@
--- Symptom Tracker standalone schema.
--- Apply this to the dedicated Symptom Tracker Supabase project, not the VCH content database.
+-- Symptom Tracker schema for the shared VCH Supabase project.
+-- Tables live in the `tracker` schema so they stay grouped separately from hub content.
 
 create table if not exists public.symptom_entries (
   id uuid primary key default gen_random_uuid(),

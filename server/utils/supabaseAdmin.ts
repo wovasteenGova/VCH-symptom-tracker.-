@@ -1,9 +1,13 @@
 import { createClient } from '@supabase/supabase-js'
 
+const TRACKER_SCHEMA = 'tracker'
+
 export function getSupabaseAdmin() {
   const config = useRuntimeConfig()
   const supabaseUrl = String(config.public.supabaseUrl || '').trim()
-  const serviceRoleKey = String(config.supabaseServiceRoleKey || '').trim()
+  const serviceRoleKey = String(
+    config.supabaseServiceRoleKey || config.supabaseServiceKey || ''
+  ).trim()
 
   if (!supabaseUrl || !serviceRoleKey) {
     throw createError({
@@ -16,6 +20,9 @@ export function getSupabaseAdmin() {
     auth: {
       persistSession: false,
       autoRefreshToken: false
+    },
+    db: {
+      schema: TRACKER_SCHEMA
     }
   })
 }

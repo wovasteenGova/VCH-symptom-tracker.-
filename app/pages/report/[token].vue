@@ -517,7 +517,7 @@ const relationshipSuggestions = [
 ] as const
 
 const route = useRoute()
-const supabase = useSupabaseClient()
+const trackerDb = useTrackerDb()
 const { showSubmissionToast } = useSubmissionToast()
 const token = String(route.params.token || '')
 
@@ -826,7 +826,7 @@ async function loadSupporterProfile() {
   isLoading.value = true
   pageError.value = ''
 
-  const { data, error } = await supabase.rpc('get_supporter_profile_by_token', {
+  const { data, error } = await trackerDb.rpc('get_supporter_profile_by_token', {
     link_token: token
   })
 
@@ -861,7 +861,7 @@ async function submitObservation() {
   isSubmitting.value = true
   submitError.value = ''
 
-  const { error } = await supabase.rpc('submit_supporter_observation', {
+  const { error } = await trackerDb.rpc('submit_supporter_observation', {
     link_token: token,
     condition_label: form.value.condition_label,
     observed_at: new Date(form.value.observed_at).toISOString(),

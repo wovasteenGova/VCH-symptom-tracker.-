@@ -80,30 +80,38 @@
 
               <label v-if="authMode === 'signup'" class="block">
                 <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Confirm password</span>
-                <input
+                <PasswordInput
                   v-model="authConfirmPassword"
-                  type="password"
                   name="confirm-password"
                   autocomplete="new-password"
-                  class="w-full rounded-3xl border border-slate-600/70 bg-slate-800/70 px-4 py-4 text-base font-medium text-white outline-none placeholder:text-slate-400 focus:border-slate-400"
+                  tone="dark"
                   placeholder="Re-enter password"
                   :required="authMode === 'signup'"
-                >
+                />
               </label>
 
               <label class="block">
                 <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Password</span>
-                <input
+                <PasswordInput
                   v-model="authPassword"
-                  type="password"
                   name="password"
+                  tone="dark"
                   :autocomplete="authMode === 'signup' ? 'new-password' : 'current-password'"
-                  class="w-full rounded-3xl border border-slate-600/70 bg-slate-800/70 px-4 py-4 text-base font-medium text-white outline-none placeholder:text-slate-400 focus:border-slate-400"
                   placeholder="At least 6 characters"
-                  minlength="6"
+                  :minlength="6"
                   required
-                >
+                />
               </label>
+
+              <button
+                v-if="authMode === 'login'"
+                type="button"
+                class="w-full rounded-2xl px-4 py-2 text-sm font-semibold text-slate-300"
+                :disabled="isAuthSubmitting"
+                @click="handleForgotPassword"
+              >
+                Forgot password?
+              </button>
 
               <button
                 type="button"
@@ -671,14 +679,13 @@
 
           <label v-if="usesPasswordLogin" class="mt-5 block">
             <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Password</span>
-            <input
+            <PasswordInput
               v-model="deleteAllLogsPassword"
-              type="password"
+              tone="dark"
               autocomplete="current-password"
-              class="w-full rounded-3xl border border-slate-600/70 bg-slate-800/70 px-4 py-4 text-base font-medium text-white outline-none placeholder:text-slate-400 focus:border-slate-400"
               placeholder="Enter your account password"
               required
-            >
+            />
           </label>
 
           <label v-else class="mt-5 block">
@@ -751,6 +758,7 @@ const {
   signIn,
   signUp,
   signInWithGoogle,
+  sendPasswordReset,
   signOut,
   verifyPassword
 } = useSupabaseAuth()
@@ -1226,6 +1234,15 @@ async function confirmDeleteAllLogs() {
   }
 }
 
+function redirectAfterAuth() {
+  if (closeEmbedProfile) {
+    closeEmbedProfile()
+    return
+  }
+
+  navigateTo('/app')
+}
+
 async function handleAuthSubmit() {
   authMessage.value = ''
   authError.value = ''
@@ -1251,21 +1268,45 @@ async function handleAuthSubmit() {
     if (authMode.value === 'login') {
       await signIn(authEmail.value, authPassword.value)
       showSubmissionToast('Signed in.')
+      redirectAfterAuth()
     } else {
       const data = await signUp(authEmail.value, authPassword.value, authName.value.trim())
 
-      if (data.user) {
-        if (data.session) {
-          showSubmissionToast('Account created. You are signed in.')
-        } else {
-          showSubmissionToast('Check your email to confirm your account.')
-        }
+      if (data.session || user.value) {
+        showSubmissionToast('Account created. You are signed in.')
+        redirectAfterAuth()
+      } else if (data.user) {
+        authMessage.value = 'Account created, but sign-in did not start. Try Sign in with the same password.'
       } else {
         authMessage.value = 'Signup did not return a user. Check Supabase Auth settings and try again.'
       }
     }
   } catch {
-    // useSupabaseAuth exposes the message in authError.
+    if (/already has a VCH account/i.test(authError.value)) {
+      authMode.value = 'login'
+    }
+    authMessage.value = authError.value || 'Could not sign in. Check your email and password.'
+  } finally {
+    isAuthSubmitting.value = false
+  }
+}
+
+async function handleForgotPassword() {
+  authMessage.value = ''
+  authError.value = ''
+
+  if (!authEmail.value.trim()) {
+    authMessage.value = 'Enter your email first, then tap Forgot password again.'
+    return
+  }
+
+  isAuthSubmitting.value = true
+
+  try {
+    await sendPasswordReset(authEmail.value)
+    showSubmissionToast('Password reset email sent. Check spam if it does not arrive.')
+  } catch {
+    authMessage.value = authError.value || 'Could not send the reset email.'
   } finally {
     isAuthSubmitting.value = false
   }
@@ -1281,7 +1322,7 @@ async function handleGoogleSignIn() {
     }
     await signInWithGoogle()
   } catch {
-    // useSupabaseAuth exposes the message in authError.
+    authMessage.value = authError.value || 'Could not sign in with Google.'
   } finally {
     isAuthSubmitting.value = false
   }

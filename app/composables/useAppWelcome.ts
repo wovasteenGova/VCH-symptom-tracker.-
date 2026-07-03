@@ -6,7 +6,6 @@ import {
   WEEKLY_LOG_DAY_STORAGE_KEY,
   type LoggingCadence
 } from '../utils/loggingCadence'
-import { useSupabaseClient } from './useSupabaseClient'
 
 export type AppWelcomePreferences = {
   loggingCadence: LoggingCadence
@@ -53,6 +52,7 @@ function writeLocalPreferences(preferences: AppWelcomePreferences) {
 
 export function useAppWelcome() {
   const supabase = useSupabaseClient()
+  const trackerDb = useTrackerDb()
   const appWelcomeCompleted = ref(readLocalWelcomeCompleted())
   const loggingCadence = ref<LoggingCadence>(readLocalCadence())
   const weeklyLogDay = ref(readLocalWeeklyLogDay())
@@ -79,7 +79,7 @@ export function useAppWelcome() {
         return
       }
 
-      const { data: profile, error: profileError } = await supabase
+      const { data: profile, error: profileError } = await trackerDb
         .from('user_profiles')
         .select('app_welcome_completed, logging_cadence, weekly_log_day, terms_accepted_at')
         .eq('user_id', userData.user.id)
@@ -127,7 +127,7 @@ export function useAppWelcome() {
       return
     }
 
-    const { error } = await supabase
+    const { error } = await trackerDb
       .from('user_profiles')
       .upsert({
         user_id: userData.user.id,
@@ -164,7 +164,7 @@ export function useAppWelcome() {
       return
     }
 
-    const { error } = await supabase
+    const { error } = await trackerDb
       .from('user_profiles')
       .upsert({
         user_id: userData.user.id,

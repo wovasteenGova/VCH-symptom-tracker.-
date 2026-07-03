@@ -4,7 +4,6 @@ import {
   PRO_PRODUCT_KEY,
   isActiveEntitlementStatus
 } from '../utils/subscription'
-import { useSupabaseClient } from './useSupabaseClient'
 
 type EntitlementRow = {
   user_id: string
@@ -20,6 +19,7 @@ type EntitlementRow = {
 
 export function useEntitlements() {
   const supabase = useSupabaseClient()
+  const trackerDb = useTrackerDb()
   const entitlement = ref<EntitlementRow | null>(null)
   const freeConditionKeys = ref<string[]>([])
   const isLoading = ref(false)
@@ -46,19 +46,36 @@ export function useEntitlements() {
   })
 
   async function getAccessToken() {
-    const { data, error } = await supabase.auth.getSession()
+    const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession()
 
-    if (error || !data.session?.access_token) {
+    if (refreshError) {
+      console.warn('[checkout] refreshSession failed', {
+        message: refreshError.message,
+        code: refreshError.code,
+        status: refreshError.status
+      })
+    }
+
+    const session = refreshed.session ?? (await supabase.auth.getSession()).data.session
+
+    if (!session?.access_token) {
+      console.error('[checkout] no active session')
       throw new Error('Sign in to continue.')
     }
 
-    return data.session.access_token
+    console.info('[checkout] session ready', {
+      userId: session.user.id,
+      email: session.user.email,
+      expiresAt: session.expires_at
+    })
+
+    return session.access_token
   }
 
   async function persistFreeConditionKeys(userId: string, keys: string[]) {
     const uniqueKeys = [...new Set(keys.filter(Boolean))].slice(0, FREE_CONDITION_LIMIT)
 
-    const { error } = await supabase
+    const { error } = await trackerDb
       .from('user_profiles')
       .upsert({
         user_id: userId,
@@ -94,18 +111,18 @@ export function useEntitlements() {
         { data: profile, error: profileError },
         { data: entries, error: entriesError }
       ] = await Promise.all([
-        supabase
+        trackerDb
           .from('user_entitlements')
           .select('user_id, product_key, status, stripe_customer_id, stripe_subscription_id, current_period_end, granted_by, grant_note, unlocked_at')
           .eq('user_id', userId)
           .eq('product_key', PRO_PRODUCT_KEY)
           .maybeSingle(),
-        supabase
+        trackerDb
           .from('user_profiles')
           .select('free_condition_keys')
           .eq('user_id', userId)
           .maybeSingle(),
-        supabase
+        trackerDb
           .from('symptom_entries')
           .select('condition_key, created_at')
           .eq('user_id', userId)
@@ -222,25 +239,99 @@ export function useEntitlements() {
     return persistFreeConditionKeys(userData.user.id, [conditionKey])
   }
 
-  async function startCheckout() {
+  async function createEmbeddedCheckoutSession() {
+    console.info('[checkout] create embedded session')
+
     const accessToken = await getAccessToken()
 
-    const response = await $fetch<{ url: string }>('/api/stripe/create-subscription-checkout', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`
+    try {
+      const response = await $fetch<{ clientSecret: string, sessionId: string }>('/api/stripe/create-subscription-checkout', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        },
+        body: {
+          embedded: true
+        }
+      })
+
+      if (!response.clientSecret) {
+        throw new Error('Stripe checkout secret was missing.')
       }
-    })
 
-    if (!response.url) {
-      throw new Error('Stripe checkout URL was missing.')
+      console.info('[checkout] embedded session ready', {
+        sessionId: response.sessionId
+      })
+
+      return response
+    } catch (error) {
+      const fetchError = error as {
+        statusCode?: number
+        data?: { message?: string }
+        message?: string
+      }
+
+      console.error('[checkout] embedded session failed', {
+        statusCode: fetchError.statusCode,
+        message: fetchError.data?.message || fetchError.message
+      })
+
+      throw new Error(fetchError.data?.message || fetchError.message || 'Could not start embedded checkout.')
+    }
+  }
+
+  async function startCheckout() {
+    console.info('[checkout] start redirect fallback')
+
+    let accessToken = ''
+
+    try {
+      accessToken = await getAccessToken()
+    } catch (error) {
+      console.error('[checkout] auth unavailable', error)
+      throw error
     }
 
-    if (import.meta.client) {
-      window.location.href = response.url
-    }
+    try {
+      console.info('[checkout] posting to create-subscription-checkout')
 
-    return response.url
+      const response = await $fetch<{ url: string }>('/api/stripe/create-subscription-checkout', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      })
+
+      console.info('[checkout] success', {
+        hasUrl: Boolean(response.url)
+      })
+
+      if (!response.url) {
+        throw new Error('Stripe checkout URL was missing.')
+      }
+
+      if (import.meta.client) {
+        window.location.href = response.url
+      }
+
+      return response.url
+    } catch (error) {
+      const fetchError = error as {
+        statusCode?: number
+        data?: { message?: string }
+        message?: string
+      }
+
+      console.error('[checkout] request failed', {
+        statusCode: fetchError.statusCode,
+        message: fetchError.data?.message || fetchError.message,
+        data: fetchError.data
+      })
+
+      throw new Error(fetchError.data?.message || fetchError.message || 'Could not start checkout.')
+    }
   }
 
   async function openBillingPortal() {
@@ -264,6 +355,22 @@ export function useEntitlements() {
     return response.url
   }
 
+  async function confirmCheckoutSession(sessionId: string) {
+    const accessToken = await getAccessToken()
+
+    await $fetch('/api/stripe/confirm-subscription', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      },
+      body: {
+        sessionId
+      }
+    })
+
+    await loadEntitlements()
+  }
+
   return {
     entitlement,
     freeConditionKeys,
@@ -284,6 +391,8 @@ export function useEntitlements() {
     replaceFreeCondition,
     syncFreeConditionKey,
     startCheckout,
-    openBillingPortal
+    createEmbeddedCheckoutSession,
+    openBillingPortal,
+    confirmCheckoutSession
   }
 }

@@ -1,23 +1,40 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+const isProduction = process.env.NODE_ENV === 'production'
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: process.env.NODE_ENV === 'development' },
-  modules: ['@nuxt/ui', '@vite-pwa/nuxt'],
+  modules: ['@nuxt/ui', '@vite-pwa/nuxt', '@nuxtjs/supabase'],
   css: ['~/assets/css/main.css'],
   colorMode: {
     preference: 'dark',
     fallback: 'dark',
     classSuffix: ''
   },
+  supabase: {
+    redirect: false,
+    url: process.env.SUPABASE_URL,
+    key: process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_KEY,
+    serviceKey: process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY,
+    cookieOptions: isProduction
+      ? {
+          domain: '.veteranscentralhub.us',
+          secure: true,
+          sameSite: 'lax'
+        }
+      : undefined
+  },
   runtimeConfig: {
     stripeSecretKey: process.env.STRIPE_SECRET_KEY || '',
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
     stripeProPriceId: process.env.STRIPE_PRO_PRICE_ID || '',
-    supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+    supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || '',
+    supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '',
     public: {
-      supabaseUrl: process.env.SUPABASE_URL || process.env.NUXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      supabasePublishableKey: process.env.SUPABASE_ANON_KEY || process.env.NUXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '',
-      stripePublishableKey: process.env.STRIPE_PUBLIC_KEY || process.env.NUXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
+      supabaseUrl: process.env.SUPABASE_URL || process.env.NUXT_PUBLIC_SUPABASE_URL || '',
+      supabasePublishableKey: process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_KEY || process.env.NUXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '',
+      supabaseAnonKey: process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_KEY || '',
+      stripePublishableKey: process.env.STRIPE_PUBLIC_KEY || process.env.STRIPE_PUBLISHABLE_KEY || process.env.NUXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
       siteUrl: process.env.APP_URL || process.env.NUXT_PUBLIC_SITE_URL || ''
     }
   },
@@ -88,7 +105,11 @@ export default defineNuxtConfig({
     compressPublicAssets: true
   },
   routeRules: {
+    '/app': { ssr: false },
+    '/app/**': { ssr: false },
+    '/profile': { ssr: false },
     '/upgrade': { ssr: false },
-    '/upgrade/**': { ssr: false }
+    '/upgrade/**': { ssr: false },
+    '/api/stripe/webhook': { cors: false }
   }
 })

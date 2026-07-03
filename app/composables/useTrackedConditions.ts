@@ -1,7 +1,6 @@
 import { computed, ref } from 'vue'
 import { conditionKeyFromLabel } from '../utils/subscription'
 import { normalizeTrackedConditionKeys, resolveCatalogConditionByStoredKey } from '../utils/conditionCatalog'
-import { useSupabaseClient } from './useSupabaseClient'
 
 const TRACKED_CONDITIONS_STORAGE_KEY = 'symptom-tracker-tracked-condition-keys'
 const ONBOARDING_COMPLETED_STORAGE_KEY = 'symptom-tracker-conditions-onboarding-completed'
@@ -43,6 +42,7 @@ function writeLocalState(keys: string[], completed: boolean) {
 
 export function useTrackedConditions() {
   const supabase = useSupabaseClient()
+  const trackerDb = useTrackerDb()
   const trackedConditionKeys = ref<string[]>([])
   const onboardingCompleted = ref(false)
   const isLoading = ref(false)
@@ -68,7 +68,7 @@ export function useTrackedConditions() {
       return uniqueKeys
     }
 
-    const { error } = await supabase
+    const { error } = await trackerDb
       .from('user_profiles')
       .upsert({
         user_id: userData.user.id,
@@ -109,7 +109,7 @@ export function useTrackedConditions() {
         return
       }
 
-      const { data: profile, error: profileError } = await supabase
+      const { data: profile, error: profileError } = await trackerDb
         .from('user_profiles')
         .select('tracked_condition_keys, conditions_onboarding_completed, free_condition_keys')
         .eq('user_id', userData.user.id)

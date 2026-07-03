@@ -14,6 +14,7 @@ export default defineEventHandler(async (event) => {
     .from('user_entitlements')
     .select('stripe_customer_id, status')
     .eq('user_id', user.id)
+    .eq('product_key', PRO_PRODUCT_KEY)
     .maybeSingle()
 
   if (!entitlement?.stripe_customer_id || !isActiveEntitlementStatus(entitlement.status)) {

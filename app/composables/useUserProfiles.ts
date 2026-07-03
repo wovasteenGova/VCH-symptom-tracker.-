@@ -36,6 +36,7 @@ function createLinkToken() {
 
 export function useUserProfiles() {
   const supabase = useSupabaseClient()
+  const trackerDb = useTrackerDb()
 
   async function getUserId() {
     const { data, error } = await supabase.auth.getUser()
@@ -54,7 +55,7 @@ export function useUserProfiles() {
   async function getProfile() {
     const userId = await getUserId()
 
-    const { data, error } = await supabase
+    const { data, error } = await trackerDb
       .from('user_profiles')
       .select('*')
       .eq('user_id', userId)
@@ -70,7 +71,7 @@ export function useUserProfiles() {
   async function upsertProfile(payload: UserProfilePayload) {
     const userId = await getUserId()
 
-    const { data, error } = await supabase
+    const { data, error } = await trackerDb
       .from('user_profiles')
       .upsert({
         user_id: userId,
@@ -90,7 +91,7 @@ export function useUserProfiles() {
   async function listSupporterProfiles() {
     const userId = await getUserId()
 
-    const { data, error } = await supabase
+    const { data, error } = await trackerDb
       .from('supporter_profiles')
       .select('*')
       .eq('user_id', userId)
@@ -111,7 +112,7 @@ export function useUserProfiles() {
     const linkLabel = payload.link_label?.trim()
     const displayName = linkLabel || 'Private supporter link'
 
-    const { data, error } = await supabase
+    const { data, error } = await trackerDb
       .from('supporter_profiles')
       .insert({
         user_id: userId,
@@ -135,7 +136,7 @@ export function useUserProfiles() {
   }
 
   async function toggleSupporterProfile(id: string, active: boolean) {
-    const { data, error } = await supabase
+    const { data, error } = await trackerDb
       .from('supporter_profiles')
       .update({
         active,
@@ -157,7 +158,7 @@ export function useUserProfiles() {
     const token = createLinkToken()
     const tokenHash = await sha256Hex(token)
 
-    const { error } = await supabase
+    const { error } = await trackerDb
       .from('supporter_link_tokens')
       .insert({
         supporter_profile_id: profileId,
@@ -175,7 +176,7 @@ export function useUserProfiles() {
   async function deleteSupporterProfile(id: string) {
     const userId = await getUserId()
 
-    const { error } = await supabase
+    const { error } = await trackerDb
       .from('supporter_profiles')
       .delete()
       .eq('id', id)

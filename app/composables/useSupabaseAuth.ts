@@ -1,17 +1,81 @@
 import type { User } from '@supabase/supabase-js'
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
+
+type AuthFailure = {
+  message?: string
+  msg?: string
+  code?: string
+  error_code?: string
+  status?: number
+}
+
+function normalizeAuthEmail(email: string) {
+  return email.trim().toLowerCase()
+}
+
+function validateAuthEmail(email: string) {
+  const normalized = normalizeAuthEmail(email)
+
+  if (!normalized || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
+    throw new Error('Enter a valid email address.')
+  }
+
+  return normalized
+}
 
 export function useSupabaseAuth() {
   const supabase = useSupabaseClient()
-  const user = ref<User | null>(null)
-  const isAuthLoading = ref(true)
-  const authError = ref('')
+  const user = useState<User | null>('tracker-auth-user', () => null)
+  const isAuthLoading = useState('tracker-auth-loading', () => true)
+  const authError = useState('tracker-auth-error', () => '')
   let unsubscribe: (() => void) | undefined
 
   function getAuthErrorMessage(error: unknown) {
+    if (error && typeof error === 'object') {
+      const failure = error as AuthFailure
+      const message = failure.message || failure.msg || ''
+
+      if (
+        failure.error_code === 'email_not_confirmed'
+        || failure.code === 'email_not_confirmed'
+        || /email not confirmed/i.test(message)
+      ) {
+        return 'Confirm your email first. Check spam for mail from Supabase, or tap Resend confirmation email below.'
+      }
+
+      if (
+        failure.error_code === 'invalid_credentials'
+        || failure.code === 'invalid_credentials'
+        || /invalid login credentials/i.test(message)
+      ) {
+        return 'Wrong password for this email. Use Forgot password, Continue with Google, or the password from veteranscentralhub.us.'
+      }
+
+      if (
+        failure.error_code === 'validation_failed'
+        || failure.code === 'validation_failed'
+        || /unable to validate email address/i.test(message)
+        || /email address.*invalid/i.test(message)
+      ) {
+        return 'Enter a valid email address.'
+      }
+
+      if (failure.status === 400 && message) {
+        return message
+      }
+
+      if (message) {
+        return message
+      }
+    }
+
     if (error instanceof Error) {
       if (/failed to fetch|fetch failed|networkerror|load failed/i.test(error.message)) {
         return 'Could not reach Supabase. Check your internet connection, Supabase project URL, and browser/network blocking.'
+      }
+
+      if (/invalid login credentials/i.test(error.message)) {
+        return 'Wrong password for this email. Use Forgot password, Continue with Google, or the password from veteranscentralhub.us.'
       }
 
       return error.message
@@ -45,14 +109,24 @@ export function useSupabaseAuth() {
     unsubscribe?.()
   })
 
+  function requireAuthEmail(email: string) {
+    try {
+      return validateAuthEmail(email)
+    } catch (error) {
+      authError.value = getAuthErrorMessage(error)
+      throw error
+    }
+  }
+
   async function signIn(email: string, password: string) {
     authError.value = ''
+    const normalizedEmail = requireAuthEmail(email)
 
     let error: unknown
 
     try {
       const result = await supabase.auth.signInWithPassword({
-        email,
+        email: normalizedEmail,
         password
       })
       error = result.error
@@ -68,15 +142,21 @@ export function useSupabaseAuth() {
 
   async function signUp(email: string, password: string, fullName: string) {
     authError.value = ''
+    const normalizedEmail = requireAuthEmail(email)
+
+    const emailRedirectTo = import.meta.client
+      ? `${window.location.origin}/app`
+      : undefined
 
     let data
     let error: unknown
 
     try {
       const result = await supabase.auth.signUp({
-        email,
+        email: normalizedEmail,
         password,
         options: {
+          emailRedirectTo,
           data: {
             full_name: fullName
           }
@@ -93,14 +173,61 @@ export function useSupabaseAuth() {
       throw error
     }
 
+    if (!data.session) {
+      try {
+        await signIn(normalizedEmail, password)
+      } catch (signInError) {
+        if (!data.user) {
+          authError.value = 'This email already has a VCH account. Switch to Sign in, or use Forgot password.'
+        }
+        throw signInError
+      }
+
+      const { data: sessionData } = await supabase.auth.getSession()
+
+      return {
+        user: sessionData.session?.user ?? data.user,
+        session: sessionData.session
+      }
+    }
+
     return data
+  }
+
+  async function resendConfirmationEmail(email: string) {
+    authError.value = ''
+    const normalizedEmail = requireAuthEmail(email)
+
+    const emailRedirectTo = import.meta.client
+      ? `${window.location.origin}/app`
+      : undefined
+
+    let error: unknown
+
+    try {
+      const result = await supabase.auth.resend({
+        type: 'signup',
+        email: normalizedEmail,
+        options: {
+          emailRedirectTo
+        }
+      })
+      error = result.error
+    } catch (caughtError) {
+      error = caughtError
+    }
+
+    if (error) {
+      authError.value = getAuthErrorMessage(error)
+      throw error
+    }
   }
 
   async function signInWithGoogle() {
     authError.value = ''
 
     const redirectTo = import.meta.client
-      ? window.location.origin
+      ? `${window.location.origin}/app`
       : undefined
 
     let error: unknown
@@ -125,6 +252,7 @@ export function useSupabaseAuth() {
 
   async function sendPasswordReset(email: string) {
     authError.value = ''
+    const normalizedEmail = requireAuthEmail(email)
 
     const redirectTo = import.meta.client
       ? window.location.origin
@@ -133,7 +261,7 @@ export function useSupabaseAuth() {
     let error: unknown
 
     try {
-      const result = await supabase.auth.resetPasswordForEmail(email, {
+      const result = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
         redirectTo
       })
       error = result.error
@@ -166,15 +294,17 @@ export function useSupabaseAuth() {
   }
 
   async function verifyPassword(email: string, password: string) {
-    if (!email.trim() || !password) {
+    if (!password) {
       throw new Error('Enter your password to continue.')
     }
+
+    const normalizedEmail = requireAuthEmail(email)
 
     let error: unknown
 
     try {
       const result = await supabase.auth.signInWithPassword({
-        email: email.trim(),
+        email: normalizedEmail,
         password
       })
       error = result.error
@@ -193,6 +323,7 @@ export function useSupabaseAuth() {
     authError,
     signIn,
     signUp,
+    resendConfirmationEmail,
     signInWithGoogle,
     sendPasswordReset,
     signOut,
