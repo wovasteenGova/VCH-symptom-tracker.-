@@ -32,16 +32,15 @@
             <div>
               <p class="text-xs font-bold uppercase tracking-[0.16em] text-sky-300">Why we charge</p>
               <p class="mt-2 text-sm leading-6 text-sky-50">
-                Payments go toward building Veterans Central Hub — including our free Claim Maker for veterans who can't afford paid help.
-                Your subscription helps keep this symptom tracker accessible for others.
+                {{ WHY_WE_CHARGE_COPY }}
               </p>
               <a
                 :href="VCH_CLAIM_MAKER_URL"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-sky-200 underline-offset-2 hover:underline"
+                class="mt-4 inline-flex items-center gap-1 rounded-full bg-sky-500/15 px-3 py-2 text-xs font-semibold text-sky-100 ring-1 ring-sky-500/30 underline-offset-2 hover:underline"
               >
-                Learn about Claim Maker
+                Visit upcoming Claim Maker on VCH
                 <UIcon name="i-lucide-arrow-up-right" class="size-3.5" />
               </a>
             </div>
@@ -129,6 +128,16 @@
                 <span>{{ feature }}</span>
               </li>
             </ul>
+
+            <p class="mt-5 text-center">
+              <button
+                type="button"
+                class="text-xs font-semibold text-emerald-300 underline-offset-2 transition hover:text-emerald-200 hover:underline"
+                @click="scrollToCantPaySection"
+              >
+                Can't pay right now?
+              </button>
+            </p>
           </article>
         </div>
 
@@ -151,7 +160,10 @@
           </ol>
         </section>
 
-        <section class="rounded-4xl border border-emerald-900/50 bg-emerald-950/20 p-5">
+        <section
+          id="cant-pay-section"
+          class="scroll-mt-24 rounded-4xl border border-emerald-900/50 bg-emerald-950/20 p-5"
+        >
           <div class="flex items-start gap-3">
             <UIcon name="i-lucide-hand-heart" class="mt-0.5 size-5 shrink-0 text-emerald-300" />
             <div>
@@ -232,6 +244,7 @@ import {
   PRO_TIER_FEATURES,
   VCH_CLAIM_MAKER_URL,
   VCH_CONTACT_URL,
+  WHY_WE_CHARGE_COPY,
   buildSupportEmailHref
 } from '../utils/subscription'
 
@@ -270,8 +283,8 @@ const paymentSteps = [
     body: 'Pro turns on right after payment: unlimited entries, family reporting links, and signed PDF exports.'
   },
   {
-    title: 'Help other veterans',
-    body: 'Your payment supports VCH development so we can keep Claim Maker and accessibility grants available.'
+    title: 'Help finish Claim Maker',
+    body: 'Your payment supports a self-funded build of the upcoming VCH Claim Maker — not live yet — so veterans can organize claims with more clarity when it ships.'
   }
 ]
 
@@ -317,5 +330,16 @@ async function handleManageBilling() {
   } finally {
     isPortalLoading.value = false
   }
+}
+
+function scrollToCantPaySection() {
+  if (!import.meta.client) {
+    return
+  }
+
+  document.getElementById('cant-pay-section')?.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start'
+  })
 }
 </script>

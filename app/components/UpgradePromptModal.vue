@@ -44,7 +44,7 @@
         </ul>
 
         <p class="mt-4 rounded-2xl border border-sky-900/60 bg-sky-950/30 px-4 py-3 text-xs leading-5 text-sky-100">
-          {{ PRO_ANNUAL_PRICE_LABEL }} supports Veterans Central Hub and helps keep tools like Claim Maker free for veterans who need them.
+          {{ PRO_ANNUAL_PRICE_LABEL }} helps fund the upcoming VCH Claim Maker build. It is not live yet — Pro subscriptions help cover development until it ships.
         </p>
 
         <div class="mt-5 grid gap-3">

@@ -61,7 +61,7 @@ let pollTimer: ReturnType<typeof setInterval> | undefined
 const isActivated = computed(() => isPro.value)
 const statusMessage = computed(() => {
   if (isActivated.value) {
-    return 'Thank you for supporting Veterans Central Hub.'
+    return 'Thank you for helping fund the Claim Maker build.'
   }
 
   if (pollAttempts.value >= 8) {
