@@ -130,6 +130,25 @@ function drawVeteranElectronicSignatureSection(
   return y + signatureBlockHeight
 }
 
+function buildPdfDownloadFilename(conditionLabel: string | null | undefined) {
+  const now = new Date()
+  const datePart = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, '0'),
+    String(now.getDate()).padStart(2, '0')
+  ].join('-')
+  const timePart = [
+    String(now.getHours()).padStart(2, '0'),
+    String(now.getMinutes()).padStart(2, '0'),
+    String(now.getSeconds()).padStart(2, '0')
+  ].join('')
+  const fileSlug = conditionLabel
+    ? conditionLabel.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+    : 'all-conditions'
+
+  return `vch-symptom-report-${fileSlug}-${datePart}-${timePart}.pdf`
+}
+
 export function useSymptomPdfExport() {
   async function downloadEntriesPdf(
     entries: SymptomEntryRecord[],
@@ -328,11 +347,7 @@ export function useSymptomPdfExport() {
       drawPageFooter(doc, pageNumber, totalPages, margin)
     }
 
-    const fileDate = new Date().toISOString().slice(0, 10)
-    const fileSlug = conditionLabel
-      ? conditionLabel.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
-      : 'all-conditions'
-    doc.save(`vch-symptom-report-${fileSlug}-${fileDate}.pdf`)
+    doc.save(buildPdfDownloadFilename(conditionLabel))
   }
 
   return {
