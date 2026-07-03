@@ -3243,10 +3243,13 @@ async function saveEntry() {
       details
     }
 
+    let savedEntryId: string | null = null
+
     if (editingEntryId.value) {
       await updateEntry(editingEntryId.value, payload)
     } else {
-      await createEntry(payload)
+      const savedEntry = await createEntry(payload)
+      savedEntryId = savedEntry?.id || null
     }
 
     hasActiveDraft.value = false
@@ -3254,6 +3257,11 @@ async function saveEntry() {
     await loadEntries()
     await syncHomeConditionsAfterEntrySave(payload.condition_key)
     await loadEntitlements()
+
+    if (!wasEditing && savedEntryId && isMobileLayout.value) {
+      await focusSubmission(savedEntryId)
+    }
+
     showSubmissionToast({
       message: wasEditing ? 'Entry updated.' : 'Entry saved.',
       highlight: wasEditing ? undefined : '+1'

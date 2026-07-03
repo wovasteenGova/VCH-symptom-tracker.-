@@ -1,8 +1,10 @@
 import type { jsPDF } from 'jspdf'
 import { drawSectionTitle } from './symptomReportCharts'
 import {
+  formatReportEntryTimestamp,
   getEntryBackdateNote,
-  type BackdateReportContext
+  type BackdateReportContext,
+  type EntryBackdateNote
 } from './reportBackfillNote'
 
 export type ReportEntryRecord = {
@@ -85,22 +87,7 @@ function getEntryDate(entry: ReportEntryRecord) {
 }
 
 function formatReportEntryDate(value: string | null | undefined) {
-  if (!value) {
-    return 'Not recorded'
-  }
-
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) {
-    return 'Not recorded'
-  }
-
-  return date.toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit'
-  })
+  return formatReportEntryTimestamp(value)
 }
 
 function wasEntryEdited(entry: ReportEntryRecord) {
@@ -185,15 +172,15 @@ function measureBlockHeight(block: EntryBlock, lineHeight: number, labelHeight: 
   return labelHeight + block.lines.length * lineHeight + gapAfter
 }
 
-const backdateNoteHeight = 24
+const backdateNoteHeight = 34
 
-function measureBackdateNoteHeight() {
+function measureBackdateNoteHeight(_note: EntryBackdateNote) {
   return backdateNoteHeight + 8
 }
 
 function drawBackdateNote(
   ctx: LayoutContext,
-  note: string,
+  note: EntryBackdateNote,
   innerX: number,
   innerWidth: number
 ) {
@@ -203,10 +190,16 @@ function drawBackdateNote(
   setFill(ctx.doc, amber50)
   ctx.doc.roundedRect(innerX, boxTop, innerWidth, backdateNoteHeight, 8, 8, 'FD')
 
-  ctx.doc.setFont('helvetica', 'normal')
+  ctx.doc.setFont('helvetica', 'bold')
   ctx.doc.setFontSize(8.5)
   setText(ctx.doc, amber900)
-  ctx.doc.text(note, innerX + innerWidth / 2, boxTop + backdateNoteHeight / 2 + 3, {
+  ctx.doc.text(note.title, innerX + innerWidth / 2, boxTop + 12, {
+    align: 'center'
+  })
+
+  ctx.doc.setFont('helvetica', 'normal')
+  ctx.doc.setFontSize(8)
+  ctx.doc.text(note.enteredAtLabel, innerX + innerWidth / 2, boxTop + 24, {
     align: 'center'
   })
 
@@ -216,7 +209,7 @@ function drawBackdateNote(
 function measureEntryHeight(
   blocks: EntryBlock[],
   options: {
-    backdateNote?: string | null
+    backdateNote?: EntryBackdateNote | null
     edited?: boolean
   } = {}
 ) {
@@ -230,7 +223,7 @@ function measureEntryHeight(
   }
 
   if (options.backdateNote) {
-    height += measureBackdateNoteHeight()
+    height += measureBackdateNoteHeight(options.backdateNote)
   } else {
     height += 14
   }

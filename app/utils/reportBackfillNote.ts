@@ -10,7 +10,31 @@ export type BackdateReportContext = {
   weeklyLogDay?: number
 }
 
+export type EntryBackdateNote = {
+  title: string
+  enteredAtLabel: string
+}
+
 export const BACKDATE_NOTE = 'Backdated entry'
+
+export function formatReportEntryTimestamp(value: string | null | undefined) {
+  if (!value) {
+    return 'Not recorded'
+  }
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return 'Not recorded'
+  }
+
+  return date.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  })
+}
 
 function toLocalDateKey(value: string | null | undefined) {
   if (!value) {
@@ -36,12 +60,15 @@ export function isBackdatedEntry(entry: ReportEntry) {
 export function getEntryBackdateNote(
   entry: ReportEntry,
   _context: BackdateReportContext = {}
-) {
+): EntryBackdateNote | null {
   if (!isBackdatedEntry(entry) || !entry.created_at) {
     return null
   }
 
-  return BACKDATE_NOTE
+  return {
+    title: BACKDATE_NOTE,
+    enteredAtLabel: `Date entered: ${formatReportEntryTimestamp(entry.created_at)}`
+  }
 }
 
 export function shouldIncludeBackfillReportNote(entries: ReportEntry[]) {
