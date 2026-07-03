@@ -1,10 +1,15 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
+:root {
+  --app-height: 100vh;
+}
+
 html {
   background: #f8fafc;
   scrollbar-width: none;
   overscroll-behavior: none;
+  min-height: var(--app-height);
 }
 
 html.dark {
@@ -13,6 +18,7 @@ html.dark {
 
 body {
   min-width: 320px;
+  min-height: var(--app-height);
   color: #020617;
   background: #f8fafc;
   scrollbar-width: none;
@@ -25,6 +31,11 @@ html.dark body {
   background: #020617;
 }
 
+.app-shell {
+  height: var(--app-height);
+  max-height: var(--app-height);
+  min-height: var(--app-height);
+}
 body::-webkit-scrollbar {
   display: none;
 }

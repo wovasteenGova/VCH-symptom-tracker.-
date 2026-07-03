@@ -80,8 +80,8 @@ async function finishWelcome() {
 </script>
 
 <template>
-  <div class="fixed inset-0 z-[80] flex items-end justify-center bg-slate-950/75 p-4 backdrop-blur-sm sm:items-center">
-    <section class="flex max-h-[min(92dvh,44rem)] w-full max-w-md flex-col overflow-hidden rounded-[1.75rem] border border-teal-200 bg-teal-50 shadow-2xl shadow-teal-950/15 dark:border-teal-500/30 dark:bg-slate-900 dark:shadow-black/40">
+  <div class="fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto bg-slate-950/80 p-4 backdrop-blur-sm">
+    <section class="flex max-h-[min(calc(var(--app-height)-2rem),44rem)] w-full max-w-md flex-col overflow-hidden rounded-[1.75rem] border border-teal-200 bg-teal-50 shadow-2xl shadow-teal-950/15 dark:border-teal-500/30 dark:bg-slate-900 dark:shadow-black/40">
       <div class="shrink-0 border-b border-teal-200/80 px-5 py-4 dark:border-teal-500/20">
         <p class="text-xs font-bold uppercase tracking-[0.2em] text-teal-700 dark:text-teal-200">
           Step {{ activeStep + 1 }} of {{ totalSteps }}

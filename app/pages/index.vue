@@ -1,6 +1,6 @@
 <template>
-  <main class="h-dvh max-h-dvh overflow-hidden bg-slate-50 text-slate-950 transition-colors dark:bg-slate-950 dark:text-white">
-    <section class="mx-auto flex h-full max-h-dvh w-full max-w-md flex-col overflow-hidden pt-4 pb-0 sm:max-w-lg">
+  <main class="app-shell overflow-hidden bg-slate-50 text-slate-950 transition-colors dark:bg-slate-950 dark:text-white">
+    <section class="mx-auto flex h-full w-full max-w-md flex-col overflow-hidden pt-4 pb-0 sm:max-w-lg">
       <header class="flex shrink-0 flex-col gap-4 px-4">
         <div class="flex items-center justify-between gap-3">
           <div class="flex min-w-0 items-center gap-2.5">

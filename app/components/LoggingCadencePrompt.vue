@@ -23,7 +23,7 @@ const emit = defineEmits<{
   >
     <div
       v-if="open && caution"
-      class="fixed inset-0 z-[75] flex items-end justify-center bg-slate-950/70 p-4 sm:items-center"
+      class="fixed inset-0 z-[75] flex items-center justify-center bg-slate-950/70 p-4"
       @click.self="emit('close')"
     >
       <div class="w-full max-w-md rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
