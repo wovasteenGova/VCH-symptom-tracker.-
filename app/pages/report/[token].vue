@@ -264,62 +264,64 @@
               </template>
 
               <template v-else-if="observationStep === 2">
-                <div class="space-y-1 text-center">
-                  <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                    How severe it seemed to me
-                  </p>
-                  <p class="text-xs leading-5 text-slate-500 dark:text-slate-400">
-                    Based on what I saw — not a medical rating.
-                  </p>
-                </div>
+                <div data-step-swipe-block class="space-y-5">
+                  <div class="space-y-1 text-center">
+                    <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                      How severe it seemed to me
+                    </p>
+                    <p class="text-xs leading-5 text-slate-500 dark:text-slate-400">
+                      Based on what I saw — not a medical rating.
+                    </p>
+                  </div>
 
-                <div class="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
-                  <span>Mild</span>
-                  <span class="rounded-full bg-slate-950 px-3 py-1 text-xs font-bold text-white dark:bg-slate-700 dark:text-slate-100">
-                    {{ severityValue }}/10
-                  </span>
-                  <span>Severe</span>
-                </div>
+                  <div class="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    <span>Mild</span>
+                    <span class="rounded-full bg-slate-950 px-3 py-1 text-xs font-bold text-white dark:bg-slate-700 dark:text-slate-100">
+                      {{ severityValue }}/10
+                    </span>
+                    <span>Severe</span>
+                  </div>
 
-                <USlider
-                  v-model="severityValue"
-                  :min="0"
-                  :max="10"
-                  :step="1"
-                  size="xl"
-                  color="neutral"
-                  tooltip
-                />
+                  <USlider
+                    v-model="severityValue"
+                    :min="0"
+                    :max="10"
+                    :step="1"
+                    size="xl"
+                    color="neutral"
+                    tooltip
+                  />
 
-                <div class="flex flex-wrap justify-center gap-2">
-                  <button
-                    v-for="preset in supporterSeverityQuickPresets"
-                    :key="preset.label"
-                    type="button"
-                    class="rounded-full border px-3 py-1.5 text-xs font-bold transition"
-                    :class="severityValue === preset.value
-                      ? 'border-slate-950 bg-slate-950 text-white dark:border-slate-500 dark:bg-slate-700 dark:text-slate-100'
-                      : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-200 dark:hover:bg-slate-800'"
-                    @click="severityValue = preset.value"
-                  >
-                    {{ preset.label }}
-                  </button>
-                </div>
-
-                <div class="min-h-[5.25rem] overflow-hidden">
-                  <Transition name="severity-guide" mode="out-in">
-                    <div
-                      :key="severityValue"
-                      class="rounded-2xl bg-slate-100/80 px-5 py-4 dark:bg-slate-800/80"
+                  <div class="flex flex-wrap justify-center gap-2">
+                    <button
+                      v-for="preset in supporterSeverityQuickPresets"
+                      :key="preset.label"
+                      type="button"
+                      class="rounded-full border px-3 py-1.5 text-xs font-bold transition"
+                      :class="severityValue === preset.value
+                        ? 'border-slate-950 bg-slate-950 text-white dark:border-slate-500 dark:bg-slate-700 dark:text-slate-100'
+                        : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-200 dark:hover:bg-slate-800'"
+                      @click="severityValue = preset.value"
                     >
-                      <p class="text-center text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                        {{ severityGuidance.title }}
-                      </p>
-                      <p class="mt-2 text-center text-base leading-6 text-slate-600 dark:text-slate-300">
-                        {{ severityGuidance.text }}
-                      </p>
-                    </div>
-                  </Transition>
+                      {{ preset.label }}
+                    </button>
+                  </div>
+
+                  <div class="min-h-[5.25rem] overflow-hidden">
+                    <Transition name="severity-guide" mode="out-in">
+                      <div
+                        :key="severityValue"
+                        class="rounded-2xl bg-slate-100/80 px-5 py-4 dark:bg-slate-800/80"
+                      >
+                        <p class="text-center text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                          {{ severityGuidance.title }}
+                        </p>
+                        <p class="mt-2 text-center text-base leading-6 text-slate-600 dark:text-slate-300">
+                          {{ severityGuidance.text }}
+                        </p>
+                      </div>
+                    </Transition>
+                  </div>
                 </div>
               </template>
 
@@ -572,6 +574,17 @@ const {
 })
 
 const observationSwipeStartX = ref<number | null>(null)
+const observationSwipeStartedOnControl = ref(false)
+
+function isStepSwipeBlockedTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) {
+    return false
+  }
+
+  return Boolean(target.closest(
+    'input, textarea, select, button, [role="slider"], [data-step-swipe-block]'
+  ))
+}
 
 const reporterFullName = computed(() => {
   return [form.value.first_name, form.value.last_name].filter(Boolean).join(' ').trim()
@@ -680,10 +693,17 @@ function relationshipChipClass(suggestion: typeof relationshipSuggestions[number
 }
 
 function handleObservationSwipeStart(event: TouchEvent) {
-  observationSwipeStartX.value = event.changedTouches[0]?.clientX ?? null
+  observationSwipeStartedOnControl.value = isStepSwipeBlockedTarget(event.target)
+  observationSwipeStartX.value = event.touches[0]?.clientX ?? null
 }
 
 function handleObservationSwipeEnd(event: TouchEvent) {
+  if (observationSwipeStartedOnControl.value || observationStep.value === 2) {
+    observationSwipeStartedOnControl.value = false
+    observationSwipeStartX.value = null
+    return
+  }
+
   const startX = observationSwipeStartX.value
   const endX = event.changedTouches[0]?.clientX
 

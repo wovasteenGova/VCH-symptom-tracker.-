@@ -501,7 +501,65 @@ type LoggingChartSections = {
   heatmap?: boolean
 }
 
+type AggregateLoggingMetrics = {
+  rangeLabel: string
+  totalLogs: number
+  conditionCount: number
+  conditionBreakdown: Array<{ label: string, count: number }>
+  monthCount: number
+}
+
 const CHART_SECTION_GAP = 28
+
+export function drawAggregateLoggingSection(
+  doc: jsPDF,
+  x: number,
+  y: number,
+  width: number,
+  pageHeight: number,
+  margin: number,
+  metrics: AggregateLoggingMetrics,
+  summaryText: string,
+  options: { showConditionChart?: boolean } = {}
+) {
+  const showCondition = options.showConditionChart === true
+
+  drawSectionTitle(doc, `Logging activity — ${metrics.rangeLabel}`, x, y)
+  y += 14
+
+  if (summaryText) {
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(9)
+    setText(doc, slate500)
+    doc.text(summaryText, x, y)
+    y += 22
+  } else {
+    y += 8
+  }
+
+  if (showCondition && metrics.conditionBreakdown.length) {
+    const conditionItems = metrics.conditionBreakdown.map((c) => ({
+      label: c.label,
+      value: c.count
+    }))
+    const conditionChartHeight = Math.max(96, conditionItems.length * 28 + 28)
+    y = ensureChartPageSpace(doc, y, conditionChartHeight + 52, pageHeight, margin)
+    drawSectionTitle(doc, 'By condition (all months)', x, y)
+    y += 14
+    y = drawHorizontalBarChart(
+      doc,
+      x,
+      y,
+      width,
+      conditionChartHeight,
+      conditionItems,
+      [[16, 185, 129]],
+      { labelWidth: 128 }
+    ) + CHART_SECTION_GAP
+  }
+
+  return y
+}
 
 export function drawLoggingActivitySection(
   doc: jsPDF,
@@ -517,15 +575,22 @@ export function drawLoggingActivitySection(
   const showWeek = sections.week !== false
   const showCondition = sections.condition === true
   const showHeatmap = sections.heatmap === true
+  const heatmapOnly = showHeatmap && !showWeek && !showCondition
 
-  drawSectionTitle(doc, `Logging activity — ${metrics.monthLabel}`, x, y)
-  y += 14
+  if (!heatmapOnly) {
+    drawSectionTitle(doc, `Logging activity — ${metrics.monthLabel}`, x, y)
+    y += 14
 
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(9)
-  setText(doc, slate500)
-  doc.text(summaryText, x, y)
-  y += 22
+    if (summaryText) {
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(9)
+      setText(doc, slate500)
+      doc.text(summaryText, x, y)
+      y += 22
+    } else {
+      y += 8
+    }
+  }
 
   const weeklyItems = metrics.weeklyBreakdown.map((week, index) => ({
     label: week.label || `Week ${index + 1}`,
@@ -573,7 +638,10 @@ export function drawLoggingActivitySection(
   if (showHeatmap) {
     const heatmapHeight = computeHeatmapChartHeight(metrics.dailyCounts, metrics.mondayOffset)
     y = ensureChartPageSpace(doc, y, heatmapHeight + 52, pageHeight, margin)
-    drawSectionTitle(doc, 'Daily log density', x, y)
+    const heatmapTitle = heatmapOnly
+      ? `Daily log density — ${metrics.monthLabel}`
+      : 'Daily log density'
+    drawSectionTitle(doc, heatmapTitle, x, y)
     y += 14
     y = drawHeatmapCalendar(
       doc,

@@ -99,6 +99,100 @@ export function buildLoggingActivityMetrics(
   }
 }
 
+export function buildAllMonthMetrics(
+  entries: LoggingEntry[]
+): LoggingActivityMetrics[] {
+  const monthSet = new Set<string>()
+
+  for (const entry of entries) {
+    const date = getEntryDate(entry)
+    if (!isValidEntryDate(date)) {
+      continue
+    }
+
+    monthSet.add(`${date.getFullYear()}-${date.getMonth()}`)
+  }
+
+  return [...monthSet]
+    .map((key) => {
+      const [year, month] = key.split('-').map(Number)
+      return buildLoggingActivityMetrics(entries, year, month)
+    })
+    .filter((metrics) => metrics.totalLogs > 0)
+    .sort((a, b) => {
+      if (a.year !== b.year) {
+        return a.year - b.year
+      }
+
+      return a.month - b.month
+    })
+}
+
+export type AggregateLoggingMetrics = {
+  rangeLabel: string
+  totalLogs: number
+  conditionCount: number
+  conditionBreakdown: Array<{ label: string, count: number }>
+  extraConditionCount: number
+  monthCount: number
+}
+
+export function buildAggregateLoggingMetrics(entries: LoggingEntry[]): AggregateLoggingMetrics {
+  const valid = entries.filter((entry) => {
+    const date = getEntryDate(entry)
+    return isValidEntryDate(date)
+  })
+
+  const byCondition = new Map<string, number>()
+  const monthSet = new Set<string>()
+  let earliest: Date | null = null
+  let latest: Date | null = null
+
+  for (const entry of valid) {
+    const label = entry.condition_label?.trim() || 'Untitled condition'
+    byCondition.set(label, (byCondition.get(label) || 0) + 1)
+
+    const date = getEntryDate(entry)
+    monthSet.add(`${date.getFullYear()}-${date.getMonth()}`)
+
+    if (!earliest || date < earliest) {
+      earliest = date
+    }
+
+    if (!latest || date > latest) {
+      latest = date
+    }
+  }
+
+  const sortedConditions = [...byCondition.entries()]
+    .sort((left, right) => right[1] - left[1])
+    .map(([label, count]) => ({ label, count }))
+
+  let rangeLabel = '—'
+
+  if (earliest && latest) {
+    const sameMonth = earliest.getFullYear() === latest.getFullYear()
+      && earliest.getMonth() === latest.getMonth()
+
+    if (sameMonth) {
+      rangeLabel = earliest.toLocaleString('en-US', { month: 'long', year: 'numeric' })
+    } else {
+      const firstLabel = earliest.toLocaleString('en-US', { month: 'short', year: 'numeric' })
+      const lastLabel = latest.toLocaleString('en-US', { month: 'short', year: 'numeric' })
+      rangeLabel = `${firstLabel} – ${lastLabel}`
+    }
+  }
+
+  return {
+    rangeLabel,
+    totalLogs: valid.length,
+    conditionCount: byCondition.size,
+    conditionBreakdown: sortedConditions.slice(0, MAX_VISIBLE_CONDITIONS),
+    extraConditionCount: Math.max(0, sortedConditions.length - MAX_VISIBLE_CONDITIONS),
+    monthCount: monthSet.size
+  }
+}
+
 export function formatLoggingActivitySummary(metrics: LoggingActivityMetrics) {
   const logLabel = metrics.totalLogs === 1 ? 'symptom log' : 'symptom logs'
   const conditionLabel = metrics.conditionCount === 1 ? 'condition' : 'conditions'
@@ -108,4 +202,19 @@ export function formatLoggingActivitySummary(metrics: LoggingActivityMetrics) {
   }
 
   return `${metrics.totalLogs} ${logLabel} this month · ${metrics.conditionCount} ${conditionLabel} tracked`
+}
+
+export function formatAggregateLoggingSummary(metrics: AggregateLoggingMetrics) {
+  const logLabel = metrics.totalLogs === 1 ? 'symptom log' : 'symptom logs'
+  const conditionLabel = metrics.conditionCount === 1 ? 'condition' : 'conditions'
+
+  if (!metrics.totalLogs) {
+    return 'No symptom logs recorded.'
+  }
+
+  if (metrics.monthCount <= 1) {
+    return `${metrics.totalLogs} ${logLabel} · ${metrics.conditionCount} ${conditionLabel} tracked`
+  }
+
+  return `${metrics.totalLogs} ${logLabel} across ${metrics.monthCount} months · ${metrics.conditionCount} ${conditionLabel} tracked`
 }

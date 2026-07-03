@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf'
 import {
   buildReportMetrics,
+  drawAggregateLoggingSection,
   drawHorizontalBarChart,
   drawLineChart,
   drawLoggingActivitySection,
@@ -13,8 +14,9 @@ import { getLogoFormat, loadReportLogoDataUrl, reportBranding } from '../utils/r
 import type { LoggingCadence } from '../utils/loggingCadence'
 import { PDF_EXPORT_CERTIFICATION_TEXT } from '../utils/pdfExportCertification'
 import {
-  buildLoggingActivityMetrics,
-  formatLoggingActivitySummary
+  buildAllMonthMetrics,
+  buildAggregateLoggingMetrics,
+  formatAggregateLoggingSummary
 } from '../utils/loggingActivityReport'
 
 type SymptomEntryRecord = {
@@ -272,8 +274,9 @@ export function useSymptomPdfExport() {
     }
 
     const metrics = buildReportMetrics(entries)
-    const now = new Date()
-    const loggingMetrics = buildLoggingActivityMetrics(entries, now.getFullYear(), now.getMonth())
+    const allMonthMetrics = buildAllMonthMetrics(entries)
+    const aggregateMetrics = buildAggregateLoggingMetrics(entries)
+    const hasLogs = aggregateMetrics.totalLogs > 0
     const logoDataUrl = await loadReportLogoDataUrl()
 
     const doc = new jsPDF({
@@ -357,42 +360,53 @@ export function useSymptomPdfExport() {
       { label: 'Severe days (7+)', value: String(metrics.flareDayCount), accent: [236, 72, 153] }
     ], 3) + PDF_SECTION_GAP
 
-    if (includeLoggingCharts && loggingMetrics.totalLogs) {
-      if (showAdvancedCharts) {
-        y = ensurePageSpace(doc, y, 176, margin, pageHeight)
-        drawSectionTitle(doc, 'Severity trend', margin, y)
-        y += 14
-        y = drawLineChart(doc, margin, y, contentWidth, 148, metrics.trend) + PDF_SECTION_GAP
-
-        y = drawLoggingActivitySection(
-          doc,
-          margin,
-          y,
-          contentWidth,
-          pageHeight,
-          margin,
-          loggingMetrics,
-          formatLoggingActivitySummary(loggingMetrics),
-          { week: true, condition: true, heatmap: true }
-        )
-      } else {
-        y = drawLoggingActivitySection(
-          doc,
-          margin,
-          y,
-          contentWidth,
-          pageHeight,
-          margin,
-          loggingMetrics,
-          formatLoggingActivitySummary(loggingMetrics),
-          { week: true, condition: false, heatmap: false }
-        )
-      }
-    } else if (showAdvancedCharts) {
+    if (showAdvancedCharts) {
       y = ensurePageSpace(doc, y, 176, margin, pageHeight)
       drawSectionTitle(doc, 'Severity trend', margin, y)
       y += 14
       y = drawLineChart(doc, margin, y, contentWidth, 148, metrics.trend) + PDF_SECTION_GAP
+    }
+
+    if (includeLoggingCharts && hasLogs) {
+      if (allMonthMetrics.length === 1) {
+        y = drawLoggingActivitySection(
+          doc,
+          margin,
+          y,
+          contentWidth,
+          pageHeight,
+          margin,
+          allMonthMetrics[0],
+          formatAggregateLoggingSummary(aggregateMetrics),
+          { week: true, condition: showAdvancedCharts, heatmap: true }
+        )
+      } else {
+        y = drawAggregateLoggingSection(
+          doc,
+          margin,
+          y,
+          contentWidth,
+          pageHeight,
+          margin,
+          aggregateMetrics,
+          formatAggregateLoggingSummary(aggregateMetrics),
+          { showConditionChart: showAdvancedCharts }
+        )
+
+        for (const monthMetrics of allMonthMetrics) {
+          y = drawLoggingActivitySection(
+            doc,
+            margin,
+            y,
+            contentWidth,
+            pageHeight,
+            margin,
+            monthMetrics,
+            '',
+            { week: false, condition: false, heatmap: true }
+          )
+        }
+      }
     }
 
     if (showAdvancedCharts) {

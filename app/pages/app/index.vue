@@ -548,6 +548,7 @@
 
                           <div
                             v-if="field.type === 'slider'"
+                            data-step-swipe-block
                             class="w-full space-y-5"
                           >
                             <div class="space-y-1 text-center">
@@ -3742,6 +3743,7 @@ function selectSearchCondition(condition: { title: string, category: string, des
 function expandHistorySheet() {
   if (!historyExpanded.value) {
     historyExpanded.value = true
+    lockHistoryTransition()
   }
 }
 
@@ -3752,9 +3754,14 @@ function collapseHistorySheet() {
 
   historyExpanded.value = false
   historyScrollEl.value?.scrollTo({ top: 0 })
+  lockHistoryTransition()
 }
 
 function selectHistoryTab(tab: string) {
+  if (activeHistoryTab.value === tab && historyExpanded.value) {
+    return
+  }
+
   if (!historyExpanded.value) {
     expandHistorySheet()
   }
@@ -3764,6 +3771,17 @@ function selectHistoryTab(tab: string) {
 
 const HISTORY_DRAG_ACTIVATE_PX = 8
 const HISTORY_DRAG_SNAP_PX = 32
+const HISTORY_TRANSITION_LOCK_MS = 560
+
+let historyTransitionLockUntil = 0
+
+function lockHistoryTransition(durationMs = HISTORY_TRANSITION_LOCK_MS) {
+  historyTransitionLockUntil = Date.now() + durationMs
+}
+
+function isHistoryTransitionLocked() {
+  return Date.now() < historyTransitionLockUntil
+}
 
 let historyPointerId: number | null = null
 let historyPointerStartY = 0
@@ -3926,18 +3944,35 @@ function handleConditionSwipeEnd(event: TouchEvent) {
 
 let entrySwipeStartX = 0
 let entrySwipeStartY = 0
+let entrySwipeStartedOnControl = false
+
+function isStepSwipeBlockedTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) {
+    return false
+  }
+
+  return Boolean(target.closest(
+    'input, textarea, select, button, [role="slider"], [data-step-swipe-block]'
+  ))
+}
 
 function handleEntrySwipeStart(event: TouchEvent) {
   if (isDesktopLayout.value) {
     return
   }
 
+  entrySwipeStartedOnControl = isStepSwipeBlockedTarget(event.target)
   entrySwipeStartX = event.touches[0]?.clientX ?? 0
   entrySwipeStartY = event.touches[0]?.clientY ?? 0
 }
 
 function handleEntrySwipeEnd(event: TouchEvent) {
   if (isDesktopLayout.value) {
+    return
+  }
+
+  if (entrySwipeStartedOnControl || currentStepHasSliderField()) {
+    entrySwipeStartedOnControl = false
     return
   }
 
@@ -4046,7 +4081,7 @@ function handleConditionScroll() {
     isConditionScrolling.value = false
   }, 350)
 
-  if (historyExpanded.value) {
+  if (historyExpanded.value && !isHistoryTransitionLocked()) {
     collapseHistorySheet()
   }
 }
