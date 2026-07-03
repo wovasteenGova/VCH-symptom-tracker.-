@@ -474,6 +474,7 @@
               <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
                 <div class="relative z-10 mb-6 shrink-0 flex items-center justify-between gap-4 bg-slate-50 px-1 dark:bg-slate-950">
                     <button
+                      v-if="isDesktopLayout"
                       type="button"
                       class="grid size-10 place-items-center rounded-full bg-slate-100 text-slate-950 transition hover:bg-slate-200 disabled:opacity-30 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
                       :disabled="entryStep === 0"
@@ -496,6 +497,7 @@
                     </div>
 
                     <button
+                      v-if="isDesktopLayout"
                       type="button"
                       class="grid size-10 place-items-center rounded-full bg-slate-100 text-slate-950 transition hover:bg-slate-200 disabled:opacity-30 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
                       :disabled="isLastEntryStep"
@@ -506,7 +508,11 @@
                     </button>
                   </div>
 
-                  <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
+                  <div
+                    class="flex min-h-0 flex-1 flex-col overflow-hidden"
+                    @touchstart.passive="handleEntrySwipeStart"
+                    @touchend="handleEntrySwipeEnd"
+                  >
                     <Transition
                       mode="out-in"
                       enter-active-class="transition duration-300 ease-out"
@@ -525,6 +531,16 @@
                             ? 'mt-8 justify-start space-y-12 overflow-y-auto no-scrollbar pt-2'
                             : 'mt-6 justify-start space-y-6 overflow-y-auto no-scrollbar'"
                       >
+                        <button
+                          v-if="isMobileLayout && entryStep === 0"
+                          type="button"
+                          class="mb-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3.5 text-sm font-bold text-white shadow-md transition active:scale-[0.98] dark:bg-white dark:text-slate-950"
+                          @click="handleEntryPrimaryAction"
+                        >
+                          Continue
+                          <UIcon name="i-lucide-arrow-right" class="size-4" />
+                        </button>
+
                         <label
                           v-for="(field, fieldIndex) in currentEntryStepFields"
                           :key="field.label"
@@ -823,6 +839,8 @@
           <div class="relative flex min-h-0 flex-1 flex-col">
             <div
               class="relative min-h-0 w-full flex-1 overflow-hidden rounded-[1.75rem] transition-[flex] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+              @touchstart.passive="handleConditionSwipeStart"
+              @touchend="handleConditionSwipeEnd"
             >
               <Transition
                 :enter-active-class="slideEnterActiveClass"
@@ -972,7 +990,19 @@
                     />
                   </div>
 
-                  <div class="flex items-center justify-center gap-4">
+                  <div v-if="isMobileLayout" class="flex w-full justify-center px-2">
+                    <button
+                      type="button"
+                      class="flex w-full max-w-xs items-center justify-center gap-2 rounded-full bg-white px-6 py-3.5 text-base font-bold text-slate-950 shadow-xl transition active:scale-[0.98] dark:bg-slate-800 dark:text-white"
+                      :aria-label="isSearchSlide ? 'Add custom condition' : `Log ${activeCondition.title} entry`"
+                      @click="startEntryFromCurrentSlide"
+                    >
+                      <UIcon name="i-lucide-plus" class="size-5" />
+                      {{ isSearchSlide ? 'Add custom condition' : `Log ${activeCondition.title}` }}
+                    </button>
+                  </div>
+
+                  <div v-if="isDesktopLayout" class="flex items-center justify-center gap-4">
                     <button
                       type="button"
                       class="grid size-11 place-items-center rounded-full bg-white text-slate-950 shadow-lg transition hover:bg-slate-100 dark:bg-slate-900 dark:text-white dark:hover:bg-slate-800"
@@ -1010,48 +1040,29 @@
         <section
           class="flex min-h-0 flex-col overflow-hidden rounded-t-[1.75rem] border-t border-slate-200/80 bg-white transition-[flex] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] dark:border-slate-800 dark:bg-slate-900"
           :class="historyExpanded ? 'flex-[4]' : 'flex-[1]'"
+          @pointerdown="handleHistoryPointerDown"
+          @pointermove="handleHistoryPointerMove"
+          @pointerup="handleHistoryPointerUp"
+          @pointercancel="handleHistoryPointerCancel"
         >
-          <div
-            class="flex w-full shrink-0 touch-none select-none flex-col items-center py-2.5"
-            @touchstart.passive="handleSheetDragStart"
-            @touchmove.passive="handleSheetDragMove"
-            @touchend="handleSheetDragEnd"
-            @touchcancel="handleSheetDragEnd"
-          >
-            <button
-              type="button"
-              class="flex w-full justify-center py-1 text-slate-400 transition hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
-              :aria-label="historyExpanded ? 'Collapse history' : 'Expand history'"
-              @click="toggleHistoryExpanded"
-            >
-              <UIcon
-                :name="historyExpanded ? 'i-lucide-chevron-down' : 'i-lucide-chevron-up'"
-                class="size-5"
-              />
-            </button>
+          <div class="flex w-full shrink-0 cursor-grab flex-col items-center py-3 active:cursor-grabbing">
+            <span class="mb-2 h-1.5 w-14 rounded-full bg-slate-300 dark:bg-slate-600" />
+            <UIcon
+              :name="historyExpanded ? 'i-lucide-chevron-down' : 'i-lucide-chevron-up'"
+              class="size-8 text-slate-500 dark:text-slate-400"
+            />
           </div>
 
           <div class="shrink-0 px-4">
             <div class="flex items-start justify-between gap-3">
               <div>
                 <h2 class="text-2xl font-bold text-slate-950 dark:text-white">History</h2>
-                <p
-                  v-if="user && !isPro"
-                  class="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400"
-                >
-                  Free: 1 condition · unlimited entries · Entries only
-                </p>
-                <p
-                  v-if="user && !isPro && freeConditionKeys.length"
-                  class="mt-0.5 text-xs text-slate-500 dark:text-slate-400"
-                >
-                  Your conditions: {{ freeConditionLabels.join(', ') }}
-                </p>
               </div>
               <div class="flex shrink-0 items-center gap-2">
                 <NuxtLink
                   v-if="user && !isPro"
                   to="/upgrade"
+                  data-history-interactive
                   class="inline-flex items-center gap-1 rounded-full bg-amber-400/15 px-3 py-2 text-xs font-bold text-amber-700 ring-1 ring-amber-400/40 dark:text-amber-200"
                 >
                   <UIcon name="i-lucide-crown" class="size-3.5" />
@@ -1059,6 +1070,7 @@
                 </NuxtLink>
                 <button
                   type="button"
+                  data-history-interactive
                   class="inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-slate-600 transition hover:text-slate-950 disabled:opacity-40 dark:text-slate-300 dark:hover:text-white"
                   :disabled="!savedEntries.length || isExportingPdf"
                   @click="exportEntriesPdf"
@@ -1075,21 +1087,26 @@
               <UIcon name="i-lucide-crown" class="mt-0.5 size-3.5 shrink-0 text-amber-600 dark:text-amber-300" />
               <span>
                 {{ exportNotice }}
-                <NuxtLink to="/upgrade" class="font-bold underline decoration-amber-600/60 underline-offset-2 hover:text-amber-800 dark:decoration-amber-300/60 dark:hover:text-amber-50">
+                <NuxtLink to="/upgrade" data-history-interactive class="font-bold underline decoration-amber-600/60 underline-offset-2 hover:text-amber-800 dark:decoration-amber-300/60 dark:hover:text-amber-50">
                   Get Pro now
                 </NuxtLink>
               </span>
             </p>
 
-            <div class="mt-4 rounded-full bg-slate-100 p-1 dark:bg-slate-800/80">
+            <div
+              class="mt-4 rounded-full bg-slate-100 p-1 dark:bg-slate-800/80"
+              @touchstart.passive="handleHistoryTabSwipeStart"
+              @touchend="handleHistoryTabSwipeEnd"
+            >
               <div class="grid grid-cols-2 gap-1">
                 <button
                   v-for="tab in historyTabs"
                   :key="tab"
                   type="button"
+                  data-history-interactive
                   class="relative rounded-full px-4 py-3 text-sm font-semibold transition"
                   :class="activeHistoryTab === tab ? 'bg-white text-slate-950 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 dark:text-slate-400'"
-                  @click="activeHistoryTab = tab"
+                  @click="selectHistoryTab(tab)"
                 >
                   {{ tab }}
                 </button>
@@ -1103,8 +1120,6 @@
             :class="historyExpanded ? 'overflow-y-auto' : 'overflow-hidden touch-pan-y'"
             @scroll="handleHistoryScroll"
             @wheel="handleHistoryWheel"
-            @touchstart.passive="handleHistoryTouchStart"
-            @touchmove.passive="handleHistoryTouchMove"
           >
             <div v-if="activeHistoryTab === 'Entries'" class="divide-y divide-slate-200 dark:divide-slate-800">
               <div v-if="!user && !isAuthLoading" class="py-8 text-center">
@@ -1114,6 +1129,7 @@
                 </p>
                 <button
                   type="button"
+                  data-history-interactive
                   class="mt-4 rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white dark:bg-white dark:text-slate-950"
                   @click="toggleAuthPanel"
                 >
@@ -1134,6 +1150,7 @@
                 v-for="entry in historyEntries"
                 :key="entry.id"
                 :data-entry-id="entry.id"
+                data-history-interactive
                 class="rounded-2xl px-2 py-3 transition duration-500 hover:bg-slate-50 active:bg-slate-100 dark:hover:bg-slate-900/70 dark:active:bg-slate-900"
                 :class="highlightedSubmissionId === entry.id
                   ? 'submission-flash bg-sky-50 ring-2 ring-sky-300 shadow-lg shadow-sky-950/10 dark:bg-sky-950/30 dark:ring-sky-500/70 dark:shadow-black/20'
@@ -1188,6 +1205,7 @@
                   <button
                     v-if="entry.source === 'Veteran'"
                     type="button"
+                    data-history-interactive
                     class="grid size-10 shrink-0 place-items-center rounded-full transition"
                     :class="canUseFamilyReporting
                       ? 'text-slate-400 hover:bg-sky-50 hover:text-sky-600 dark:hover:bg-sky-950/40 dark:hover:text-sky-300'
@@ -1200,6 +1218,7 @@
 
                   <button
                     type="button"
+                    data-history-interactive
                     class="grid size-10 shrink-0 place-items-center rounded-full text-slate-400 transition hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40 dark:hover:text-red-300"
                     :aria-label="`Delete ${entry.title}`"
                     @click.stop="requestDeleteEntry(entry.id)"
@@ -1210,21 +1229,31 @@
               </article>
             </div>
 
-            <div v-else class="py-1">
+            <div
+              v-else
+              class="py-1"
+              @touchstart.passive="handleCalendarSwipeStart"
+              @touchend="handleCalendarSwipeEnd"
+            >
               <div class="flex items-center justify-between">
                 <button
+                  v-if="isDesktopLayout"
                   type="button"
+                  data-history-interactive
                   class="grid size-8 place-items-center rounded-full text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
                   aria-label="Previous month"
                   @click="showPreviousHistoryMonth"
                 >
                   <UIcon name="i-lucide-chevron-left" class="size-4" />
                 </button>
+                <div v-else class="size-8" />
 
                 <p class="font-bold text-slate-950 dark:text-white">{{ historyMonthLabel }}</p>
 
                 <button
+                  v-if="isDesktopLayout"
                   type="button"
+                  data-history-interactive
                   class="grid size-8 place-items-center rounded-full text-slate-500 hover:bg-slate-100 disabled:opacity-30 dark:text-slate-400 dark:hover:bg-slate-800"
                   aria-label="Next month"
                   :disabled="!canShowNextHistoryMonth"
@@ -1232,6 +1261,7 @@
                 >
                   <UIcon name="i-lucide-chevron-right" class="size-4" />
                 </button>
+                <div v-else class="size-8" />
               </div>
 
               <div class="mt-4 grid grid-cols-7 text-center text-xs font-semibold text-slate-500 dark:text-slate-400">
@@ -1265,13 +1295,10 @@
               </div>
             </div>
 
-            <p class="mt-4 text-center text-xs leading-5 text-slate-500">
-              Drag the handle or swipe to expand history.
-            </p>
             <div class="mt-2 flex items-center justify-center gap-3 pb-1 text-xs font-semibold text-slate-500">
-              <NuxtLink to="/install" class="hover:text-slate-700 dark:hover:text-slate-300">Install</NuxtLink>
-              <NuxtLink to="/privacy" class="hover:text-slate-700 dark:hover:text-slate-300">Privacy</NuxtLink>
-              <NuxtLink to="/disclaimer" class="hover:text-slate-700 dark:hover:text-slate-300">Disclaimer</NuxtLink>
+              <NuxtLink to="/install" data-history-interactive class="hover:text-slate-700 dark:hover:text-slate-300">Install</NuxtLink>
+              <NuxtLink to="/privacy" data-history-interactive class="hover:text-slate-700 dark:hover:text-slate-300">Privacy</NuxtLink>
+              <NuxtLink to="/disclaimer" data-history-interactive class="hover:text-slate-700 dark:hover:text-slate-300">Disclaimer</NuxtLink>
             </div>
           </div>
         </section>
@@ -1507,6 +1534,7 @@ import {
 } from '../utils/conditionImages'
 import { getSeverityGuidance, severityQuickPresets } from '../utils/severityGuidance'
 import { CalendarDate } from '@internationalized/date'
+import { useMediaQuery } from '@vueuse/core'
 import { computed, nextTick, onMounted, ref, shallowRef, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -1575,6 +1603,8 @@ const deferredInstallPrompt = ref<any>(null)
 const historyExpanded = ref(false)
 const historyScrollEl = ref<HTMLElement | null>(null)
 const conditionScrollEl = ref<HTMLElement | null>(null)
+const isDesktopLayout = useMediaQuery('(min-width: 768px)')
+const isMobileLayout = computed(() => !isDesktopLayout.value)
 const isConditionScrolling = ref(false)
 const isSubmissionDropdownOpen = ref(false)
 const lastSeenSubmissionAt = ref('')
@@ -3148,6 +3178,10 @@ function selectSearchCondition(condition: { title: string, category: string, des
 }
 
 function startEntryFromCurrentSlide() {
+  if (suppressConditionTap) {
+    return
+  }
+
   if (isSearchSlide.value) {
     const customName = debouncedSearchQuery.value.trim() || searchQuery.value.trim()
     openEntryPanel({ prefillCustomCondition: customName || undefined })
@@ -3179,6 +3213,280 @@ function collapseHistorySheet() {
   historyScrollEl.value?.scrollTo({ top: 0 })
 }
 
+function selectHistoryTab(tab: string) {
+  if (!historyExpanded.value) {
+    expandHistorySheet()
+  }
+
+  activeHistoryTab.value = tab
+}
+
+const HISTORY_DRAG_ACTIVATE_PX = 8
+const HISTORY_DRAG_SNAP_PX = 32
+
+let historyPointerId: number | null = null
+let historyPointerStartY = 0
+let historyPointerDeltaY = 0
+let historyPointerStartedOnInteractive = false
+
+function resetHistoryPointer() {
+  historyPointerId = null
+  historyPointerStartY = 0
+  historyPointerDeltaY = 0
+  historyPointerStartedOnInteractive = false
+}
+
+function handleHistoryPointerDown(event: PointerEvent) {
+  if (event.pointerType === 'mouse' && event.button !== 0) {
+    return
+  }
+
+  const target = event.target as HTMLElement
+
+  historyPointerStartedOnInteractive = Boolean(
+    target.closest('[data-history-interactive]')
+  )
+
+  if (historyPointerStartedOnInteractive) {
+    return
+  }
+
+  if (historyExpanded.value && historyScrollEl.value?.contains(target)) {
+    return
+  }
+
+  historyPointerId = event.pointerId
+  historyPointerStartY = event.clientY
+  historyPointerDeltaY = 0
+  ;(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
+}
+
+function handleHistoryPointerMove(event: PointerEvent) {
+  if (historyPointerId !== event.pointerId || historyPointerStartedOnInteractive) {
+    return
+  }
+
+  historyPointerDeltaY = historyPointerStartY - event.clientY
+
+  if (!historyExpanded.value && historyPointerDeltaY > HISTORY_DRAG_ACTIVATE_PX) {
+    expandHistorySheet()
+  }
+
+  if (
+    historyExpanded.value
+    && historyPointerDeltaY < -HISTORY_DRAG_ACTIVATE_PX
+    && (historyScrollEl.value?.scrollTop ?? 0) <= 0
+  ) {
+    collapseHistorySheet()
+  }
+}
+
+function handleHistoryPointerUp(event: PointerEvent) {
+  if (historyPointerId !== event.pointerId) {
+    return
+  }
+
+  const target = event.currentTarget as HTMLElement
+  if (target.hasPointerCapture?.(event.pointerId)) {
+    target.releasePointerCapture(event.pointerId)
+  }
+
+  if (!historyPointerStartedOnInteractive) {
+    const delta = historyPointerDeltaY
+
+    if (Math.abs(delta) < HISTORY_DRAG_ACTIVATE_PX) {
+      if (historyExpanded.value) {
+        collapseHistorySheet()
+      } else {
+        expandHistorySheet()
+      }
+    } else if (delta > HISTORY_DRAG_SNAP_PX) {
+      expandHistorySheet()
+    } else if (delta < -HISTORY_DRAG_SNAP_PX) {
+      collapseHistorySheet()
+    }
+  }
+
+  resetHistoryPointer()
+}
+
+function handleHistoryPointerCancel() {
+  resetHistoryPointer()
+}
+
+let conditionSwipeStartX = 0
+let conditionSwipeStartY = 0
+let conditionSwipeAxis: 'horizontal' | 'vertical' | null = null
+let suppressConditionTap = false
+
+function handleConditionSwipeStart(event: TouchEvent) {
+  if (isDesktopLayout.value) {
+    return
+  }
+
+  conditionSwipeStartX = event.touches[0]?.clientX ?? 0
+  conditionSwipeStartY = event.touches[0]?.clientY ?? 0
+  conditionSwipeAxis = null
+  suppressConditionTap = false
+}
+
+function handleConditionSwipeEnd(event: TouchEvent) {
+  if (isDesktopLayout.value) {
+    return
+  }
+
+  const touch = event.changedTouches[0]
+  if (!touch) {
+    return
+  }
+
+  const deltaX = touch.clientX - conditionSwipeStartX
+  const deltaY = conditionSwipeStartY - touch.clientY
+
+  if (!conditionSwipeAxis) {
+    if (Math.abs(deltaX) < 12 && Math.abs(deltaY) < 12) {
+      return
+    }
+
+    conditionSwipeAxis = Math.abs(deltaX) > Math.abs(deltaY) ? 'horizontal' : 'vertical'
+  }
+
+  if (conditionSwipeAxis === 'horizontal') {
+    if (Math.abs(deltaX) >= 50) {
+      suppressConditionTap = true
+      window.setTimeout(() => {
+        suppressConditionTap = false
+      }, 320)
+
+      if (deltaX < -50) {
+        showNextCondition()
+      } else if (deltaX > 50) {
+        showPreviousCondition()
+      }
+    }
+    return
+  }
+
+  if (deltaY > 36 && !historyExpanded.value) {
+    expandHistorySheet()
+  }
+}
+
+let entrySwipeStartX = 0
+let entrySwipeStartY = 0
+
+function handleEntrySwipeStart(event: TouchEvent) {
+  if (isDesktopLayout.value) {
+    return
+  }
+
+  entrySwipeStartX = event.touches[0]?.clientX ?? 0
+  entrySwipeStartY = event.touches[0]?.clientY ?? 0
+}
+
+function handleEntrySwipeEnd(event: TouchEvent) {
+  if (isDesktopLayout.value) {
+    return
+  }
+
+  const touch = event.changedTouches[0]
+  if (!touch) {
+    return
+  }
+
+  const deltaX = touch.clientX - entrySwipeStartX
+  const deltaY = Math.abs(touch.clientY - entrySwipeStartY)
+
+  if (Math.abs(deltaX) < 50 || Math.abs(deltaX) <= deltaY) {
+    return
+  }
+
+  if (deltaX < 0 && !isLastEntryStep.value) {
+    if (currentStepHasDateTimeField() && !validateEntryDateTimeStep()) {
+      return
+    }
+
+    showNextEntryStep()
+    return
+  }
+
+  if (deltaX > 0 && entryStep.value > 0) {
+    showPreviousEntryStep()
+  }
+}
+
+let historyTabSwipeStartX = 0
+
+function handleHistoryTabSwipeStart(event: TouchEvent) {
+  if (isDesktopLayout.value) {
+    return
+  }
+
+  historyTabSwipeStartX = event.touches[0]?.clientX ?? 0
+}
+
+function handleHistoryTabSwipeEnd(event: TouchEvent) {
+  if (isDesktopLayout.value) {
+    return
+  }
+
+  const touch = event.changedTouches[0]
+  if (!touch) {
+    return
+  }
+
+  const deltaX = touch.clientX - historyTabSwipeStartX
+
+  if (Math.abs(deltaX) < 40) {
+    return
+  }
+
+  if (deltaX < 0 && activeHistoryTab.value === 'Entries') {
+    selectHistoryTab('Calendar')
+    return
+  }
+
+  if (deltaX > 0 && activeHistoryTab.value === 'Calendar') {
+    selectHistoryTab('Entries')
+  }
+}
+
+let calendarSwipeStartX = 0
+
+function handleCalendarSwipeStart(event: TouchEvent) {
+  if (isDesktopLayout.value) {
+    return
+  }
+
+  calendarSwipeStartX = event.touches[0]?.clientX ?? 0
+}
+
+function handleCalendarSwipeEnd(event: TouchEvent) {
+  if (isDesktopLayout.value) {
+    return
+  }
+
+  const touch = event.changedTouches[0]
+  if (!touch) {
+    return
+  }
+
+  const deltaX = touch.clientX - calendarSwipeStartX
+
+  if (Math.abs(deltaX) < 40) {
+    return
+  }
+
+  if (deltaX < 0 && canShowNextHistoryMonth.value) {
+    showNextHistoryMonth()
+    return
+  }
+
+  if (deltaX > 0) {
+    showPreviousHistoryMonth()
+  }
+}
+
 function handleConditionScroll() {
   isConditionScrolling.value = true
 
@@ -3208,7 +3516,7 @@ function handleConditionTouchStart(event: TouchEvent) {
 }
 
 function handleConditionTouchMove(event: TouchEvent) {
-  if (!historyExpanded.value) {
+  if (!historyExpanded.value || isDesktopLayout.value) {
     return
   }
 
@@ -3218,67 +3526,6 @@ function handleConditionTouchMove(event: TouchEvent) {
   if (deltaY > 8) {
     collapseHistorySheet()
   }
-}
-
-function toggleHistoryExpanded() {
-  if (sheetDidDrag) {
-    sheetDidDrag = false
-    return
-  }
-
-  if (historyExpanded.value) {
-    collapseHistorySheet()
-    return
-  }
-
-  expandHistorySheet()
-}
-
-let sheetDragStartY = 0
-let sheetDidDrag = false
-
-function handleSheetDragStart(event: TouchEvent) {
-  sheetDragStartY = event.touches[0]?.clientY ?? 0
-  sheetDidDrag = false
-}
-
-function handleSheetDragMove(event: TouchEvent) {
-  const currentY = event.touches[0]?.clientY ?? 0
-  const deltaY = sheetDragStartY - currentY
-
-  if (Math.abs(deltaY) > 10) {
-    sheetDidDrag = true
-  }
-
-  if (!historyExpanded.value && deltaY > 28) {
-    expandHistorySheet()
-    return
-  }
-
-  if (historyExpanded.value && deltaY < -28) {
-    collapseHistorySheet()
-  }
-}
-
-function handleSheetDragEnd() {
-  window.setTimeout(() => {
-    sheetDidDrag = false
-  }, 0)
-}
-
-function resolvePendingEntryConditionKey(options: {
-  prefillCustomCondition?: string
-  condition?: { title: string }
-} = {}) {
-  if (options.condition?.title) {
-    return conditionKey(options.condition.title)
-  }
-
-  if (options.prefillCustomCondition) {
-    return conditionKey(options.prefillCustomCondition)
-  }
-
-  return ''
 }
 
 function handleHistoryScroll(event: Event) {
@@ -3300,24 +3547,19 @@ function handleHistoryWheel(event: WheelEvent) {
   }
 }
 
-let historyTouchStartY = 0
-
-function handleHistoryTouchStart(event: TouchEvent) {
-  historyTouchStartY = event.touches[0]?.clientY ?? 0
-}
-
-function handleHistoryTouchMove(event: TouchEvent) {
-  const currentY = event.touches[0]?.clientY ?? 0
-  const deltaY = historyTouchStartY - currentY
-
-  if (!historyExpanded.value && deltaY > 10) {
-    expandHistorySheet()
-    return
+function resolvePendingEntryConditionKey(options: {
+  prefillCustomCondition?: string
+  condition?: { title: string }
+} = {}) {
+  if (options.condition?.title) {
+    return conditionKey(options.condition.title)
   }
 
-  if (historyExpanded.value && deltaY < -28 && (historyScrollEl.value?.scrollTop ?? 0) <= 0) {
-    collapseHistorySheet()
+  if (options.prefillCustomCondition) {
+    return conditionKey(options.prefillCustomCondition)
   }
+
+  return ''
 }
 
 function resolveEntryConditionLabel(label: string) {
