@@ -4,9 +4,6 @@ export type SubmissionToastPayload = {
   tone?: 'success' | 'error'
 }
 
-const activeToast = useState<SubmissionToastPayload | null>('submission-toast', () => null)
-const toastKey = useState('submission-toast-key', () => 0)
-
 let dismissTimer: ReturnType<typeof setTimeout> | undefined
 
 function normalizePayload(payload: string | SubmissionToastPayload): SubmissionToastPayload {
@@ -21,6 +18,9 @@ function normalizePayload(payload: string | SubmissionToastPayload): SubmissionT
 }
 
 export function useSubmissionToast() {
+  const activeToast = useState<SubmissionToastPayload | null>('submission-toast', () => null)
+  const toastKey = useState('submission-toast-key', () => 0)
+
   function showSubmissionToast(payload: string | SubmissionToastPayload) {
     if (dismissTimer) {
       clearTimeout(dismissTimer)
