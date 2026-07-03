@@ -190,11 +190,22 @@
             Install app
           </button>
 
+          <a
+            v-if="installGuideVideoUrl"
+            :href="installGuideVideoUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-slate-950 ring-1 ring-teal-200 dark:bg-slate-900/80 dark:text-white dark:ring-teal-500/30"
+          >
+            <UIcon name="i-lucide-play" class="size-4" />
+            Watch how
+          </a>
+
           <NuxtLink
             to="/install"
             class="rounded-full bg-white px-4 py-2 text-sm font-bold text-slate-950 ring-1 ring-teal-200 dark:bg-slate-900/80 dark:text-white dark:ring-teal-500/30"
           >
-            How to install
+            Step-by-step guide
           </NuxtLink>
         </div>
       </section>
@@ -1594,6 +1605,7 @@ import {
   isEpisodeFollowUpField
 } from '../utils/vaConditionFields'
 import { reportBranding } from '../utils/reportBranding'
+import { androidAddToHomeScreenVideoUrl, iosAddToHomeScreenVideoUrl } from '../utils/installGuide'
 import { conditionCatalog, pickRandomHomeVisitTip, resolveCatalogConditionByStoredKey } from '../utils/conditionCatalog'
 import { conditionImageAssets } from '../utils/conditionImages'
 import { getSeverityGuidance, severityQuickPresets } from '../utils/severityGuidance'
@@ -2365,9 +2377,20 @@ const showCustomConditionEmptyState = computed(() =>
   hasCustomConditionSearch.value && filteredPickerConditionResults.value.length === 0
 )
 const canPromptInstall = computed(() => Boolean(deferredInstallPrompt.value))
+const installGuideVideoUrl = computed(() => {
+  if (installPlatform.value === 'ios') {
+    return iosAddToHomeScreenVideoUrl
+  }
+
+  if (installPlatform.value === 'android') {
+    return androidAddToHomeScreenVideoUrl
+  }
+
+  return null
+})
 const installInstructionText = computed(() => {
   if (installPlatform.value === 'ios') {
-    return 'On iPhone: open this in Safari, tap the Share button, then tap Add to Home Screen.'
+    return 'On iPhone: use Safari, tap Share, then Add to Home Screen.'
   }
 
   if (installPlatform.value === 'android') {

@@ -1,3 +1,7 @@
+<script setup lang="ts">
+import { androidAddToHomeScreenVideoUrl, iosAddToHomeScreenVideoUrl } from '../utils/installGuide'
+</script>
+
 <template>
   <main class="flex min-h-dvh flex-col bg-slate-950 text-white">
     <section class="mx-auto flex w-full max-w-md flex-1 flex-col px-4 pt-5 sm:max-w-lg">
@@ -22,9 +26,25 @@
           <ol class="mt-4 space-y-3 text-sm leading-6 text-slate-300">
             <li><span class="font-bold text-white">1.</span> Open this site in Safari.</li>
             <li><span class="font-bold text-white">2.</span> Tap the Share button at the bottom of Safari.</li>
-            <li><span class="font-bold text-white">3.</span> Scroll and tap Add to Home Screen.</li>
+            <li><span class="font-bold text-white">3.</span> Scroll and tap <span class="font-bold text-white">Add to Home Screen</span>.</li>
             <li><span class="font-bold text-white">4.</span> Tap Add. The app will appear with your other apps.</li>
           </ol>
+
+          <a
+            :href="iosAddToHomeScreenVideoUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="mt-5 flex items-center gap-3 rounded-3xl border border-teal-500/30 bg-teal-950/40 p-4 transition hover:bg-teal-950/60"
+          >
+            <span class="grid size-12 shrink-0 place-items-center rounded-full bg-teal-500 text-white shadow-lg shadow-teal-950/30">
+              <UIcon name="i-lucide-play" class="size-5" />
+            </span>
+            <span class="min-w-0">
+              <span class="block text-base font-bold text-white">Watch the 30-second guide</span>
+              <span class="mt-0.5 block text-xs leading-5 text-teal-100/80">Opens in YouTube — follow along in Safari</span>
+            </span>
+            <UIcon name="i-lucide-external-link" class="ml-auto size-4 shrink-0 text-teal-200/70" />
+          </a>
         </section>
 
         <section class="rounded-4xl border border-slate-800 bg-slate-900 p-5">
@@ -35,14 +55,22 @@
             <li><span class="font-bold text-white">3.</span> If not, tap the three-dot menu.</li>
             <li><span class="font-bold text-white">4.</span> Tap Add to Home screen or Install app.</li>
           </ol>
-        </section>
 
-        <section class="rounded-4xl border border-teal-500/30 bg-teal-950/30 p-5">
-          <h2 class="text-xl font-bold text-white">Share this with testers</h2>
-          <p class="mt-3 text-sm leading-6 text-teal-50/90">
-            Open the app link on your phone. On iPhone use Safari Share > Add to Home Screen.
-            On Android use Chrome > Install app or Add to Home screen.
-          </p>
+          <a
+            :href="androidAddToHomeScreenVideoUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="mt-5 flex items-center gap-3 rounded-3xl border border-teal-500/30 bg-teal-950/40 p-4 transition hover:bg-teal-950/60"
+          >
+            <span class="grid size-12 shrink-0 place-items-center rounded-full bg-teal-500 text-white shadow-lg shadow-teal-950/30">
+              <UIcon name="i-lucide-play" class="size-5" />
+            </span>
+            <span class="min-w-0">
+              <span class="block text-base font-bold text-white">Watch the 30-second guide</span>
+              <span class="mt-0.5 block text-xs leading-5 text-teal-100/80">Opens in YouTube — follow along in Chrome</span>
+            </span>
+            <UIcon name="i-lucide-external-link" class="ml-auto size-4 shrink-0 text-teal-200/70" />
+          </a>
         </section>
       </div>
 
