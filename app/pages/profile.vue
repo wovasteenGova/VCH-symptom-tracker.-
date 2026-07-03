@@ -421,6 +421,30 @@
             </article>
           </div>
         </section>
+
+        <section class="rounded-4xl border border-red-900/40 bg-slate-900 p-4">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-red-300/80">Data control</p>
+            <h2 class="mt-1 text-xl font-bold text-white">Delete all logs</h2>
+            <p class="mt-2 text-sm leading-6 text-slate-400">
+              Permanently remove every symptom entry from your account, including items in your recovery bin. Your profile, plan, and condition picks stay saved.
+            </p>
+            <p v-if="activeLogCount > 0" class="mt-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+              {{ activeLogCount }} {{ activeLogCount === 1 ? 'entry' : 'entries' }} saved
+            </p>
+            <p v-else class="mt-3 text-xs leading-5 text-slate-500">
+              No logs saved right now. You can still use this setting anytime you need a fresh start.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            class="mt-5 w-full rounded-2xl bg-red-950/50 px-4 py-3 text-sm font-bold text-red-300 ring-1 ring-red-900/60 transition hover:bg-red-950/70"
+            @click="openDeleteAllLogsModal"
+          >
+            Delete all logs
+          </button>
+        </section>
         </div>
 
         <StickyActionBar tone="dark">
@@ -530,6 +554,79 @@
         </div>
       </div>
     </Transition>
+
+    <Transition
+      enter-active-class="transition duration-200 ease-out"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-active-class="transition duration-150 ease-in"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
+    >
+      <div
+        v-if="isDeleteAllLogsModalOpen"
+        class="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/70 p-4 sm:items-center"
+        @click.self="closeDeleteAllLogsModal"
+      >
+        <form
+          class="w-full max-w-md rounded-[1.75rem] border border-slate-800 bg-slate-900 p-5 shadow-2xl"
+          @submit.prevent="confirmDeleteAllLogs"
+        >
+          <p class="text-xs font-bold uppercase tracking-[0.16em] text-red-300/80">Delete all logs</p>
+          <h3 class="mt-2 text-xl font-bold text-white">Remove every entry?</h3>
+          <p class="mt-3 text-sm leading-6 text-slate-300">
+            This permanently deletes all symptom logs and clears your recovery bin. It cannot be undone.
+          </p>
+
+          <label v-if="usesPasswordLogin" class="mt-5 block">
+            <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Password</span>
+            <input
+              v-model="deleteAllLogsPassword"
+              type="password"
+              autocomplete="current-password"
+              class="w-full rounded-3xl border border-slate-600/70 bg-slate-800/70 px-4 py-4 text-base font-medium text-white outline-none placeholder:text-slate-400 focus:border-slate-400"
+              placeholder="Enter your account password"
+              required
+            >
+          </label>
+
+          <label v-else class="mt-5 block">
+            <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Confirmation</span>
+            <input
+              v-model="deleteAllLogsConfirmPhrase"
+              type="text"
+              autocomplete="off"
+              class="w-full rounded-3xl border border-slate-600/70 bg-slate-800/70 px-4 py-4 text-base font-medium text-white outline-none placeholder:text-slate-400 focus:border-slate-400"
+              placeholder="Type DELETE ALL LOGS"
+              required
+            >
+            <p class="mt-2 px-1 text-xs leading-5 text-slate-400">
+              Google sign-in accounts must type <span class="font-semibold text-slate-300">DELETE ALL LOGS</span> to confirm.
+            </p>
+          </label>
+
+          <p v-if="deleteAllLogsError" class="mt-3 text-sm font-medium text-red-300">{{ deleteAllLogsError }}</p>
+
+          <div class="mt-5 grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              class="rounded-2xl bg-slate-800 px-4 py-3 text-sm font-bold text-white"
+              :disabled="isDeletingAllLogs"
+              @click="closeDeleteAllLogsModal"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="rounded-2xl bg-red-600 px-4 py-3 text-sm font-bold text-white disabled:opacity-60"
+              :disabled="isDeletingAllLogs"
+            >
+              {{ isDeletingAllLogs ? 'Deleting...' : 'Delete all logs' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </Transition>
   </main>
 </template>
 
@@ -559,7 +656,8 @@ const {
   signIn,
   signUp,
   signInWithGoogle,
-  signOut
+  signOut,
+  verifyPassword
 } = useSupabaseAuth()
 const {
   getProfile,
@@ -570,12 +668,13 @@ const {
   toggleSupporterProfile,
   deleteSupporterProfile
 } = useUserProfiles()
-const { createEntry } = useSymptomEntries()
+const { createEntry, listEntries, deleteAllEntries } = useSymptomEntries()
 const {
   listDeletedEntries,
   removeDeletedEntry,
   takeDeletedEntry,
-  archiveDeletedEntry
+  archiveDeletedEntry,
+  clearDeletedEntriesForUser
 } = useDeletedEntryArchive()
 const {
   isPro,
@@ -633,6 +732,16 @@ const isCopyingSupporterId = ref<string | null>(null)
 const copiedSupporterId = ref<string | null>(null)
 const pendingPurgeEntry = ref<null | { id: string, title: string }>(null)
 const pendingDeleteSupporter = ref<null | { id: string, display_name: string }>(null)
+const activeLogCount = ref(0)
+const isDeleteAllLogsModalOpen = ref(false)
+const deleteAllLogsPassword = ref('')
+const deleteAllLogsConfirmPhrase = ref('')
+const deleteAllLogsError = ref('')
+const isDeletingAllLogs = ref(false)
+
+const usesPasswordLogin = computed(() => {
+  return Boolean(user.value?.identities?.some((identity) => identity.provider === 'email'))
+})
 
 const deletedHistoryEntries = computed(() => {
   return deletedEntries.value.map((entry) => mapEntryHistoryItem(entry, { deleted: true }))
@@ -698,13 +807,15 @@ async function loadProfilePage() {
   loadDeletedEntries()
 
   try {
-    const [profile, supporters] = await Promise.all([
+    const [profile, supporters, entries] = await Promise.all([
       getProfile(),
-      listSupporterProfiles()
+      listSupporterProfiles(),
+      listEntries().catch(() => [])
     ])
 
     await loadEntitlements()
 
+    activeLogCount.value = entries.length
     profileForm.value.full_name = profile?.full_name || user.value?.user_metadata?.full_name || ''
     supporterProfiles.value = supporters
   } catch (error) {
@@ -918,6 +1029,55 @@ function confirmPurgeDeletedEntry() {
   pendingPurgeEntry.value = null
   loadDeletedEntries()
   pageMessage.value = 'Deleted entry removed permanently.'
+}
+
+function openDeleteAllLogsModal() {
+  deleteAllLogsPassword.value = ''
+  deleteAllLogsConfirmPhrase.value = ''
+  deleteAllLogsError.value = ''
+  isDeleteAllLogsModalOpen.value = true
+}
+
+function closeDeleteAllLogsModal() {
+  if (isDeletingAllLogs.value) {
+    return
+  }
+
+  isDeleteAllLogsModalOpen.value = false
+  deleteAllLogsPassword.value = ''
+  deleteAllLogsConfirmPhrase.value = ''
+  deleteAllLogsError.value = ''
+}
+
+async function confirmDeleteAllLogs() {
+  if (!user.value) {
+    return
+  }
+
+  deleteAllLogsError.value = ''
+  isDeletingAllLogs.value = true
+  pageMessage.value = ''
+  pageError.value = ''
+
+  try {
+    if (usesPasswordLogin.value) {
+      await verifyPassword(user.value.email || '', deleteAllLogsPassword.value)
+    } else if (deleteAllLogsConfirmPhrase.value.trim() !== 'DELETE ALL LOGS') {
+      deleteAllLogsError.value = 'Type DELETE ALL LOGS exactly to confirm.'
+      return
+    }
+
+    await deleteAllEntries()
+    clearDeletedEntriesForUser(user.value.id)
+    loadDeletedEntries()
+    activeLogCount.value = 0
+    closeDeleteAllLogsModal()
+    pageMessage.value = 'All logs deleted.'
+  } catch (error) {
+    deleteAllLogsError.value = getErrorMessage(error)
+  } finally {
+    isDeletingAllLogs.value = false
+  }
 }
 
 async function handleAuthSubmit() {

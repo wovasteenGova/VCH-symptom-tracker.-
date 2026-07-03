@@ -58,10 +58,15 @@ export function useDeletedEntryArchive() {
     return entry
   }
 
+  function clearDeletedEntriesForUser(userId: string) {
+    writeDeletedEntriesForUser(userId, [])
+  }
+
   return {
     listDeletedEntries,
     archiveDeletedEntry,
     removeDeletedEntry,
-    takeDeletedEntry
+    takeDeletedEntry,
+    clearDeletedEntriesForUser
   }
 }

@@ -2,6 +2,8 @@ type UserProfilePayload = {
   full_name?: string | null
   display_name?: string | null
   free_condition_keys?: string[]
+  tracked_condition_keys?: string[]
+  conditions_onboarding_completed?: boolean
 }
 type SupporterProfilePayload = {
   link_label?: string | null

@@ -165,6 +165,28 @@ export function useSupabaseAuth() {
     }
   }
 
+  async function verifyPassword(email: string, password: string) {
+    if (!email.trim() || !password) {
+      throw new Error('Enter your password to continue.')
+    }
+
+    let error: unknown
+
+    try {
+      const result = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password
+      })
+      error = result.error
+    } catch (caughtError) {
+      error = caughtError
+    }
+
+    if (error) {
+      throw new Error('Incorrect password.')
+    }
+  }
+
   return {
     user,
     isAuthLoading,
@@ -173,6 +195,7 @@ export function useSupabaseAuth() {
     signUp,
     signInWithGoogle,
     sendPasswordReset,
-    signOut
+    signOut,
+    verifyPassword
   }
 }

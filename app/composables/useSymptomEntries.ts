@@ -93,10 +93,24 @@ export function useSymptomEntries() {
     }
   }
 
+  async function deleteAllEntries() {
+    const userId = await getUserId()
+
+    const { error } = await supabase
+      .from('symptom_entries')
+      .delete()
+      .eq('user_id', userId)
+
+    if (error) {
+      throw error
+    }
+  }
+
   return {
     listEntries,
     createEntry,
     updateEntry,
-    deleteEntry
+    deleteEntry,
+    deleteAllEntries
   }
 }

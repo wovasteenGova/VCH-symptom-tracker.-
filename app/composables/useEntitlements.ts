@@ -182,6 +182,46 @@ export function useEntitlements() {
     return persistFreeConditionKeys(userData.user.id, [...freeConditionKeys.value, conditionKey])
   }
 
+  function canReplaceFreeCondition(conditionKey: string, loggedEntryCount: number) {
+    if (!conditionKey || isPro.value || loggedEntryCount > 0) {
+      return false
+    }
+
+    if (freeConditionKeys.value.includes(conditionKey)) {
+      return false
+    }
+
+    return freeConditionKeys.value.length >= FREE_CONDITION_LIMIT
+  }
+
+  async function replaceFreeCondition(conditionKey: string, loggedEntryCount: number) {
+    if (!canReplaceFreeCondition(conditionKey, loggedEntryCount)) {
+      throw new Error('You can only change your free condition before logging your first entry.')
+    }
+
+    const { data: userData, error: userError } = await supabase.auth.getUser()
+
+    if (userError || !userData.user) {
+      throw new Error('Sign in to continue.')
+    }
+
+    return persistFreeConditionKeys(userData.user.id, [conditionKey])
+  }
+
+  async function syncFreeConditionKey(conditionKey: string) {
+    if (!conditionKey || isPro.value || freeConditionKeys.value.includes(conditionKey)) {
+      return freeConditionKeys.value
+    }
+
+    const { data: userData, error: userError } = await supabase.auth.getUser()
+
+    if (userError || !userData.user) {
+      throw new Error('Sign in to continue.')
+    }
+
+    return persistFreeConditionKeys(userData.user.id, [conditionKey])
+  }
+
   async function startCheckout() {
     const accessToken = await getAccessToken()
 
@@ -240,6 +280,9 @@ export function useEntitlements() {
     canTrackCondition,
     canAddFreeCondition,
     addFreeCondition,
+    canReplaceFreeCondition,
+    replaceFreeCondition,
+    syncFreeConditionKey,
     startCheckout,
     openBillingPortal
   }

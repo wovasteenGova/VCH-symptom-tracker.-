@@ -1,151 +1,164 @@
 <template>
   <main class="h-dvh max-h-dvh overflow-hidden bg-slate-50 text-slate-950 transition-colors dark:bg-slate-950 dark:text-white">
     <section class="mx-auto flex h-full max-h-dvh w-full max-w-md flex-col overflow-hidden pt-4 pb-0 sm:max-w-lg">
-      <header class="flex shrink-0 items-center justify-between gap-3 px-4">
-        <div>
-          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{{ homeGreetingLine }}</p>
-          <h1 class="mt-1 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">Symptom Tracker</h1>
-        </div>
-
-        <div v-if="isEntryOpen" class="flex items-center gap-2">
-          <button
-            type="button"
-            class="rounded-full px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-800"
-            @click="closeEntryPanel"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            class="rounded-full bg-slate-950 px-4 py-2 text-sm font-bold text-white shadow-sm dark:bg-white dark:text-slate-950"
-            @click="closeEntryPanel(true)"
-          >
-            Done
-          </button>
-        </div>
-
-        <div v-else class="flex items-center gap-2">
-          <button
-            v-if="hasActiveDraft"
-            type="button"
-            class="relative grid size-10 place-items-center rounded-full bg-white text-slate-950 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-100 dark:bg-slate-900 dark:text-white dark:ring-slate-800 dark:hover:bg-slate-800"
-            aria-label="Open active draft"
-            @click="openEntryPanel"
-          >
-            <UIcon name="i-lucide-files" class="size-5" />
-            <span class="absolute right-0.5 top-0.5 size-2.5 rounded-full bg-red-500 ring-2 ring-slate-950" />
-          </button>
-
-          <UColorModeSwitch
-            size="md"
-            color="primary"
-            class="header-color-toggle"
-          />
-
-          <div v-if="user" class="relative">
-            <button
-              type="button"
-              class="relative z-[60] grid size-10 place-items-center rounded-full shadow-sm ring-1 transition"
-              :class="isSubmissionDropdownOpen
-                ? 'bg-sky-500 text-white ring-sky-400 dark:bg-sky-500 dark:text-white dark:ring-sky-400'
-                : 'bg-white text-slate-950 ring-slate-200 hover:bg-slate-100 dark:bg-slate-900 dark:text-white dark:ring-slate-800 dark:hover:bg-slate-800'"
-              :aria-expanded="isSubmissionDropdownOpen"
-              aria-label="Open submission notifications"
-              @click="toggleSubmissionDropdown"
-            >
-              <UIcon name="i-lucide-inbox" class="size-5" />
-              <span
-                v-if="unreadSubmissionCount"
-                class="absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-sky-500 px-1.5 text-[0.65rem] font-bold leading-5 text-white ring-2 ring-slate-50 dark:ring-slate-950"
+      <header class="flex shrink-0 flex-col gap-4 px-4">
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex min-w-0 items-center gap-2.5">
+            <div class="size-10 shrink-0 overflow-hidden rounded-full ring-1 ring-slate-200 dark:ring-slate-700">
+              <img
+                :src="reportBranding.logoPath"
+                alt="Veterans Central Hub"
+                class="size-10 object-cover object-center"
               >
-                {{ unreadSubmissionCount }}
-              </span>
-            </button>
-
-            <Transition
-              enter-active-class="transition duration-200 ease-out"
-              enter-from-class="-translate-y-1 opacity-0"
-              enter-to-class="translate-y-0 opacity-100"
-              leave-active-class="transition duration-150 ease-in"
-              leave-from-class="translate-y-0 opacity-100"
-              leave-to-class="-translate-y-1 opacity-0"
-            >
-              <div
-                v-if="isSubmissionDropdownOpen"
-                class="fixed inset-0 z-40"
-                @click="closeSubmissionDropdown"
-              />
-            </Transition>
-
-            <Transition
-              enter-active-class="transition duration-200 ease-out"
-              enter-from-class="-translate-y-1 opacity-0"
-              enter-to-class="translate-y-0 opacity-100"
-              leave-active-class="transition duration-150 ease-in"
-              leave-from-class="translate-y-0 opacity-100"
-              leave-to-class="-translate-y-1 opacity-0"
-            >
-              <div
-                v-if="isSubmissionDropdownOpen"
-                class="absolute right-0 top-12 z-[70] w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/15 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/40"
-              >
-                <div class="border-b border-slate-200 px-4 py-3 dark:border-slate-800">
-                  <div class="flex items-center gap-2">
-                    <UIcon name="i-lucide-inbox" class="size-4 text-sky-500" />
-                    <p class="text-[0.875rem] font-bold text-slate-950 dark:text-white">Submissions</p>
-                  </div>
-                  <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                    All observations submitted to your tracker.
-                  </p>
-                </div>
-
-                <div v-if="!submissionNotifications.length" class="px-4 py-6 text-center text-[0.875rem] text-slate-500 dark:text-slate-400">
-                  No submissions yet.
-                </div>
-
-                <div v-else class="max-h-80 overflow-y-auto no-scrollbar p-2">
-                  <button
-                    v-for="submission in submissionNotifications"
-                    :key="submission.id"
-                    type="button"
-                    class="flex w-full items-start gap-3 rounded-2xl px-3 py-3 text-left transition hover:bg-slate-100 dark:hover:bg-slate-800/80"
-                    @click="focusSubmission(submission.id)"
-                  >
-                    <span
-                      class="mt-0.5 grid size-9 shrink-0 place-items-center rounded-full"
-                      :class="highlightedSubmissionId === submission.id
-                        ? 'bg-sky-500 text-white'
-                        : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300'"
-                    >
-                      <UIcon name="i-lucide-message-square-text" class="size-4" />
-                    </span>
-                    <span class="min-w-0 flex-1">
-                      <span class="block truncate text-[0.875rem] font-bold text-slate-950 dark:text-white">{{ submission.title }}</span>
-                      <span class="mt-1 line-clamp-2 block text-xs leading-5 text-slate-500 dark:text-slate-400">{{ submission.summary }}</span>
-                      <span class="mt-1 block text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
-                        {{ submission.source }} · {{ submission.condition }} · {{ submission.timeLabel }}
-                      </span>
-                    </span>
-                  </button>
-                </div>
-              </div>
-            </Transition>
+            </div>
+            <span class="text-base font-bold tracking-[0.12em] text-slate-950 dark:text-white">VCH</span>
           </div>
 
-          <button
-            type="button"
-            class="grid size-10 place-items-center rounded-full bg-white text-slate-950 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-100 dark:bg-slate-900 dark:text-white dark:ring-slate-800 dark:hover:bg-slate-800"
-            :aria-label="user ? 'Open account' : 'Sign in'"
-            @click="handleProfileClick"
-          >
-            <UIcon :name="user ? 'i-lucide-user-check' : 'i-lucide-user-round'" class="size-5" />
-          </button>
+          <div v-if="isEntryOpen" class="ml-auto flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              class="rounded-full px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-800"
+              @click="closeEntryPanel"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="rounded-full bg-slate-950 px-4 py-2 text-sm font-bold text-white shadow-sm dark:bg-white dark:text-slate-950"
+              @click="closeEntryPanel(true)"
+            >
+              Done
+            </button>
+          </div>
+
+          <div v-else class="ml-auto flex shrink-0 items-center gap-2">
+            <button
+              v-if="hasActiveDraft"
+              type="button"
+              class="relative grid size-10 place-items-center rounded-full bg-white text-slate-950 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-100 dark:bg-slate-900 dark:text-white dark:ring-slate-800 dark:hover:bg-slate-800"
+              aria-label="Open active draft"
+              @click="openEntryPanel"
+            >
+              <UIcon name="i-lucide-files" class="size-5" />
+              <span class="absolute right-0.5 top-0.5 size-2.5 rounded-full bg-red-500 ring-2 ring-slate-950" />
+            </button>
+
+            <UColorModeSwitch
+              size="md"
+              color="primary"
+              class="header-color-toggle"
+            />
+
+            <div v-if="user" class="relative">
+              <button
+                type="button"
+                class="relative z-[60] grid size-10 place-items-center rounded-full shadow-sm ring-1 transition"
+                :class="isSubmissionDropdownOpen
+                  ? 'bg-sky-500 text-white ring-sky-400 dark:bg-sky-500 dark:text-white dark:ring-sky-400'
+                  : 'bg-white text-slate-950 ring-slate-200 hover:bg-slate-100 dark:bg-slate-900 dark:text-white dark:ring-slate-800 dark:hover:bg-slate-800'"
+                :aria-expanded="isSubmissionDropdownOpen"
+                aria-label="Open submission notifications"
+                @click="toggleSubmissionDropdown"
+              >
+                <UIcon name="i-lucide-inbox" class="size-5" />
+                <span
+                  v-if="unreadSubmissionCount"
+                  class="absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-sky-500 px-1.5 text-[0.65rem] font-bold leading-5 text-white ring-2 ring-slate-50 dark:ring-slate-950"
+                >
+                  {{ unreadSubmissionCount }}
+                </span>
+              </button>
+
+              <Transition
+                enter-active-class="transition duration-200 ease-out"
+                enter-from-class="-translate-y-1 opacity-0"
+                enter-to-class="translate-y-0 opacity-100"
+                leave-active-class="transition duration-150 ease-in"
+                leave-from-class="translate-y-0 opacity-100"
+                leave-to-class="-translate-y-1 opacity-0"
+              >
+                <div
+                  v-if="isSubmissionDropdownOpen"
+                  class="fixed inset-0 z-40"
+                  @click="closeSubmissionDropdown"
+                />
+              </Transition>
+
+              <Transition
+                enter-active-class="transition duration-200 ease-out"
+                enter-from-class="-translate-y-1 opacity-0"
+                enter-to-class="translate-y-0 opacity-100"
+                leave-active-class="transition duration-150 ease-in"
+                leave-from-class="translate-y-0 opacity-100"
+                leave-to-class="-translate-y-1 opacity-0"
+              >
+                <div
+                  v-if="isSubmissionDropdownOpen"
+                  class="absolute right-0 top-12 z-[70] w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/15 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/40"
+                >
+                  <div class="border-b border-slate-200 px-4 py-3 dark:border-slate-800">
+                    <div class="flex items-center gap-2">
+                      <UIcon name="i-lucide-inbox" class="size-4 text-sky-500" />
+                      <p class="text-[0.875rem] font-bold text-slate-950 dark:text-white">Submissions</p>
+                    </div>
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      All observations submitted to your tracker.
+                    </p>
+                  </div>
+
+                  <div v-if="!submissionNotifications.length" class="px-4 py-6 text-center text-[0.875rem] text-slate-500 dark:text-slate-400">
+                    No submissions yet.
+                  </div>
+
+                  <div v-else class="max-h-80 overflow-y-auto no-scrollbar p-2">
+                    <button
+                      v-for="submission in submissionNotifications"
+                      :key="submission.id"
+                      type="button"
+                      class="flex w-full items-start gap-3 rounded-2xl px-3 py-3 text-left transition hover:bg-slate-100 dark:hover:bg-slate-800/80"
+                      @click="focusSubmission(submission.id)"
+                    >
+                      <span
+                        class="mt-0.5 grid size-9 shrink-0 place-items-center rounded-full"
+                        :class="highlightedSubmissionId === submission.id
+                          ? 'bg-sky-500 text-white'
+                          : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300'"
+                      >
+                        <UIcon name="i-lucide-message-square-text" class="size-4" />
+                      </span>
+                      <span class="min-w-0 flex-1">
+                        <span class="block truncate text-[0.875rem] font-bold text-slate-950 dark:text-white">{{ submission.title }}</span>
+                        <span class="mt-1 line-clamp-2 block text-xs leading-5 text-slate-500 dark:text-slate-400">{{ submission.summary }}</span>
+                        <span class="mt-1 block text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
+                          {{ submission.source }} · {{ submission.condition }} · {{ submission.timeLabel }}
+                        </span>
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              </Transition>
+            </div>
+
+            <button
+              type="button"
+              class="grid size-10 place-items-center rounded-full bg-white text-slate-950 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-100 dark:bg-slate-900 dark:text-white dark:ring-slate-800 dark:hover:bg-slate-800"
+              :aria-label="user ? 'Open account' : 'Sign in'"
+              @click="handleProfileClick"
+            >
+              <UIcon :name="user ? 'i-lucide-user-check' : 'i-lucide-user-round'" class="size-5" />
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{{ homeGreetingLine }}</p>
+          <h1 class="mt-1.5 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">Symptom Tracker</h1>
         </div>
       </header>
 
       <section
         v-if="showInstallCard && !isEntryOpen"
-        class="mx-4 mt-5 shrink-0 rounded-4xl border border-teal-200 bg-teal-50 p-4 shadow-lg shadow-teal-950/5 dark:border-teal-500/30 dark:bg-teal-950/30 dark:shadow-black/20"
+        class="mx-4 mt-7 shrink-0 rounded-4xl border border-teal-200 bg-teal-50 p-4 shadow-lg shadow-teal-950/5 dark:border-teal-500/30 dark:bg-teal-950/30 dark:shadow-black/20"
       >
         <div class="flex items-start justify-between gap-3">
           <div>
@@ -474,7 +487,6 @@
               <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
                 <div class="relative z-10 mb-6 shrink-0 flex items-center justify-between gap-4 bg-slate-50 px-1 dark:bg-slate-950">
                     <button
-                      v-if="isDesktopLayout"
                       type="button"
                       class="grid size-10 place-items-center rounded-full bg-slate-100 text-slate-950 transition hover:bg-slate-200 disabled:opacity-30 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
                       :disabled="entryStep === 0"
@@ -497,12 +509,11 @@
                     </div>
 
                     <button
-                      v-if="isDesktopLayout"
                       type="button"
                       class="grid size-10 place-items-center rounded-full bg-slate-100 text-slate-950 transition hover:bg-slate-200 disabled:opacity-30 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
                       :disabled="isLastEntryStep"
                       aria-label="Next entry step"
-                      @click="showNextEntryStep"
+                      @click="handleEntryNextStep"
                     >
                       <UIcon name="i-lucide-chevron-right" class="size-5" />
                     </button>
@@ -531,16 +542,6 @@
                             ? 'mt-8 justify-start space-y-12 overflow-y-auto no-scrollbar pt-2'
                             : 'mt-6 justify-start space-y-6 overflow-y-auto no-scrollbar'"
                       >
-                        <button
-                          v-if="isMobileLayout && entryStep === 0"
-                          type="button"
-                          class="mb-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3.5 text-sm font-bold text-white shadow-md transition active:scale-[0.98] dark:bg-white dark:text-slate-950"
-                          @click="handleEntryPrimaryAction"
-                        >
-                          Continue
-                          <UIcon name="i-lucide-arrow-right" class="size-4" />
-                        </button>
-
                         <label
                           v-for="(field, fieldIndex) in currentEntryStepFields"
                           :key="field.label"
@@ -827,7 +828,7 @@
           <div
             v-else
             key="home-workspace"
-            class="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden"
+            class="mt-5 flex min-h-0 flex-1 flex-col overflow-hidden"
           >
         <div
           class="flex min-h-0 flex-col px-4 transition-[flex] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
@@ -842,197 +843,240 @@
               @touchstart.passive="handleConditionSwipeStart"
               @touchend="handleConditionSwipeEnd"
             >
-              <Transition
-                :enter-active-class="slideEnterActiveClass"
-                :enter-from-class="slideEnterFromClass"
-                enter-to-class="translate-y-0 opacity-100"
-                :leave-active-class="slideLeaveActiveClass"
-                leave-from-class="translate-y-0 opacity-100"
-                :leave-to-class="slideLeaveToClass"
-              >
-                <div
-                  v-if="isSearchSlide"
-                  key="search"
-                  class="absolute inset-0 flex h-full flex-col px-2 pt-3 pb-20"
+              <ConditionBrowser
+                v-if="showConditionBrowser"
+                class="absolute inset-0 z-20 bg-slate-50 dark:bg-slate-950"
+                :mode="needsOnboarding ? 'onboarding' : 'manage'"
+                :conditions="conditionPickerOptions"
+                :selected-keys="draftSelectedKeys"
+                :locked-keys="proLockedConditionKeys"
+                :show-pro-limit="Boolean(user && !isPro)"
+                :saving="isSavingTrackedConditions"
+                :error="trackedConditionsError"
+                @toggle="toggleDraftCondition"
+                @locked-select="handleLockedConditionSelect"
+                @confirm="confirmConditionOnboarding"
+                @done="finishConditionBrowser"
+              />
+
+              <template v-else-if="homeConditions.length">
+                <Transition
+                  :enter-active-class="slideEnterActiveClass"
+                  :enter-from-class="slideEnterFromClass"
+                  enter-to-class="translate-y-0 opacity-100"
+                  :leave-active-class="slideLeaveActiveClass"
+                  leave-from-class="translate-y-0 opacity-100"
+                  :leave-to-class="slideLeaveToClass"
                 >
-                  <p class="px-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-                    1 of {{ totalSlides }}
-                  </p>
-
-                  <input
-                    v-model="searchQuery"
-                    type="search"
-                    placeholder="Find a condition or + custom"
-                    class="mt-2 w-full border-0 border-b border-slate-300/80 bg-transparent px-1 py-2.5 text-lg font-semibold text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-500"
+                  <div
+                    :key="isHomeOverviewSlide ? 'home-overview' : activeCondition.key"
+                    class="absolute inset-0"
                   >
-
-                  <div class="relative mt-2 min-h-0 flex-1">
                     <div
-                      ref="conditionScrollEl"
-                      class="no-scrollbar h-full space-y-1 overflow-y-auto px-1 pb-16"
-                      @scroll="handleConditionScroll"
+                      v-if="isHomeOverviewSlide"
+                      class="flex h-full min-h-0 flex-col overflow-hidden bg-slate-50 dark:bg-slate-950"
                     >
-                      <div
-                        v-if="showConditionSearchEmptyState"
-                        class="rounded-2xl px-3 py-6 text-center"
-                      >
-                        <p class="text-lg font-bold text-slate-950 dark:text-white">
-                          No results
-                        </p>
-                        <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                          Press
-                          <span class="inline-grid size-7 translate-y-0.5 align-middle place-items-center rounded-full bg-slate-950 text-white dark:bg-white dark:text-slate-950">
-                            <UIcon name="i-lucide-plus" class="size-4" />
-                          </span>
-                          to add
-                          <span class="font-semibold text-slate-950 dark:text-white">"{{ debouncedSearchQuery.trim() }}"</span>
-                          as a custom condition.
-                        </p>
+                      <div class="shrink-0 px-4 pt-5 pb-2">
+                        <div class="flex items-center justify-between gap-3">
+                          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                            {{ trackedConditionCount }} picked
+                          </p>
+                          <button
+                            type="button"
+                            class="rounded-full bg-slate-950 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+                            @click.stop="openConditionBrowser"
+                          >
+                            All conditions
+                          </button>
+                        </div>
+                        <h2 class="mt-3 text-2xl font-bold text-slate-950 dark:text-white">
+                          Your conditions
+                        </h2>
                       </div>
 
-                      <button
-                        v-for="result in filteredConditionResults"
-                        :key="result.title"
-                        type="button"
-                        class="flex w-full items-start gap-3 rounded-2xl px-2 py-2.5 text-left transition hover:bg-slate-100 active:scale-[0.99] dark:hover:bg-slate-800/80"
-                        @click="selectSearchCondition(result)"
-                      >
-                        <img
-                          :src="result.image"
-                          :alt="result.title"
-                          class="size-16 shrink-0 rounded-2xl object-cover"
-                        >
+                      <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
+                        <div class="no-scrollbar min-h-0 max-h-[calc(100%-6rem)] shrink overflow-y-auto px-2">
+                          <div class="space-y-1">
+                            <button
+                              v-for="condition in homeConditions"
+                              :key="condition.key"
+                              type="button"
+                              class="flex w-full items-center gap-3 rounded-2xl px-2 py-3 text-left transition hover:bg-slate-100 active:scale-[0.995] dark:hover:bg-slate-800/80"
+                              @click="logHomeCondition(condition)"
+                            >
+                              <img
+                                :src="condition.image"
+                                :alt="condition.title"
+                                class="size-16 shrink-0 rounded-2xl object-cover"
+                              >
 
-                        <span class="min-w-0 flex-1">
-                          <span class="block text-lg font-bold leading-snug text-slate-950 dark:text-white">
-                            {{ result.title }}
-                          </span>
-                          <span class="mt-1 block text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-                            {{ result.category }}
-                          </span>
-                          <span class="mt-1 block text-sm leading-5 text-slate-600 dark:text-slate-300">
-                            {{ result.description }}
-                          </span>
-                        </span>
+                              <span class="min-w-0 flex-1">
+                                <span class="block text-lg font-bold leading-snug text-slate-950 dark:text-white">
+                                  {{ condition.title }}
+                                </span>
+                                <span class="mt-1 block text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+                                  {{ condition.category }}
+                                </span>
+                              </span>
+
+                            <UIcon
+                              v-if="isConditionLogLocked(condition.key)"
+                              name="i-lucide-lock"
+                              class="size-5 shrink-0 text-amber-600 dark:text-amber-300"
+                              aria-hidden="true"
+                            />
+                            <UIcon
+                              v-else
+                              name="i-lucide-chevron-right"
+                              class="size-5 shrink-0 text-slate-400 dark:text-slate-500"
+                              aria-hidden="true"
+                            />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div class="shrink-0 px-4 pt-2 pb-4">
+                          <div class="flex justify-center gap-2">
+                            <button
+                              v-for="slideIndex in homeCarouselSlideCount"
+                              :key="slideIndex - 1"
+                              type="button"
+                              class="h-2 rounded-full transition-all"
+                              :class="[
+                                slideIndex - 1 === activeIndex ? 'w-7 bg-slate-950 dark:bg-white' : 'w-2 bg-slate-300 dark:bg-slate-600'
+                              ]"
+                              :aria-label="slideIndex === 1 ? 'Show your conditions overview' : `Show ${homeConditions[slideIndex - 2]?.title}`"
+                              @click="showSlide(slideIndex - 1)"
+                            />
+                          </div>
+
+                          <div
+                            v-if="homeVisitTip"
+                            class="mt-8 overflow-hidden"
+                          >
+                            <Transition
+                              name="severity-guide"
+                              appear
+                            >
+                              <div :key="homeVisitTip.title">
+                                <p class="text-xs font-bold uppercase tracking-[0.14em] text-sky-700 dark:text-sky-300">
+                                  {{ homeVisitTip.title }}
+                                </p>
+                                <p class="mt-1.5 leading-6 text-slate-600 dark:text-slate-300">
+                                  {{ homeVisitTip.text }}
+                                </p>
+                              </div>
+                            </Transition>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <template v-else>
+                      <img
+                        :src="activeCondition.image"
+                        :alt="activeCondition.title"
+                        class="h-full w-full object-cover"
+                      >
+
+                      <div class="absolute inset-x-0 top-0 bg-linear-to-b from-black/70 via-black/20 to-transparent p-5 pb-10">
+                        <h2 class="text-2xl font-bold text-white">{{ activeCondition.title }}</h2>
+                      </div>
+                    </template>
+                  </div>
+                </Transition>
+
+                <div
+                  v-if="!isHomeOverviewSlide"
+                  class="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-linear-to-t from-slate-950 via-slate-950/90 to-transparent px-3 pb-1 pt-16"
+                >
+                  <div class="pointer-events-auto flex flex-col items-center gap-2">
+                    <div class="flex justify-center gap-2 pt-1">
+                      <button
+                        v-for="slideIndex in homeCarouselSlideCount"
+                        :key="slideIndex - 1"
+                        type="button"
+                        class="h-2 rounded-full transition-all"
+                        :class="slideIndex - 1 === activeIndex ? 'w-7 bg-white' : 'w-2 bg-white/35'"
+                        :aria-label="slideIndex === 1 ? 'Show your conditions overview' : `Show ${homeConditions[slideIndex - 2]?.title}`"
+                        @click="showSlide(slideIndex - 1)"
+                      />
+                    </div>
+
+                    <div v-if="isMobileLayout" class="flex w-full justify-center px-2 pb-1">
+                      <button
+                        type="button"
+                        class="flex w-full max-w-xs items-center justify-center gap-2 rounded-full bg-white px-6 py-3.5 text-base font-bold text-slate-950 shadow-xl transition active:scale-[0.98] dark:bg-slate-800 dark:text-white"
+                        :aria-label="`Log ${activeCondition.title} entry`"
+                        @click="startEntryFromCurrentSlide"
+                      >
+                        <UIcon name="i-lucide-plus" class="size-5" />
+                        Log {{ activeCondition.title }}
                       </button>
                     </div>
 
-                    <div
-                      v-if="filteredConditionResults.length > 2 && !showConditionSearchEmptyState"
-                      class="pointer-events-none absolute inset-x-0 bottom-3 flex h-10 items-end justify-center pb-1.5 transition-opacity duration-200"
-                      :class="isConditionScrolling ? 'opacity-0' : 'opacity-100'"
-                    >
-                      <span class="rounded-full bg-slate-950/85 px-3 py-1 text-[0.68rem] font-bold uppercase tracking-[0.14em] text-white shadow-lg shadow-slate-950/20 ring-1 ring-white/40 dark:bg-white/90 dark:text-slate-950 dark:shadow-black/30 dark:ring-slate-700/40">
-                        Scroll for more
-                      </span>
+                    <div v-if="isDesktopLayout" class="flex items-center justify-center gap-4 pb-1">
+                      <button
+                        type="button"
+                        class="grid size-11 place-items-center rounded-full bg-white text-slate-950 shadow-lg transition hover:bg-slate-100 dark:bg-slate-900 dark:text-white dark:hover:bg-slate-800"
+                        aria-label="Previous slide"
+                        @click="showPreviousCondition"
+                      >
+                        <UIcon name="i-lucide-chevron-left" class="size-5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        class="grid size-[4.5rem] place-items-center rounded-full bg-white text-slate-950 shadow-xl transition hover:bg-slate-100 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
+                        :class="historyExpanded ? 'scale-90' : 'scale-100'"
+                        :aria-label="`Add ${activeCondition.title} entry`"
+                        @click="startEntryFromCurrentSlide"
+                      >
+                        <UIcon name="i-lucide-plus" class="size-9" />
+                      </button>
+
+                      <button
+                        type="button"
+                        class="grid size-11 place-items-center rounded-full bg-white text-slate-950 shadow-lg transition hover:bg-slate-100 dark:bg-slate-900 dark:text-white dark:hover:bg-slate-800"
+                        aria-label="Next slide"
+                        @click="showNextCondition"
+                      >
+                        <UIcon name="i-lucide-chevron-right" class="size-5" />
+                      </button>
                     </div>
                   </div>
                 </div>
 
                 <div
-                  v-else
-                  :key="activeCondition.title"
-                  class="absolute inset-0"
-                  role="button"
-                  tabindex="0"
-                  :aria-label="`Start entry for ${activeCondition.title}`"
-                  data-clickable="true"
-                  @click="startEntryFromCurrentSlide"
-                  @keydown.enter.prevent="startEntryFromCurrentSlide"
-                  @keydown.space.prevent="startEntryFromCurrentSlide"
+                  v-else-if="isDesktopLayout"
+                  class="pointer-events-none absolute inset-x-0 bottom-0 z-10 px-3 pb-1 pt-16"
                 >
-                  <img
-                    :src="activeCondition.image"
-                    :alt="activeCondition.title"
-                    class="h-full w-full object-cover"
-                  >
-
-                  <div class="absolute inset-x-0 top-0 bg-linear-to-b from-black/70 via-black/20 to-transparent p-5 pb-16">
-                    <div class="flex items-start justify-between gap-4">
-                      <p class="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
-                        {{ activeIndex + 1 }} of {{ totalSlides }}
-                      </p>
-                      <button
-                        type="button"
-                        class="grid size-10 place-items-center rounded-full bg-slate-950/70 text-white shadow-sm ring-1 ring-white/10 backdrop-blur transition hover:bg-slate-900"
-                        aria-label="Search conditions"
-                        @click.stop="goToSearch"
-                      >
-                        <UIcon name="i-lucide-search" class="size-5" />
-                      </button>
-                    </div>
-                    <h2 class="mt-1 text-2xl font-bold text-white">{{ activeCondition.title }}</h2>
-                  </div>
-                </div>
-              </Transition>
-
-              <div
-                class="pointer-events-none absolute inset-x-0 bottom-0 z-10 px-3 pb-1 pt-6"
-                :class="isSearchSlide
-                  ? 'bg-linear-to-t from-white via-white/95 to-transparent dark:from-slate-950 dark:via-slate-950/95'
-                  : 'bg-linear-to-t from-slate-950 via-slate-950/90 to-transparent'"
-              >
-                <div class="pointer-events-auto flex flex-col items-center gap-1.5">
-                  <div class="flex justify-center gap-2">
-                    <button
-                      v-for="(_, index) in totalSlides"
-                      :key="index"
-                      type="button"
-                      class="h-2 rounded-full transition-all"
-                      :class="[
-                        index === activeIndex ? 'w-7' : 'w-2',
-                        isSearchSlide
-                          ? (index === activeIndex ? 'bg-slate-950 dark:bg-white' : 'bg-slate-300 dark:bg-white/35')
-                          : (index === activeIndex ? 'bg-white' : 'bg-white/35'),
-                      ]"
-                      :aria-label="`Show condition ${index + 1}`"
-                      @click="showSlide(index)"
-                    />
-                  </div>
-
-                  <div v-if="isMobileLayout" class="flex w-full justify-center px-2">
+                  <div class="pointer-events-auto flex items-center justify-center gap-4 pb-1">
                     <button
                       type="button"
-                      class="flex w-full max-w-xs items-center justify-center gap-2 rounded-full bg-white px-6 py-3.5 text-base font-bold text-slate-950 shadow-xl transition active:scale-[0.98] dark:bg-slate-800 dark:text-white"
-                      :aria-label="isSearchSlide ? 'Add custom condition' : `Log ${activeCondition.title} entry`"
-                      @click="startEntryFromCurrentSlide"
-                    >
-                      <UIcon name="i-lucide-plus" class="size-5" />
-                      {{ isSearchSlide ? 'Add custom condition' : `Log ${activeCondition.title}` }}
-                    </button>
-                  </div>
-
-                  <div v-if="isDesktopLayout" class="flex items-center justify-center gap-4">
-                    <button
-                      type="button"
-                      class="grid size-11 place-items-center rounded-full bg-white text-slate-950 shadow-lg transition hover:bg-slate-100 dark:bg-slate-900 dark:text-white dark:hover:bg-slate-800"
-                      aria-label="Previous condition"
+                      class="grid size-11 place-items-center rounded-full bg-slate-950 text-white shadow-lg transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+                      aria-label="Previous slide"
                       @click="showPreviousCondition"
                     >
                       <UIcon name="i-lucide-chevron-left" class="size-5" />
                     </button>
 
-                    <button
-                      type="button"
-                      class="grid size-[4.5rem] place-items-center rounded-full bg-white text-slate-950 shadow-xl transition hover:bg-slate-100 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
-                      :class="historyExpanded ? 'scale-90' : 'scale-100'"
-                      :aria-label="isSearchSlide ? 'Add custom condition' : `Add ${activeCondition.title} entry`"
-                      @click="startEntryFromCurrentSlide"
-                    >
-                      <UIcon name="i-lucide-plus" class="size-9" />
-                    </button>
+                    <span
+                      class="size-[4.5rem]"
+                      aria-hidden="true"
+                    />
 
                     <button
                       type="button"
-                      class="grid size-11 place-items-center rounded-full bg-white text-slate-950 shadow-lg transition hover:bg-slate-100 dark:bg-slate-900 dark:text-white dark:hover:bg-slate-800"
-                      aria-label="Next condition"
+                      class="grid size-11 place-items-center rounded-full bg-slate-950 text-white shadow-lg transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+                      aria-label="Next slide"
                       @click="showNextCondition"
                     >
                       <UIcon name="i-lucide-chevron-right" class="size-5" />
                     </button>
                   </div>
                 </div>
-              </div>
+              </template>
             </div>
           </div>
         </div>
@@ -1046,11 +1090,7 @@
           @pointercancel="handleHistoryPointerCancel"
         >
           <div class="flex w-full shrink-0 cursor-grab flex-col items-center py-3 active:cursor-grabbing">
-            <span class="mb-2 h-1.5 w-14 rounded-full bg-slate-300 dark:bg-slate-600" />
-            <UIcon
-              :name="historyExpanded ? 'i-lucide-chevron-down' : 'i-lucide-chevron-up'"
-              class="size-8 text-slate-500 dark:text-slate-400"
-            />
+            <span class="h-1.5 w-14 rounded-full bg-slate-300 dark:bg-slate-600" />
           </div>
 
           <div class="shrink-0 px-4">
@@ -1068,12 +1108,30 @@
                   <UIcon name="i-lucide-crown" class="size-3.5" />
                   Pro
                 </NuxtLink>
+                <UDropdownMenu
+                  v-if="hasMultipleExportConditions"
+                  :items="pdfExportMenuItems"
+                  :content="{ align: 'end' }"
+                  :ui="{ content: 'min-w-56' }"
+                >
+                  <button
+                    type="button"
+                    data-history-interactive
+                    class="inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-slate-600 transition hover:text-slate-950 disabled:opacity-40 dark:text-slate-300 dark:hover:text-white"
+                    :disabled="!savedEntries.length || isExportingPdf"
+                  >
+                    <UIcon name="i-lucide-download" class="size-4" />
+                    {{ isExportingPdf ? 'Exporting...' : 'PDF' }}
+                    <UIcon name="i-lucide-chevron-down" class="size-3.5 opacity-60" />
+                  </button>
+                </UDropdownMenu>
                 <button
+                  v-else
                   type="button"
                   data-history-interactive
                   class="inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-slate-600 transition hover:text-slate-950 disabled:opacity-40 dark:text-slate-300 dark:hover:text-white"
                   :disabled="!savedEntries.length || isExportingPdf"
-                  @click="exportEntriesPdf"
+                  @click="exportEntriesPdf()"
                 >
                   <UIcon name="i-lucide-download" class="size-4" />
                   {{ isExportingPdf ? 'Exporting...' : 'PDF' }}
@@ -1455,12 +1513,19 @@
     >
       <div class="w-full max-w-md rounded-[1.75rem] border border-slate-800 bg-slate-900 p-5 shadow-2xl">
         <p class="text-xs font-bold uppercase tracking-[0.16em] text-sky-300">Free plan</p>
-        <h3 class="mt-2 text-xl font-bold text-white">Use {{ pendingConditionSlotLabel }}?</h3>
+        <h3 class="mt-2 text-xl font-bold text-white">
+          {{ pendingConditionSlotMode === 'replace' ? 'Switch to' : 'Use' }} {{ pendingConditionSlotLabel }}?
+        </h3>
         <p class="mt-3 text-sm leading-6 text-slate-300">
-          Free includes {{ FREE_CONDITION_LIMIT }} conditions with unlimited entries in each.
-          <span v-if="freeConditionSlotsRemaining === FREE_CONDITION_LIMIT">Pick one condition to start.</span>
-          <span v-else-if="freeConditionSlotsRemaining === 1">This will use your free condition slot.</span>
-          <span v-else>Your free condition slot is already used.</span>
+          <template v-if="pendingConditionSlotMode === 'replace'">
+            You have not logged anything yet, so you can change your free condition to this one.
+          </template>
+          <template v-else>
+            Free includes {{ FREE_CONDITION_LIMIT }} conditions with unlimited entries in each.
+            <span v-if="freeConditionSlotsRemaining === FREE_CONDITION_LIMIT">Pick one condition to start.</span>
+            <span v-else-if="freeConditionSlotsRemaining === 1">This will use your free condition slot.</span>
+            <span v-else>Your free condition slot is already used.</span>
+          </template>
         </p>
         <p v-if="freeConditionKeys.length" class="mt-3 text-xs leading-5 text-slate-400">
           Current: {{ freeConditionLabels.join(', ') || 'None yet' }}
@@ -1473,7 +1538,7 @@
             :disabled="isConfirmingConditionSlot"
             @click="confirmConditionSlot"
           >
-            {{ isConfirmingConditionSlot ? 'Saving...' : `Use ${pendingConditionSlotLabel}` }}
+            {{ isConfirmingConditionSlot ? 'Saving...' : pendingConditionSlotMode === 'replace' ? `Switch to ${pendingConditionSlotLabel}` : `Use ${pendingConditionSlotLabel}` }}
           </button>
           <button
             type="button"
@@ -1495,7 +1560,8 @@ import { useSymptomPdfExport } from '../composables/useSymptomPdfExport'
 import { useDeletedEntryArchive } from '../composables/useDeletedEntryArchive'
 import { useUserProfiles } from '../composables/useUserProfiles'
 import { useEntitlements } from '../composables/useEntitlements'
-import { FREE_CONDITION_LIMIT, formatConditionKeyLabel } from '../utils/subscription'
+import { useTrackedConditions } from '../composables/useTrackedConditions'
+import { FREE_CONDITION_LIMIT, formatConditionKeyLabel, conditionKeyFromLabel } from '../utils/subscription'
 import { mapEntryHistoryItem } from '../utils/entryDisplay'
 import { copyToClipboard } from '../utils/copyToClipboard'
 import {
@@ -1527,11 +1593,9 @@ import {
   isEpisodeDurationField,
   isEpisodeFollowUpField
 } from '../utils/vaConditionFields'
-import {
-  carouselConditions,
-  conditionImageAssets,
-  getConditionImage
-} from '../utils/conditionImages'
+import { reportBranding } from '../utils/reportBranding'
+import { conditionCatalog, pickRandomHomeVisitTip, resolveCatalogConditionByStoredKey } from '../utils/conditionCatalog'
+import { conditionImageAssets } from '../utils/conditionImages'
 import { getSeverityGuidance, severityQuickPresets } from '../utils/severityGuidance'
 import { CalendarDate } from '@internationalized/date'
 import { useMediaQuery } from '@vueuse/core'
@@ -1558,9 +1622,20 @@ const {
   canTrackCondition,
   canAddFreeCondition,
   addFreeCondition,
+  canReplaceFreeCondition,
+  replaceFreeCondition,
+  syncFreeConditionKey,
   loadEntitlements,
   startCheckout
 } = useEntitlements()
+const {
+  trackedConditionKeys,
+  needsOnboarding,
+  trackedConditionCount,
+  loadTrackedConditions,
+  completeOnboarding,
+  updateTrackedConditions
+} = useTrackedConditions()
 
 const profileDisplayName = ref('')
 const homeGreetingWord = ref<'Hello' | 'Hey'>(Math.random() < 0.5 ? 'Hello' : 'Hey')
@@ -1602,7 +1677,7 @@ const installPlatform = ref<'ios' | 'android' | 'desktop'>('desktop')
 const deferredInstallPrompt = ref<any>(null)
 const historyExpanded = ref(false)
 const historyScrollEl = ref<HTMLElement | null>(null)
-const conditionScrollEl = ref<HTMLElement | null>(null)
+const homeVisitTip = ref<{ title: string, text: string } | null>(null)
 const isDesktopLayout = useMediaQuery('(min-width: 768px)')
 const isMobileLayout = computed(() => !isDesktopLayout.value)
 const isConditionScrolling = ref(false)
@@ -1742,6 +1817,7 @@ const isUpgradeCheckoutLoading = ref(false)
 const isConditionSlotOpen = ref(false)
 const pendingConditionSlotKey = ref('')
 const pendingConditionSlotLabel = ref('')
+const pendingConditionSlotMode = ref<'add' | 'replace'>('add')
 const pendingEntryPanelOptions = ref<{
   prefillCustomCondition?: string
   condition?: {
@@ -1753,166 +1829,68 @@ const pendingEntryPanelOptions = ref<{
 } | null>(null)
 const isConfirmingConditionSlot = ref(false)
 const conditionSlotError = ref('')
+const isConditionBrowserOpen = ref(false)
+const draftSelectedKeys = ref<string[]>([])
+const isSavingTrackedConditions = ref(false)
+const trackedConditionsError = ref('')
 
-const conditions = [...carouselConditions]
+const conditionResults = conditionCatalog
 
-const conditionResultDefinitions = [
-  {
-    title: 'Migraine',
-    category: 'Neurological',
-    description: 'Frequency, duration, severity, triggers, and daily impact.'
-  },
-  {
-    title: 'Tension headaches',
-    category: 'Neurological',
-    description: 'Headache pattern, pain level, work impact, and medication use.'
-  },
-  {
-    title: 'Vertigo / Dizziness',
-    category: 'Neurological',
-    description: 'Dizzy spells, falls, nausea, balance issues, and missed activity.'
-  },
-  {
-    title: 'Seizures',
-    category: 'Neurological',
-    description: 'Episode timing, recovery, injuries, witnesses, and daily impact.'
-  },
-  {
-    title: 'PTSD',
-    category: 'Mental Health',
-    description: 'Nightmares, flashbacks, panic, isolation, irritability, and missed work.'
-  },
-  {
-    title: 'Anxiety',
-    category: 'Mental Health',
-    description: 'Triggers, panic symptoms, avoidance, sleep, and social impact.'
-  },
-  {
-    title: 'Depression',
-    category: 'Mental Health',
-    description: 'Mood, motivation, hygiene, isolation, sleep, and daily functioning.'
-  },
-  {
-    title: 'Panic attacks',
-    category: 'Mental Health',
-    description: 'Immediate episode logs for panic symptoms, duration, and recovery.'
-  },
-  {
-    title: 'Insomnia / Sleep disturbances',
-    category: 'Sleep',
-    description: 'Hours slept, wake-ups, nightmares, fatigue, and next-day effects.'
-  },
-  {
-    title: 'Lower back pain',
-    category: 'Back, Neck, and Joint',
-    description: 'Pain level, flare-ups, limits sitting, standing, walking, and lifting.'
-  },
-  {
-    title: 'Neck pain',
-    category: 'Back, Neck, and Joint',
-    description: 'Range of motion, flare-ups, pain level, and activity limits.'
-  },
-  {
-    title: 'Knee conditions',
-    category: 'Back, Neck, and Joint',
-    description: 'Pain, swelling, instability, walking limits, stairs, and missed activity.'
-  },
-  {
-    title: 'Shoulder conditions',
-    category: 'Back, Neck, and Joint',
-    description: 'Pain, range of motion, lifting limits, sleep interruption, and flare-ups.'
-  },
-  {
-    title: 'Arthritis',
-    category: 'Back, Neck, and Joint',
-    description: 'Joint pain, stiffness, flare-ups, movement limits, and medication use.'
-  },
-  {
-    title: 'Radiculopathy',
-    category: 'Nerve',
-    description: 'Left/right symptoms, numbness, tingling, burning, weakness, and falls.'
-  },
-  {
-    title: 'Sciatica',
-    category: 'Nerve',
-    description: 'Radiating pain, leg weakness, numbness, sitting limits, and flare-ups.'
-  },
-  {
-    title: 'Peripheral neuropathy',
-    category: 'Nerve',
-    description: 'Numbness, tingling, burning, weakness, walking issues, and falls.'
-  },
-  {
-    title: 'GERD',
-    category: 'Digestive',
-    description: 'Heartburn, regurgitation, medication, sleep interruption, and diet triggers.'
-  },
-  {
-    title: 'IBS',
-    category: 'Digestive',
-    description: 'Pain, diarrhea, constipation, urgency, missed activity, and triggers.'
-  },
-  {
-    title: 'Chronic diarrhea',
-    category: 'Digestive',
-    description: 'Frequency, urgency, dehydration, medication, and daily interruptions.'
-  },
-  {
-    title: 'Constipation',
-    category: 'Digestive',
-    description: 'Frequency, pain, medication, diet triggers, and functional impact.'
-  },
-  {
-    title: 'Asthma',
-    category: 'Respiratory',
-    description: 'Shortness of breath, rescue inhaler use, attacks, and triggers.'
-  },
-  {
-    title: 'Sleep apnea',
-    category: 'Respiratory',
-    description: 'Sleep problems, fatigue, CPAP use, headaches, and daytime impact.'
-  },
-  {
-    title: 'Sinusitis',
-    category: 'Respiratory',
-    description: 'Congestion, headaches, flare-ups, infections, medication, and missed activity.'
-  },
-  {
-    title: 'Rhinitis',
-    category: 'Respiratory',
-    description: 'Congestion, runny nose, sneezing, breathing issues, and triggers.'
-  },
-  {
-    title: 'Eczema',
-    category: 'Skin',
-    description: 'Area affected, itching, flare-ups, treatment, and photos later.'
-  },
-  {
-    title: 'Psoriasis',
-    category: 'Skin',
-    description: 'Area affected, plaques, itching, flare-ups, treatment, and photos later.'
-  },
-  {
-    title: 'Dermatitis',
-    category: 'Skin',
-    description: 'Rash location, itching, triggers, flare-ups, treatment, and photos later.'
-  },
-  {
-    title: 'Fibromyalgia',
-    category: 'Chronic Pain / Fatigue',
-    description: 'Pain, fatigue, brain fog, flare-ups, and days unable to function normally.'
-  },
-  {
-    title: 'Chronic fatigue',
-    category: 'Chronic Pain / Fatigue',
-    description: 'Fatigue level, brain fog, rest needs, and functional limitations.'
+type HomeCondition = typeof conditionCatalog[number]
+
+const conditionPickerOptions = computed(() => conditionCatalog)
+
+const homeConditions = computed(() => {
+  const lastRecordedAt = new Map<string, number>()
+  const trackedOrder = new Map<string, number>()
+
+  trackedConditionKeys.value.forEach((storedKey, index) => {
+    const resolvedKey = resolveCatalogConditionByStoredKey(storedKey)?.key ?? storedKey
+    if (!trackedOrder.has(resolvedKey)) {
+      trackedOrder.set(resolvedKey, index)
+    }
+  })
+
+  for (const entry of savedEntries.value) {
+    if (!entry.condition_key) {
+      continue
+    }
+
+    const resolvedKey = resolveCatalogConditionByStoredKey(entry.condition_key)?.key ?? entry.condition_key
+    const timestamp = new Date(entry.occurred_at || entry.created_at).getTime()
+    const previous = lastRecordedAt.get(resolvedKey) ?? 0
+
+    if (timestamp > previous) {
+      lastRecordedAt.set(resolvedKey, timestamp)
+    }
   }
-] as const
 
-const conditionResults = conditionResultDefinitions.map((condition) => ({
-  ...condition,
-  image: getConditionImage(condition.title, condition.category)
-}))
+  const conditions = trackedConditionKeys.value
+    .map((storedKey) => resolveCatalogConditionByStoredKey(storedKey))
+    .filter((condition): condition is HomeCondition => Boolean(condition))
+
+  return conditions.sort((a, b) => {
+    const lastRecordedDiff = (lastRecordedAt.get(b.key) ?? 0) - (lastRecordedAt.get(a.key) ?? 0)
+    if (lastRecordedDiff !== 0) {
+      return lastRecordedDiff
+    }
+
+    return (trackedOrder.get(a.key) ?? 0) - (trackedOrder.get(b.key) ?? 0)
+  })
+})
+
+const showConditionBrowser = computed(() => {
+  return needsOnboarding.value || isConditionBrowserOpen.value
+})
+
+function refreshHomeVisitTip() {
+  if (showConditionBrowser.value || !homeConditions.value.length) {
+    homeVisitTip.value = null
+    return
+  }
+
+  homeVisitTip.value = pickRandomHomeVisitTip(homeConditions.value)
+}
 
 const historyEntries = computed(() => {
   return [...savedEntries.value]
@@ -2056,26 +2034,75 @@ const calendarDays = computed(() => {
   return days
 })
 
-const totalSlides = computed(() => conditions.length + 1)
-const homeGreetingLine = computed(() => {
-  if (!user.value) {
-    return 'Today'
+const isHomeOverviewSlide = computed(() => activeIndex.value === 0)
+
+const homeCarouselSlideCount = computed(() => homeConditions.value.length + 1)
+
+function isConditionProLocked(key: string) {
+  if (isPro.value) {
+    return false
   }
 
-  const firstName = profileDisplayName.value.trim().split(/\s+/)[0]
-    || user.value.email?.split('@')[0]
-    || 'there'
+  if (draftSelectedKeys.value.includes(key)) {
+    return false
+  }
 
-  return `${homeGreetingWord.value}, ${firstName}`
+  if (freeConditionKeys.value.includes(key)) {
+    return false
+  }
+
+  if (
+    draftSelectedKeys.value.length < FREE_CONDITION_LIMIT
+    && freeConditionKeys.value.length === 0
+    && savedEntries.value.length === 0
+  ) {
+    return false
+  }
+
+  if (canReplaceFreeCondition(key, savedEntries.value.length)) {
+    return false
+  }
+
+  return true
+}
+
+function isConditionLogLocked(key: string) {
+  if (isPro.value) {
+    return false
+  }
+
+  if (canTrackCondition(key)) {
+    return false
+  }
+
+  if (canAddFreeCondition(key)) {
+    return false
+  }
+
+  if (canReplaceFreeCondition(key, savedEntries.value.length)) {
+    return false
+  }
+
+  return true
+}
+
+const proLockedConditionKeys = computed(() => {
+  if (isPro.value) {
+    return [] as string[]
+  }
+
+  return conditionCatalog
+    .filter((condition) => isConditionProLocked(condition.key))
+    .map((condition) => condition.key)
 })
-const freeConditionLabels = computed(() => {
-  return freeConditionKeys.value.map((key) => {
-    const matchedEntry = savedEntries.value.find((entry) => entry.condition_key === key)
-    return matchedEntry?.condition_label || formatConditionKeyLabel(key)
-  })
+
+const activeCondition = computed(() => {
+  if (isHomeOverviewSlide.value) {
+    return homeConditions.value[0] || conditionCatalog[0]
+  }
+
+  return homeConditions.value[activeIndex.value - 1] || homeConditions.value[0] || conditionCatalog[0]
 })
-const isSearchSlide = computed(() => activeIndex.value === 0)
-const activeCondition = computed(() => conditions[Math.max(activeIndex.value - 1, 0)])
 const entryTitle = computed(() => {
   if (isConditionPickerOpen.value) {
     const previewName = debouncedCustomConditionPreview.value.trim()
@@ -2097,22 +2124,89 @@ const entryTitle = computed(() => {
     return editingEntryConditionLabel.value
   }
 
-  if (isSearchSlide.value) {
-    return 'Custom condition'
+  return activeCondition.value?.title || 'Custom condition'
+})
+const homeGreetingLine = computed(() => {
+  if (!user.value) {
+    return 'Today'
   }
 
-  return activeCondition.value.title
+  const firstName = profileDisplayName.value.trim().split(/\s+/)[0]
+    || user.value.email?.split('@')[0]
+    || 'there'
+
+  return `${homeGreetingWord.value}, ${firstName}`
+})
+const freeConditionLabels = computed(() => {
+  return freeConditionKeys.value.map((key) => {
+    const matchedEntry = savedEntries.value.find((entry) => entry.condition_key === key)
+    return matchedEntry?.condition_label || formatConditionKeyLabel(key)
+  })
+})
+
+type ExportableCondition = {
+  key: string
+  label: string
+  entryCount: number
+}
+
+const exportableConditions = computed((): ExportableCondition[] => {
+  const groups = new Map<string, { label: string, count: number }>()
+
+  for (const entry of savedEntries.value) {
+    const key = entry.condition_key || conditionKey(entry.condition_label)
+    const label = entry.condition_label || formatConditionKeyLabel(key)
+    const existing = groups.get(key)
+
+    if (existing) {
+      existing.count += 1
+    } else {
+      groups.set(key, { label, count: 1 })
+    }
+  }
+
+  return [...groups.entries()]
+    .map(([key, data]) => ({
+      key,
+      label: data.label,
+      entryCount: data.count
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label))
+})
+
+const hasMultipleExportConditions = computed(() => exportableConditions.value.length > 1)
+
+const pdfExportMenuItems = computed(() => {
+  const conditions = exportableConditions.value
+
+  if (!conditions.length) {
+    return []
+  }
+
+  const conditionItems = conditions.map((condition) => ({
+    label: `${condition.label} (${condition.entryCount})`,
+    onSelect: () => exportEntriesPdf(condition.key)
+  }))
+
+  if (conditions.length <= 1) {
+    return conditionItems
+  }
+
+  return [
+    {
+      label: `All conditions (${savedEntries.value.length})`,
+      onSelect: () => exportEntriesPdf(null)
+    },
+    { type: 'separator' as const },
+    ...conditionItems
+  ]
 })
 const activeEntryImage = computed(() => {
   if (selectedSearchCondition.value?.image) {
     return selectedSearchCondition.value.image
   }
 
-  if (isSearchSlide.value) {
-    return conditionImageAssets.mentalHealth
-  }
-
-  return activeCondition.value.image
+  return activeCondition.value?.image || conditionImageAssets.mentalHealth
 })
 const activeEntryFields = computed(() => {
   if (selectedSearchCondition.value) {
@@ -2136,18 +2230,12 @@ const activeEntryFields = computed(() => {
       || defaultEntryFields
   }
 
-  if (isSearchSlide.value) {
-    return [
-      {
-        label: 'Condition name',
-        type: 'text',
-        placeholder: 'Example: tinnitus, sinusitis, skin flare-up...'
-      },
-      ...defaultEntryFields
-    ]
+  const activeTitle = activeCondition.value?.title
+  if (activeTitle) {
+    return entryFieldsByCondition[activeTitle as keyof typeof entryFieldsByCondition] || defaultEntryFields
   }
 
-  return entryFieldsByCondition[activeCondition.value.title] || defaultEntryFields
+  return defaultEntryFields
 })
 const entrySteps = computed(() => {
   const fields = activeEntryFields.value
@@ -2325,12 +2413,14 @@ watch(isConditionPickerOpen, (open) => {
   }
 })
 
-onMounted(() => {
+onMounted(async () => {
   setupInstallCard()
 
   if (!entryCalendarDate.value) {
     syncEntryInputsFromForm()
   }
+
+  await refreshTrackedConditions()
 
   if (user.value) {
     loadProfileDisplayName()
@@ -2339,18 +2429,53 @@ onMounted(() => {
   }
 })
 
-watch(user, (currentUser) => {
+watch(user, async (currentUser) => {
   if (currentUser) {
     isAuthPanelOpen.value = false
     loadProfileDisplayName()
     loadEntitlements()
-    loadEntries()
+    await loadEntries()
+    await refreshTrackedConditions()
     return
   }
 
   profileDisplayName.value = ''
   savedEntries.value = []
+  await refreshTrackedConditions()
   closeEntryPanel(true)
+})
+
+watch(needsOnboarding, (needsOnboardingNow) => {
+  if (needsOnboardingNow) {
+    draftSelectedKeys.value = [...trackedConditionKeys.value]
+    isConditionBrowserOpen.value = false
+    return
+  }
+
+  if (!draftSelectedKeys.value.length && trackedConditionKeys.value.length) {
+    draftSelectedKeys.value = [...trackedConditionKeys.value]
+  }
+}, { immediate: true })
+
+watch(trackedConditionKeys, () => {
+  refreshHomeVisitTip()
+}, { deep: true, immediate: true })
+
+watch(showConditionBrowser, (isOpen) => {
+  if (!isOpen) {
+    refreshHomeVisitTip()
+  }
+})
+
+watch(trackedConditionKeys, (keys) => {
+  if (!keys.length) {
+    activeIndex.value = 0
+    return
+  }
+
+  if (activeIndex.value > keys.length) {
+    activeIndex.value = keys.length
+  }
 })
 
 async function loadProfileDisplayName() {
@@ -2568,26 +2693,43 @@ function validateEntryDateTimeStep() {
   return true
 }
 
-async function exportEntriesPdf() {
+async function exportEntriesPdf(exportConditionKey: string | null = null) {
   isExportingPdf.value = true
   exportError.value = ''
   exportNotice.value = ''
 
   try {
+    let entries = savedEntries.value
+    let conditionLabel: string | null = null
+
+    if (exportConditionKey) {
+      entries = savedEntries.value.filter((entry) => {
+        const entryKey = entry.condition_key || conditionKey(entry.condition_label)
+        return entryKey === exportConditionKey
+      })
+      conditionLabel = entries[0]?.condition_label || formatConditionKeyLabel(exportConditionKey)
+    }
+
+    if (!entries.length) {
+      exportError.value = 'No entries found for that condition.'
+      return
+    }
+
     const profile = await getProfile()
     const veteranName = profile?.full_name?.trim()
       || (typeof user.value?.user_metadata?.full_name === 'string'
         ? user.value.user_metadata.full_name.trim()
         : '')
 
-    await downloadEntriesPdf(savedEntries.value, {
+    await downloadEntriesPdf(entries, {
       veteranName: veteranName || null,
       veteranEmail: user.value?.email || null,
-      includeCharts: isPro.value
+      includeCharts: isPro.value,
+      conditionLabel
     })
 
     if (!isPro.value) {
-      exportNotice.value = 'PDF downloaded with your entries. Pro users get access to advanced charts in PDF exports. '
+      exportNotice.value = 'PDF downloaded with your entries. Pro adds advanced charts to PDF exports. '
     }
   } catch (error) {
     exportError.value = getErrorMessage(error)
@@ -2654,6 +2796,142 @@ async function promptInstall() {
   deferredInstallPrompt.value = null
 }
 
+async function refreshTrackedConditions() {
+  const entryKeys = [...new Set(savedEntries.value.map((entry) => entry.condition_key).filter(Boolean))]
+  await loadTrackedConditions(entryKeys)
+
+  if (needsOnboarding.value) {
+    draftSelectedKeys.value = [...trackedConditionKeys.value]
+  }
+}
+
+function openConditionBrowser() {
+  draftSelectedKeys.value = [...trackedConditionKeys.value]
+  trackedConditionsError.value = ''
+  isConditionBrowserOpen.value = true
+  collapseHistorySheet()
+}
+
+function toggleDraftCondition(key: string) {
+  trackedConditionsError.value = ''
+
+  if (draftSelectedKeys.value.includes(key)) {
+    if (draftSelectedKeys.value.length === 1) {
+      trackedConditionsError.value = 'Keep at least one condition on your home screen.'
+      return
+    }
+
+    draftSelectedKeys.value = draftSelectedKeys.value.filter((existingKey) => existingKey !== key)
+    return
+  }
+
+  if (isConditionProLocked(key)) {
+    handleLockedConditionSelect(key)
+    return
+  }
+
+  draftSelectedKeys.value = [...draftSelectedKeys.value, key]
+}
+
+function handleLockedConditionSelect(key: string) {
+  const label = resolveCatalogConditionByStoredKey(key)?.title || formatConditionKeyLabel(key)
+
+  openUpgradePrompt(
+    'Unlock more conditions',
+    `Free includes ${FREE_CONDITION_LIMIT} condition. Upgrade to Pro to add ${label} to your home screen and track unlimited conditions.`
+  )
+}
+
+async function syncFreeConditionWithTrackedKeys(keys: string[]) {
+  if (isPro.value || !keys.length) {
+    return
+  }
+
+  const normalizedKeys = keys
+    .map((key) => resolveCatalogConditionByStoredKey(key)?.key ?? key)
+    .filter(Boolean)
+
+  if (!normalizedKeys.length) {
+    return
+  }
+
+  const activeFreeKey = freeConditionKeys.value[0]
+  if (activeFreeKey && normalizedKeys.includes(activeFreeKey)) {
+    return
+  }
+
+  const nextKey = normalizedKeys[0]
+  if (!nextKey) {
+    return
+  }
+
+  if (savedEntries.value.length === 0) {
+    await replaceFreeCondition(nextKey, 0)
+    return
+  }
+
+  if (canReplaceFreeCondition(nextKey, savedEntries.value.length)) {
+    await replaceFreeCondition(nextKey, savedEntries.value.length)
+  }
+}
+
+async function syncHomeConditionsAfterEntrySave(savedConditionKey: string) {
+  const resolved = resolveCatalogConditionByStoredKey(savedConditionKey)
+  if (!resolved) {
+    return
+  }
+
+  const key = resolved.key
+
+  if (isPro.value) {
+    if (!trackedConditionKeys.value.includes(key)) {
+      await updateTrackedConditions([...trackedConditionKeys.value, key])
+      refreshHomeVisitTip()
+    }
+    return
+  }
+
+  const trackedAlreadyMatches = trackedConditionKeys.value.length === 1 && trackedConditionKeys.value[0] === key
+  if (!trackedAlreadyMatches) {
+    await updateTrackedConditions([key])
+    refreshHomeVisitTip()
+  }
+
+  await syncFreeConditionKey(key)
+}
+
+async function confirmConditionOnboarding() {
+  isSavingTrackedConditions.value = true
+  trackedConditionsError.value = ''
+
+  try {
+    await completeOnboarding(draftSelectedKeys.value)
+    await syncFreeConditionWithTrackedKeys(draftSelectedKeys.value)
+    refreshHomeVisitTip()
+    isConditionBrowserOpen.value = false
+  } catch (error) {
+    trackedConditionsError.value = getErrorMessage(error)
+  } finally {
+    isSavingTrackedConditions.value = false
+  }
+}
+
+async function finishConditionBrowser() {
+  isSavingTrackedConditions.value = true
+  trackedConditionsError.value = ''
+
+  try {
+    await updateTrackedConditions(draftSelectedKeys.value)
+    await syncFreeConditionWithTrackedKeys(draftSelectedKeys.value)
+    refreshHomeVisitTip()
+    isConditionBrowserOpen.value = false
+  } catch (error) {
+    trackedConditionsError.value = getErrorMessage(error)
+  } finally {
+    isSavingTrackedConditions.value = false
+  }
+}
+
 async function loadEntries() {
   if (!user.value) {
     savedEntries.value = []
@@ -2670,6 +2948,7 @@ async function loadEntries() {
     const { listEntries } = useSymptomEntries()
     savedEntries.value = await listEntries()
     updateSubmissionHighlights(savedEntries.value)
+    await refreshTrackedConditions()
   } catch (error) {
     entriesError.value = getErrorMessage(error)
   } finally {
@@ -2798,6 +3077,13 @@ async function saveEntry() {
         entryError.value = getErrorMessage(error)
         return
       }
+    } else if (canReplaceFreeCondition(entryConditionKey, savedEntries.value.length)) {
+      try {
+        await replaceFreeCondition(entryConditionKey, savedEntries.value.length)
+      } catch (error) {
+        entryError.value = getErrorMessage(error)
+        return
+      }
     } else {
       openUpgradePrompt(
         'Free plan: 1 condition',
@@ -2835,6 +3121,7 @@ async function saveEntry() {
     hasActiveDraft.value = false
     closeEntryPanel(true)
     await loadEntries()
+    await syncHomeConditionsAfterEntrySave(payload.condition_key)
     await loadEntitlements()
   } catch (error) {
     entryError.value = getErrorMessage(error)
@@ -3092,34 +3379,65 @@ async function handleSignOut() {
   }
 }
 
+function logHomeCondition(condition: HomeCondition) {
+  openEntryPanel({
+    condition: {
+      title: condition.title,
+      category: condition.category,
+      description: condition.description,
+      image: condition.image
+    }
+  })
+}
+
 function showPreviousCondition() {
-  transitionDirection.value = 'previous'
-  closeEntryPanel()
-  activeIndex.value = activeIndex.value === 0 ? totalSlides.value - 1 : activeIndex.value - 1
-}
-
-function showNextCondition() {
-  transitionDirection.value = 'next'
-  closeEntryPanel()
-  activeIndex.value = activeIndex.value === totalSlides.value - 1 ? 0 : activeIndex.value + 1
-}
-
-function showSlide(index: number) {
-  if (index === activeIndex.value) {
+  if (!homeConditions.value.length) {
     return
   }
 
-  if (index !== 0) {
-    selectedSearchCondition.value = null
+  const lastIndex = homeConditions.value.length
+
+  transitionDirection.value = 'previous'
+  closeEntryPanel()
+  activeIndex.value = activeIndex.value === 0 ? lastIndex : activeIndex.value - 1
+}
+
+function showNextCondition() {
+  if (!homeConditions.value.length) {
+    return
   }
 
+  const lastIndex = homeConditions.value.length
+
+  transitionDirection.value = 'next'
+  closeEntryPanel()
+  activeIndex.value = activeIndex.value === lastIndex ? 0 : activeIndex.value + 1
+}
+
+function showSlide(index: number) {
+  const lastIndex = homeConditions.value.length
+
+  if (index === activeIndex.value || index < 0 || index > lastIndex) {
+    return
+  }
+
+  selectedSearchCondition.value = null
   transitionDirection.value = index > activeIndex.value ? 'next' : 'previous'
   closeEntryPanel()
   activeIndex.value = index
 }
 
-function goToSearch() {
-  showSlide(0)
+function startEntryFromCurrentSlide() {
+  if (suppressConditionTap || isHomeOverviewSlide.value) {
+    return
+  }
+
+  const condition = activeCondition.value
+  if (!condition) {
+    return
+  }
+
+  logHomeCondition(condition)
 }
 
 function changeEntryCondition(condition: { title: string, category: string, description: string, image: string }) {
@@ -3138,6 +3456,14 @@ function changeEntryCondition(condition: { title: string, category: string, desc
   customConditionInput.value = ''
   entryStep.value = 0
   isConditionPickerOpen.value = false
+
+  if (!isPro.value && !editingEntryId.value) {
+    ensureFreeConditionAccess(
+      conditionKeyFromLabel(condition.title),
+      condition.title,
+      null
+    )
+  }
 }
 
 function applyCustomEntryCondition() {
@@ -3156,6 +3482,14 @@ function applyCustomEntryCondition() {
   entryForm.value.condition_name = customName
   entryStep.value = 0
   isConditionPickerOpen.value = false
+
+  if (!isPro.value && !editingEntryId.value) {
+    ensureFreeConditionAccess(
+      conditionKeyFromLabel(customName),
+      customName,
+      null
+    )
+  }
 }
 
 function toggleConditionPicker() {
@@ -3175,27 +3509,6 @@ function toggleConditionPicker() {
 
 function selectSearchCondition(condition: { title: string, category: string, description: string, image: string }) {
   openEntryPanel({ condition })
-}
-
-function startEntryFromCurrentSlide() {
-  if (suppressConditionTap) {
-    return
-  }
-
-  if (isSearchSlide.value) {
-    const customName = debouncedSearchQuery.value.trim() || searchQuery.value.trim()
-    openEntryPanel({ prefillCustomCondition: customName || undefined })
-    return
-  }
-
-  openEntryPanel({
-    condition: {
-      title: activeCondition.value.title,
-      category: activeCondition.value.category,
-      description: activeCondition.value.description,
-      image: activeCondition.value.image
-    }
-  })
 }
 
 function expandHistorySheet() {
@@ -3320,7 +3633,7 @@ let conditionSwipeAxis: 'horizontal' | 'vertical' | null = null
 let suppressConditionTap = false
 
 function handleConditionSwipeStart(event: TouchEvent) {
-  if (isDesktopLayout.value) {
+  if (isDesktopLayout.value || showConditionBrowser.value) {
     return
   }
 
@@ -3331,7 +3644,7 @@ function handleConditionSwipeStart(event: TouchEvent) {
 }
 
 function handleConditionSwipeEnd(event: TouchEvent) {
-  if (isDesktopLayout.value) {
+  if (isDesktopLayout.value || showConditionBrowser.value) {
     return
   }
 
@@ -3402,11 +3715,7 @@ function handleEntrySwipeEnd(event: TouchEvent) {
   }
 
   if (deltaX < 0 && !isLastEntryStep.value) {
-    if (currentStepHasDateTimeField() && !validateEntryDateTimeStep()) {
-      return
-    }
-
-    showNextEntryStep()
+    handleEntryNextStep()
     return
   }
 
@@ -3650,6 +3959,74 @@ function openEntryForEdit(entryId: string) {
   }
 }
 
+function openConditionSlotModal(options: {
+  conditionKey: string
+  conditionLabel: string
+  mode: 'add' | 'replace'
+  entryPanelOptions?: {
+    prefillCustomCondition?: string
+    condition?: {
+      title: string
+      category: string
+      description: string
+      image: string
+    }
+  } | null
+}) {
+  pendingEntryPanelOptions.value = options.entryPanelOptions ?? null
+  pendingConditionSlotKey.value = options.conditionKey
+  pendingConditionSlotLabel.value = options.conditionLabel
+  pendingConditionSlotMode.value = options.mode
+  conditionSlotError.value = ''
+  isConditionSlotOpen.value = true
+}
+
+function ensureFreeConditionAccess(
+  conditionKey: string,
+  conditionLabel: string,
+  entryPanelOptions: {
+    prefillCustomCondition?: string
+    condition?: {
+      title: string
+      category: string
+      description: string
+      image: string
+    }
+  } | null = null
+) {
+  if (isPro.value || canTrackCondition(conditionKey)) {
+    return true
+  }
+
+  const loggedEntryCount = savedEntries.value.length
+
+  if (canAddFreeCondition(conditionKey)) {
+    openConditionSlotModal({
+      conditionKey,
+      conditionLabel,
+      mode: 'add',
+      entryPanelOptions
+    })
+    return false
+  }
+
+  if (canReplaceFreeCondition(conditionKey, loggedEntryCount)) {
+    openConditionSlotModal({
+      conditionKey,
+      conditionLabel,
+      mode: 'replace',
+      entryPanelOptions
+    })
+    return false
+  }
+
+  openUpgradePrompt(
+    'Free plan: 1 condition',
+    `You already picked ${freeConditionLabels.value[0] || 'your free condition'}. Upgrade to Pro for about $1.08/month to track ${conditionLabel || formatConditionKeyLabel(conditionKey)} and more.`
+  )
+  return false
+}
+
 function openEntryPanel(options: {
   prefillCustomCondition?: string
   condition?: {
@@ -3677,24 +4054,9 @@ function openEntryPanel(options: {
     return
   }
 
-  if (canTrackCondition(pendingConditionKey)) {
+  if (ensureFreeConditionAccess(pendingConditionKey, pendingConditionLabel || formatConditionKeyLabel(pendingConditionKey), options)) {
     openEntryPanelInner(options)
-    return
   }
-
-  if (canAddFreeCondition(pendingConditionKey)) {
-    pendingEntryPanelOptions.value = options
-    pendingConditionSlotKey.value = pendingConditionKey
-    pendingConditionSlotLabel.value = pendingConditionLabel || formatConditionKeyLabel(pendingConditionKey)
-    conditionSlotError.value = ''
-    isConditionSlotOpen.value = true
-    return
-  }
-
-  openUpgradePrompt(
-    'Free plan: 1 condition',
-    `You already picked ${freeConditionLabels.value[0] || 'your free condition'}. Upgrade to Pro for about $1.08/month to track ${pendingConditionLabel || formatConditionKeyLabel(pendingConditionKey)} and more.`
-  )
 }
 
 function openEntryPanelInner(options: {
@@ -3732,11 +4094,12 @@ function closeConditionSlotModal() {
   pendingEntryPanelOptions.value = null
   pendingConditionSlotKey.value = ''
   pendingConditionSlotLabel.value = ''
+  pendingConditionSlotMode.value = 'add'
   conditionSlotError.value = ''
 }
 
 async function confirmConditionSlot() {
-  if (!pendingConditionSlotKey.value || !pendingEntryPanelOptions.value) {
+  if (!pendingConditionSlotKey.value) {
     return
   }
 
@@ -3744,10 +4107,18 @@ async function confirmConditionSlot() {
   conditionSlotError.value = ''
 
   try {
-    await addFreeCondition(pendingConditionSlotKey.value)
+    if (pendingConditionSlotMode.value === 'replace') {
+      await replaceFreeCondition(pendingConditionSlotKey.value, savedEntries.value.length)
+    } else {
+      await addFreeCondition(pendingConditionSlotKey.value)
+    }
+
     const options = pendingEntryPanelOptions.value
     closeConditionSlotModal()
-    openEntryPanelInner(options)
+
+    if (options) {
+      openEntryPanelInner(options)
+    }
   } catch (error) {
     conditionSlotError.value = getErrorMessage(error)
   } finally {
@@ -3783,6 +4154,18 @@ function showNextEntryStep() {
   if (!isLastEntryStep.value) {
     entryStep.value += 1
   }
+}
+
+function handleEntryNextStep() {
+  if (isLastEntryStep.value) {
+    return
+  }
+
+  if (currentStepHasDateTimeField() && !validateEntryDateTimeStep()) {
+    return
+  }
+
+  showNextEntryStep()
 }
 
 function handleEntryPrimaryAction() {

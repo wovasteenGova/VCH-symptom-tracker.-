@@ -31,6 +31,7 @@ type VeteranSignatureInfo = {
 
 type PdfExportOptions = VeteranSignatureInfo & {
   includeCharts?: boolean
+  conditionLabel?: string | null
 }
 
 function resolveTypedSignatureName(signatureInfo: VeteranSignatureInfo) {
@@ -130,7 +131,7 @@ export function useSymptomPdfExport() {
     entries: SymptomEntryRecord[],
     options: PdfExportOptions = {}
   ) {
-    const { includeCharts = true, veteranName = null, veteranEmail = null } = options
+    const { includeCharts = true, veteranName = null, veteranEmail = null, conditionLabel = null } = options
     const signatureInfo = { veteranName, veteranEmail }
 
     if (!entries.length) {
@@ -188,7 +189,11 @@ export function useSymptomPdfExport() {
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(9)
     doc.setTextColor(100, 116, 139)
-    doc.text(reportBranding.reportSubtitle, headerX, y + 52)
+    doc.text(
+      conditionLabel ? `${conditionLabel} symptom log` : reportBranding.reportSubtitle,
+      headerX,
+      y + 52
+    )
     doc.text(
       new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       pageWidth - margin,
@@ -309,7 +314,10 @@ export function useSymptomPdfExport() {
     }
 
     const fileDate = new Date().toISOString().slice(0, 10)
-    doc.save(`vch-symptom-report-${fileDate}.pdf`)
+    const fileSlug = conditionLabel
+      ? conditionLabel.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+      : 'all-conditions'
+    doc.save(`vch-symptom-report-${fileSlug}-${fileDate}.pdf`)
   }
 
   return {
