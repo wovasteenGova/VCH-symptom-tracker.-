@@ -52,6 +52,24 @@ export function useSupabaseAuth() {
       }
 
       if (
+        failure.error_code === 'user_already_exists'
+        || failure.code === 'user_already_exists'
+        || failure.error_code === 'email_exists'
+        || failure.code === 'email_exists'
+        || /already (been )?registered|already exists|user already registered/i.test(message)
+      ) {
+        return 'An account with this email already exists. Switch to Sign in or use Forgot password.'
+      }
+
+      if (
+        failure.error_code === 'signup_disabled'
+        || failure.code === 'signup_disabled'
+        || /signups? (are )?disabled/i.test(message)
+      ) {
+        return 'New signups are temporarily disabled. Try Sign in, Continue with Google, or contact support.'
+      }
+
+      if (
         failure.error_code === 'validation_failed'
         || failure.code === 'validation_failed'
         || /unable to validate email address/i.test(message)
@@ -173,13 +191,30 @@ export function useSupabaseAuth() {
       throw error
     }
 
-    if (!data.session) {
+    if (data.user?.identities?.length === 0) {
+      const message = 'An account with this email already exists. Switch to Sign in or use Forgot password.'
+      authError.value = message
+      throw new Error(message)
+    }
+
+    if (data.session) {
+      return data
+    }
+
+    if (data.user) {
       try {
         await signIn(normalizedEmail, password)
       } catch (signInError) {
-        if (!data.user) {
-          authError.value = 'This email already has a VCH account. Switch to Sign in, or use Forgot password.'
+        if (/confirm your email/i.test(authError.value)) {
+          throw signInError
         }
+
+        if (!data.user.confirmed_at) {
+          authError.value = 'Account created. Confirm your email, then sign in. Check spam for mail from Supabase.'
+        } else {
+          authError.value = authError.value || 'Account created, but sign-in did not start. Try Sign in with the same password.'
+        }
+
         throw signInError
       }
 
@@ -191,7 +226,8 @@ export function useSupabaseAuth() {
       }
     }
 
-    return data
+    authError.value = 'Signup did not return a user. Try again or contact support.'
+    throw new Error(authError.value)
   }
 
   async function resendConfirmationEmail(email: string) {

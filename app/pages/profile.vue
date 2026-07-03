@@ -1,12 +1,8 @@
 <template>
   <main
-    class="flex flex-col bg-slate-950 text-white"
-    :class="closeEmbedProfile ? 'h-full min-h-0' : 'min-h-dvh'"
+    class="flex h-dvh min-h-0 flex-col overflow-hidden bg-slate-950 text-white"
   >
-    <section
-      class="mx-auto flex w-full max-w-md flex-1 flex-col px-4 pt-4 sm:max-w-lg"
-      :class="closeEmbedProfile ? 'min-h-0 overflow-y-auto no-scrollbar' : ''"
-    >
+    <section class="mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col px-4 pt-4 sm:max-w-lg">
       <header class="sticky top-0 z-40 -mx-4 flex shrink-0 items-center justify-between gap-3 border-b border-slate-800 bg-slate-950/95 px-4 pb-4 pt-4 backdrop-blur-md">
         <div>
           <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Profile</p>
@@ -114,6 +110,16 @@
               </button>
 
               <button
+                v-if="needsEmailConfirmation"
+                type="button"
+                class="w-full rounded-2xl px-4 py-2 text-sm font-semibold text-sky-300"
+                :disabled="isAuthSubmitting || !authEmail"
+                @click="handleResendConfirmation"
+              >
+                Resend confirmation email
+              </button>
+
+              <button
                 type="button"
                 class="w-full rounded-2xl px-4 py-2 text-sm font-semibold text-slate-300"
                 @click="authMode = authMode === 'login' ? 'signup' : 'login'"
@@ -173,7 +179,7 @@
           </div>
 
           <p v-if="!isPro" class="mt-3 text-xs leading-5 text-slate-400">
-            Free plan: 1 condition with unlimited entries, calendar logging activity charts, and entry PDF exports. Upgrade for about $1.08/month to unlock more conditions, family reporting, and advanced severity charts in PDFs.
+            Free plan: 1 condition with unlimited entries, calendar logging charts, and entry PDFs with weekly symptom counts. Upgrade for about $1.08/month to unlock more conditions, family reporting, and severity trends in PDFs.
           </p>
           <div v-if="!isPro" class="mt-4 rounded-3xl border border-slate-800 bg-slate-950/60 p-4">
             <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Your free conditions</p>
@@ -757,6 +763,7 @@ const {
   authError,
   signIn,
   signUp,
+  resendConfirmationEmail,
   signInWithGoogle,
   sendPasswordReset,
   signOut,
@@ -838,6 +845,7 @@ const authEmail = ref('')
 const authPassword = ref('')
 const authConfirmPassword = ref('')
 const authMessage = ref('')
+const needsEmailConfirmation = ref(false)
 const isAuthSubmitting = ref(false)
 
 const profileForm = ref({
@@ -1246,6 +1254,7 @@ function redirectAfterAuth() {
 async function handleAuthSubmit() {
   authMessage.value = ''
   authError.value = ''
+  needsEmailConfirmation.value = false
 
   if (authMode.value === 'signup' && !authName.value.trim()) {
     authMessage.value = 'Enter your full name.'
@@ -1282,10 +1291,35 @@ async function handleAuthSubmit() {
       }
     }
   } catch {
-    if (/already has a VCH account/i.test(authError.value)) {
+    if (/already exists|already has a VCH account/i.test(authError.value)) {
       authMode.value = 'login'
     }
+    if (/confirm your email/i.test(authError.value)) {
+      needsEmailConfirmation.value = true
+    }
     authMessage.value = authError.value || 'Could not sign in. Check your email and password.'
+  } finally {
+    isAuthSubmitting.value = false
+  }
+}
+
+async function handleResendConfirmation() {
+  if (!authEmail.value) {
+    authMessage.value = 'Enter your email first, then tap Resend confirmation email.'
+    return
+  }
+
+  isAuthSubmitting.value = true
+  authMessage.value = ''
+  authError.value = ''
+
+  try {
+    await resendConfirmationEmail(authEmail.value)
+    needsEmailConfirmation.value = true
+    authMessage.value = 'Confirmation email sent again. Check spam for mail from Supabase.'
+    showSubmissionToast('Confirmation email sent.')
+  } catch {
+    authMessage.value = authError.value || 'Could not resend the confirmation email.'
   } finally {
     isAuthSubmitting.value = false
   }

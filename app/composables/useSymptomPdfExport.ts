@@ -156,6 +156,23 @@ function buildPdfDownloadFilename(conditionLabel: string | null | undefined) {
   return `vch-symptom-report-${fileSlug}-${datePart}-${timePart}.pdf`
 }
 
+const PDF_SECTION_GAP = 28
+
+function ensurePageSpace(
+  doc: jsPDF,
+  y: number,
+  neededHeight: number,
+  margin: number,
+  pageHeight: number
+) {
+  if (y + neededHeight > pageHeight - margin - 36) {
+    doc.addPage()
+    return margin
+  }
+
+  return y
+}
+
 export function useSymptomPdfExport() {
   async function downloadEntriesPdf(
     entries: SymptomEntryRecord[],
@@ -250,35 +267,55 @@ export function useSymptomPdfExport() {
       { label: 'Avg severity', value: metrics.averageSeverity.toFixed(1) },
       { label: 'Peak severity', value: String(metrics.peakSeverity) },
       { label: 'Conditions', value: String(metrics.conditionCount) }
-    ]) + 18
-
-    drawSectionTitle(doc, 'Severity trend', margin, y)
-    y += 10
-    y = drawLineChart(doc, margin, y, contentWidth, 148, metrics.trend) + 16
+    ]) + PDF_SECTION_GAP
 
     if (includeLoggingCharts && loggingMetrics.totalLogs) {
-      y = drawLoggingActivitySection(
-        doc,
-        margin,
-        y,
-        contentWidth,
-        loggingMetrics,
-        formatLoggingActivitySummary(loggingMetrics)
-      )
+      if (showAdvancedCharts) {
+        y = ensurePageSpace(doc, y, 176, margin, pageHeight)
+        drawSectionTitle(doc, 'Severity trend', margin, y)
+        y += 14
+        y = drawLineChart(doc, margin, y, contentWidth, 148, metrics.trend) + PDF_SECTION_GAP
+
+        y = drawLoggingActivitySection(
+          doc,
+          margin,
+          y,
+          contentWidth,
+          pageHeight,
+          margin,
+          loggingMetrics,
+          formatLoggingActivitySummary(loggingMetrics),
+          { week: true, condition: true, heatmap: true }
+        )
+      } else {
+        y = drawLoggingActivitySection(
+          doc,
+          margin,
+          y,
+          contentWidth,
+          pageHeight,
+          margin,
+          loggingMetrics,
+          formatLoggingActivitySummary(loggingMetrics),
+          { week: true, condition: false, heatmap: false }
+        )
+      }
+    } else if (showAdvancedCharts) {
+      y = ensurePageSpace(doc, y, 176, margin, pageHeight)
+      drawSectionTitle(doc, 'Severity trend', margin, y)
+      y += 14
+      y = drawLineChart(doc, margin, y, contentWidth, 148, metrics.trend) + PDF_SECTION_GAP
     }
 
     if (showAdvancedCharts) {
-      if (y > pageHeight - 280) {
-        doc.addPage()
-        y = margin
-      }
+      y = ensurePageSpace(doc, y, 176, margin, pageHeight)
 
       const columnGap = 14
       const columnWidth = (contentWidth - columnGap) / 2
 
       drawSectionTitle(doc, 'Entries by condition', margin, y)
       drawSectionTitle(doc, 'Severity bands', margin + columnWidth + columnGap, y)
-      y += 10
+      y += 14
 
       drawHorizontalBarChart(
         doc,
@@ -304,41 +341,46 @@ export function useSymptomPdfExport() {
         [[16, 185, 129], [245, 158, 11], [249, 115, 22]]
       )
 
-      doc.addPage()
-      y = margin
+      y += 148 + PDF_SECTION_GAP
+      y = ensurePageSpace(doc, y, 176, margin, pageHeight)
 
       drawSectionTitle(doc, 'Monthly activity', margin, y)
-      y += 10
-      y = drawVerticalBarChart(doc, margin, y, contentWidth, 156, metrics.monthActivity, chartColors) + 16
+      y += 14
+      y = drawVerticalBarChart(doc, margin, y, contentWidth, 156, metrics.monthActivity, chartColors) + PDF_SECTION_GAP
 
       if (metrics.extendedConditionBreakdown.length) {
+        const extendedChartHeight = Math.max(160, metrics.extendedConditionBreakdown.length * 28 + 36)
+        y = ensurePageSpace(doc, y, extendedChartHeight + 40, margin, pageHeight)
         drawSectionTitle(doc, 'Additional conditions tracked', margin, y)
-        y += 10
+        y += 14
         y = drawHorizontalBarChart(
           doc,
           margin,
           y,
           contentWidth,
-          Math.max(160, metrics.extendedConditionBreakdown.length * 28 + 36),
+          extendedChartHeight,
           metrics.extendedConditionBreakdown,
           chartColors
-        ) + 20
+        ) + PDF_SECTION_GAP
       }
 
+      const sourceChartHeight = Math.max(96, metrics.sourceBreakdown.length * 28 + 28)
+      y = ensurePageSpace(doc, y, sourceChartHeight + 40, margin, pageHeight)
       drawSectionTitle(doc, 'Report source mix', margin, y)
-      y += 10
+      y += 14
       drawHorizontalBarChart(
         doc,
         margin,
         y,
         contentWidth,
-        Math.max(92, metrics.sourceBreakdown.length * 28 + 24),
+        sourceChartHeight,
         metrics.sourceBreakdown,
         [[14, 165, 233], [139, 92, 246]]
       )
-      y += Math.max(92, metrics.sourceBreakdown.length * 28 + 24) + 20
+      y += sourceChartHeight + PDF_SECTION_GAP
     }
 
+    y = ensurePageSpace(doc, y, 120, margin, pageHeight)
     y = drawEntryLogSection(
       doc,
       entries,

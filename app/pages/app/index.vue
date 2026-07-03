@@ -166,10 +166,16 @@
       >
         <div
           v-if="isAuthPanelOpen"
-          class="fixed inset-0 z-50 flex items-start justify-center bg-slate-200/70 px-4 pt-20 backdrop-blur-sm dark:bg-slate-950/70"
+          class="fixed inset-0 z-50 overflow-y-auto overscroll-y-contain bg-slate-200/70 backdrop-blur-sm dark:bg-slate-950/70"
           @click.self="isAuthPanelOpen = false"
         >
-          <section class="w-full max-w-md rounded-4xl border border-slate-200 bg-white p-4 shadow-2xl shadow-slate-950/10 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/40">
+          <div
+            class="flex min-h-[100dvh] items-end justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] sm:items-start sm:py-16"
+          >
+            <section
+              class="w-full max-w-md max-h-[min(92dvh,calc(100dvh-2rem))] overflow-y-auto overscroll-y-contain rounded-4xl border border-slate-200 bg-white p-4 shadow-2xl shadow-slate-950/10 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/40 sm:max-h-none sm:overflow-visible"
+              @click.stop
+            >
             <div class="flex items-start justify-between gap-3">
               <div>
                 <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
@@ -215,7 +221,7 @@
               >
                 {{ isAuthSubmitting ? 'Signing out...' : 'Sign out' }}
               </button>
-              <p v-if="authError" class="text-center text-sm font-medium text-red-300">{{ authError }}</p>
+              <p v-if="authError" class="text-center text-sm font-medium text-red-600 dark:text-red-300">{{ authError }}</p>
             </div>
 
             <form v-else class="mt-4 space-y-3" @submit.prevent="handleAuthSubmit">
@@ -265,7 +271,7 @@
 
             <button
               type="submit"
-              class="w-full rounded-2xl bg-white px-4 py-4 text-base font-bold text-slate-950"
+              class="w-full rounded-2xl bg-slate-950 px-4 py-4 text-base font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
               :disabled="isAuthSubmitting"
             >
               {{ isAuthSubmitting ? 'Working...' : authMode === 'login' ? 'Sign in' : 'Create account' }}
@@ -294,7 +300,7 @@
             <button
               v-if="needsEmailConfirmation"
               type="button"
-              class="w-full rounded-2xl px-4 py-2 text-sm font-semibold text-sky-300"
+              class="w-full rounded-2xl px-4 py-2 text-sm font-semibold text-sky-600 dark:text-sky-300"
               :disabled="isAuthSubmitting || !authEmail"
               @click="handleResendConfirmation"
             >
@@ -309,10 +315,11 @@
               {{ authMode === 'login' ? 'Need an account? Sign up' : 'Already have an account? Sign in' }}
             </button>
 
-            <p v-if="authMessage" class="text-center text-sm font-medium text-slate-300">{{ authMessage }}</p>
-            <p v-if="authError" class="text-center text-sm font-medium text-red-300">{{ authError }}</p>
+            <p v-if="authMessage" class="text-center text-sm font-medium text-slate-600 dark:text-slate-300">{{ authMessage }}</p>
+            <p v-if="authError" class="text-center text-sm font-medium text-red-600 dark:text-red-300">{{ authError }}</p>
             </form>
           </section>
+          </div>
         </div>
       </Transition>
 
@@ -2885,7 +2892,7 @@ async function exportEntriesPdf(exportConditionKey: string | null = null) {
     })
 
     if (!isPro.value) {
-      exportNotice.value = 'PDF downloaded with your entries, severity trend, and logging activity charts. Pro adds more advanced charts. '
+      exportNotice.value = 'PDF downloaded with your entries and weekly symptom counts. Pro adds severity trends and advanced charts. '
     }
   } catch (error) {
     exportError.value = getErrorMessage(error)
@@ -3496,7 +3503,7 @@ async function handleAuthSubmit() {
       }
     }
   } catch {
-    if (/already has a VCH account/i.test(authError.value)) {
+    if (/already exists|already has a VCH account/i.test(authError.value)) {
       authMode.value = 'login'
     }
     if (/confirm your email/i.test(authError.value)) {

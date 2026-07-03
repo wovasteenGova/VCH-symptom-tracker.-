@@ -321,6 +321,26 @@ export function drawVerticalBarChart(
   return y + height
 }
 
+export function computeHeatmapChartHeight(dailyCounts: number[], mondayOffset: number) {
+  const rows = Math.ceil((mondayOffset + dailyCounts.length) / 7)
+  return 38 + rows * 22 + 28
+}
+
+function ensureChartPageSpace(
+  doc: jsPDF,
+  y: number,
+  neededHeight: number,
+  pageHeight: number,
+  margin: number
+) {
+  if (y + neededHeight > pageHeight - margin - 36) {
+    doc.addPage()
+    return margin
+  }
+
+  return y
+}
+
 export function drawHeatmapCalendar(
   doc: jsPDF,
   x: number,
@@ -333,9 +353,12 @@ export function drawHeatmapCalendar(
     ? 6
     : new Date(new Date().getFullYear(), new Date().getMonth(), 1).getDay() - 1
 ) {
+  const resolvedMondayOffset = mondayOffset
+  const resolvedHeight = Math.max(height, computeHeatmapChartHeight(dailyCounts, resolvedMondayOffset))
+
   setStroke(doc, slate200)
   setFill(doc, [255, 255, 255])
-  doc.roundedRect(x, y, width, height, 10, 10, 'FD')
+  doc.roundedRect(x, y, width, resolvedHeight, 10, 10, 'FD')
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8)
@@ -346,14 +369,14 @@ export function drawHeatmapCalendar(
 
   const today = new Date()
   const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).getDay()
-  const resolvedMondayOffset = mondayOffset ?? (firstDay === 0 ? 6 : firstDay - 1)
+  const heatmapMondayOffset = mondayOffset ?? (firstDay === 0 ? 6 : firstDay - 1)
   const maxCount = Math.max(...dailyCounts, 1)
   const cellSize = 18
   const gridX = x + 12
   const gridY = y + 26
 
   dailyCounts.forEach((count, index) => {
-    const cellIndex = resolvedMondayOffset + index
+    const cellIndex = heatmapMondayOffset + index
     const row = Math.floor(cellIndex / 7)
     const col = cellIndex % 7
     const cellX = gridX + col * 24
@@ -383,31 +406,48 @@ export function drawHeatmapCalendar(
   setText(doc, slate500)
   doc.text(monthLabel, x + width - 12, y + 14, { align: 'right' })
 
-  return y + height
+  return y + resolvedHeight
 }
+
+type LoggingActivityMetrics = {
+  monthLabel: string
+  weeklyBreakdown: Array<{ label: string, count: number }>
+  conditionBreakdown: Array<{ label: string, count: number }>
+  dailyCounts: number[]
+  mondayOffset: number
+}
+
+type LoggingChartSections = {
+  week?: boolean
+  condition?: boolean
+  heatmap?: boolean
+}
+
+const CHART_SECTION_GAP = 28
 
 export function drawLoggingActivitySection(
   doc: jsPDF,
   x: number,
   y: number,
   width: number,
-  metrics: {
-    monthLabel: string
-    weeklyBreakdown: Array<{ label: string, count: number }>
-    conditionBreakdown: Array<{ label: string, count: number }>
-    dailyCounts: number[]
-    mondayOffset: number
-  },
-  summaryText: string
+  pageHeight: number,
+  margin: number,
+  metrics: LoggingActivityMetrics,
+  summaryText: string,
+  sections: LoggingChartSections = { week: true, condition: true, heatmap: true }
 ) {
+  const showWeek = sections.week !== false
+  const showCondition = sections.condition === true
+  const showHeatmap = sections.heatmap === true
+
   drawSectionTitle(doc, `Logging activity — ${metrics.monthLabel}`, x, y)
-  y += 12
+  y += 14
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(9)
   setText(doc, slate500)
   doc.text(summaryText, x, y)
-  y += 18
+  y += 22
 
   const weeklyItems = metrics.weeklyBreakdown.map((week, index) => ({
     label: week.label || `Week ${index + 1}`,
@@ -417,47 +457,57 @@ export function drawLoggingActivitySection(
     label: condition.label,
     value: condition.count
   }))
-  const weeklyChartHeight = Math.max(92, weeklyItems.length * 28 + 24)
-  const conditionChartHeight = Math.max(92, conditionItems.length * 28 + 24)
+  const weeklyChartHeight = Math.max(96, weeklyItems.length * 28 + 28)
 
-  drawSectionTitle(doc, 'By week', x, y)
-  y += 10
-  y = drawHorizontalBarChart(
-    doc,
-    x,
-    y,
-    width,
-    weeklyChartHeight,
-    weeklyItems.length ? weeklyItems : [{ label: 'No logs', value: 0 }],
-    [[14, 165, 233]],
-    { labelWidth: 108 }
-  ) + 16
+  if (showWeek) {
+    y = ensureChartPageSpace(doc, y, weeklyChartHeight + 52, pageHeight, margin)
+    drawSectionTitle(doc, 'Symptoms logged by week', x, y)
+    y += 14
+    y = drawHorizontalBarChart(
+      doc,
+      x,
+      y,
+      width,
+      weeklyChartHeight,
+      weeklyItems.length ? weeklyItems : [{ label: 'No logs', value: 0 }],
+      [[14, 165, 233]],
+      { labelWidth: 108 }
+    ) + CHART_SECTION_GAP
+  }
 
-  drawSectionTitle(doc, 'By condition', x, y)
-  y += 10
-  y = drawHorizontalBarChart(
-    doc,
-    x,
-    y,
-    width,
-    conditionChartHeight,
-    conditionItems.length ? conditionItems : [{ label: 'No logs', value: 0 }],
-    [[16, 185, 129]],
-    { labelWidth: 128 }
-  ) + 16
+  if (showCondition) {
+    const conditionChartHeight = Math.max(96, conditionItems.length * 28 + 28)
+    y = ensureChartPageSpace(doc, y, conditionChartHeight + 52, pageHeight, margin)
+    drawSectionTitle(doc, 'By condition', x, y)
+    y += 14
+    y = drawHorizontalBarChart(
+      doc,
+      x,
+      y,
+      width,
+      conditionChartHeight,
+      conditionItems.length ? conditionItems : [{ label: 'No logs', value: 0 }],
+      [[16, 185, 129]],
+      { labelWidth: 128 }
+    ) + CHART_SECTION_GAP
+  }
 
-  drawSectionTitle(doc, 'Daily log density', x, y)
-  y += 10
-  y = drawHeatmapCalendar(
-    doc,
-    x,
-    y,
-    width,
-    188,
-    metrics.monthLabel,
-    metrics.dailyCounts,
-    metrics.mondayOffset
-  ) + 16
+  if (showHeatmap) {
+    const heatmapHeight = computeHeatmapChartHeight(metrics.dailyCounts, metrics.mondayOffset)
+    y = ensureChartPageSpace(doc, y, heatmapHeight + 52, pageHeight, margin)
+    drawSectionTitle(doc, 'Daily log density', x, y)
+    y += 14
+    y = drawHeatmapCalendar(
+      doc,
+      x,
+      y,
+      width,
+      heatmapHeight,
+      metrics.monthLabel,
+      metrics.dailyCounts,
+      metrics.mondayOffset
+    ) + CHART_SECTION_GAP
+  }
 
   return y
 }
