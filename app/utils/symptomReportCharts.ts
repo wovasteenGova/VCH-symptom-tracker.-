@@ -6,6 +6,7 @@ type ChartEntry = {
   severity?: number | null
   occurred_at?: string | null
   created_at?: string | null
+  impact?: string | null
 }
 
 const slate900 = [15, 23, 42] as const
@@ -40,12 +41,19 @@ export function buildReportMetrics(entries: ChartEntry[]) {
   const peakSeverity = Math.max(...severities, 0)
 
   const byCondition = new Map<string, number>()
+  const severitySumByCondition = new Map<string, number>()
   const bySource = new Map<string, number>()
   const severityBands = { mild: 0, moderate: 0, severe: 0 }
   const byMonth = new Map<string, number>()
+  const flareDays = new Set<string>()
+  const impactCounts = new Map<string, number>()
 
   entries.forEach((entry) => {
     byCondition.set(entry.condition_label, (byCondition.get(entry.condition_label) || 0) + 1)
+    severitySumByCondition.set(
+      entry.condition_label,
+      (severitySumByCondition.get(entry.condition_label) || 0) + (entry.severity ?? 0)
+    )
 
     const sourceLabel = entry.source === 'family' ? 'Family' : 'Veteran'
     bySource.set(sourceLabel, (bySource.get(sourceLabel) || 0) + 1)
@@ -53,6 +61,7 @@ export function buildReportMetrics(entries: ChartEntry[]) {
     const severity = entry.severity ?? 0
     if (severity >= 7) {
       severityBands.severe += 1
+      flareDays.add(getEntryDate(entry).toDateString())
     } else if (severity >= 4) {
       severityBands.moderate += 1
     } else {
@@ -61,7 +70,48 @@ export function buildReportMetrics(entries: ChartEntry[]) {
 
     const monthKey = getEntryDate(entry).toLocaleString('en-US', { month: 'short', year: '2-digit' })
     byMonth.set(monthKey, (byMonth.get(monthKey) || 0) + 1)
+
+    String(entry.impact || '')
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .forEach((item) => {
+        const label = item.charAt(0).toUpperCase() + item.slice(1)
+        impactCounts.set(label, (impactCounts.get(label) || 0) + 1)
+      })
   })
+
+  const impactBreakdown = [...impactCounts.entries()]
+    .sort((left, right) => right[1] - left[1])
+    .slice(0, 8)
+    .map(([label, value]) => ({ label, value }))
+
+  const avgSeverityByCondition = [...severitySumByCondition.entries()]
+    .map(([label, sum]) => ({
+      label,
+      value: Math.round((sum / Math.max(byCondition.get(label) || 1, 1)) * 10) / 10
+    }))
+    .sort((left, right) => right.value - left.value)
+    .slice(0, 8)
+
+  const firstEntry = sorted[0]
+  const lastEntry = sorted[sorted.length - 1]
+  let trackingSpanLabel = '—'
+  let trackingDays = 0
+
+  if (firstEntry && lastEntry) {
+    const firstDate = getEntryDate(firstEntry)
+    const lastDate = getEntryDate(lastEntry)
+    trackingDays = Math.max(1, Math.round((lastDate.getTime() - firstDate.getTime()) / 86_400_000) + 1)
+    const sameYear = firstDate.getFullYear() === lastDate.getFullYear()
+    const firstLabel = firstDate.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      ...(sameYear ? {} : { year: 'numeric' })
+    })
+    const lastLabel = lastDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    trackingSpanLabel = `${firstLabel} – ${lastLabel}`
+  }
 
   const trend = sorted.slice(-14).map((entry) => ({
     label: getEntryDate(entry).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' }),
@@ -100,6 +150,11 @@ export function buildReportMetrics(entries: ChartEntry[]) {
     averageSeverity,
     peakSeverity,
     conditionCount: byCondition.size,
+    flareDayCount: flareDays.size,
+    trackingSpanLabel,
+    trackingDays,
+    impactBreakdown,
+    avgSeverityByCondition,
     trend,
     monthActivity,
     conditionBreakdown,
@@ -123,30 +178,52 @@ export function drawStatCards(
   x: number,
   y: number,
   width: number,
-  stats: Array<{ label: string, value: string }>
+  stats: Array<{ label: string, value: string, accent?: readonly [number, number, number] }>,
+  perRow = 4
 ) {
   const gap = 10
-  const cardWidth = (width - gap * (stats.length - 1)) / stats.length
-  const cardHeight = 54
+  const cardHeight = 58
+  const rows: Array<typeof stats> = []
 
-  stats.forEach((stat, index) => {
-    const cardX = x + index * (cardWidth + gap)
-    setStroke(doc, slate200)
-    setFill(doc, [248, 250, 252])
-    doc.roundedRect(cardX, y, cardWidth, cardHeight, 8, 8, 'FD')
+  for (let index = 0; index < stats.length; index += perRow) {
+    rows.push(stats.slice(index, index + perRow))
+  }
 
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(18)
-    setText(doc, slate900)
-    doc.text(stat.value, cardX + 12, y + 28)
+  let rowY = y
 
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(8)
-    setText(doc, slate500)
-    doc.text(stat.label.toUpperCase(), cardX + 12, y + 42)
+  rows.forEach((row) => {
+    const cardWidth = (width - gap * (row.length - 1)) / row.length
+
+    row.forEach((stat, index) => {
+      const cardX = x + index * (cardWidth + gap)
+      setStroke(doc, slate200)
+      setFill(doc, [255, 255, 255])
+      doc.roundedRect(cardX, rowY, cardWidth, cardHeight, 10, 10, 'FD')
+
+      setFill(doc, stat.accent || sky500)
+      doc.roundedRect(cardX + 12, rowY + 11, 18, 3, 1.5, 1.5, 'F')
+
+      doc.setFont('helvetica', 'bold')
+      let valueFontSize = 16
+      doc.setFontSize(valueFontSize)
+      const maxValueWidth = cardWidth - 24
+      while (valueFontSize > 9 && doc.getTextWidth(stat.value) > maxValueWidth) {
+        valueFontSize -= 1
+        doc.setFontSize(valueFontSize)
+      }
+      setText(doc, slate900)
+      doc.text(stat.value, cardX + 12, rowY + 34)
+
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(7.5)
+      setText(doc, slate500)
+      doc.text(stat.label.toUpperCase(), cardX + 12, rowY + 47)
+    })
+
+    rowY += cardHeight + gap
   })
 
-  return y + cardHeight
+  return rowY - gap
 }
 
 export function drawLineChart(
@@ -218,6 +295,7 @@ export function drawLineChart(
 type HorizontalBarChartLayout = {
   labelWidth?: number
   valueWidth?: number
+  maxValue?: number
 }
 
 export function drawHorizontalBarChart(
@@ -245,7 +323,7 @@ export function drawHorizontalBarChart(
     width - leftPad - labelWidth - barGap - valueWidth - rightPad
   )
   const valueX = x + width - rightPad
-  const maxValue = Math.max(...items.map((item) => item.value), 1)
+  const maxValue = layout.maxValue ?? Math.max(...items.map((item) => item.value), 1)
   const rowHeight = Math.min(24, (height - 28) / Math.max(items.length, 1))
   let rowY = y + 18
 

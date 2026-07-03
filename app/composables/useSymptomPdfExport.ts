@@ -62,10 +62,15 @@ function drawPageFooter(doc: jsPDF, pageNumber: number, totalPages: number, marg
   const pageWidth = doc.internal.pageSize.getWidth()
   const pageHeight = doc.internal.pageSize.getHeight()
 
+  doc.setDrawColor(226, 232, 240)
+  doc.setLineWidth(0.5)
+  doc.line(margin, pageHeight - 34, pageWidth - margin, pageHeight - 34)
+
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8)
   doc.setTextColor(100, 116, 139)
   doc.text(reportBranding.organizationName, margin, pageHeight - 24)
+  doc.text('Personal health record — veteran-reported symptom log', pageWidth / 2, pageHeight - 24, { align: 'center' })
   doc.text(`Page ${pageNumber} of ${totalPages}`, pageWidth - margin, pageHeight - 24, { align: 'right' })
 }
 
@@ -220,13 +225,20 @@ export function useSymptomPdfExport() {
       && !logoDataUrl.startsWith('data:image/svg')
     )
 
+    // Modern dark header band with accent rule.
+    const headerBandHeight = 92
+    doc.setFillColor(15, 23, 42)
+    doc.rect(0, 0, pageWidth, headerBandHeight, 'F')
+    doc.setFillColor(14, 165, 233)
+    doc.rect(0, headerBandHeight, pageWidth, 3, 'F')
+
     if (logoIsRenderable) {
       try {
         doc.addImage(
           logoDataUrl!,
           getLogoFormat(logoDataUrl),
           margin,
-          y,
+          18,
           56,
           56
         )
@@ -239,35 +251,44 @@ export function useSymptomPdfExport() {
 
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(16)
-    doc.setTextColor(15, 23, 42)
-    doc.text(reportBranding.organizationName, headerX, y + 18)
+    doc.setTextColor(255, 255, 255)
+    doc.text(reportBranding.organizationName, headerX, 38)
 
-    doc.setFontSize(12)
-    doc.text(reportBranding.reportTitle, headerX, y + 36)
+    doc.setFontSize(11)
+    doc.setTextColor(125, 211, 252)
+    doc.text(reportBranding.reportTitle, headerX, 56)
 
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(9)
-    doc.setTextColor(100, 116, 139)
+    doc.setTextColor(148, 163, 184)
     doc.text(
       conditionLabel ? `${conditionLabel} symptom log` : reportBranding.reportSubtitle,
       headerX,
-      y + 52
+      72
     )
+
+    doc.setFontSize(9)
+    doc.setTextColor(203, 213, 225)
     doc.text(
-      new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      `Generated ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`,
       pageWidth - margin,
-      y + 18,
+      38,
       { align: 'right' }
     )
+    if (veteranName) {
+      doc.text(`Prepared by ${veteranName}`, pageWidth - margin, 54, { align: 'right' })
+    }
 
-    y += 78
+    y = headerBandHeight + 27
 
     y = drawStatCards(doc, margin, y, contentWidth, [
-      { label: 'Total entries', value: String(metrics.totalEntries) },
-      { label: 'Avg severity', value: metrics.averageSeverity.toFixed(1) },
-      { label: 'Peak severity', value: String(metrics.peakSeverity) },
-      { label: 'Conditions', value: String(metrics.conditionCount) }
-    ]) + PDF_SECTION_GAP
+      { label: 'Total entries', value: String(metrics.totalEntries), accent: [14, 165, 233] },
+      { label: 'Tracking period', value: metrics.trackingSpanLabel, accent: [139, 92, 246] },
+      { label: 'Conditions', value: String(metrics.conditionCount), accent: [16, 185, 129] },
+      { label: 'Avg severity', value: `${metrics.averageSeverity.toFixed(1)}/10`, accent: [245, 158, 11] },
+      { label: 'Peak severity', value: `${metrics.peakSeverity}/10`, accent: [249, 115, 22] },
+      { label: 'Severe days (7+)', value: String(metrics.flareDayCount), accent: [236, 72, 153] }
+    ], 3) + PDF_SECTION_GAP
 
     if (includeLoggingCharts && loggingMetrics.totalLogs) {
       if (showAdvancedCharts) {
@@ -308,6 +329,40 @@ export function useSymptomPdfExport() {
     }
 
     if (showAdvancedCharts) {
+      if (metrics.impactBreakdown.length) {
+        const impactChartHeight = Math.max(96, metrics.impactBreakdown.length * 28 + 28)
+        y = ensurePageSpace(doc, y, impactChartHeight + 40, margin, pageHeight)
+        drawSectionTitle(doc, 'Reported functional impacts', margin, y)
+        y += 14
+        y = drawHorizontalBarChart(
+          doc,
+          margin,
+          y,
+          contentWidth,
+          impactChartHeight,
+          metrics.impactBreakdown,
+          [[236, 72, 153]],
+          { labelWidth: 180 }
+        ) + PDF_SECTION_GAP
+      }
+
+      if (metrics.avgSeverityByCondition.length > 1) {
+        const avgChartHeight = Math.max(96, metrics.avgSeverityByCondition.length * 28 + 28)
+        y = ensurePageSpace(doc, y, avgChartHeight + 40, margin, pageHeight)
+        drawSectionTitle(doc, 'Average severity by condition (0–10)', margin, y)
+        y += 14
+        y = drawHorizontalBarChart(
+          doc,
+          margin,
+          y,
+          contentWidth,
+          avgChartHeight,
+          metrics.avgSeverityByCondition,
+          [[245, 158, 11]],
+          { labelWidth: 150, maxValue: 10 }
+        ) + PDF_SECTION_GAP
+      }
+
       y = ensurePageSpace(doc, y, 176, margin, pageHeight)
 
       const columnGap = 14

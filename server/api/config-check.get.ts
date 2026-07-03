@@ -6,6 +6,13 @@ function extractSupabaseProjectRef(url: string) {
 }
 
 export default defineEventHandler(() => {
+  if (process.env.NODE_ENV === 'production') {
+    throw createError({
+      statusCode: 404,
+      message: 'Not found.'
+    })
+  }
+
   const config = useRuntimeConfig()
   const moduleConfig = config.public.supabase as { url?: string, key?: string } | undefined
   const resolved = getSupabasePublicConfig()

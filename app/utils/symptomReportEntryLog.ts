@@ -426,7 +426,27 @@ export function drawEntryLogSection(
     bottomLimit
   }
 
-  ensureSpace(ctx, 56)
+  const sortedEntries = [...entries].sort(
+    (left, right) => getEntryDate(right).getTime() - getEntryDate(left).getTime()
+  )
+
+  // Keep the section header attached to the first entry card: if the header
+  // plus the first card (capped at roughly half a page) won't fit, start a
+  // fresh page before drawing the header instead of orphaning it.
+  const headerHeight = 38
+  const firstEntry = sortedEntries[0]
+  let keepWithHeader = 96
+
+  if (firstEntry) {
+    const firstBlocks = buildEntryBlocks(doc, firstEntry, width - 36)
+    const firstCardHeight = measureEntryHeight(firstBlocks, {
+      backdateNote: getEntryBackdateNote(firstEntry, backdateContext),
+      edited: wasEntryEdited(firstEntry)
+    })
+    keepWithHeader = Math.min(firstCardHeight + 14, 360)
+  }
+
+  ensureSpace(ctx, headerHeight + keepWithHeader)
   drawSectionTitle(doc, 'Symptom entry log', x, ctx.y)
   ctx.y += 16
 
@@ -435,10 +455,6 @@ export function drawEntryLogSection(
   setText(doc, slate500)
   doc.text('Readable record of logged symptoms, severity, functional impact, and edit history.', x, ctx.y)
   ctx.y += 22
-
-  const sortedEntries = [...entries].sort(
-    (left, right) => getEntryDate(right).getTime() - getEntryDate(left).getTime()
-  )
 
   sortedEntries.forEach((entry, index) => {
     drawEntryCard(ctx, entry, index, backdateContext)

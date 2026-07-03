@@ -1530,6 +1530,7 @@
           {{ pdfExportModalTitle }}
         </h3>
         <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+          Your report includes summary stats, charts, and your full entry log.
           Your full name from Account Settings will appear as your electronic signature on the PDF.
         </p>
 

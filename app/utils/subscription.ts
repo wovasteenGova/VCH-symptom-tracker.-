@@ -22,7 +22,7 @@ export const FREE_TIER_FEATURES = [
 export const PRO_TIER_FEATURES = [
   'Unlimited conditions',
   'Family reporting links for supporters',
-  'Severity trends and advanced charts in PDF exports'
+  'Severity trends, functional impact and advanced charts in PDF exports'
 ] as const
 
 export function conditionKeyFromLabel(label: string) {

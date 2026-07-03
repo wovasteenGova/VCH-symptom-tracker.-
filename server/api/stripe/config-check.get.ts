@@ -1,4 +1,11 @@
 export default defineEventHandler(() => {
+  if (process.env.NODE_ENV === 'production') {
+    throw createError({
+      statusCode: 404,
+      message: 'Not found.'
+    })
+  }
+
   const config = useRuntimeConfig()
 
   return {
