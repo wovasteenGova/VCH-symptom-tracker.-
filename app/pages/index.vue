@@ -663,93 +663,16 @@
                               </div>
                             </div>
 
-                            <div class="mt-6 space-y-3 pb-6">
-                              <p class="text-center text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                                Time
-                              </p>
-                              <div v-if="isMobileLayout" class="grid grid-cols-3 gap-3">
-                                <select
-                                  v-model="entryTimeHour"
-                                  aria-label="Hour"
-                                  class="sym-entry-time-select w-full"
-                                  @change="onEntryTimePartsChange"
-                                >
-                                  <option
-                                    v-for="hour in entryHourOptions"
-                                    :key="hour"
-                                    :value="hour"
-                                  >
-                                    {{ hour }}
-                                  </option>
-                                </select>
-                                <select
-                                  v-model="entryTimeMinute"
-                                  aria-label="Minute"
-                                  class="sym-entry-time-select w-full"
-                                  @change="onEntryTimePartsChange"
-                                >
-                                  <option
-                                    v-for="minute in entryMinuteOptions"
-                                    :key="minute"
-                                    :value="minute"
-                                  >
-                                    {{ minute }}
-                                  </option>
-                                </select>
-                                <select
-                                  v-model="entryTimePeriod"
-                                  aria-label="AM or PM"
-                                  class="sym-entry-time-select w-full"
-                                  @change="onEntryTimePartsChange"
-                                >
-                                  <option
-                                    v-for="period in entryPeriodOptions"
-                                    :key="period"
-                                    :value="period"
-                                  >
-                                    {{ period }}
-                                  </option>
-                                </select>
-                              </div>
-                              <div v-else class="grid grid-cols-3 gap-3">
-                                <USelectMenu
-                                  v-model="entryTimeHour"
-                                  :items="entryHourOptions"
-                                  :ui="entryTimeSelectUi"
-                                  color="neutral"
-                                  variant="ghost"
-                                  size="md"
-                                  aria-label="Hour"
-                                  class="sym-entry-time-menu w-full"
-                                  :popper="{ strategy: 'fixed' }"
-                                  @update:model-value="onEntryTimePartsChange"
-                                />
-                                <USelectMenu
-                                  v-model="entryTimeMinute"
-                                  :items="entryMinuteOptions"
-                                  :ui="entryTimeSelectUi"
-                                  color="neutral"
-                                  variant="ghost"
-                                  size="md"
-                                  aria-label="Minute"
-                                  class="sym-entry-time-menu w-full"
-                                  :popper="{ strategy: 'fixed' }"
-                                  @update:model-value="onEntryTimePartsChange"
-                                />
-                                <USelectMenu
-                                  v-model="entryTimePeriod"
-                                  :items="entryPeriodOptions"
-                                  :ui="entryTimeSelectUi"
-                                  color="neutral"
-                                  variant="ghost"
-                                  size="md"
-                                  aria-label="AM or PM"
-                                  class="sym-entry-time-menu w-full"
-                                  :popper="{ strategy: 'fixed' }"
-                                  @update:model-value="onEntryTimePartsChange"
-                                />
-                              </div>
-                            </div>
+                            <TimeOfDayPicker
+                              :hour="entryTimeHour"
+                              :minute="entryTimeMinute"
+                              :period="entryTimePeriod"
+                              class="mt-6 pb-6"
+                              @update:hour="entryTimeHour = $event"
+                              @update:minute="entryTimeMinute = $event"
+                              @update:period="entryTimePeriod = $event"
+                              @change="onEntryTimePartsChange"
+                            />
                           </div>
                         </div>
                         <div
@@ -853,12 +776,11 @@
                 :mode="needsOnboarding ? 'onboarding' : 'manage'"
                 :conditions="conditionPickerOptions"
                 :selected-keys="draftSelectedKeys"
-                :locked-keys="proLockedConditionKeys"
-                :show-pro-limit="Boolean(user && !isPro)"
+                :locked-keys="[]"
+                :show-pro-limit="false"
                 :saving="isSavingTrackedConditions"
                 :error="trackedConditionsError"
                 @toggle="toggleDraftCondition"
-                @locked-select="handleLockedConditionSelect"
                 @confirm="confirmConditionOnboarding"
                 @done="finishConditionBrowser"
               />
@@ -1619,8 +1541,8 @@ import { conditionImageAssets } from '../utils/conditionImages'
 import { getSeverityGuidance, severityQuickPresets } from '../utils/severityGuidance'
 import { CalendarDate } from '@internationalized/date'
 import { useMediaQuery } from '@vueuse/core'
-import { computed, nextTick, onBeforeMount, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, nextTick, onBeforeMount, onMounted, ref, shallowRef, watch } from 'vue'
+import { useKeyboardAwareScroll } from '../composables/useKeyboardAwareScroll'
 
 const {
   user,
@@ -1733,61 +1655,13 @@ const entryTimeInput = ref(initialEntryDateTime.time)
 const entryTimeHour = ref(initialEntryTimeParts.hour12)
 const entryTimeMinute = ref(initialEntryTimeParts.minute)
 const entryTimePeriod = ref<'AM' | 'PM'>(initialEntryTimeParts.period)
+
+const entryStepScrollEl = ref<HTMLElement | null>(null)
+const { scrollStyle: entryStepScrollStyle, handleFieldFocus: handleEntryFieldFocus } = useKeyboardAwareScroll(entryStepScrollEl)
 const entryPickerViewMonth = ref({
   year: new Date().getFullYear(),
   month: new Date().getMonth()
 })
-
-const entryHourOptions = Array.from({ length: 12 }, (_, index) => String(index + 1))
-const entryMinuteOptions = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, '0'))
-const entryPeriodOptions = ['AM', 'PM']
-const entryTimeSelectUi = {
-  base: 'w-full justify-center border-0 ring-0 shadow-none bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800',
-  content: 'bg-white dark:bg-slate-900 ring-1 ring-slate-200 dark:ring-slate-700',
-  item: 'dark:text-white'
-}
-
-const entryStepScrollEl = ref<HTMLElement | null>(null)
-const keyboardInset = ref(0)
-
-const entryStepScrollStyle = computed(() => {
-  if (keyboardInset.value <= 0) {
-    return undefined
-  }
-
-  return {
-    paddingBottom: `${keyboardInset.value + 24}px`
-  }
-})
-
-function updateKeyboardInset() {
-  if (typeof window === 'undefined') {
-    return
-  }
-
-  const viewport = window.visualViewport
-  if (!viewport) {
-    keyboardInset.value = 0
-    return
-  }
-
-  keyboardInset.value = Math.max(0, Math.round(window.innerHeight - viewport.height - viewport.offsetTop))
-}
-
-function handleEntryFieldFocus(event: FocusEvent) {
-  const target = event.target
-  if (!(target instanceof HTMLElement) || !entryStepScrollEl.value) {
-    return
-  }
-
-  if (!target.matches('input, textarea, select')) {
-    return
-  }
-
-  window.setTimeout(() => {
-    target.scrollIntoView({ block: 'center', behavior: 'smooth' })
-  }, 250)
-}
 
 const maxEntryTimeInput = computed(() => {
   if (!entryCalendarDate.value) {
@@ -2147,67 +2021,17 @@ const isHomeOverviewSlide = computed(() => activeIndex.value === 0)
 
 const homeCarouselSlideCount = computed(() => homeConditions.value.length + 1)
 
-function isConditionProLocked(key: string) {
-  if (isPro.value) {
-    return false
-  }
-
-  if (draftSelectedKeys.value.includes(key)) {
-    return false
-  }
-
-  if (needsOnboarding.value) {
-    return draftSelectedKeys.value.length >= FREE_CONDITION_LIMIT
-  }
-
-  if (freeConditionKeys.value.includes(key)) {
-    return false
-  }
-
-  if (
-    draftSelectedKeys.value.length < FREE_CONDITION_LIMIT
-    && freeConditionKeys.value.length === 0
-    && savedEntries.value.length === 0
-  ) {
-    return false
-  }
-
-  if (canReplaceFreeCondition(key, savedEntries.value.length)) {
-    return false
-  }
-
-  return true
-}
-
 function isConditionLogLocked(key: string) {
-  if (isPro.value) {
+  if (isPro.value || !user.value) {
     return false
   }
 
-  if (canTrackCondition(key)) {
+  if (savedEntries.value.length === 0) {
     return false
   }
 
-  if (canAddFreeCondition(key)) {
-    return false
-  }
-
-  if (canReplaceFreeCondition(key, savedEntries.value.length)) {
-    return false
-  }
-
-  return true
+  return !canTrackCondition(key)
 }
-
-const proLockedConditionKeys = computed(() => {
-  if (isPro.value) {
-    return [] as string[]
-  }
-
-  return conditionCatalog
-    .filter((condition) => isConditionProLocked(condition.key))
-    .map((condition) => condition.key)
-})
 
 const activeCondition = computed(() => {
   if (isHomeOverviewSlide.value) {
@@ -2528,10 +2352,6 @@ onBeforeMount(() => {
 })
 
 onMounted(async () => {
-  updateKeyboardInset()
-  window.visualViewport?.addEventListener('resize', updateKeyboardInset)
-  window.visualViewport?.addEventListener('scroll', updateKeyboardInset)
-
   setupInstallCard()
   await loadAppWelcomeState()
 
@@ -2546,11 +2366,6 @@ onMounted(async () => {
     loadEntitlements()
     loadEntries()
   }
-})
-
-onUnmounted(() => {
-  window.visualViewport?.removeEventListener('resize', updateKeyboardInset)
-  window.visualViewport?.removeEventListener('scroll', updateKeyboardInset)
 })
 
 watch(user, async (currentUser) => {
@@ -2926,42 +2741,15 @@ function toggleDraftCondition(key: string) {
     return
   }
 
-  if (!isPro.value && draftSelectedKeys.value.length >= FREE_CONDITION_LIMIT) {
-    if (needsOnboarding.value || savedEntries.value.length === 0) {
-      draftSelectedKeys.value = [key]
-      return
-    }
-
-    if (isConditionProLocked(key)) {
-      handleLockedConditionSelect(key)
-      return
-    }
-  }
-
-  if (isConditionProLocked(key)) {
-    handleLockedConditionSelect(key)
-    return
-  }
-
   draftSelectedKeys.value = [...draftSelectedKeys.value, key]
 }
 
-function handleLockedConditionSelect(key: string) {
-  if (needsOnboarding.value) {
-    draftSelectedKeys.value = [key]
+async function syncFreeConditionWithTrackedKeys(keys: string[]) {
+  if (isPro.value || !keys.length || !user.value) {
     return
   }
 
-  const label = resolveCatalogConditionByStoredKey(key)?.title || formatConditionKeyLabel(key)
-
-  openUpgradePrompt(
-    'Unlock more conditions',
-    `Free includes ${FREE_CONDITION_LIMIT} condition. Upgrade to Pro to add ${label} to your home screen and track unlimited conditions.`
-  )
-}
-
-async function syncFreeConditionWithTrackedKeys(keys: string[]) {
-  if (isPro.value || !keys.length) {
+  if (freeConditionKeys.value.length === 0 && savedEntries.value.length === 0) {
     return
   }
 

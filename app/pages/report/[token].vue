@@ -1,5 +1,5 @@
 <template>
-  <main class="flex min-h-dvh flex-col bg-slate-50 text-slate-950 transition-colors dark:bg-slate-950 dark:text-white">
+  <main class="app-shell overflow-hidden flex flex-col bg-slate-50 text-slate-950 transition-colors dark:bg-slate-950 dark:text-white">
     <section class="mx-auto flex w-full max-w-md flex-1 flex-col px-4 pt-4 sm:max-w-lg">
       <header class="sticky top-0 z-40 -mx-4 flex shrink-0 items-start justify-between gap-3 border-b border-slate-200 bg-slate-50/95 px-4 pb-4 pt-4 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/95">
         <div>
@@ -129,9 +129,12 @@
               leave-to-class="-translate-x-4 opacity-0"
             >
               <div
+                ref="observationStepScrollEl"
                 :key="observationStep"
-                class="flex min-h-0 flex-1 flex-col overflow-y-auto no-scrollbar px-4"
+                class="flex min-h-0 flex-1 flex-col overflow-y-auto no-scrollbar px-4 pb-6"
                 :class="observationStep === 2 ? 'justify-center gap-5 py-8' : 'justify-start space-y-6 py-5'"
+                :style="observationStepScrollStyle"
+                @focusin="handleObservationFieldFocus"
               >
                 <!-- Step 0: Your information -->
                 <template v-if="observationStep === 0">
@@ -238,13 +241,24 @@
                   </label>
 
                   <label class="block">
-                    <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Observed at</span>
+                    <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Date observed</span>
                     <input
-                      v-model="form.observed_at"
-                      type="datetime-local"
+                      v-model="observedDate"
+                      type="date"
+                      :max="maxObservedDate"
                       class="w-full rounded-3xl border border-slate-300 bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none focus:border-slate-500 dark:border-slate-600/70 dark:bg-slate-800/70 dark:text-white dark:focus:border-slate-400 dark:[color-scheme:dark]"
                     >
                   </label>
+
+                  <TimeOfDayPicker
+                    :hour="observedTimeHour"
+                    :minute="observedTimeMinute"
+                    :period="observedTimePeriod"
+                    @update:hour="observedTimeHour = $event"
+                    @update:minute="observedTimeMinute = $event"
+                    @update:period="observedTimePeriod = $event"
+                    @change="syncObservedAtFromParts"
+                  />
                 </template>
 
                 <!-- Step 2: Severity -->
@@ -397,7 +411,7 @@
             </Transition>
           </div>
 
-          <div class="sticky bottom-0 z-30 -mx-4 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+          <div class="sticky bottom-0 z-30 shrink-0 border-t border-slate-200 bg-white/95 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/95">
             <ul
               v-if="showCurrentStepBlockers && currentStepBlockers.length && !isSubmitting"
               class="mb-4 rounded-3xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/60 dark:bg-amber-950/30"
@@ -426,7 +440,7 @@
           </div>
         </form>
 
-        <footer class="mt-6 flex shrink-0 items-center justify-center gap-3 pb-[max(1rem,env(safe-area-inset-bottom))] text-xs font-semibold text-slate-500">
+        <footer class="mt-6 flex shrink-0 items-center justify-center gap-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-2 text-xs font-semibold text-slate-500">
           <NuxtLink to="/privacy" class="hover:text-slate-700 dark:hover:text-slate-300">Privacy</NuxtLink>
           <NuxtLink to="/disclaimer" class="hover:text-slate-700 dark:hover:text-slate-300">Disclaimer</NuxtLink>
         </footer>
@@ -437,8 +451,15 @@
 
 <script setup lang="ts">
 import { useSupabaseClient } from '../../composables/useSupabaseClient'
+import { useKeyboardAwareScroll } from '../../composables/useKeyboardAwareScroll'
 import { getSeverityGuidance, severityQuickPresets } from '../../utils/severityGuidance'
 import { signatureMatchesReporter } from '../../utils/signatureMatch'
+import {
+  formatPartsToTime24,
+  getMaxEntryDateLocal,
+  parseTime24ToParts,
+  splitEntryDateTimeLocal
+} from '../../utils/symptomDateTime'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
@@ -499,6 +520,15 @@ const form = ref({
   notes: '',
   signature_name: ''
 })
+
+const observedDate = ref('')
+const observedTimeHour = ref('12')
+const observedTimeMinute = ref('00')
+const observedTimePeriod = ref<'AM' | 'PM'>('PM')
+const maxObservedDate = getMaxEntryDateLocal()
+
+const observationStepScrollEl = ref<HTMLElement | null>(null)
+const { scrollStyle: observationStepScrollStyle, handleFieldFocus: handleObservationFieldFocus } = useKeyboardAwareScroll(observationStepScrollEl)
 
 const reporterFullName = computed(() => {
   return [form.value.first_name, form.value.last_name].filter(Boolean).join(' ').trim()
@@ -606,6 +636,10 @@ function relationshipChipClass(suggestion: typeof relationshipSuggestions[number
   return 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-200 dark:hover:bg-slate-800'
 }
 
+watch(observedDate, () => {
+  syncObservedAtFromParts()
+})
+
 watch(reporterFullName, (fullName) => {
   if (!signatureManuallyEdited.value && fullName) {
     form.value.signature_name = fullName
@@ -624,10 +658,40 @@ onMounted(async () => {
   await loadSupporterProfile()
 })
 
+function syncObservedAtFromParts() {
+  if (!observedDate.value) {
+    form.value.observed_at = ''
+    return
+  }
+
+  const time24 = formatPartsToTime24(
+    observedTimeHour.value,
+    observedTimeMinute.value,
+    observedTimePeriod.value
+  )
+
+  form.value.observed_at = `${observedDate.value}T${time24}`
+}
+
+function syncPartsFromObservedAt() {
+  if (!form.value.observed_at) {
+    return
+  }
+
+  const { date, time } = splitEntryDateTimeLocal(form.value.observed_at)
+  const parts = parseTime24ToParts(time)
+
+  observedDate.value = date
+  observedTimeHour.value = parts.hour12
+  observedTimeMinute.value = parts.minute
+  observedTimePeriod.value = parts.period
+}
+
 function setDefaultObservedAt() {
   const now = new Date()
   const timezoneOffset = now.getTimezoneOffset() * 60000
   form.value.observed_at = new Date(now.getTime() - timezoneOffset).toISOString().slice(0, 16)
+  syncPartsFromObservedAt()
 }
 
 function isValidEmail(value: string) {

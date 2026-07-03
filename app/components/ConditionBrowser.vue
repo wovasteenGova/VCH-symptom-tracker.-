@@ -36,17 +36,9 @@
 
             {{ mode === 'onboarding'
 
-              ? (showProLimit
+              ? 'Pick as many conditions as you want for quick access on your home screen.'
 
-                ? 'Free includes 1 condition. Tap one to select it, tap again to unselect, or tap another to switch.'
-
-                : 'Pick the conditions you want quick access to on your home screen.')
-
-              : (showProLimit
-
-                ? 'Free includes 1 active condition. Locked conditions require Pro.'
-
-                : 'Tap to add or remove conditions from your home screen.') }}
+              : 'Tap to add or remove conditions from your home screen. The free plan limit only applies to logging after your first entry.' }}
 
           </p>
 
