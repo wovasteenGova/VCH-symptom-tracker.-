@@ -472,7 +472,6 @@
 </template>
 
 <script setup lang="ts">
-import { useSupabaseClient } from '../../composables/useSupabaseClient'
 import { useKeyboardAwareScroll } from '../../composables/useKeyboardAwareScroll'
 import { signatureMatchesReporter } from '../../utils/signatureMatch'
 import {

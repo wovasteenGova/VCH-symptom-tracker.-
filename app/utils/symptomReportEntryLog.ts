@@ -174,10 +174,6 @@ function measureBlockHeight(block: EntryBlock, lineHeight: number, labelHeight: 
 
 const backdateNoteHeight = 34
 
-function measureBackdateNoteHeight(_note: EntryBackdateNote) {
-  return backdateNoteHeight + 8
-}
-
 function drawBackdateNote(
   ctx: LayoutContext,
   note: EntryBackdateNote,
@@ -222,11 +218,7 @@ function measureEntryHeight(
     height += 13
   }
 
-  if (options.backdateNote) {
-    height += measureBackdateNoteHeight(options.backdateNote)
-  } else {
-    height += 14
-  }
+  height += 14
 
   primaryBlocks.forEach((block, index) => {
     height += measureBlockHeight(block, 15, 12, index === primaryBlocks.length - 1 && !detailBlocks.length ? 0 : 10)
@@ -245,6 +237,10 @@ function measureEntryHeight(
       const rightHeight = right ? measureBlockHeight(right, 14, 11, 0) : 0
       height += Math.max(leftHeight, rightHeight) + 10
     }
+  }
+
+  if (options.backdateNote) {
+    height += 10 + backdateNoteHeight
   }
 
   return Math.max(height, 96)
@@ -351,12 +347,7 @@ function drawEntryCard(
     ctx.doc.text(`Edited ${formatReportEntryDate(entry.updated_at)}`, innerX, ctx.y)
   }
 
-  if (backdateNote) {
-    ctx.y += 10
-    drawBackdateNote(ctx, backdateNote, innerX, innerWidth)
-  } else {
-    ctx.y += 14
-  }
+  ctx.y += 14
 
   drawDivider(ctx, innerX, innerWidth)
 
@@ -404,6 +395,11 @@ function drawEntryCard(
 
       ctx.y = Math.max(leftEndY, rightEndY) + 8
     }
+  }
+
+  if (backdateNote) {
+    ctx.y += 10
+    drawBackdateNote(ctx, backdateNote, innerX, innerWidth)
   }
 
   ctx.y = cardY + cardHeight + 14
