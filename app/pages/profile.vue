@@ -173,7 +173,7 @@
           </div>
 
           <p v-if="!isPro" class="mt-3 text-xs leading-5 text-slate-400">
-            Free plan: 1 condition with unlimited entries, calendar view, and entry PDF exports. Upgrade for about $1.08/month to unlock more conditions, family reporting, and advanced charts in PDFs.
+            Free plan: 1 condition with unlimited entries, calendar logging activity charts, and entry PDF exports. Upgrade for about $1.08/month to unlock more conditions, family reporting, and advanced severity charts in PDFs.
           </p>
           <div v-if="!isPro" class="mt-4 rounded-3xl border border-slate-800 bg-slate-950/60 p-4">
             <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Your free conditions</p>

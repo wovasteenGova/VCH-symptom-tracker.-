@@ -1,9 +1,9 @@
 import { jsPDF } from 'jspdf'
 import {
   buildReportMetrics,
-  drawHeatmapCalendar,
   drawHorizontalBarChart,
   drawLineChart,
+  drawLoggingActivitySection,
   drawSectionTitle,
   drawStatCards,
   drawVerticalBarChart
@@ -12,6 +12,10 @@ import { drawEntryLogSection } from '../utils/symptomReportEntryLog'
 import { getLogoFormat, loadReportLogoDataUrl, reportBranding } from '../utils/reportBranding'
 import type { LoggingCadence } from '../utils/loggingCadence'
 import { PDF_EXPORT_CERTIFICATION_TEXT } from '../utils/pdfExportCertification'
+import {
+  buildLoggingActivityMetrics,
+  formatLoggingActivitySummary
+} from '../utils/loggingActivityReport'
 
 type SymptomEntryRecord = {
   id: string
@@ -32,6 +36,9 @@ type VeteranSignatureInfo = {
 }
 
 type PdfExportOptions = VeteranSignatureInfo & {
+  includeLoggingCharts?: boolean
+  includeAdvancedCharts?: boolean
+  /** @deprecated Use includeAdvancedCharts */
   includeCharts?: boolean
   conditionLabel?: string | null
   loggingCadence?: LoggingCadence
@@ -155,13 +162,16 @@ export function useSymptomPdfExport() {
     options: PdfExportOptions = {}
   ) {
     const {
-      includeCharts = true,
+      includeLoggingCharts = true,
+      includeAdvancedCharts = false,
+      includeCharts,
       veteranName = null,
       veteranEmail = null,
       conditionLabel = null,
       loggingCadence = 'weekly',
       weeklyLogDay = 0
     } = options
+    const showAdvancedCharts = includeCharts ?? includeAdvancedCharts
     const signatureInfo = { veteranName, veteranEmail }
 
     if (!entries.length) {
@@ -173,6 +183,8 @@ export function useSymptomPdfExport() {
     }
 
     const metrics = buildReportMetrics(entries)
+    const now = new Date()
+    const loggingMetrics = buildLoggingActivityMetrics(entries, now.getFullYear(), now.getMonth())
     const logoDataUrl = await loadReportLogoDataUrl()
 
     const doc = new jsPDF({
@@ -240,10 +252,26 @@ export function useSymptomPdfExport() {
       { label: 'Conditions', value: String(metrics.conditionCount) }
     ]) + 18
 
-    if (includeCharts) {
-      drawSectionTitle(doc, 'Severity trend', margin, y)
-      y += 10
-      y = drawLineChart(doc, margin, y, contentWidth, 148, metrics.trend) + 16
+    drawSectionTitle(doc, 'Severity trend', margin, y)
+    y += 10
+    y = drawLineChart(doc, margin, y, contentWidth, 148, metrics.trend) + 16
+
+    if (includeLoggingCharts && loggingMetrics.totalLogs) {
+      y = drawLoggingActivitySection(
+        doc,
+        margin,
+        y,
+        contentWidth,
+        loggingMetrics,
+        formatLoggingActivitySummary(loggingMetrics)
+      )
+    }
+
+    if (showAdvancedCharts) {
+      if (y > pageHeight - 280) {
+        doc.addPage()
+        y = margin
+      }
 
       const columnGap = 14
       const columnWidth = (contentWidth - columnGap) / 2
@@ -283,9 +311,19 @@ export function useSymptomPdfExport() {
       y += 10
       y = drawVerticalBarChart(doc, margin, y, contentWidth, 156, metrics.monthActivity, chartColors) + 16
 
-      drawSectionTitle(doc, 'Daily log density', margin, y)
-      y += 10
-      y = drawHeatmapCalendar(doc, margin, y, contentWidth, 188, metrics.monthLabel, metrics.dailyCounts) + 16
+      if (metrics.extendedConditionBreakdown.length) {
+        drawSectionTitle(doc, 'Additional conditions tracked', margin, y)
+        y += 10
+        y = drawHorizontalBarChart(
+          doc,
+          margin,
+          y,
+          contentWidth,
+          Math.max(160, metrics.extendedConditionBreakdown.length * 28 + 36),
+          metrics.extendedConditionBreakdown,
+          chartColors
+        ) + 20
+      }
 
       drawSectionTitle(doc, 'Report source mix', margin, y)
       y += 10
@@ -299,23 +337,6 @@ export function useSymptomPdfExport() {
         [[14, 165, 233], [139, 92, 246]]
       )
       y += Math.max(92, metrics.sourceBreakdown.length * 28 + 24) + 20
-
-      if (metrics.extendedConditionBreakdown.length) {
-        doc.addPage()
-        y = margin
-
-        drawSectionTitle(doc, 'Additional conditions tracked', margin, y)
-        y += 10
-        y = drawHorizontalBarChart(
-          doc,
-          margin,
-          y,
-          contentWidth,
-          Math.max(160, metrics.extendedConditionBreakdown.length * 28 + 36),
-          metrics.extendedConditionBreakdown,
-          chartColors
-        ) + 20
-      }
     }
 
     y = drawEntryLogSection(

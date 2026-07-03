@@ -1329,6 +1329,8 @@
                   </button>
                 </div>
               </div>
+
+              <LoggingActivityReport :metrics="loggingActivityMetrics" />
             </div>
 
             <div class="mt-2 flex items-center justify-center gap-3 pb-1 text-xs font-semibold text-slate-500">
@@ -1661,6 +1663,7 @@ import { reportBranding } from '../../utils/reportBranding'
 import { androidAddToHomeScreenVideoUrl, iosAddToHomeScreenVideoUrl } from '../../utils/installGuide'
 import { filterAndRankConditions } from '../../utils/conditionSearch'
 import { getWeeklyLogCaution, type WeeklyLogCaution } from '../../utils/loggingCadence'
+import { buildLoggingActivityMetrics } from '../../utils/loggingActivityReport'
 import { conditionCatalog, pickRandomHomeVisitTip, resolveCatalogConditionByStoredKey, VA_CRISIS_LINE_SHORT } from '../../utils/conditionCatalog'
 import { conditionImageAssets } from '../../utils/conditionImages'
 import { getSeverityGuidance, severityQuickPresets } from '../../utils/severityGuidance'
@@ -2117,6 +2120,11 @@ function showNextHistoryMonth() {
 
   historyViewMonth.value = { year: view.year, month: view.month + 1 }
 }
+
+const loggingActivityMetrics = computed(() => {
+  const view = historyViewMonth.value
+  return buildLoggingActivityMetrics(savedEntries.value, view.year, view.month)
+})
 
 const calendarDays = computed(() => {
   const year = historyViewMonth.value.year
@@ -2869,14 +2877,15 @@ async function exportEntriesPdf(exportConditionKey: string | null = null) {
     await downloadEntriesPdf(entries, {
       veteranName: veteranName || null,
       veteranEmail: user.value?.email || null,
-      includeCharts: isPro.value,
+      includeLoggingCharts: true,
+      includeAdvancedCharts: isPro.value,
       conditionLabel,
       loggingCadence: loggingCadence.value,
       weeklyLogDay: weeklyLogDay.value
     })
 
     if (!isPro.value) {
-      exportNotice.value = 'PDF downloaded with your entries. Pro adds advanced charts to PDF exports. '
+      exportNotice.value = 'PDF downloaded with your entries, severity trend, and logging activity charts. Pro adds more advanced charts. '
     }
   } catch (error) {
     exportError.value = getErrorMessage(error)

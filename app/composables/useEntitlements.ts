@@ -27,6 +27,8 @@ export function useEntitlements() {
 
   const isPro = computed(() => isActiveEntitlementStatus(entitlement.value?.status))
   const isComped = computed(() => entitlement.value?.status === 'comped')
+  const canUseLoggingCharts = computed(() => true)
+  const canUseAdvancedCharts = computed(() => isPro.value)
   const canUseCharts = computed(() => isPro.value)
   const canUseFamilyReporting = computed(() => isPro.value)
   const canExportPdf = computed(() => isPro.value)
@@ -378,6 +380,8 @@ export function useEntitlements() {
     loadError,
     isPro,
     isComped,
+    canUseLoggingCharts,
+    canUseAdvancedCharts,
     canUseCharts,
     canUseFamilyReporting,
     canExportPdf,
