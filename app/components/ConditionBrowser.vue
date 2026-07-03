@@ -32,14 +32,11 @@
 
           </h2>
 
-          <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-
-            {{ mode === 'onboarding'
-
-              ? 'Pick as many conditions as you want for quick access on your home screen.'
-
-              : 'Tap to add or remove conditions from your home screen. The free plan limit only applies to logging after your first entry.' }}
-
+          <p
+            v-if="mode === 'onboarding'"
+            class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300"
+          >
+            Pick as many conditions as you want for quick access on your home screen.
           </p>
 
         </div>
