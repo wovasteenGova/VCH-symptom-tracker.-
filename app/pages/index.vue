@@ -3,7 +3,7 @@
     <section class="mx-auto flex h-full max-h-dvh w-full max-w-md flex-col overflow-hidden pt-4 pb-0 sm:max-w-lg">
       <header class="flex shrink-0 items-center justify-between gap-3 px-4">
         <div>
-          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Today</p>
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{{ homeGreetingLine }}</p>
           <h1 class="mt-1 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">Symptom Tracker</h1>
         </div>
 
@@ -1409,6 +1409,10 @@ const {
   signOut
 } = useSupabaseAuth()
 const router = useRouter()
+const { getProfile } = useUserProfiles()
+
+const profileDisplayName = ref('')
+const homeGreetingWord = ref<'Hello' | 'Hey'>(Math.random() < 0.5 ? 'Hello' : 'Hey')
 
 const activeIndex = ref(0)
 const activeHistoryTab = ref('Entries')
@@ -1881,6 +1885,17 @@ const calendarDays = computed(() => {
 })
 
 const totalSlides = computed(() => conditions.length + 1)
+const homeGreetingLine = computed(() => {
+  if (!user.value) {
+    return 'Today'
+  }
+
+  const firstName = profileDisplayName.value.trim().split(/\s+/)[0]
+    || user.value.email?.split('@')[0]
+    || 'there'
+
+  return `${homeGreetingWord.value}, ${firstName}`
+})
 const isSearchSlide = computed(() => activeIndex.value === 0)
 const activeCondition = computed(() => conditions[Math.max(activeIndex.value - 1, 0)])
 const entryTitle = computed(() => {
@@ -2140,6 +2155,7 @@ onMounted(() => {
   }
 
   if (user.value) {
+    loadProfileDisplayName()
     loadEntries()
   }
 })
@@ -2147,13 +2163,34 @@ onMounted(() => {
 watch(user, (currentUser) => {
   if (currentUser) {
     isAuthPanelOpen.value = false
+    loadProfileDisplayName()
     loadEntries()
     return
   }
 
+  profileDisplayName.value = ''
   savedEntries.value = []
   closeEntryPanel(true)
 })
+
+async function loadProfileDisplayName() {
+  if (!user.value) {
+    profileDisplayName.value = ''
+    return
+  }
+
+  try {
+    const profile = await getProfile()
+    profileDisplayName.value = profile?.full_name?.trim()
+      || (typeof user.value.user_metadata?.full_name === 'string'
+        ? user.value.user_metadata.full_name.trim()
+        : '')
+  } catch {
+    profileDisplayName.value = typeof user.value.user_metadata?.full_name === 'string'
+      ? user.value.user_metadata.full_name.trim()
+      : ''
+  }
+}
 
 function fieldKey(label: string) {
   return label
@@ -2356,7 +2393,6 @@ async function exportEntriesPdf() {
   exportError.value = ''
 
   try {
-    const { getProfile } = useUserProfiles()
     const profile = await getProfile()
     const veteranName = profile?.full_name?.trim()
       || (typeof user.value?.user_metadata?.full_name === 'string'

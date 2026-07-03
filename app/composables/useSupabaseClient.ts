@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import WebSocket from 'ws'
 
 let browserClient: SupabaseClient | null = null
 
@@ -56,10 +57,15 @@ export function useSupabaseClient() {
 
   const client = createClient(supabaseUrl, supabasePublishableKey, {
     auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true
-    }
+      persistSession: import.meta.client,
+      autoRefreshToken: import.meta.client,
+      detectSessionInUrl: import.meta.client
+    },
+    realtime: import.meta.server
+      ? {
+          transport: WebSocket
+        }
+      : undefined
   })
 
   if (import.meta.client) {

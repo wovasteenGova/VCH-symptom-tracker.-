@@ -787,7 +787,7 @@ const _routes = [
   {
     name: "report-token",
     path: "/report/:token()",
-    component: () => import('./_token_-BB5-lDg9.mjs')
+    component: () => import('./_token_-BNdzjGi-.mjs')
   },
   {
     name: "disclaimer",
@@ -807,12 +807,12 @@ const _routes = [
   {
     name: "profile",
     path: "/profile",
-    component: () => import('./profile-VyPINgjL.mjs')
+    component: () => import('./profile-gnXXZOCT.mjs')
   },
   {
     name: "index",
     path: "/",
-    component: () => import('./index-EZ_KoUR2.mjs')
+    component: () => import('./index-DP9t-wKH.mjs')
   }
 ];
 const ROUTE_KEY_PARENTHESES_RE = /(:\w+)\([^)]+\)/g;
