@@ -163,8 +163,8 @@
         </StickyActionBar>
       </form>
 
-      <div v-else class="mt-6 flex min-h-0 flex-1 flex-col">
-        <div class="flex-1 space-y-5 overflow-y-auto no-scrollbar pb-8">
+      <div v-else class="mt-6 min-h-0 flex-1 overflow-y-auto overscroll-y-contain no-scrollbar">
+        <div class="space-y-5 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <section class="rounded-4xl border border-slate-800 bg-slate-900 p-4">
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
