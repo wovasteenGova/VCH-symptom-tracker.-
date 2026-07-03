@@ -30,3 +30,4 @@
 [build.environment]
   NODE_VERSION = "20.19.0"
   NODE_OPTIONS = "--max-old-space-size=4096"
+  SECRETS_SCAN_OMIT_KEYS = "SUPABASE_URL,SUPABASE_ANON_KEY"
