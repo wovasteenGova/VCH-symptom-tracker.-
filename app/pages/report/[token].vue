@@ -520,6 +520,11 @@ const trackerDb = useTrackerDb()
 const { showSubmissionToast } = useSubmissionToast()
 const token = String(route.params.token || '')
 
+definePageMeta({
+  layout: false,
+  ssr: false
+})
+
 const supporterProfile = ref<null | {
   id: string
   display_name: string
