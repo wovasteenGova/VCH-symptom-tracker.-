@@ -1,4 +1,5 @@
 import { getSupabasePublicConfig, inspectSupabaseKey, previewSupabaseKey } from '../utils/supabasePublicConfig'
+import { getSupabaseConfigError, resolveSupabaseEnv } from '../utils/supabaseEnv'
 
 function extractSupabaseProjectRef(url: string) {
   const match = String(url || '').match(/https:\/\/([^.]+)\.supabase\.co/)
@@ -16,6 +17,7 @@ export default defineEventHandler(() => {
   const config = useRuntimeConfig()
   const moduleConfig = config.public.supabase as { url?: string, key?: string } | undefined
   const resolved = getSupabasePublicConfig()
+  const envConfig = resolveSupabaseEnv()
   const moduleUrl = String(moduleConfig?.url || '').trim()
   const moduleKey = String(moduleConfig?.key || '').trim()
   const runtimeUrl = String(config.public.supabaseUrl || '').trim()
@@ -31,6 +33,12 @@ export default defineEventHandler(() => {
   )
 
   return {
+    configured: Boolean(resolved.supabaseUrl && resolved.supabaseKey),
+    configError: getSupabaseConfigError({
+      url: resolved.supabaseUrl || envConfig.url,
+      anonKey: resolved.supabaseKey || envConfig.anonKey,
+      serviceKey: serviceKey
+    }),
     supabaseProjectRef: extractSupabaseProjectRef(resolved.supabaseUrl),
     expectedSupabaseProjectRef: 'bszlmqdqrwqocoxbzpyh',
     supabaseMatchesVch: extractSupabaseProjectRef(resolved.supabaseUrl) === 'bszlmqdqrwqocoxbzpyh',

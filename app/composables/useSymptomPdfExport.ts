@@ -74,6 +74,14 @@ function drawPageFooter(doc: jsPDF, pageNumber: number, totalPages: number, marg
   doc.text(`Page ${pageNumber} of ${totalPages}`, pageWidth - margin, pageHeight - 24, { align: 'right' })
 }
 
+function measureWrappedLines(
+  doc: jsPDF,
+  lines: string[],
+  lineHeight: number
+) {
+  return Math.max(lines.length, 1) * lineHeight
+}
+
 function drawVeteranElectronicSignatureSection(
   doc: jsPDF,
   y: number,
@@ -88,58 +96,117 @@ function drawVeteranElectronicSignatureSection(
   }
 
   const contactEmail = signatureInfo.veteranEmail?.trim() || null
-  const certificationText = doc.splitTextToSize(
+  const innerPadX = 18
+  const innerPadY = 20
+  const innerWidth = contentWidth - innerPadX * 2
+  const sectionTitleGap = 18
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(10)
+  const certificationLines = doc.splitTextToSize(
     PDF_EXPORT_CERTIFICATION_TEXT,
-    contentWidth - 36
+    innerWidth
   ) as string[]
-  const signatureBlockHeight = certificationText.length * 13 + (contactEmail ? 118 : 104)
-  if (y + signatureBlockHeight > pageHeight - 56) {
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(10)
+  const signatureLines = doc.splitTextToSize(
+    `Electronic signature: /s/ ${signedName}`,
+    innerWidth
+  ) as string[]
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9)
+  const signedAtLines = doc.splitTextToSize(
+    `Electronically signed on: ${new Date().toLocaleString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    })}`,
+    innerWidth
+  ) as string[]
+  const methodLines = doc.splitTextToSize(
+    'Signature method: typed full legal name (not an image or email address).',
+    innerWidth
+  ) as string[]
+  const emailLines = contactEmail
+    ? doc.splitTextToSize(`Account email on file: ${contactEmail}`, innerWidth) as string[]
+    : []
+
+  const boxContentHeight = innerPadY
+    + measureWrappedLines(doc, certificationLines, 13)
+    + 14
+    + measureWrappedLines(doc, signatureLines, 14)
+    + 8
+    + measureWrappedLines(doc, signedAtLines, 12)
+    + 6
+    + measureWrappedLines(doc, methodLines, 12)
+    + (emailLines.length ? 6 + measureWrappedLines(doc, emailLines, 12) : 0)
+    + innerPadY
+
+  const totalSectionHeight = sectionTitleGap + boxContentHeight
+
+  if (y + totalSectionHeight > pageHeight - 56) {
     doc.addPage()
     y = margin
   }
 
-  const signedAt = new Date().toLocaleString('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit'
-  })
-
   drawSectionTitle(doc, 'Veteran electronic signature', margin, y)
-  y += 18
+  y += sectionTitleGap
 
   doc.setDrawColor(226, 232, 240)
   doc.setFillColor(248, 250, 252)
-  doc.roundedRect(margin, y, contentWidth, signatureBlockHeight - 22, 12, 12, 'FD')
+  doc.roundedRect(margin, y, contentWidth, boxContentHeight, 12, 12, 'FD')
 
-  const innerX = margin + 18
-  let textY = y + 24
+  const innerX = margin + innerPadX
+  let textY = y + innerPadY
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(10)
   doc.setTextColor(51, 65, 85)
-  doc.text(certificationText, innerX, textY)
-  textY += certificationText.length * 13 + 16
+  certificationLines.forEach((line) => {
+    doc.text(line, innerX, textY)
+    textY += 13
+  })
+
+  textY += 10
 
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(10)
   doc.setTextColor(15, 23, 42)
-  doc.text(`Electronic signature: /s/ ${signedName}`, innerX, textY)
-  textY += 16
+  signatureLines.forEach((line) => {
+    doc.text(line, innerX, textY)
+    textY += 14
+  })
+
+  textY += 6
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(9)
   doc.setTextColor(100, 116, 139)
-  doc.text(`Electronically signed on: ${signedAt}`, innerX, textY)
-  textY += 14
-  doc.text('Signature method: typed full legal name (not an image or email address).', innerX, textY)
-  if (contactEmail) {
-    textY += 14
-    doc.text(`Account email on file: ${contactEmail}`, innerX, textY)
+  signedAtLines.forEach((line) => {
+    doc.text(line, innerX, textY)
+    textY += 12
+  })
+
+  textY += 4
+
+  methodLines.forEach((line) => {
+    doc.text(line, innerX, textY)
+    textY += 12
+  })
+
+  if (emailLines.length) {
+    textY += 4
+    emailLines.forEach((line) => {
+      doc.text(line, innerX, textY)
+      textY += 12
+    })
   }
 
-  return y + signatureBlockHeight
+  return y + boxContentHeight + 12
 }
 
 function buildPdfDownloadFilename(conditionLabel: string | null | undefined) {

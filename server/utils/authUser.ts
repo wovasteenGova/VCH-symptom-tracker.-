@@ -2,7 +2,7 @@ import type { H3Event } from 'h3'
 import { createClient } from '@supabase/supabase-js'
 import { getHeader } from 'h3'
 import { serverSupabaseUser } from '#supabase/server'
-import { getSupabasePublicConfig } from './supabasePublicConfig'
+import { assertSupabasePublicConfig } from './supabasePublicConfig'
 
 function logAuth(step: string, details: Record<string, unknown> = {}) {
   console.info(`[checkout-auth] ${step}`, details)
@@ -20,19 +20,7 @@ async function getUserFromBearerToken(event: H3Event) {
     return null
   }
 
-  const { supabaseUrl, supabaseKey, source } = getSupabasePublicConfig(event)
-
-  if (!supabaseUrl || !supabaseKey) {
-    logAuthError('missing supabase public config', {
-      hasSupabaseUrl: Boolean(supabaseUrl),
-      hasSupabaseKey: Boolean(supabaseKey),
-      source
-    })
-    throw createError({
-      statusCode: 500,
-      message: 'Supabase is not configured on the server.'
-    })
-  }
+  const { supabaseUrl, supabaseKey, source } = assertSupabasePublicConfig(event)
 
   logAuth('validating bearer token', {
     tokenLength: token.length,
