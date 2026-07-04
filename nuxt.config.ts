@@ -46,12 +46,16 @@ export default defineNuxtConfig({
     stripeProPriceId: process.env.STRIPE_PRO_PRICE_ID || '',
     supabaseServiceRoleKey: supabaseServiceKey,
     supabaseServiceKey,
+    vapidPrivateKey: env('VAPID_PRIVATE_KEY'),
+    reminderCronSecret: env('REMINDER_CRON_SECRET') || env('NUXT_REMINDER_CRON_SECRET'),
+    reminderTestMode: env('REMINDER_TEST_MODE') === 'true' || env('REMINDER_TEST_MODE') === '1',
     public: {
       supabaseUrl,
       supabaseAnonKey: supabaseAnonKey,
       supabaseKey: supabaseAnonKey,
       supabasePublishableKey: supabaseAnonKey,
       stripePublishableKey: env('STRIPE_PUBLIC_KEY') || env('STRIPE_PUBLISHABLE_KEY') || env('NUXT_PUBLIC_STRIPE_PUBLISHABLE_KEY'),
+      vapidPublicKey: env('VAPID_PUBLIC_KEY') || env('NUXT_PUBLIC_VAPID_PUBLIC_KEY'),
       siteUrl: env('APP_URL')
         || env('NUXT_PUBLIC_SITE_URL')
         || (isProduction ? 'https://tracker.veteranscentralhub.us' : '')

@@ -11,6 +11,9 @@ export type AppWelcomePreferences = {
   loggingCadence: LoggingCadence
   weeklyLogDay: number
   termsAcceptedAt: string
+  enableLogReminders?: boolean
+  reminderHour?: number
+  reminderTimezone?: string
 }
 
 function readLocalWelcomeCompleted() {
@@ -135,6 +138,9 @@ export function useAppWelcome() {
         logging_cadence: preferences.loggingCadence,
         weekly_log_day: preferences.weeklyLogDay,
         terms_accepted_at: preferences.termsAcceptedAt,
+        log_reminders_enabled: preferences.enableLogReminders ?? false,
+        reminder_hour: preferences.reminderHour ?? 10,
+        reminder_timezone: preferences.reminderTimezone ?? null,
         updated_at: new Date().toISOString()
       })
 

@@ -19,7 +19,7 @@ export const VA_MENTAL_HEALTH_SEVERITY_TIP =
   'Severity is about impact, not toughness. Log what happened under episode type or symptoms noticed. Your 0-10 score should reflect how the day actually went: work, sleep, relationships, and safety. You are not picking a diagnosis. You are building an honest timeline.'
 
 export const VA_MENTAL_HEALTH_WORST_DAY_TIP =
-  'Worst days often look like this: could not leave the house, panic most of the day, no sleep, or thoughts of not wanting to be here. If it happened, log it. Many veterans minimize symptoms that raters still treat as significant.'
+  'Worst days often look like this: could not or would not leave the house, being forced out by friends or family, panic most of the day, no sleep, or thoughts of not wanting to be here. Remember those days too—if it happened, log it. Many veterans minimize symptoms that raters still treat as significant.'
 
 export const VA_MENTAL_HEALTH_CRISIS_TIP =
   'In crisis right now? Call 988 and press 1, text 838255, or visit veteranscrisisline.net. This tracker is for your records, not an emergency line. Passive or brief suicidal thoughts are still worth logging when you are safe.'

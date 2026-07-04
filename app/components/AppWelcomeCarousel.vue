@@ -4,6 +4,13 @@ import {
   WEEKLY_LOG_DAY_OPTIONS,
   type LoggingCadence
 } from '../utils/loggingCadence'
+import {
+  DEFAULT_LOG_REMINDER_HOUR,
+  LOG_REMINDER_HOUR_OPTIONS,
+  formatLogReminderHour,
+  formatTimezoneLabel,
+  getBrowserTimezone
+} from '../utils/logReminders'
 
 const props = defineProps<{
   installPlatform: 'ios' | 'android' | 'desktop'
@@ -13,7 +20,14 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  complete: [payload: { loggingCadence: LoggingCadence, weeklyLogDay: number, termsAcceptedAt: string }]
+  complete: [payload: {
+    loggingCadence: LoggingCadence
+    weeklyLogDay: number
+    termsAcceptedAt: string
+    enableLogReminders: boolean
+    reminderHour: number
+    reminderTimezone: string
+  }]
   promptInstall: []
 }>()
 
@@ -21,7 +35,12 @@ const activeStep = ref(0)
 const loggingCadence = ref<LoggingCadence>('weekly')
 const weeklyLogDay = ref(0)
 const termsAccepted = ref(false)
+const enableLogReminders = ref(true)
+const reminderHour = ref(DEFAULT_LOG_REMINDER_HOUR)
+const reminderTimezone = ref(getBrowserTimezone())
 const isSaving = ref(false)
+
+const reminderTimezoneLabel = computed(() => formatTimezoneLabel(reminderTimezone.value))
 
 const totalSteps = 3
 
@@ -71,7 +90,10 @@ async function finishWelcome() {
     emit('complete', {
       loggingCadence: loggingCadence.value,
       weeklyLogDay: weeklyLogDay.value,
-      termsAcceptedAt: new Date().toISOString()
+      termsAcceptedAt: new Date().toISOString(),
+      enableLogReminders: enableLogReminders.value,
+      reminderHour: reminderHour.value,
+      reminderTimezone: reminderTimezone.value
     })
   } finally {
     isSaving.value = false
@@ -192,6 +214,40 @@ async function finishWelcome() {
               >
                 {{ option.label }}
               </button>
+            </div>
+          </div>
+
+          <div class="mt-5 rounded-3xl border border-teal-200 bg-white/80 p-4 dark:border-slate-700 dark:bg-slate-800/80">
+            <label class="flex items-start gap-3">
+              <input
+                v-model="enableLogReminders"
+                type="checkbox"
+                class="mt-1 size-4 rounded border-slate-300 text-slate-950 focus:ring-slate-400 dark:border-slate-600 dark:bg-slate-900"
+              >
+              <span class="text-sm leading-6 text-slate-700 dark:text-slate-200">
+                Remind me to log
+                <span class="mt-1 block text-slate-500 dark:text-slate-400">
+                  Default {{ formatLogReminderHour(reminderHour) }} your time ({{ reminderTimezoneLabel }}). You can change this in Profile.
+                </span>
+              </span>
+            </label>
+
+            <div v-if="enableLogReminders" class="mt-4">
+              <label class="block text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                Reminder time
+              </label>
+              <select
+                v-model.number="reminderHour"
+                class="mt-2 w-full rounded-2xl border border-teal-200 bg-white px-4 py-3 text-sm font-semibold text-slate-950 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+              >
+                <option
+                  v-for="option in LOG_REMINDER_HOUR_OPTIONS"
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.label }}
+                </option>
+              </select>
             </div>
           </div>
         </div>

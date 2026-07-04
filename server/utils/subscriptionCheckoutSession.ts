@@ -13,6 +13,7 @@ export function buildSubscriptionLineItems(
     return [{ price: configuredPriceId, quantity: 1 }]
   }
 
+  // Fallback creates one-off checkout products in Stripe — set STRIPE_PRO_PRICE_ID in production.
   const amountInCents = Math.round(PRO_ANNUAL_PRICE * 100)
 
   return [{

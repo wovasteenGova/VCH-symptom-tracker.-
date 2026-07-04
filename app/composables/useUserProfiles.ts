@@ -8,6 +8,9 @@ type UserProfilePayload = {
   logging_cadence?: 'daily' | 'weekly'
   weekly_log_day?: number
   terms_accepted_at?: string | null
+  log_reminders_enabled?: boolean
+  reminder_hour?: number
+  reminder_timezone?: string | null
 }
 type SupporterProfilePayload = {
   link_label?: string | null

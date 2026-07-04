@@ -1,0 +1,55 @@
+---
+description: VCH Supabase project only — never the old VCH_symptom tracker project
+alwaysApply: true
+---
+
+# Symptom Tracker + Supabase
+
+## Two different things (do not mix them up)
+
+### 1. Supabase **project** (which database / which login pool)
+
+| Dashboard name (typical) | Project ref | Use? |
+|--------------------------|-------------|------|
+| **VCH** (shared with veteranscentralhub.us) | `bszlmqdqrwqocoxbzpyh` | **YES — only this one** |
+| **VCH_symptom tracker** (old standalone) | `hlpbcmxcxgyzlmojprmp` | **NO — obsolete** |
+
+- Symptom Tracker `.env`, Netlify, and production must use **VCH** (`bszlmqdqrwqocoxbzpyh`).
+- You moved to VCH so **one `auth.users`** — same account on hub and tracker.
+- **VCH_symptom tracker** is a separate project with its **own** users. The live app does not connect to it. Safe to drop its tables / ignore the project.
+
+### 2. **Schema** inside the VCH project (folder inside one database)
+
+Same VCH project contains:
+
+- **`auth.*`** — login only (shared). Do not store app profile/cadence here.
+- **`tracker.*`** — all Symptom Tracker app tables (`symptom_entries`, `user_profiles`, push, supporter links, entitlements, etc.). App code uses `useTrackerDb()` → this schema.
+- **`public.*` (and any hub schemas)** — Veterans Central Hub site data. Symptom Tracker must **not** create or write symptom data here.
+
+So: **project = VCH only**. **Symptom data tables = `tracker` schema on that project.**
+
+## Code
+
+- Client: `useTrackerDb()` → `app/composables/useTrackerDb.ts`
+- Server: `getSupabaseAdmin()` → `server/utils/supabaseAdmin.ts` (schema `tracker`)
+- Auth: `useSupabaseClient().auth` (same VCH project URL/key)
+
+## Migrations / MCP
+
+1. `get_project_url` must be `https://bszlmqdqrwqocoxbzpyh.supabase.co`
+2. If MCP shows `hlpbcmxcxgyzlmojprmp`, stop — relink MCP to VCH or run SQL on VCH manually
+3. New SQL migrations: `tracker.` prefix, applied on **VCH** only
+
+## Push reminders
+
+- Tables: `tracker.push_subscriptions`, `tracker.log_reminder_deliveries`
+- Profile flags: `tracker.user_profiles.log_reminders_enabled`, `reminder_hour`
+- Migration: `supabase/migrations/20260704153000_push_log_reminders_tracker.sql`
+
+## Production data safety (never break this)
+
+- **Never delete `tracker.user_profiles` rows** — not in migrations, MCP SQL, cleanup scripts, or agent suggestions unless the user explicitly asks to delete a specific account.
+- **Never run** `DELETE FROM tracker.user_profiles`, `TRUNCATE tracker.user_profiles`, or `DROP TABLE tracker.user_profiles` as part of routine cleanup, schema work, or test resets.
+- Same rule for **`auth.users`** tied to real tracker accounts — do not bulk-delete production users.
+- Safe cleanup targets: obsolete sandbox projects, unused legacy tables (e.g. dropped `supporter_observations`), empty test rows the user confirms — **not** live profile or entry data.
+- When writing migrations or SQL, prefer `ADD COLUMN`, `DROP COLUMN` on unused fields, and `IF NOT EXISTS` — avoid destructive data ops on core tables (`user_profiles`, `symptom_entries`, `user_entitlements`).

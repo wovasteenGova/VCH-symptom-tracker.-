@@ -1909,7 +1909,12 @@ let conditionSlideEntryBlockedTimer: ReturnType<typeof setTimeout> | undefined
 const homeVisitTip = ref<{ title: string, text: string } | null>(null)
 const isHomeTipsOverlayOpen = ref(false)
 const homeVisitTips = computed(() => buildHomeVisitTips(homeConditions.value))
-const { runLogReminderCheck } = useLogReminders()
+const {
+  runLogReminderCheck,
+  hydrateReminderSettings,
+  persistReminderSettings,
+  enableRemindersWithPermission
+} = useLogReminders()
 const homeSortUsesEntryDates = ref(false)
 const { isDesktopLayout, isMobileLayout, isEmbeddedPreview } = useTrackerLayout()
 const isEmbedProfileOpen = ref(false)
@@ -4926,9 +4931,30 @@ async function handleWelcomeComplete(payload: {
   loggingCadence: 'daily' | 'weekly'
   weeklyLogDay: number
   termsAcceptedAt: string
+  enableLogReminders: boolean
+  reminderHour: number
+  reminderTimezone: string
 }) {
   try {
     await completeAppWelcome(payload)
+    hydrateReminderSettings({
+      log_reminders_enabled: payload.enableLogReminders,
+      reminder_hour: payload.reminderHour,
+      reminder_timezone: payload.reminderTimezone
+    })
+
+    if (payload.enableLogReminders) {
+      const enabled = await enableRemindersWithPermission()
+
+      if (!enabled) {
+        await persistReminderSettings({
+          enabled: false,
+          hour: payload.reminderHour,
+          timezone: payload.reminderTimezone
+        })
+      }
+    }
+
     showSubmissionToast('Welcome! You are all set.')
   } catch (error) {
     console.error(error)

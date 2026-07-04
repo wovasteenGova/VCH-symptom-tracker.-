@@ -326,8 +326,30 @@
             </button>
           </div>
 
+          <div class="mt-4 rounded-3xl border border-slate-700 bg-slate-800/50 px-4 py-4">
+            <label class="block text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+              Reminder time
+            </label>
+            <select
+              :value="reminderHour"
+              class="mt-2 w-full rounded-2xl border border-slate-600 bg-slate-900 px-4 py-3 text-sm font-semibold text-white"
+              @change="handleReminderHourChange"
+            >
+              <option
+                v-for="option in logReminderHourOptions"
+                :key="option.value"
+                :value="option.value"
+              >
+                {{ option.label }}
+              </option>
+            </select>
+            <p class="mt-2 text-xs leading-5 text-slate-500">
+              Uses your local timezone: {{ logReminderTimezoneLabel }} ({{ reminderTimezone }}).
+            </p>
+          </div>
+
           <p class="mt-3 text-xs leading-5 text-slate-500">
-            Install the app for the best experience. Reminders run on this device when the app is open; background push alerts are the next step.
+            Install the app for background alerts when the app is closed. One nudge per day after your chosen time if you have not logged yet.
           </p>
         </section>
 
@@ -795,7 +817,7 @@ import {
   buildSupportEmailHref
 } from '../utils/subscription'
 import { WEEKLY_LOG_DAY_OPTIONS, type LoggingCadence } from '../utils/loggingCadence'
-import { describeLogReminderSchedule } from '../utils/logReminders'
+import { describeLogReminderSchedule, formatTimezoneLabel, LOG_REMINDER_HOUR_OPTIONS } from '../utils/logReminders'
 import { useTrackerLayout, TRACKER_CLOSE_EMBED_PROFILE_KEY, type TrackerLayoutMode } from '../composables/useTrackerLayout'
 import { mapEntryHistoryItem } from '../utils/entryDisplay'
 import { copyToClipboard } from '../utils/copyToClipboard'
@@ -852,15 +874,27 @@ const {
 } = useAppWelcome()
 const {
   remindersEnabled,
+  reminderHour,
+  reminderTimezone,
   permissionState: logReminderPermissionState,
   enableRemindersWithPermission,
-  setRemindersEnabled,
+  disableReminders,
+  hydrateReminderSettings,
+  updateReminderHour,
   syncPermissionState
 } = useLogReminders()
+const logReminderHourOptions = LOG_REMINDER_HOUR_OPTIONS
 
 const logReminderScheduleDescription = computed(() => {
-  return describeLogReminderSchedule(loggingCadence.value, weeklyLogDay.value)
+  return describeLogReminderSchedule(
+    loggingCadence.value,
+    weeklyLogDay.value,
+    reminderHour.value,
+    reminderTimezone.value
+  )
 })
+
+const logReminderTimezoneLabel = computed(() => formatTimezoneLabel(reminderTimezone.value))
 const { layoutMode, setLayoutMode } = useTrackerLayout()
 
 const layoutOptions: Array<{ value: TrackerLayoutMode, label: string, copy: string }> = [
@@ -1042,6 +1076,7 @@ async function loadProfilePage() {
 
     activeLogCount.value = entries.length
     profileForm.value.full_name = profile?.full_name || user.value?.user_metadata?.full_name || ''
+    hydrateReminderSettings(profile)
     supporterProfiles.value = supporters
   } catch (error) {
     pageError.value = getErrorMessage(error)
@@ -1147,7 +1182,7 @@ async function saveWeeklyLogDay(day: number) {
 
 async function toggleLogReminders() {
   if (remindersEnabled.value) {
-    setRemindersEnabled(false)
+    await disableReminders()
     showSubmissionToast({ message: 'Log reminders turned off.' })
     return
   }
@@ -1159,7 +1194,27 @@ async function toggleLogReminders() {
     return
   }
 
-  showSubmissionToast({ message: 'Allow notifications to turn on reminders.' })
+  showSubmissionToast({
+    message: 'Allow notifications to turn on reminders.'
+  })
+}
+
+async function handleReminderHourChange(event: Event) {
+  const target = event.target as HTMLSelectElement
+  const hour = Number(target.value)
+
+  if (!Number.isFinite(hour)) {
+    return
+  }
+
+  pageError.value = ''
+
+  try {
+    await updateReminderHour(hour)
+    showSubmissionToast({ message: `Reminder time set to ${logReminderHourOptions.find((option) => option.value === hour)?.label || 'your chosen time'}.` })
+  } catch (error) {
+    pageError.value = getErrorMessage(error)
+  }
 }
 
 async function createSupporter() {
