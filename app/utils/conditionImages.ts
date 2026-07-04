@@ -1,6 +1,7 @@
 export const conditionImageAssets = {
   mentalHealth: '/image/ptsd-mental-health.png',
   backJointPain: '/image/back-joint-pain.png',
+  neckPain: '/image/neck-pain.png',
   nerveRadiculopathy: '/image/nerve-radiculopathy.png',
   migraineHeadache: '/image/migraine-headache.png',
   gerdIbs: '/image/gerd-ibs.png',
@@ -36,6 +37,7 @@ const defaultConditionImage = conditionImageAssets.mentalHealth
 
 const conditionTitleImageOverrides: Record<string, string> = {
   Asthma: conditionImageAssets.asthma,
+  'Neck pain': conditionImageAssets.neckPain,
   'Sleep apnea': conditionImageAssets.sleepApnea,
   Sinusitis: conditionImageAssets.sinusitis,
   Rhinitis: conditionImageAssets.rhinitis,
@@ -87,7 +89,8 @@ export const conditionsWithoutDedicatedImages = [] as const
 
 export const conditionImageCatalog = [
   { file: 'ptsd-mental-health.png', usedFor: ['Mental Health', 'PTSD', 'Anxiety', 'Depression', 'Panic attacks'] },
-  { file: 'back-joint-pain.png', usedFor: ['Back, Neck, and Joint', 'Lower back pain', 'Neck pain', 'Knee conditions', 'Shoulder conditions', 'Arthritis'] },
+  { file: 'back-joint-pain.png', usedFor: ['Back, Neck, and Joint fallback', 'Lower back pain', 'Knee conditions', 'Shoulder conditions', 'Arthritis'] },
+  { file: 'neck-pain.png', usedFor: ['Neck pain'] },
   { file: 'nerve-radiculopathy.png', usedFor: ['Nerve', 'Radiculopathy', 'Sciatica', 'Peripheral neuropathy'] },
   { file: 'migraine-headache.png', usedFor: ['Neurological', 'Migraine', 'Tension headaches', 'Vertigo / Dizziness', 'Seizures'] },
   { file: 'gerd-ibs.png', usedFor: ['Digestive', 'GERD', 'IBS', 'Chronic diarrhea', 'Constipation'] },
