@@ -2,6 +2,7 @@ export type SubmissionToastPayload = {
   message: string
   highlight?: string
   tone?: 'success' | 'error'
+  durationMs?: number
 }
 
 let dismissTimer: ReturnType<typeof setTimeout> | undefined
@@ -29,9 +30,13 @@ export function useSubmissionToast() {
     toastKey.value += 1
     activeToast.value = normalizePayload(payload)
 
+    const durationMs = activeToast.value.tone === 'error'
+      ? activeToast.value.durationMs ?? 4200
+      : activeToast.value.durationMs ?? 1800
+
     dismissTimer = setTimeout(() => {
       activeToast.value = null
-    }, 3200)
+    }, durationMs)
   }
 
   function clearSubmissionToast() {

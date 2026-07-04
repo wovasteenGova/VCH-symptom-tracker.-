@@ -309,6 +309,9 @@
           <p class="mt-2 text-sm leading-6 text-slate-400">
             {{ logReminderScheduleDescription }}
           </p>
+          <p class="mt-2 text-xs leading-5 text-slate-500">
+            Device permission: {{ logReminderDevicePermissionLabel }}. Turning VCH reminders off stops app reminders but does not change your device notification permission.
+          </p>
 
           <p v-if="logReminderPermissionState === 'unsupported'" class="mt-3 text-sm leading-6 text-amber-200">
             Notifications are not supported in this browser.
@@ -918,7 +921,7 @@ const logReminderScheduleDescription = computed(() => {
 const logReminderTimezoneLabel = computed(() => formatTimezoneLabel(reminderTimezone.value))
 const logReminderStatusLabel = computed(() => {
   if (logReminderPermissionState.value === 'denied') {
-    return 'Blocked in phone/browser settings'
+    return 'Blocked in device settings'
   }
 
   if (logReminderPermissionState.value === 'unsupported') {
@@ -933,6 +936,10 @@ const logReminderStatusLabel = computed(() => {
     return 'Needs setup on this device'
   }
 
+  if (logReminderPermissionState.value === 'granted' && !remindersEnabled.value) {
+    return 'Device allowed; VCH reminders off'
+  }
+
   return remindersEnabled.value ? 'On for this device' : 'Off'
 })
 const logReminderButtonLabel = computed(() => {
@@ -945,6 +952,21 @@ const logReminderButtonLabel = computed(() => {
   }
 
   return 'Enable'
+})
+const logReminderDevicePermissionLabel = computed(() => {
+  if (logReminderPermissionState.value === 'granted') {
+    return 'Allowed'
+  }
+
+  if (logReminderPermissionState.value === 'denied') {
+    return 'Blocked in device settings'
+  }
+
+  if (logReminderPermissionState.value === 'unsupported') {
+    return 'Not supported here'
+  }
+
+  return 'Not decided yet'
 })
 const { layoutMode, setLayoutMode } = useTrackerLayout()
 
@@ -1236,7 +1258,7 @@ async function toggleLogReminders() {
   if (remindersEnabled.value) {
     await disableReminders()
     await refreshPushReminderStatus()
-    showSubmissionToast({ message: 'Log reminders turned off.' })
+    showSubmissionToast({ message: 'VCH reminders turned off. Device notification permission stays allowed.' })
     return
   }
 

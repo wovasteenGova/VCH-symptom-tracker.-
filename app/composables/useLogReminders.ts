@@ -141,8 +141,7 @@ export function useLogReminders() {
         return true
       }
 
-      new Notification(title, options)
-      return true
+      return false
     } catch {
       return false
     }
@@ -252,8 +251,20 @@ export function useLogReminders() {
         reminderTimezone: timezone
       })
 
+      syncPermissionState()
+      hasRegisteredPushSubscription.value = await hasActivePushSubscription()
+
+      if (permissionState.value !== 'granted' || !hasRegisteredPushSubscription.value) {
+        setRemindersEnabled(false)
+
+        return {
+          ok: false as const,
+          reason: 'subscribe-failed' as const,
+          message: 'Notifications were allowed, but this device did not finish registering. Try Enable again.'
+        }
+      }
+
       setRemindersEnabled(true)
-      hasRegisteredPushSubscription.value = true
 
       return { ok: true as const }
     } catch (error) {
@@ -270,6 +281,7 @@ export function useLogReminders() {
 
   async function disableReminders() {
     setRemindersEnabled(false)
+    hasRegisteredPushSubscription.value = false
 
     try {
       await disablePushSubscription()

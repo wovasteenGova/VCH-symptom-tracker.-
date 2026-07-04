@@ -54,7 +54,7 @@ const { activeToast, toastKey, clearSubmissionToast } = useSubmissionToast()
 
 <style scoped>
 .submission-toast-root {
-  top: calc(env(safe-area-inset-top, 0px) + 4.25rem);
+  top: calc(env(safe-area-inset-top, 0px) + 5.75rem);
   bottom: auto;
 }
 

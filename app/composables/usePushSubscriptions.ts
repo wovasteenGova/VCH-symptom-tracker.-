@@ -18,7 +18,7 @@ export function usePushSubscriptions() {
       throw new Error('Invalid push subscription.')
     }
 
-    const { error } = await trackerDb
+    const { data, error } = await trackerDb
       .from('push_subscriptions')
       .upsert({
         user_id: authData.user.id,
@@ -31,9 +31,15 @@ export function usePushSubscriptions() {
       }, {
         onConflict: 'user_id,endpoint'
       })
+      .select('id')
+      .single()
 
     if (error) {
       throw error
+    }
+
+    if (!data?.id) {
+      throw new Error('Push subscription was not saved.')
     }
   }
 
@@ -44,6 +50,19 @@ export function usePushSubscriptions() {
       return
     }
 
+    let currentEndpoint = endpoint
+
+    if (import.meta.client && !currentEndpoint && 'serviceWorker' in navigator) {
+      try {
+        const registration = await navigator.serviceWorker.ready
+        const subscription = await registration.pushManager.getSubscription()
+        currentEndpoint = subscription?.endpoint
+        await subscription?.unsubscribe()
+      } catch {
+        // Database disable still applies even if the browser subscription is already gone.
+      }
+    }
+
     let query = trackerDb
       .from('push_subscriptions')
       .update({
@@ -52,8 +71,8 @@ export function usePushSubscriptions() {
       })
       .eq('user_id', authData.user.id)
 
-    if (endpoint) {
-      query = query.eq('endpoint', endpoint)
+    if (currentEndpoint) {
+      query = query.eq('endpoint', currentEndpoint)
     }
 
     const { error } = await query
@@ -121,14 +140,18 @@ export function usePushSubscriptions() {
     }
 
     const registration = await navigator.serviceWorker.ready
+    await registration.update().catch(() => undefined)
     let subscription = await registration.pushManager.getSubscription()
 
-    if (!subscription) {
-      subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
-      })
+    if (subscription) {
+      await disablePushSubscription(subscription.endpoint)
+      await subscription.unsubscribe().catch(() => false)
     }
+
+    subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+    })
 
     await savePushSubscription(subscription.toJSON())
     await syncProfileReminderSettings({

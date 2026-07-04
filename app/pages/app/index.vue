@@ -2924,9 +2924,19 @@ function scheduleEntryDraftSave() {
   }, 800)
 }
 
+function cancelEntryDraftSave() {
+  if (!entryDraftSaveTimer) {
+    return
+  }
+
+  clearTimeout(entryDraftSaveTimer)
+  entryDraftSaveTimer = undefined
+}
+
 function clearPersistedEntryDraft() {
+  cancelEntryDraftSave()
   clearEntryDraft(user.value?.id)
-  refreshEntryDraftPreview()
+  entryDraftPreview.value = null
 }
 
 function restoreEntryDraftSnapshot(snapshot: EntryDraftSnapshot) {
