@@ -16,8 +16,10 @@ export type ConditionCatalogEntry = {
   tipLinks?: readonly HomeVisitTipLink[]
 }
 
-export const EFFECTIVE_DATE_TIP =
-  'If you\'re nearing an important filing deadline or effective date, consider filing your claim first. Additional evidence and symptom logs can be submitted later.'
+export const FILING_WHEN_READY_TIP = {
+  title: 'Don\'t wait to file',
+  text: 'Don\'t let logging hold you back from filing. If you\'re near a deadline or effective date, submit with what you have now—symptom logs and evidence can be added later.'
+} as const
 
 export const VA_MENTAL_HEALTH_COMBINED_TIP =
   'The VA evaluates mental health as one combined rating. Log any mental health symptoms you have, even if you do not think they belong to your diagnosis. Anxiety, depression, panic, nightmares, and sleep issues all count.'
@@ -42,11 +44,6 @@ export const HOME_HONESTY_TIP = {
 export const LOG_HISTORY_LENGTH_TIP = {
   title: 'How much to log',
   text: 'There is no hard rule, but about three months of steady entries—roughly 30 to 40 logs—gives you a useful pattern for exams and reviews. Consistency beats volume.'
-} as const
-
-export const FILING_WHEN_READY_TIP = {
-  title: 'Don\'t wait to file',
-  text: 'Don\'t let a symptom tracker hold you back from filing. If you need to submit with the evidence you have now, you can always add a detailed log later.'
 } as const
 
 export type HomeVisitTip = {
@@ -632,26 +629,25 @@ export function normalizeConditionLabel(label: string | null | undefined) {
   return trimmedLabel
 }
 
-export function buildHomeVisitTips(conditions: ConditionCatalogItem[]): HomeVisitTip[] {
-  const pool: HomeVisitTip[] = conditions.map((condition) => ({
+function mapConditionTip(condition: ConditionCatalogItem): HomeVisitTip {
+  return {
     title: `${condition.title} tip`,
     text: condition.tip,
     ...(condition.tipLinks?.length ? { links: condition.tipLinks } : {})
-  }))
+  }
+}
 
-  pool.push(
+export function buildHomeVisitTips(conditions: ConditionCatalogItem[]): HomeVisitTip[] {
+  const mentalHealthConditions = conditions.filter((condition) => condition.category === 'Mental Health')
+  const otherConditions = conditions.filter((condition) => condition.category !== 'Mental Health')
+
+  const pool: HomeVisitTip[] = [
     {
       title: LOG_HISTORY_LENGTH_TIP.title,
       text: LOG_HISTORY_LENGTH_TIP.text
     },
-    {
-      title: 'Effective date tip',
-      text: EFFECTIVE_DATE_TIP
-    },
-    {
-      title: FILING_WHEN_READY_TIP.title,
-      text: FILING_WHEN_READY_TIP.text
-    },
+    ...otherConditions.map(mapConditionTip),
+    ...mentalHealthConditions.map(mapConditionTip),
     {
       title: 'Mental health tip',
       text: VA_MENTAL_HEALTH_COMBINED_TIP
@@ -665,6 +661,10 @@ export function buildHomeVisitTips(conditions: ConditionCatalogItem[]): HomeVisi
       text: VA_MENTAL_HEALTH_WORST_DAY_TIP
     },
     {
+      title: FILING_WHEN_READY_TIP.title,
+      text: FILING_WHEN_READY_TIP.text
+    },
+    {
       title: HOME_HONESTY_TIP.title,
       text: HOME_HONESTY_TIP.text
     },
@@ -672,7 +672,7 @@ export function buildHomeVisitTips(conditions: ConditionCatalogItem[]): HomeVisi
       title: 'Crisis support',
       text: VA_MENTAL_HEALTH_CRISIS_TIP
     }
-  )
+  ]
 
   return pool
 }
