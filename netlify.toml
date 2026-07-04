@@ -28,7 +28,7 @@
     Cache-Control = "public, max-age=604800, stale-while-revalidate=86400"
 
 [build.environment]
-  NODE_VERSION = "20.19.0"
+  NODE_VERSION = "22"
   NODE_OPTIONS = "--max-old-space-size=4096"
   SECRETS_SCAN_OMIT_KEYS = "SUPABASE_URL,SUPABASE_ANON_KEY,SUPABASE_SERVICE_KEY"
   # Required at build AND runtime on Netlify (Site configuration → Environment variables):

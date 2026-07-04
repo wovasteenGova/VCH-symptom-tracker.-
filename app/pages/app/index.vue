@@ -967,14 +967,24 @@
                     </div>
 
                     <template v-else>
-                      <img
-                        :src="activeCondition.image"
-                        :alt="activeCondition.title"
-                        class="h-full w-full object-cover"
+                      <div
+                        class="absolute inset-0 cursor-pointer"
+                        role="button"
+                        tabindex="0"
+                        :aria-label="`Log ${activeCondition.title} entry`"
+                        @click="startEntryFromCurrentSlide"
+                        @keydown.enter.prevent="startEntryFromCurrentSlide"
+                        @keydown.space.prevent="startEntryFromCurrentSlide"
                       >
+                        <img
+                          :src="activeCondition.image"
+                          :alt="activeCondition.title"
+                          class="h-full w-full object-cover"
+                        >
 
-                      <div class="absolute inset-x-0 top-0 bg-linear-to-b from-black/70 via-black/20 to-transparent p-5 pb-10">
-                        <h2 class="text-2xl font-bold text-white">{{ activeCondition.title }}</h2>
+                        <div class="pointer-events-none absolute inset-x-0 top-0 bg-linear-to-b from-black/70 via-black/20 to-transparent p-5 pb-10">
+                          <h2 class="text-2xl font-bold text-white">{{ activeCondition.title }}</h2>
+                        </div>
                       </div>
                     </template>
                   </div>
