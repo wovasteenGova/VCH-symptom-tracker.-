@@ -114,19 +114,22 @@
     }
 
     /* Tank recovery: three quick shoves up the slope, then it crests
-       the hill and drives off under its own power. */
+       the hill and drives off under its own power. The first shove runs
+       flat along the ground to the slope base, THEN climbs, so the tank
+       never lifts off the ground. */
     @keyframes drive {
-      0%, 22%   { transform: translate(0, 0); animation-timing-function: ease-out; }
+      0%, 22%   { transform: translate(0, 0); animation-timing-function: linear; }
+      24.5%     { transform: translate(45px, 0); animation-timing-function: ease-out; }
       28%, 30%  { transform: translate(75px, -14px); animation-timing-function: ease-out; }
       36%, 38%  { transform: translate(105px, -28.5px); animation-timing-function: ease-out; }
       46%       { transform: translate(125px, -38px); animation-timing-function: linear; }
       95%, 100% { transform: translate(315px, -38px); }
     }
 
-    /* Nose-up while it is on the slope. */
+    /* Nose-up begins right as it reaches the slope base. */
     @keyframes tilt {
-      0%, 22%   { transform: rotate(0deg); }
-      27%, 42%  { transform: rotate(-25deg); }
+      0%, 24%   { transform: rotate(0deg); }
+      28%, 42%  { transform: rotate(-25deg); }
       48%, 100% { transform: rotate(0deg); }
     }
 
