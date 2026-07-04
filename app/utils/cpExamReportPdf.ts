@@ -1,6 +1,6 @@
 import type { jsPDF } from 'jspdf'
 import type { CpExamConditionSummary } from './cpExamReport'
-import { reportBranding } from './reportBranding'
+import { CP_PREP_DISCLAIMER_BODY, CP_PREP_DISCLAIMER_TITLE, reportBranding } from './reportBranding'
 
 const slate900 = [15, 23, 42] as const
 const slate700 = [51, 65, 85] as const
@@ -8,6 +8,9 @@ const slate500 = [100, 116, 139] as const
 const slate200 = [226, 232, 240] as const
 const sky100 = [224, 242, 254] as const
 const sky700 = [3, 105, 161] as const
+const amber700 = [180, 83, 9] as const
+const amber100 = [254, 243, 199] as const
+const amber900 = [120, 53, 15] as const
 
 function setFill(doc: jsPDF, color: readonly [number, number, number]) {
   doc.setFillColor(color[0], color[1], color[2])
@@ -81,12 +84,18 @@ function drawPageFooter(doc: jsPDF, pageNumber: number, totalPages: number, marg
   doc.setLineWidth(0.5)
   doc.line(margin, pageHeight - 28, pageWidth - margin, pageHeight - 28)
 
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(9)
+  setText(doc, slate500)
+  doc.text(reportBranding.organizationName, margin, pageHeight - 18)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(8.5)
+  setText(doc, amber700)
+  doc.text(CP_PREP_DISCLAIMER_TITLE, pageWidth / 2, pageHeight - 18, { align: 'center' })
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7.5)
   setText(doc, slate500)
-  doc.text(reportBranding.organizationName, margin, pageHeight - 16)
-  doc.text('Personal reference — not for VA submission', pageWidth / 2, pageHeight - 16, { align: 'center' })
-  doc.text(`Page ${pageNumber} of ${totalPages}`, pageWidth - margin, pageHeight - 16, { align: 'right' })
+  doc.text(`Page ${pageNumber} of ${totalPages}`, pageWidth - margin, pageHeight - 18, { align: 'right' })
 }
 
 function drawConditionCard(
@@ -111,7 +120,15 @@ function drawConditionCard(
   const noteLineGroups = summary.reportedNotes.map((note) => wrapNoteLines(doc, note, innerWidth))
   const notesHeight = noteLineGroups.reduce((total, lines) => total + measureWrappedLinesHeight(doc, lines, 12), 0)
 
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9)
+  const talkingPointLines = doc.splitTextToSize(summary.talkingPoint, innerWidth) as string[]
+  const talkingPointHeight = measureWrappedLinesHeight(doc, talkingPointLines, 12)
+
   const cardHeight = 34
+    + 22
+    + talkingPointHeight
+    + 16
     + 54
     + 34
     + 34
@@ -139,6 +156,23 @@ function drawConditionCard(
   doc.text(`${summary.entryCount} logs · ${summary.trackingSpanLabel}`, x + width - padX, textY, { align: 'right' })
 
   textY += 22
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(7)
+  setText(doc, sky700)
+  doc.text('TOPICS YOU LOGGED FREQUENTLY', x + padX, textY)
+
+  textY += 12
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9)
+  setText(doc, slate700)
+  talkingPointLines.forEach((line) => {
+    doc.text(line, x + padX, textY)
+    textY += 12
+  })
+
+  textY += 10
 
   setFill(doc, sky100)
   doc.roundedRect(x + padX, textY, innerWidth, 44, 8, 8, 'F')
@@ -255,9 +289,27 @@ export function drawCpExamReportPdf(options: {
 
   y += 18
 
+  setFill(doc, amber100)
+  setStroke(doc, amber700)
+  doc.setLineWidth(0.75)
+  const noticeLines = doc.splitTextToSize(CP_PREP_DISCLAIMER_TITLE, contentWidth - 24) as string[]
+  const noticeHeight = noticeLines.length * 13 + 22
+  doc.roundedRect(margin, y, contentWidth, noticeHeight, 8, 8, 'FD')
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(11)
+  setText(doc, amber900)
+  let noticeY = y + 16
+  noticeLines.forEach((line) => {
+    doc.text(line, margin + 12, noticeY)
+    noticeY += 13
+  })
+
+  y += noticeHeight + 12
+
   y = drawWrappedText(
     doc,
-    'Summary pulled directly from your symptom tracker — frequency, severity, functional impact, and notes exactly as you logged them. For personal review only. Not intended to be uploaded as VA evidence; use the full signed report for submissions.',
+    `${CP_PREP_DISCLAIMER_BODY} Topics below are generated from your logged frequency, severity, functional impact, and notes — not medical or legal advice.`,
     margin,
     y,
     contentWidth,

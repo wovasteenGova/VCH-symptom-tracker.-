@@ -1,5 +1,5 @@
 import type Stripe from 'stripe'
-import { PRO_MONTHLY_PRICE, PRO_PRODUCT_KEY } from '../../app/utils/subscription'
+import { PRO_ANNUAL_PRICE, PRO_CHECKOUT_SUBMIT_MESSAGE, PRO_PRODUCT_KEY } from '../../app/utils/subscription'
 
 type CheckoutUser = {
   id: string
@@ -13,16 +13,16 @@ export function buildSubscriptionLineItems(
     return [{ price: configuredPriceId, quantity: 1 }]
   }
 
-  const amountInCents = Math.round(PRO_MONTHLY_PRICE * 100)
+  const amountInCents = Math.round(PRO_ANNUAL_PRICE * 100)
 
   return [{
     price_data: {
       currency: 'usd',
       unit_amount: amountInCents,
-      recurring: { interval: 'month' },
+      recurring: { interval: 'year' },
       product_data: {
         name: 'Symptom Tracker Pro',
-        description: 'Unlimited entries, family reporting, and signed PDF exports for veterans.',
+        description: 'Annual plan — unlimited conditions, family reporting, and PDF exports for veterans.',
         metadata: {
           product_key: PRO_PRODUCT_KEY,
           app: 'symptom_tracker'
@@ -52,6 +52,11 @@ export function buildSubscriptionCheckoutParams(options: {
       metadata: {
         user_id: options.user.id,
         product_key: PRO_PRODUCT_KEY
+      }
+    },
+    custom_text: {
+      submit: {
+        message: PRO_CHECKOUT_SUBMIT_MESSAGE
       }
     }
   }

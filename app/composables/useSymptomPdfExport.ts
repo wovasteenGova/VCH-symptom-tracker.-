@@ -254,7 +254,12 @@ function appendConditionWeeklyFrequencySection(
   }, 0)
 
   y = ensurePageSpace(doc, y, Math.min(estimatedHeight, 220), margin, pageHeight)
-  drawSectionTitle(doc, 'Weekly symptom frequency by condition', margin, y)
+  drawSectionTitle(doc, 'Weekly logs per condition', margin, y)
+  y += 10
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(8)
+  doc.setTextColor(100, 116, 139)
+  doc.text('Each row is one calendar month · week columns show log count', margin, y)
   y += 14
 
   return drawConditionWeeklyFrequencyGrid(
@@ -461,7 +466,12 @@ export function useSymptomPdfExport() {
         )
 
         y = ensurePageSpace(doc, y, 160, margin, pageHeight)
-        drawSectionTitle(doc, 'Daily log density', margin, y)
+        drawSectionTitle(doc, `Daily logging consistency — ${aggregateMetrics.rangeLabel}`, margin, y)
+        y += 10
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(8)
+        doc.setTextColor(100, 116, 139)
+        doc.text('How consistently you logged across each month in this report', margin, y)
         y += 14
         y = drawCompactHeatmapGrid(
           doc,
@@ -515,8 +525,13 @@ export function useSymptomPdfExport() {
       const columnGap = 14
       const columnWidth = (contentWidth - columnGap) / 2
 
-      drawSectionTitle(doc, 'Entries by condition', margin, y)
+      drawSectionTitle(doc, 'Total entries per condition', margin, y)
       drawSectionTitle(doc, 'Severity bands', margin + columnWidth + columnGap, y)
+      y += 10
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(8)
+      doc.setTextColor(100, 116, 139)
+      doc.text('Full export range · each saved entry counts once', margin, y)
       y += 14
 
       drawHorizontalBarChart(
@@ -627,7 +642,7 @@ export function useSymptomPdfExport() {
 
     const summaries = buildCpExamSummaries(entries)
     if (!summaries.length) {
-      throw new Error('No valid symptom entries found for C&P prep export.')
+      throw new Error('No valid symptom entries found for personal review export.')
     }
 
     const doc = new jsPDF({

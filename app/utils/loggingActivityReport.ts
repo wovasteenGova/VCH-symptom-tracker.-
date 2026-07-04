@@ -8,6 +8,7 @@ export type LoggingActivityMetrics = {
   monthLabel: string
   year: number
   month: number
+  daysInMonth: number
   totalLogs: number
   conditionCount: number
   conditionBreakdown: Array<{ label: string, count: number }>
@@ -89,6 +90,7 @@ export function buildLoggingActivityMetrics(
     }),
     year,
     month,
+    daysInMonth,
     totalLogs: monthEntries.length,
     conditionCount: byCondition.size,
     conditionBreakdown: sortedConditions.slice(0, MAX_VISIBLE_CONDITIONS),

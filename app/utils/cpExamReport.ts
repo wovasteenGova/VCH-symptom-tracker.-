@@ -23,6 +23,7 @@ export type CpExamConditionSummary = {
   functionalImpacts: string[]
   reportedNotes: string[]
   recentWeeklyCounts: Array<{ label: string, count: number }>
+  talkingPoint: string
 }
 
 const RECENT_WINDOW_DAYS = 90
@@ -207,6 +208,160 @@ function collectReportedNotes(entries: CpExamEntry[]) {
   return notes
 }
 
+function timesPerMonthLabel(avgPerWeek: number) {
+  if (avgPerWeek <= 0) {
+    return 'no logged episodes in this period'
+  }
+
+  const perMonth = avgPerWeek * (52 / 12)
+  const rounded = Math.round(perMonth)
+
+  if (rounded <= 1) {
+    return 'about once a month'
+  }
+
+  if (rounded === 2) {
+    return 'about twice a month'
+  }
+
+  return `about ${rounded} times a month`
+}
+
+function episodeNoun(conditionLabel: string) {
+  const label = conditionLabel.toLowerCase()
+
+  if (/ptsd|anxiety|depression|mental|panic/.test(label)) {
+    return 'episodes'
+  }
+
+  if (/migraine|headache/.test(label)) {
+    return 'headache days'
+  }
+
+  if (/gerd|ibs|digestive|diarrhea|constipation|reflux/.test(label)) {
+    return 'flare-ups'
+  }
+
+  if (/sleep|apnea|insomnia/.test(label)) {
+    return 'sleep issues'
+  }
+
+  return 'symptom episodes'
+}
+
+function joinNatural(items: string[]) {
+  if (!items.length) {
+    return ''
+  }
+
+  if (items.length === 1) {
+    return items[0]
+  }
+
+  if (items.length === 2) {
+    return `${items[0]} and ${items[1]}`
+  }
+
+  return `${items.slice(0, -1).join(', ')}, and ${items.at(-1)}`
+}
+
+function softenImpactForSpeech(impact: string) {
+  const normalized = impact.trim()
+  const map: Record<string, string> = {
+    'No - kept going': 'keep up your normal pace',
+    'Slowed down but continued': 'move at your normal pace',
+    'Yes - had to rest or lie down': 'rest or get through the day',
+    'Yes - left work or stopped activity': 'stay at work or finish activities',
+    'Yes - cancelled plans or errands': 'keep plans or run errands',
+    'Sleep was mostly OK': 'get useful sleep',
+    'Woke up several times': 'sleep through the night',
+    'Hard to fall asleep': 'fall asleep',
+    'Barely slept': 'get useful sleep',
+    'No useful rest': 'get useful rest',
+    'Panic': 'feel calm in everyday situations',
+    'Nightmare': 'sleep without nightmares',
+    'Flashback': 'stay grounded in the present',
+    'Isolation': 'stay engaged with people',
+    'Irritability': 'stay patient with others',
+    'Suicidal thoughts': 'feel safe and stable',
+    'Nightmares': 'sleep without nightmares',
+    'Flashbacks': 'stay grounded in the present',
+    'Hypervigilance': 'relax in normal settings',
+    'Avoidance': 'go places or do activities you avoid',
+    'Heartburn': 'eat comfortably',
+    'Regurgitation': 'eat without reflux symptoms',
+    'Trouble swallowing': 'swallow comfortably',
+    'Pain when swallowing': 'swallow without pain',
+    'Nausea or vomiting': 'keep food down',
+    'Abdominal pain': 'get through the day without abdominal pain',
+    'Constipation': 'stay regular',
+    'Diarrhea': 'leave the house without urgency',
+    'Stiffness': 'move comfortably',
+    'Limited range of motion': 'move the way you need to',
+    'Joint instability': 'trust the joint during activity',
+    'Radiating pain': 'move without radiating pain',
+    'Numbness': 'feel the affected area normally',
+    'Tingling': 'go through the day without tingling',
+    'Burning pain': 'get through daily tasks',
+    'Weakness': 'rely on normal strength',
+    'Near fall or fall': 'move safely',
+    'Prostrating attack': 'function during headache days',
+    'Light sensitivity': 'tolerate light',
+    'Sound sensitivity': 'tolerate noise'
+  }
+
+  return map[normalized] ?? normalized.charAt(0).toLowerCase() + normalized.slice(1)
+}
+
+export function buildCpExamTalkingPoint(summary: Pick<
+  CpExamConditionSummary,
+  | 'conditionLabel'
+  | 'entryCount'
+  | 'trackingSpanLabel'
+  | 'recentAvgPerWeek'
+  | 'recentFrequencyLabel'
+  | 'avgSeverity'
+  | 'severityLabel'
+  | 'functionalImpacts'
+  | 'reportedNotes'
+>) {
+  if (summary.entryCount <= 0) {
+    return 'No logged entries yet for this condition.'
+  }
+
+  const sentences: string[] = []
+  const episodes = episodeNoun(summary.conditionLabel)
+  const monthlyFrequency = timesPerMonthLabel(summary.recentAvgPerWeek)
+
+  sentences.push(
+    `Based on your symptom logs (${summary.trackingSpanLabel}), you reported ${summary.conditionLabel}-related ${episodes} ${monthlyFrequency} recently (${summary.recentFrequencyLabel}).`
+  )
+
+  if (summary.functionalImpacts.length) {
+    const impacts = summary.functionalImpacts
+      .slice(0, 3)
+      .map(softenImpactForSpeech)
+
+    sentences.push(
+      `Your entries often note that this makes it hard to ${joinNatural(impacts)}.`
+    )
+  }
+
+  if (summary.entryCount >= 3 && summary.avgSeverity > 0) {
+    sentences.push(
+      `When you logged episodes, severity was ${summary.severityLabel}.`
+    )
+  }
+
+  if (summary.reportedNotes[0]) {
+    sentences.push(`You also wrote: "${summary.reportedNotes[0]}"`)
+  }
+
+  sentences.push('Use your own words at the exam; only describe what is still true for you.')
+
+  return sentences.join(' ')
+}
+
 export function buildCpExamSummaries(entries: CpExamEntry[]): CpExamConditionSummary[] {
   const byCondition = new Map<string, CpExamEntry[]>()
 
@@ -240,7 +395,7 @@ export function buildCpExamSummaries(entries: CpExamEntry[]): CpExamConditionSum
       const overallFrequencyLabel = formatFrequencyLabel(overallAvgPerWeek)
       const severityLabel = formatSeverityLabel(avgSeverity, peakSeverity)
 
-      return {
+      const summary: CpExamConditionSummary = {
         conditionLabel,
         entryCount: validEntries.length,
         trackingSpanLabel,
@@ -255,13 +410,18 @@ export function buildCpExamSummaries(entries: CpExamEntry[]): CpExamConditionSum
         functionalImpacts,
         reportedNotes: collectReportedNotes(validEntries),
         recentWeeklyCounts: buildRecentWeeklyCounts(validEntries, now),
+        talkingPoint: ''
       }
+
+      summary.talkingPoint = buildCpExamTalkingPoint(summary)
+
+      return summary
     })
     .sort((left, right) => right.entryCount - left.entryCount)
 }
 
 export function buildCpExamReportTitle(conditionLabel: string | null | undefined) {
   return conditionLabel
-    ? `C&P Exam Prep — ${conditionLabel}`
-    : 'C&P Exam Prep Sheet'
+    ? `Personal Review Summary — ${conditionLabel}`
+    : 'Personal Review Summary'
 }

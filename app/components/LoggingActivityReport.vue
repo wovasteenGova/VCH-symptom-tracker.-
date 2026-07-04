@@ -6,7 +6,7 @@
       </div>
       <div class="min-w-0 flex-1">
         <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-          Logging activity
+          Monthly breakdown
         </p>
         <p class="mt-1 text-base font-bold text-slate-950 dark:text-white">
           {{ metrics.monthLabel }}
@@ -14,13 +14,19 @@
         <p class="mt-1 text-xs leading-5 text-slate-600 dark:text-slate-300">
           {{ summaryText }}
         </p>
+        <p class="mt-1 text-[0.65rem] leading-5 text-slate-500 dark:text-slate-400">
+          Changes when you swipe to another month on the calendar above.
+        </p>
       </div>
     </div>
 
     <div v-if="metrics.totalLogs" class="mt-5 space-y-5">
       <div>
         <p class="text-xs font-bold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-          By week
+          Logs each week
+        </p>
+        <p class="mt-1 text-[0.65rem] leading-5 text-slate-500 dark:text-slate-400">
+          In {{ metrics.monthLabel }} only
         </p>
         <ul class="mt-3 space-y-2.5">
           <li
@@ -37,8 +43,9 @@
                 :style="{ width: `${barWidth(week.count, maxWeeklyCount)}%` }"
               />
             </div>
-            <span class="w-6 text-right text-xs font-bold tabular-nums text-slate-950 dark:text-white">
-              {{ week.count }}
+            <span class="min-w-[3.25rem] text-right text-xs tabular-nums">
+              <span class="font-bold text-slate-950 dark:text-white">{{ week.count }}</span>
+              <span class="font-semibold text-slate-400 dark:text-slate-500">{{ logCountSuffix(week.count) }}</span>
             </span>
           </li>
         </ul>
@@ -46,7 +53,10 @@
 
       <div>
         <p class="text-xs font-bold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-          By condition
+          Logs per condition
+        </p>
+        <p class="mt-1 text-[0.65rem] leading-5 text-slate-500 dark:text-slate-400">
+          In {{ metrics.monthLabel }} only · each saved entry counts (including more than one on the same day)
         </p>
         <ul class="mt-3 space-y-2.5">
           <li
@@ -63,8 +73,9 @@
                 :style="{ width: `${barWidth(condition.count, maxConditionCount)}%` }"
               />
             </div>
-            <span class="w-6 text-right text-xs font-bold tabular-nums text-slate-950 dark:text-white">
-              {{ condition.count }}
+            <span class="min-w-[3.25rem] text-right text-xs tabular-nums">
+              <span class="font-bold text-slate-950 dark:text-white">{{ condition.count }}</span>
+              <span class="font-semibold text-slate-400 dark:text-slate-500">{{ logCountSuffix(condition.count) }}</span>
             </span>
           </li>
         </ul>
@@ -78,7 +89,10 @@
 
       <div>
         <p class="text-xs font-bold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-          Daily log density
+          Daily logging consistency
+        </p>
+        <p class="mt-1 text-[0.65rem] leading-5 text-slate-500 dark:text-slate-400">
+          {{ metrics.monthLabel }} · days you saved at least one log
         </p>
         <div class="mt-3 grid grid-cols-7 gap-1.5 text-center text-[0.65rem] font-semibold text-slate-400">
           <span v-for="day in weekDays" :key="day">{{ day }}</span>
@@ -134,6 +148,10 @@ function barWidth(value: number, maxValue: number) {
   }
 
   return Math.max(10, Math.round((value / maxValue) * 100))
+}
+
+function logCountSuffix(count: number) {
+  return count === 1 ? ' log' : ' logs'
 }
 
 function densityClass(count: number) {

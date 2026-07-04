@@ -297,6 +297,7 @@ type HorizontalBarChartLayout = {
   labelWidth?: number
   valueWidth?: number
   maxValue?: number
+  valueDenominator?: number
 }
 
 export function drawHorizontalBarChart(
@@ -317,7 +318,7 @@ export function drawHorizontalBarChart(
   const rightPad = 12
   const barGap = 10
   const labelWidth = layout.labelWidth ?? 96
-  const valueWidth = layout.valueWidth ?? 24
+  const valueWidth = layout.valueWidth ?? 34
   const barStart = x + leftPad + labelWidth
   const barMaxWidth = Math.max(
     24,
@@ -357,8 +358,21 @@ export function drawHorizontalBarChart(
 
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(8)
-    setText(doc, slate900)
-    doc.text(String(item.value), valueX, rowY + 8, { align: 'right' })
+
+    const denominator = layout.valueDenominator
+    const valueLabel = String(item.value)
+
+    if (denominator) {
+      const suffix = `/${denominator}`
+      const suffixWidth = doc.getTextWidth(suffix)
+      setText(doc, slate900)
+      doc.text(valueLabel, valueX - suffixWidth, rowY + 8, { align: 'right' })
+      setText(doc, slate500)
+      doc.text(suffix, valueX, rowY + 8, { align: 'right' })
+    } else {
+      setText(doc, slate900)
+      doc.text(valueLabel, valueX, rowY + 8, { align: 'right' })
+    }
 
     rowY += rowHeight
   })
@@ -502,6 +516,7 @@ type LoggingChartSections = {
   condition?: boolean
   heatmap?: boolean
   skipHeader?: boolean
+  consistencyRangeLabel?: string
 }
 
 type AggregateLoggingMetrics = {
@@ -546,8 +561,13 @@ export function drawAggregateLoggingSection(
       value: c.count
     }))
     const conditionChartHeight = Math.max(96, conditionItems.length * 28 + 28)
-    y = ensureChartPageSpace(doc, y, conditionChartHeight + 52, pageHeight, margin)
-    drawSectionTitle(doc, 'By condition (all months)', x, y)
+    y = ensureChartPageSpace(doc, y, conditionChartHeight + 64, pageHeight, margin)
+    drawSectionTitle(doc, `Total logs per condition — ${metrics.rangeLabel}`, x, y)
+    y += 10
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8)
+    setText(doc, slate500)
+    doc.text('Saved entries in this date range only · each save counts', x, y)
     y += 14
     y = drawHorizontalBarChart(
       doc,
@@ -883,6 +903,11 @@ export function drawLoggingActivitySection(
   if (showWeek) {
     y = ensureChartPageSpace(doc, y, weeklyChartHeight + 52, pageHeight, margin)
     drawSectionTitle(doc, 'Symptoms logged by week', x, y)
+    y += 10
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8)
+    setText(doc, slate500)
+    doc.text(`${metrics.monthLabel} only`, x, y)
     y += 14
     y = drawHorizontalBarChart(
       doc,
@@ -899,7 +924,12 @@ export function drawLoggingActivitySection(
   if (showCondition) {
     const conditionChartHeight = Math.max(96, conditionItems.length * 28 + 28)
     y = ensureChartPageSpace(doc, y, conditionChartHeight + 52, pageHeight, margin)
-    drawSectionTitle(doc, 'By condition', x, y)
+    drawSectionTitle(doc, `Logs per condition — ${metrics.monthLabel}`, x, y)
+    y += 10
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8)
+    setText(doc, slate500)
+    doc.text('Saved entries this month only (same-day logs each count)', x, y)
     y += 14
     y = drawHorizontalBarChart(
       doc,
@@ -917,9 +947,16 @@ export function drawLoggingActivitySection(
     const heatmapHeight = computeHeatmapChartHeight(metrics.dailyCounts, metrics.mondayOffset)
     y = ensureChartPageSpace(doc, y, heatmapHeight + 52, pageHeight, margin)
     const heatmapTitle = heatmapOnly
-      ? `Daily log density — ${metrics.monthLabel}`
-      : 'Daily log density'
+      ? `Daily logging consistency — ${metrics.monthLabel}`
+      : (sections.consistencyRangeLabel
+        ? `Daily logging consistency — ${sections.consistencyRangeLabel}`
+        : `Daily logging consistency — ${metrics.monthLabel}`)
     drawSectionTitle(doc, heatmapTitle, x, y)
+    y += 10
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8)
+    setText(doc, slate500)
+    doc.text('Days with at least one saved log — consistency over time', x, y)
     y += 14
     y = drawHeatmapCalendar(
       doc,

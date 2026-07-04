@@ -35,17 +35,6 @@
           </div>
 
           <div v-else class="ml-auto flex shrink-0 items-center gap-2">
-            <button
-              v-if="hasActiveDraft"
-              type="button"
-              class="relative grid size-10 place-items-center rounded-full bg-white text-slate-950 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-100 dark:bg-slate-900 dark:text-white dark:ring-slate-800 dark:hover:bg-slate-800"
-              aria-label="Open active draft"
-              @click="openEntryPanel"
-            >
-              <UIcon name="i-lucide-files" class="size-5" />
-              <span class="absolute right-0.5 top-0.5 size-2.5 rounded-full bg-red-500 ring-2 ring-slate-950" />
-            </button>
-
             <UColorModeSwitch
               size="md"
               color="primary"
@@ -60,12 +49,18 @@
                   ? 'bg-sky-500 text-white ring-sky-400 dark:bg-sky-500 dark:text-white dark:ring-sky-400'
                   : 'bg-white text-slate-950 ring-slate-200 hover:bg-slate-100 dark:bg-slate-900 dark:text-white dark:ring-slate-800 dark:hover:bg-slate-800'"
                 :aria-expanded="isSubmissionDropdownOpen"
-                aria-label="Open submission notifications"
+                aria-label="Open submissions and drafts"
                 @click="toggleSubmissionDropdown"
               >
                 <UIcon name="i-lucide-inbox" class="size-5" />
                 <span
-                  v-if="unreadSubmissionCount"
+                  v-if="hasEntryDraft"
+                  class="absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-red-500 px-1 text-[0.62rem] font-black leading-5 text-white ring-2 ring-slate-50 dark:ring-slate-950"
+                >
+                  !!
+                </span>
+                <span
+                  v-else-if="unreadSubmissionCount"
                   class="absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-sky-500 px-1.5 text-[0.65rem] font-bold leading-5 text-white ring-2 ring-slate-50 dark:ring-slate-950"
                 >
                   {{ unreadSubmissionCount }}
@@ -109,11 +104,37 @@
                     </p>
                   </div>
 
-                  <div v-if="!submissionNotifications.length" class="px-4 py-6 text-center text-[0.875rem] text-slate-500 dark:text-slate-400">
-                    No submissions yet.
-                  </div>
+                  <div class="max-h-80 overflow-y-auto no-scrollbar p-2">
+                    <button
+                      v-if="hasEntryDraft"
+                      type="button"
+                      class="relative mb-2 flex w-full items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-3 py-3 text-left transition hover:bg-red-100/80 dark:border-red-900/50 dark:bg-red-950/30 dark:hover:bg-red-950/50"
+                      @click="resumeEntryDraft"
+                    >
+                      <span class="relative mt-0.5 grid size-9 shrink-0 place-items-center rounded-full bg-white text-red-600 ring-1 ring-red-200 dark:bg-slate-900 dark:text-red-300 dark:ring-red-900/60">
+                        <UIcon name="i-lucide-files" class="size-4" />
+                        <span class="absolute -right-1 -top-1 grid min-w-4 place-items-center rounded-full bg-red-500 px-0.5 text-[0.58rem] font-black leading-4 text-white ring-2 ring-red-50 dark:ring-red-950">
+                          !!
+                        </span>
+                      </span>
+                      <span class="min-w-0 flex-1">
+                        <span class="block text-[0.875rem] font-bold text-slate-950 dark:text-white">Draft</span>
+                        <span class="mt-1 block truncate text-xs font-semibold text-slate-700 dark:text-slate-200">
+                          {{ entryDraftPreview?.title || 'Symptom log' }}
+                        </span>
+                        <span class="mt-1 block text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-red-600 dark:text-red-300">
+                          Saved {{ entryDraftPreview?.timeLabel || 'recently' }}
+                        </span>
+                      </span>
+                    </button>
 
-                  <div v-else class="max-h-80 overflow-y-auto no-scrollbar p-2">
+                    <div
+                      v-if="!submissionNotifications.length && !hasEntryDraft"
+                      class="px-2 py-6 text-center text-[0.875rem] text-slate-500 dark:text-slate-400"
+                    >
+                      No submissions yet.
+                    </div>
+
                     <button
                       v-for="submission in submissionNotifications"
                       :key="submission.id"
@@ -1117,7 +1138,7 @@
             </p>
 
             <div
-              v-if="highlightedSubmissionNotice"
+              v-if="highlightedSubmissionNotice && highlightedSubmissionNotice.source === 'Family'"
               class="mt-3 flex items-start gap-2.5 rounded-2xl border border-sky-200 bg-sky-50 px-3 py-2.5 dark:border-sky-700/60 dark:bg-sky-950/40"
             >
               <span class="mt-0.5 grid size-7 shrink-0 place-items-center rounded-full bg-sky-400/15 text-sky-600 dark:bg-sky-500/20 dark:text-sky-300">
@@ -1125,7 +1146,7 @@
               </span>
               <div class="min-w-0 flex-1">
                 <p class="text-[0.875rem] font-bold text-slate-950 dark:text-white">
-                  {{ highlightedSubmissionNotice.source === 'Family' ? 'New family observation' : 'Highlighted entry' }}
+                  New family observation
                 </p>
                 <p class="mt-0.5 truncate text-xs font-semibold text-slate-700 dark:text-slate-200">
                   {{ highlightedSubmissionNotice.title }}
@@ -1365,7 +1386,7 @@
                       : 'text-slate-500 dark:text-slate-400'"
                     @click="pdfExportType = 'cp-exam'"
                   >
-                    C&P prep
+                    Personal review
                   </button>
                 </div>
               </div>
@@ -1713,7 +1734,7 @@ import { useUserProfiles } from '../../composables/useUserProfiles'
 import { useEntitlements } from '../../composables/useEntitlements'
 import { useAppWelcome } from '../../composables/useAppWelcome'
 import { useTrackedConditions } from '../../composables/useTrackedConditions'
-import { FREE_CONDITION_LIMIT, PRO_MONTHLY_PRICE_LABEL, formatConditionKeyLabel, conditionKeyFromLabel } from '../../utils/subscription'
+import { FREE_CONDITION_LIMIT, PRO_ANNUAL_PRICE_LABEL, formatConditionKeyLabel, conditionKeyFromLabel } from '../../utils/subscription'
 import { mapEntryHistoryItem } from '../../utils/entryDisplay'
 import { copyToClipboard } from '../../utils/copyToClipboard'
 import { PDF_EXPORT_ACKNOWLEDGMENT_LABEL } from '../../utils/pdfExportCertification'
@@ -1757,6 +1778,15 @@ import { getSeverityGuidance, severityQuickPresets } from '../../utils/severityG
 import { CalendarDate } from '@internationalized/date'
 import { computed, nextTick, onBeforeMount, onMounted, provide, ref, shallowRef, watch } from 'vue'
 import { useKeyboardAwareScroll } from '../../composables/useKeyboardAwareScroll'
+import {
+  buildEntryDraftSnapshot,
+  clearEntryDraft,
+  formatEntryDraftTimeLabel,
+  isMeaningfulEntryDraft,
+  readEntryDraft,
+  writeEntryDraft,
+  type EntryDraftSnapshot
+} from '../../composables/useEntryDraft'
 import { useTrackerLayout, TRACKER_CLOSE_EMBED_PROFILE_KEY } from '../../composables/useTrackerLayout'
 import ProfilePage from '../profile.vue'
 
@@ -1823,6 +1853,8 @@ const authMessage = ref('')
 const needsEmailConfirmation = ref(false)
 const isAuthSubmitting = ref(false)
 const hasActiveDraft = ref(false)
+const entryDraftPreview = ref<{ title: string, timeLabel: string } | null>(null)
+const isRestoringEntryDraft = ref(false)
 const entryStep = ref(0)
 const editingEntryId = ref<string | null>(null)
 const editingEntryConditionLabel = ref<string | null>(null)
@@ -2177,6 +2209,23 @@ const highlightedSubmissionNotice = computed(() => {
   }) ?? null
 })
 
+const hasEntryDraft = computed(() => {
+  if (entryDraftPreview.value) {
+    return true
+  }
+
+  if (!hasActiveDraft.value || isEntryOpen.value || editingEntryId.value) {
+    return false
+  }
+
+  return isMeaningfulEntryDraft({
+    entryStep: entryStep.value,
+    entryForm: entryForm.value,
+    selectedSearchCondition: selectedSearchCondition.value,
+    customConditionInput: customConditionInput.value
+  })
+})
+
 const weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 
 const historyViewMonth = ref({
@@ -2407,10 +2456,10 @@ const allExportConditionsSelected = computed(() => {
 
 const pdfExportDescription = computed(() => {
   if (pdfExportType.value === 'cp-exam') {
-    return 'Compact reference from your logs — frequency per week, severity, functional impact, and notes exactly as you entered them.'
+    return 'Personal review summary from your logs — frequency, severity, functional impact, and topics you reported most often. Not for VA upload.'
   }
 
-  return 'Signed report with summary stats, charts, and your full entry log for VA records.'
+  return 'Signed Veteran Symptom History Report with summary stats, logging consistency charts, and your full entry log.'
 })
 
 const canConfirmPdfExport = computed(() => {
@@ -2433,7 +2482,7 @@ const exportButtonLabel = computed(() => {
   const count = selectedExportConditionKeys.value.length
 
   if (pdfExportType.value === 'cp-exam') {
-    return count === 1 ? 'Download C&P prep sheet' : `Download C&P prep (${count} conditions)`
+    return count === 1 ? 'Download personal review' : `Download personal review (${count} conditions)`
   }
 
   return count === 1 ? 'Download signed PDF' : `Download signed PDF (${count} conditions)`
@@ -2689,6 +2738,132 @@ let searchTimer: ReturnType<typeof setTimeout> | undefined
 let customConditionTimer: ReturnType<typeof setTimeout> | undefined
 let conditionScrollTimer: ReturnType<typeof setTimeout> | undefined
 let submissionHighlightTimer: ReturnType<typeof setTimeout> | undefined
+let entryDraftSaveTimer: ReturnType<typeof setTimeout> | undefined
+
+function refreshEntryDraftPreview() {
+  const snapshot = readEntryDraft(user.value?.id)
+
+  if (snapshot && isMeaningfulEntryDraft(snapshot)) {
+    entryDraftPreview.value = {
+      title: snapshot.conditionTitle || 'Symptom log',
+      timeLabel: formatEntryDraftTimeLabel(snapshot.savedAt)
+    }
+    return
+  }
+
+  if (
+    hasActiveDraft.value
+    && !isEntryOpen.value
+    && !editingEntryId.value
+    && isMeaningfulEntryDraft({
+      entryStep: entryStep.value,
+      entryForm: entryForm.value,
+      selectedSearchCondition: selectedSearchCondition.value,
+      customConditionInput: customConditionInput.value
+    })
+  ) {
+    entryDraftPreview.value = {
+      title: entryTitle.value,
+      timeLabel: 'This session'
+    }
+    return
+  }
+
+  entryDraftPreview.value = null
+}
+
+function persistEntryDraftNow() {
+  if (isRestoringEntryDraft.value || editingEntryId.value) {
+    return
+  }
+
+  const snapshot = buildEntryDraftSnapshot({
+    entryStep: entryStep.value,
+    severityValue: severityValue.value,
+    entryForm: entryForm.value,
+    selectedSearchCondition: selectedSearchCondition.value,
+    customConditionInput: customConditionInput.value,
+    conditionTitle: entryTitle.value
+  })
+
+  if (!snapshot) {
+    clearEntryDraft(user.value?.id)
+    refreshEntryDraftPreview()
+    return
+  }
+
+  writeEntryDraft(user.value?.id, snapshot)
+  refreshEntryDraftPreview()
+}
+
+function scheduleEntryDraftSave() {
+  if (isRestoringEntryDraft.value || editingEntryId.value) {
+    return
+  }
+
+  if (entryDraftSaveTimer) {
+    clearTimeout(entryDraftSaveTimer)
+  }
+
+  entryDraftSaveTimer = setTimeout(() => {
+    persistEntryDraftNow()
+  }, 800)
+}
+
+function clearPersistedEntryDraft() {
+  clearEntryDraft(user.value?.id)
+  refreshEntryDraftPreview()
+}
+
+function restoreEntryDraftSnapshot(snapshot: EntryDraftSnapshot) {
+  isRestoringEntryDraft.value = true
+  historyExpanded.value = false
+  transitionDirection.value = 'expand'
+  editingEntryId.value = null
+  editingEntryConditionLabel.value = null
+  entryError.value = ''
+  entryStep.value = snapshot.entryStep
+  severityValue.value = snapshot.severityValue
+  entryForm.value = { ...snapshot.entryForm }
+  selectedSearchCondition.value = snapshot.selectedSearchCondition
+    ? { ...snapshot.selectedSearchCondition }
+    : null
+  customConditionInput.value = snapshot.customConditionInput
+  debouncedCustomConditionPreview.value = snapshot.customConditionInput
+  isConditionPickerOpen.value = false
+  hasActiveDraft.value = true
+  syncEntryInputsFromForm()
+  isRestoringEntryDraft.value = false
+}
+
+function resumeEntryDraft() {
+  closeSubmissionDropdown()
+
+  if (
+    hasActiveDraft.value
+    && isMeaningfulEntryDraft({
+      entryStep: entryStep.value,
+      entryForm: entryForm.value,
+      selectedSearchCondition: selectedSearchCondition.value,
+      customConditionInput: customConditionInput.value
+    })
+  ) {
+    historyExpanded.value = false
+    transitionDirection.value = 'expand'
+    isEntryOpen.value = true
+    return
+  }
+
+  const snapshot = readEntryDraft(user.value?.id)
+
+  if (!snapshot) {
+    refreshEntryDraftPreview()
+    return
+  }
+
+  restoreEntryDraftSnapshot(snapshot)
+  isEntryOpen.value = true
+}
 
 watch(searchQuery, (value) => {
   if (searchTimer) {
@@ -2738,6 +2913,7 @@ onMounted(async () => {
     loadProfileDisplayName()
     loadEntitlements()
     loadEntries()
+    refreshEntryDraftPreview()
   }
 })
 
@@ -2749,13 +2925,15 @@ watch(user, async (currentUser) => {
     await loadAppWelcomeState()
     await loadEntries()
     await refreshTrackedConditions()
+    refreshEntryDraftPreview()
     return
   }
 
   profileDisplayName.value = ''
   savedEntries.value = []
+  closeEntryPanel(true, true)
+  refreshEntryDraftPreview()
   await refreshTrackedConditions()
-  closeEntryPanel(true)
 })
 
 watch(needsOnboarding, (needsOnboardingNow) => {
@@ -2780,7 +2958,26 @@ watch(isEntryOpen, (open) => {
   if (!open && isHomeOverviewSlide.value) {
     refreshHomeVisitTip()
   }
+
+  if (!open || editingEntryId.value) {
+    return
+  }
+
+  scheduleEntryDraftSave()
 })
+
+watch(
+  [entryForm, () => severityValue.value, entryStep, selectedSearchCondition, customConditionInput],
+  () => {
+    if (!isEntryOpen.value || editingEntryId.value || isRestoringEntryDraft.value) {
+      return
+    }
+
+    hasActiveDraft.value = true
+    scheduleEntryDraftSave()
+  },
+  { deep: true }
+)
 
 watch(trackedConditionKeys, () => {
   if (isHomeOverviewSlide.value) {
@@ -3451,7 +3648,7 @@ async function saveEntry() {
     } else {
       openUpgradePrompt(
         'Free plan: 1 condition',
-        `Free lets you pick ${FREE_CONDITION_LIMIT} condition with unlimited entries. Upgrade to Pro for ${PRO_MONTHLY_PRICE_LABEL} to track more conditions, family reporting, and advanced charts in PDF exports.`
+        `Free lets you pick ${FREE_CONDITION_LIMIT} condition with unlimited entries. Upgrade to Pro for ${PRO_ANNUAL_PRICE_LABEL} to track more conditions, family reporting, and advanced charts in PDF exports.`
       )
       return
     }
@@ -3487,6 +3684,7 @@ async function saveEntry() {
     }
 
     hasActiveDraft.value = false
+    clearPersistedEntryDraft()
     closeEntryPanel(true)
     await loadEntries()
     await syncHomeConditionsAfterEntrySave(payload.condition_key)
@@ -3786,7 +3984,8 @@ async function handleSignOut() {
     await signOut()
     isAuthPanelOpen.value = false
     hasActiveDraft.value = false
-    closeEntryPanel(true)
+    closeEntryPanel(true, true)
+    refreshEntryDraftPreview()
   } catch {
     authMessage.value = authError.value || 'Could not sign out.'
   } finally {
@@ -4493,7 +4692,7 @@ function ensureFreeConditionAccess(
 
   openUpgradePrompt(
     'Free plan: 1 condition',
-    `You already picked ${freeConditionLabels.value[0] || 'your free condition'}. Upgrade to Pro for ${PRO_MONTHLY_PRICE_LABEL} to track ${conditionLabel || formatConditionKeyLabel(conditionKey)} and more.`
+    `You already picked ${freeConditionLabels.value[0] || 'your free condition'}. Upgrade to Pro for ${PRO_ANNUAL_PRICE_LABEL} to track ${conditionLabel || formatConditionKeyLabel(conditionKey)} and more.`
   )
   return false
 }
@@ -4643,21 +4842,46 @@ async function confirmConditionSlot() {
   }
 }
 
-function closeEntryPanel(clearDraft = false) {
+function closeEntryPanel(clearDraft = false, preservePersistedDraft = false) {
+  if (isEntryOpen.value && !clearDraft && !editingEntryId.value) {
+    persistEntryDraftNow()
+  }
+
   if (isEntryOpen.value) {
     transitionDirection.value = 'collapse'
   }
 
   if (clearDraft) {
     hasActiveDraft.value = false
+
+    if (!preservePersistedDraft) {
+      clearPersistedEntryDraft()
+    }
+
+    editingEntryId.value = null
+    editingEntryConditionLabel.value = null
+    selectedSearchCondition.value = null
+    isConditionPickerOpen.value = false
+    customConditionInput.value = ''
+    debouncedCustomConditionPreview.value = ''
+    resetEntryForm()
+  } else if (!editingEntryId.value) {
+    hasActiveDraft.value = isMeaningfulEntryDraft({
+      entryStep: entryStep.value,
+      entryForm: entryForm.value,
+      selectedSearchCondition: selectedSearchCondition.value,
+      customConditionInput: customConditionInput.value
+    })
+    refreshEntryDraftPreview()
+  } else {
+    editingEntryId.value = null
+    editingEntryConditionLabel.value = null
+    selectedSearchCondition.value = null
+    isConditionPickerOpen.value = false
+    customConditionInput.value = ''
+    debouncedCustomConditionPreview.value = ''
   }
 
-  editingEntryId.value = null
-  editingEntryConditionLabel.value = null
-  selectedSearchCondition.value = null
-  isConditionPickerOpen.value = false
-  customConditionInput.value = ''
-  debouncedCustomConditionPreview.value = ''
   isEntryOpen.value = false
 }
 

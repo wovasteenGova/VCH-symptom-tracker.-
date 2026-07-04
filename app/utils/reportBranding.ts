@@ -27,10 +27,18 @@ export function resolveTrackerAppUrl(configuredSiteUrl?: string | null) {
 
 export const reportBranding = {
   organizationName: 'Veterans Central Hub',
-  reportTitle: 'Symptom Tracker Report',
-  reportSubtitle: 'Veteran symptom analytics export',
+  reportTitle: 'Veteran Symptom History Report',
+  reportSubtitle: 'Personal evidence organizer for medical visits, claims, and your records',
   logoPath: '/vch-logo.png'
 }
+
+export const CP_PREP_DISCLAIMER_TITLE = 'Personal reference only — not for VA submission'
+
+export const CP_PREP_DISCLAIMER_BODY =
+  'For your own review before medical visits. Do not upload this sheet as VA evidence. Use your own words; only describe what is still true for you.'
+
+export const MARKETING_EXAM_HOOK =
+  'Stop trying to remember six months of symptoms during a 30-minute exam.'
 
 let cachedLogoDataUrl: string | null | undefined
 

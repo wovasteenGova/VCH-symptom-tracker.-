@@ -15,7 +15,10 @@
         <header class="flex shrink-0 items-center justify-between gap-3 border-b border-slate-800 px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))]">
           <div>
             <p class="text-xs font-bold uppercase tracking-[0.16em] text-amber-300">Secure checkout</p>
-            <h2 class="mt-1 text-lg font-bold text-white">Symptom Tracker Pro</h2>
+            <h2 class="mt-1 text-lg font-bold text-white">Symptom Tracker Pro — {{ PRO_ANNUAL_PRICE_LABEL }}</h2>
+            <p class="mt-1 text-xs leading-5 text-slate-400">
+              {{ PRO_REFUND_POLICY }}
+            </p>
           </div>
           <button
             type="button"
@@ -61,7 +64,7 @@
         </div>
 
         <p class="shrink-0 border-t border-slate-800 px-4 py-3 text-center text-[0.68rem] leading-5 text-slate-500 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          Payments processed by Stripe. You stay in the app until payment completes.
+          Payments processed by Stripe. {{ PRO_CHECKOUT_SUBMIT_MESSAGE }}
         </p>
       </div>
     </Transition>
@@ -72,6 +75,7 @@
 import { loadStripe, type StripeEmbeddedCheckout } from '@stripe/stripe-js'
 import { nextTick, onUnmounted, ref, watch } from 'vue'
 import { useEntitlements } from '../composables/useEntitlements'
+import { PRO_ANNUAL_PRICE_LABEL, PRO_CHECKOUT_SUBMIT_MESSAGE, PRO_REFUND_POLICY } from '../utils/subscription'
 
 const props = defineProps<{
   open: boolean

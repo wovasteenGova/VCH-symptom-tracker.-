@@ -113,8 +113,14 @@
             <div class="flex items-start justify-between gap-3 pr-24">
               <div>
                 <p class="text-xs font-bold uppercase tracking-[0.16em] text-amber-200">Pro</p>
-                <h2 class="mt-1 text-2xl font-bold text-white">{{ PRO_MONTHLY_PRICE_LABEL }}</h2>
-                <p class="mt-1 text-xs text-amber-100/80">Billed monthly — cancel anytime</p>
+                <h2 class="mt-1 text-2xl font-bold text-white">{{ PRO_ANNUAL_PRICE_LABEL }}</h2>
+                <p class="mt-1 text-xs text-amber-100/80">{{ PRO_ANNUAL_PRICE_DETAIL }} · renews yearly</p>
+                <p class="mt-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-semibold leading-5 text-amber-50">
+                  {{ PRO_REFUND_POLICY }}
+                </p>
+                <p class="mt-2 text-xs leading-5 text-amber-100/90">
+                  Remember months of symptoms before your next exam — not during it.
+                </p>
               </div>
             </div>
 
@@ -219,7 +225,7 @@
           :disabled="isCheckoutLoading"
           @click="handleUpgrade"
         >
-          {{ isCheckoutLoading ? 'Loading checkout...' : `Upgrade to Pro — ${PRO_MONTHLY_PRICE_LABEL}` }}
+          {{ isCheckoutLoading ? 'Loading checkout...' : `Upgrade to Pro — ${PRO_ANNUAL_PRICE_LABEL}` }}
         </button>
 
         <NuxtLink
@@ -231,7 +237,7 @@
         </NuxtLink>
 
         <p class="mt-3 text-center text-[0.68rem] leading-5 text-slate-500">
-          Secure checkout powered by Stripe. Cancel anytime from billing settings.
+          Secure checkout powered by Stripe. {{ PRO_REFUND_POLICY_SHORT }} — cancel renewal anytime from billing settings.
         </p>
       </StickyActionBar>
     </section>
@@ -246,7 +252,10 @@ import { useEntitlements } from '../composables/useEntitlements'
 import {
   FREE_CONDITION_LIMIT,
   FREE_TIER_FEATURES,
-  PRO_MONTHLY_PRICE_LABEL,
+  PRO_ANNUAL_PRICE_DETAIL,
+  PRO_ANNUAL_PRICE_LABEL,
+  PRO_REFUND_POLICY,
+  PRO_REFUND_POLICY_SHORT,
   PRO_TIER_FEATURES,
   VCH_CLAIM_MAKER_URL,
   VCH_CONTACT_URL,
@@ -280,8 +289,8 @@ const paymentSteps = [
     body: 'Tap upgrade and pay right here in the app with Stripe — no redirect to another site until you finish.'
   },
   {
-    title: 'Pay monthly',
-    body: `${PRO_MONTHLY_PRICE_LABEL} renews automatically each month. You can cancel anytime from billing settings.`
+    title: 'Pay yearly',
+    body: `${PRO_ANNUAL_PRICE_LABEL} (${PRO_ANNUAL_PRICE_DETAIL}). ${PRO_REFUND_POLICY} Renews automatically each year unless you cancel from billing settings.`
   },
   {
     title: 'Unlock instantly',

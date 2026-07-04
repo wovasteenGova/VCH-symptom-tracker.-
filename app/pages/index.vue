@@ -27,11 +27,11 @@
                 Live · Free to start
               </UBadge>
               <h1 class="text-3xl font-bold tracking-tight text-balance sm:text-4xl lg:text-[2.75rem] lg:leading-tight">
-                Log symptoms on your phone. Build claim evidence over time.
+                Stop trying to remember six months of symptoms during a 30-minute exam.
               </h1>
               <p class="max-w-xl text-base leading-relaxed text-slate-600 dark:text-slate-300 lg:text-lg">
-                A mobile-first tracker for veterans — built separately from the main VCH site so your health
-                logs stay focused, private, and easy to use day to day.
+                A mobile-first symptom history report for veterans — log as you go, organize functional impact over time,
+                and export signed PDFs or personal review summaries before medical visits and claims work.
               </p>
             </div>
 
@@ -90,10 +90,9 @@
           What the Symptom Tracker does
         </h2>
         <p class="mt-4 max-w-4xl text-base leading-relaxed text-slate-600 dark:text-slate-300 lg:text-lg">
-          Track flare-ups, severity, daily impact, and mental health symptoms in one place. Add family
-          observations when you need them, review your history on a calendar, and export signed PDF reports
-          for C&amp;P exams, personal statements, SHA, and your own records. Strong evidence starts before
-          you file — not after.
+          Organize symptom history, functional impairment, and family observations in one place. Review your calendar,
+          export a signed Veteran Symptom History Report, or download a personal review summary before exams —
+          so you are not reconstructing months of memory in one sitting.
         </p>
 
         <ul class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -183,8 +182,8 @@ onMounted(() => {
 
 const highlights = [
   {
-    title: 'Track by condition',
-    copy: 'Pick the conditions that matter to you and log episodes, severity, and impact as they happen.',
+    title: 'Log as symptoms happen',
+    copy: 'Pick your conditions and capture episodes, severity, and daily impact while the details are still fresh.',
     icon: 'i-lucide-activity'
   },
   {
@@ -193,8 +192,8 @@ const highlights = [
     icon: 'i-lucide-users'
   },
   {
-    title: 'Export PDF reports',
-    copy: 'Download signed symptom logs when you need records for exams, statements, or your VSO.',
+    title: 'Evidence organizer PDFs',
+    copy: 'Export a signed symptom history report or a personal review summary pulled from your own logs — for exams, your VSO, and your records.',
     icon: 'i-lucide-file-text'
   }
 ]
@@ -204,7 +203,7 @@ useHead({
   meta: [
     {
       name: 'description',
-      content: 'VCH Symptom Tracker — a Veterans Central Hub tool for logging symptoms, daily impact, and exporting PDF evidence for VA claims.'
+      content: 'VCH Symptom Tracker — log symptoms over time and export Veteran Symptom History Reports and personal review summaries for medical visits and your records.'
     }
   ]
 })

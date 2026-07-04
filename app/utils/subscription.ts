@@ -2,8 +2,20 @@ export const PRO_PRODUCT_KEY = 'symptom_tracker_pro'
 export const FREE_CONDITION_LIMIT = 1
 /** @deprecated Use FREE_CONDITION_LIMIT */
 export const FREE_ENTRY_LIMIT = FREE_CONDITION_LIMIT
-export const PRO_MONTHLY_PRICE = 14.99
-export const PRO_MONTHLY_PRICE_LABEL = '$14.99/month'
+export const PRO_ANNUAL_PRICE = 14.99
+export const PRO_ANNUAL_PRICE_LABEL = '$14.99/year'
+export const PRO_ANNUAL_PRICE_DETAIL = 'About $1.25/month, billed once per year'
+export const PRO_REFUND_POLICY_SHORT = '3-day refund only'
+export const PRO_REFUND_POLICY =
+  '3-day refund only — email support@veteranscentralhub.com within 3 days of purchase if Pro is not right for you.'
+export const PRO_CHECKOUT_SUBMIT_MESSAGE =
+  '$14.99/year · 3-day refund only — contact support within 3 days of purchase for a refund.'
+
+/** @deprecated Use PRO_ANNUAL_PRICE */
+export const PRO_MONTHLY_PRICE = PRO_ANNUAL_PRICE
+/** @deprecated Use PRO_ANNUAL_PRICE_LABEL */
+export const PRO_MONTHLY_PRICE_LABEL = PRO_ANNUAL_PRICE_LABEL
+
 export const VCH_HUB_URL = 'https://veteranscentralhub.us'
 export const VCH_PRIVACY_URL = `${VCH_HUB_URL}/privacy`
 export const VCH_TERMS_URL = `${VCH_HUB_URL}/terms`
@@ -22,7 +34,8 @@ export const FREE_TIER_FEATURES = [
 export const PRO_TIER_FEATURES = [
   'Unlimited conditions',
   'Family reporting links for supporters',
-  'Severity trends, functional impact and advanced charts in PDF exports'
+  'Severity trends, functional impact, and advanced charts in PDF exports',
+  'Personal review summaries with topics pulled from your logs'
 ] as const
 
 export function conditionKeyFromLabel(label: string) {
