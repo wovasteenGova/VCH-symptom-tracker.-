@@ -1,4 +1,5 @@
 import type { jsPDF } from 'jspdf'
+import { normalizeConditionLabel } from './conditionCatalog'
 import type { ConditionWeeklyFrequencyGroup, LoggingActivityMetrics } from './loggingActivityReport'
 
 type ChartEntry = {
@@ -50,10 +51,11 @@ export function buildReportMetrics(entries: ChartEntry[]) {
   const impactCounts = new Map<string, number>()
 
   entries.forEach((entry) => {
-    byCondition.set(entry.condition_label, (byCondition.get(entry.condition_label) || 0) + 1)
+    const conditionLabel = normalizeConditionLabel(entry.condition_label)
+    byCondition.set(conditionLabel, (byCondition.get(conditionLabel) || 0) + 1)
     severitySumByCondition.set(
-      entry.condition_label,
-      (severitySumByCondition.get(entry.condition_label) || 0) + (entry.severity ?? 0)
+      conditionLabel,
+      (severitySumByCondition.get(conditionLabel) || 0) + (entry.severity ?? 0)
     )
 
     const sourceLabel = entry.source === 'family' ? 'Family' : 'Veteran'

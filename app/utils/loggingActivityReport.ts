@@ -1,3 +1,5 @@
+import { normalizeConditionLabel } from './conditionCatalog'
+
 type LoggingEntry = {
   condition_label: string
   occurred_at?: string | null
@@ -70,7 +72,7 @@ export function buildLoggingActivityMetrics(
 
   const byCondition = new Map<string, number>()
   monthEntries.forEach((entry) => {
-    const label = entry.condition_label?.trim() || 'Untitled condition'
+    const label = normalizeConditionLabel(entry.condition_label)
     byCondition.set(label, (byCondition.get(label) || 0) + 1)
   })
 
@@ -151,7 +153,7 @@ export function buildConditionWeeklyFrequencyGroups(
       continue
     }
 
-    const conditionLabel = entry.condition_label?.trim() || 'Untitled condition'
+    const conditionLabel = normalizeConditionLabel(entry.condition_label)
     const monthKey = `${conditionLabel}\0${date.getFullYear()}-${date.getMonth()}`
     const bucket = byConditionMonth.get(monthKey) || []
     bucket.push(entry)
@@ -214,7 +216,7 @@ export function buildAggregateLoggingMetrics(entries: LoggingEntry[]): Aggregate
   let latest: Date | null = null
 
   for (const entry of valid) {
-    const label = entry.condition_label?.trim() || 'Untitled condition'
+    const label = normalizeConditionLabel(entry.condition_label)
     byCondition.set(label, (byCondition.get(label) || 0) + 1)
 
     const date = getEntryDate(entry)

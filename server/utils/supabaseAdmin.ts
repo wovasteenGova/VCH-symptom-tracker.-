@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { getSupabaseNodeOptions } from './supabaseNodeOptions'
 
 const TRACKER_SCHEMA = 'tracker'
 
@@ -17,6 +18,7 @@ export function getSupabaseAdmin() {
   }
 
   return createClient(supabaseUrl, serviceRoleKey, {
+    ...getSupabaseNodeOptions(),
     auth: {
       persistSession: false,
       autoRefreshToken: false

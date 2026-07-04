@@ -1,8 +1,8 @@
 import type { H3Event } from 'h3'
 import { createClient } from '@supabase/supabase-js'
 import { getHeader } from 'h3'
-import { serverSupabaseUser } from '#supabase/server'
-import { assertSupabasePublicConfig } from './supabasePublicConfig'
+import { assertSupabasePublicConfig, getSupabasePublicConfig } from './supabasePublicConfig'
+import { getSupabaseNodeOptions } from './supabaseNodeOptions'
 
 function logAuth(step: string, details: Record<string, unknown> = {}) {
   console.info(`[checkout-auth] ${step}`, details)
@@ -29,6 +29,7 @@ async function getUserFromBearerToken(event: H3Event) {
   })
 
   const supabase = createClient(supabaseUrl, supabaseKey, {
+    ...getSupabaseNodeOptions(),
     auth: {
       persistSession: false,
       autoRefreshToken: false
@@ -58,45 +59,11 @@ async function getUserFromBearerToken(event: H3Event) {
   }
 }
 
-async function getUserFromCookies(event: H3Event) {
-  logAuth('checking cookie session')
-
-  try {
-    const user = await serverSupabaseUser(event)
-
-    if (!user) {
-      logAuthError('cookie session missing user')
-      return null
-    }
-
-    logAuth('cookie session accepted', {
-      userId: user.id,
-      email: user.email
-    })
-
-    return {
-      user,
-      accessToken: ''
-    }
-  } catch (error) {
-    logAuthError('cookie session failed', {
-      message: error instanceof Error ? error.message : String(error)
-    })
-    return null
-  }
-}
-
 export async function requireAuthUser(event: H3Event) {
   const bearerAuth = await getUserFromBearerToken(event)
 
   if (bearerAuth) {
     return bearerAuth
-  }
-
-  const cookieAuth = await getUserFromCookies(event)
-
-  if (cookieAuth) {
-    return cookieAuth
   }
 
   const { source } = getSupabasePublicConfig(event)

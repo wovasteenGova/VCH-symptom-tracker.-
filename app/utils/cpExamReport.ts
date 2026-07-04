@@ -1,3 +1,5 @@
+import { normalizeConditionLabel } from './conditionCatalog'
+
 type CpExamEntry = {
   condition_label: string
   severity?: number | null
@@ -366,7 +368,7 @@ export function buildCpExamSummaries(entries: CpExamEntry[]): CpExamConditionSum
   const byCondition = new Map<string, CpExamEntry[]>()
 
   for (const entry of entries) {
-    const label = entry.condition_label?.trim() || 'Untitled condition'
+    const label = normalizeConditionLabel(entry.condition_label)
     const bucket = byCondition.get(label) || []
     bucket.push(entry)
     byCondition.set(label, bucket)

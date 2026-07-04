@@ -2,9 +2,12 @@ export const conditionImageAssets = {
   mentalHealth: '/image/ptsd-mental-health.png',
   backJointPain: '/image/back-joint-pain.png',
   neckPain: '/image/neck-pain.png',
+  kneePain: '/image/knee-pain.png',
+  shoulderArthritis: '/image/shoulder-arthritis.png',
+  arthritis: '/image/arthritis.png',
   nerveRadiculopathy: '/image/nerve-radiculopathy.png',
   migraineHeadache: '/image/migraine-headache.png',
-  gerdIbs: '/image/gerd-ibs.png',
+  ibsBowelSymptoms: '/image/ibs-bowel-symptoms.png',
   sleepIssues: '/image/sleep-issues.png',
   asthma: '/image/asthma.png',
   sleepApnea: '/image/sleep-apnea.png',
@@ -26,7 +29,7 @@ const categoryImageMap: Record<string, string> = {
   Sleep: conditionImageAssets.sleepIssues,
   'Back, Neck, and Joint': conditionImageAssets.backJointPain,
   Nerve: conditionImageAssets.nerveRadiculopathy,
-  Digestive: conditionImageAssets.gerdIbs,
+  Digestive: conditionImageAssets.ibsBowelSymptoms,
   Respiratory: conditionImageAssets.asthma,
   Skin: conditionImageAssets.eczema,
   'Chronic Pain / Fatigue': conditionImageAssets.chronicPain
@@ -38,6 +41,10 @@ const defaultConditionImage = conditionImageAssets.mentalHealth
 const conditionTitleImageOverrides: Record<string, string> = {
   Asthma: conditionImageAssets.asthma,
   'Neck pain': conditionImageAssets.neckPain,
+  'Knee conditions': conditionImageAssets.kneePain,
+  'Shoulder conditions': conditionImageAssets.shoulderArthritis,
+  Arthritis: conditionImageAssets.arthritis,
+  'IBS / Bowel Symptoms': conditionImageAssets.ibsBowelSymptoms,
   'Sleep apnea': conditionImageAssets.sleepApnea,
   Sinusitis: conditionImageAssets.sinusitis,
   Rhinitis: conditionImageAssets.rhinitis,
@@ -66,8 +73,8 @@ export const carouselConditions = [
     image: conditionImageAssets.migraineHeadache
   },
   {
-    title: 'GERD / IBS',
-    image: conditionImageAssets.gerdIbs
+    title: 'IBS / Bowel Symptoms',
+    image: conditionImageAssets.ibsBowelSymptoms
   },
   {
     title: 'Sleep Issues',
@@ -89,11 +96,14 @@ export const conditionsWithoutDedicatedImages = [] as const
 
 export const conditionImageCatalog = [
   { file: 'ptsd-mental-health.png', usedFor: ['Mental Health', 'PTSD', 'Anxiety', 'Depression', 'Panic attacks'] },
-  { file: 'back-joint-pain.png', usedFor: ['Back, Neck, and Joint fallback', 'Lower back pain', 'Knee conditions', 'Shoulder conditions', 'Arthritis'] },
+  { file: 'back-joint-pain.png', usedFor: ['Back, Neck, and Joint fallback', 'Lower back pain'] },
   { file: 'neck-pain.png', usedFor: ['Neck pain'] },
+  { file: 'knee-pain.png', usedFor: ['Knee conditions'] },
+  { file: 'shoulder-arthritis.png', usedFor: ['Shoulder conditions'] },
+  { file: 'arthritis.png', usedFor: ['Arthritis'] },
   { file: 'nerve-radiculopathy.png', usedFor: ['Nerve', 'Radiculopathy', 'Sciatica', 'Peripheral neuropathy'] },
   { file: 'migraine-headache.png', usedFor: ['Neurological', 'Migraine', 'Tension headaches', 'Vertigo / Dizziness', 'Seizures'] },
-  { file: 'gerd-ibs.png', usedFor: ['Digestive', 'GERD', 'IBS', 'Chronic diarrhea', 'Constipation'] },
+  { file: 'ibs-bowel-symptoms.png', usedFor: ['Digestive', 'IBS / Bowel Symptoms'] },
   { file: 'sleep-issues.png', usedFor: ['Sleep', 'Insomnia / Sleep disturbances'] },
   { file: 'asthma.png', usedFor: ['Asthma', 'Respiratory fallback'] },
   { file: 'sleep-apnea.png', usedFor: ['Sleep apnea'] },

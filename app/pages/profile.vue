@@ -844,7 +844,7 @@ const conditionOptions = [
   'Back or Joint Pain',
   'Nerve / Radiculopathy',
   'Migraine / Headache',
-  'GERD / IBS',
+  'IBS / Bowel Symptoms',
   'Sleep Issues'
 ]
 

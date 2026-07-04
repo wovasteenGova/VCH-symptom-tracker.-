@@ -80,7 +80,7 @@ const conditionEpisodeConfig: Record<string, ConditionEpisodeConfig> = {
     duration: durationField,
     followUp: stopActivityField
   },
-  'GERD / IBS': {
+  'IBS / Bowel Symptoms': {
     duration: durationField,
     followUp: stopActivityField
   },
@@ -188,22 +188,22 @@ export const entryFieldsByCondition: Record<string, EntryFieldDef[]> = {
       placeholder: 'Lie down, dark room, miss work, cancel plans...'
     }
   ]),
-  'GERD / IBS': buildEntryFields('GERD / IBS', [
+  'IBS / Bowel Symptoms': buildEntryFields('IBS / Bowel Symptoms', [
     {
       label: 'Digestive symptoms',
       type: 'text',
-      placeholder: 'Heartburn, regurgitation, trouble swallowing, pain when swallowing, vomiting...',
-      helper: 'Include swallowing issues if GERD affects eating or sleep.'
+      placeholder: 'Abdominal pain, urgency, diarrhea, constipation, reflux, nausea, vomiting...',
+      helper: 'Use this one digestive template for bowel and stomach symptoms.'
     },
     {
       label: 'Medication or food trigger',
       type: 'text',
-      placeholder: 'Antacids, PPI, meal trigger, alcohol, late eating, or unknown.'
+      placeholder: 'Meal trigger, dairy, spicy food, antacid/PPI, bathroom urgency, or unknown.'
     },
     {
       label: 'Night symptoms',
       type: 'text',
-      placeholder: 'Slept propped up, woke up choking, reflux after lying down...'
+      placeholder: 'Woke up with stomach pain, reflux after lying down, bathroom trips, or no night issues.'
     }
   ]),
   'Sleep Issues': buildEntryFields('Sleep Issues', [
@@ -298,8 +298,8 @@ export function getEntryFieldsForSearchCondition(condition: { title: string, cat
   }
 
   if (category.includes('digestive') || title.includes('gerd') || title.includes('ibs')
-    || title.includes('diarrhea') || title.includes('constipation')) {
-    return entryFieldsByCondition['GERD / IBS']!
+    || title.includes('bowel') || title.includes('diarrhea') || title.includes('constipation')) {
+    return entryFieldsByCondition['IBS / Bowel Symptoms']!
   }
 
   if (category.includes('respiratory') || title.includes('asthma') || title.includes('apnea')

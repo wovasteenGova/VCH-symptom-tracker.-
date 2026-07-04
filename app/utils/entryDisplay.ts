@@ -1,17 +1,20 @@
+import { normalizeConditionLabel } from './conditionCatalog'
+
 export function mapEntryHistoryItem(entry: Record<string, any>, options: { deleted?: boolean } = {}) {
   const entryDate = entry.occurred_at ? new Date(entry.occurred_at) : new Date(entry.created_at)
   const createdAt = entry.created_at ? new Date(entry.created_at) : entryDate
   const updatedAt = entry.updated_at ? new Date(entry.updated_at) : createdAt
   const deletedAt = entry.deleted_at ? new Date(entry.deleted_at) : null
   const wasEdited = !options.deleted && updatedAt.getTime() - createdAt.getTime() > 60_000
+  const conditionLabel = normalizeConditionLabel(entry.condition_label)
 
   return {
     id: entry.id,
     month: entryDate.toLocaleString('en-US', { month: 'short' }),
     day: entryDate.toLocaleString('en-US', { day: '2-digit' }),
-    condition: entry.condition_label,
+    condition: conditionLabel,
     source: entry.source === 'family' ? 'Family' : 'Veteran',
-    title: entry.summary || entry.condition_label,
+    title: entry.summary || conditionLabel,
     summary: entry.impact || 'No impact note added',
     severity: entry.severity ?? 0,
     time: entryDate.toLocaleString('en-US', {

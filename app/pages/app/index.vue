@@ -1772,7 +1772,7 @@ import { androidAddToHomeScreenVideoUrl, iosAddToHomeScreenVideoUrl } from '../.
 import { filterAndRankConditions } from '../../utils/conditionSearch'
 import { getWeeklyLogCaution, type WeeklyLogCaution } from '../../utils/loggingCadence'
 import { buildLoggingActivityMetrics } from '../../utils/loggingActivityReport'
-import { conditionCatalog, HOME_HONESTY_TIP, pickRandomHomeVisitTip, resolveCatalogConditionByStoredKey, VA_CRISIS_LINE_SHORT } from '../../utils/conditionCatalog'
+import { conditionCatalog, HOME_HONESTY_TIP, normalizeConditionLabel, pickRandomHomeVisitTip, resolveCatalogConditionByStoredKey, VA_CRISIS_LINE_SHORT } from '../../utils/conditionCatalog'
 import { conditionImageAssets } from '../../utils/conditionImages'
 import { getSeverityGuidance, severityQuickPresets } from '../../utils/severityGuidance'
 import { CalendarDate } from '@internationalized/date'
@@ -2169,12 +2169,13 @@ const submissionNotifications = computed(() => {
   return savedEntries.value
     .map((entry) => {
       const entryDate = entry.occurred_at ? new Date(entry.occurred_at) : new Date(entry.created_at)
+      const conditionLabel = normalizeConditionLabel(entry.condition_label)
 
       return {
         id: entry.id,
-        condition: entry.condition_label,
+        condition: conditionLabel,
         source: entry.source === 'family' ? 'Family' : 'Veteran',
-        title: entry.summary || entry.condition_label,
+        title: entry.summary || conditionLabel,
         summary: entry.impact || 'No impact note added',
         createdAt: entry.created_at || entry.occurred_at || '',
         timeLabel: entryDate.toLocaleString('en-US', {
@@ -2409,7 +2410,7 @@ const homeGreetingLine = computed(() => {
 const freeConditionLabels = computed(() => {
   return freeConditionKeys.value.map((key) => {
     const matchedEntry = savedEntries.value.find((entry) => entry.condition_key === key)
-    return matchedEntry?.condition_label || formatConditionKeyLabel(key)
+    return normalizeConditionLabel(matchedEntry?.condition_label || formatConditionKeyLabel(key))
   })
 })
 
@@ -2423,8 +2424,9 @@ const exportableConditions = computed((): ExportableCondition[] => {
   const groups = new Map<string, { label: string, count: number }>()
 
   for (const entry of savedEntries.value) {
-    const key = entry.condition_key || conditionKey(entry.condition_label)
-    const label = entry.condition_label || formatConditionKeyLabel(key)
+    const resolvedCondition = resolveCatalogConditionByStoredKey(entry.condition_key || entry.condition_label)
+    const key = resolvedCondition?.key || entry.condition_key || conditionKey(entry.condition_label)
+    const label = resolvedCondition?.title || normalizeConditionLabel(entry.condition_label || formatConditionKeyLabel(key))
     const existing = groups.get(key)
 
     if (existing) {
@@ -2528,7 +2530,8 @@ function resolveExportEntries(conditionKeys: string[]) {
   const keySet = new Set(conditionKeys)
 
   return savedEntries.value.filter((entry) => {
-    const entryKey = entry.condition_key || conditionKey(entry.condition_label)
+    const resolvedCondition = resolveCatalogConditionByStoredKey(entry.condition_key || entry.condition_label)
+    const entryKey = resolvedCondition?.key || entry.condition_key || conditionKey(entry.condition_label)
     return keySet.has(entryKey)
   })
 }
@@ -4537,7 +4540,8 @@ function resolvePendingEntryConditionKey(options: {
 }
 
 function resolveEntryConditionLabel(label: string) {
-  const searchMatch = conditionResults.find((condition) => condition.title === label)
+  const normalizedLabel = normalizeConditionLabel(label)
+  const searchMatch = conditionResults.find((condition) => condition.title === normalizedLabel)
   if (searchMatch) {
     return {
       searchCondition: searchMatch,
@@ -4546,10 +4550,10 @@ function resolveEntryConditionLabel(label: string) {
     }
   }
 
-  if (label in entryFieldsByCondition) {
+  if (normalizedLabel in entryFieldsByCondition) {
     return {
       searchCondition: null,
-      conditionLabel: label,
+      conditionLabel: normalizedLabel,
       customName: null
     }
   }
@@ -4557,7 +4561,7 @@ function resolveEntryConditionLabel(label: string) {
   return {
     searchCondition: null,
     conditionLabel: null,
-    customName: label
+    customName: normalizedLabel
   }
 }
 

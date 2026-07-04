@@ -91,13 +91,13 @@ const nerveTip =
   'Be specific about left vs. right and whether symptoms radiate down an arm or leg. That detail helps tie logs to your diagnosis.'
 
 const digestiveFocus = [
-  'Pain, heartburn, regurgitation, or bowel changes',
-  'Food or medication triggers when you know them',
-  'Sleep interruption, missed meals, or avoided activities'
+  'Bowel urgency, diarrhea, constipation, abdominal pain, reflux, or nausea',
+  'Food, medication, or bathroom-urgency triggers when you know them',
+  'Sleep interruption, missed meals, avoided travel, or interrupted activities'
 ] as const
 
 const digestiveTip =
-  'Night symptoms and meal-related flares are easy to forget by morning. A quick log after eating or waking up helps a lot.'
+  'Bowel and stomach flares are easy to forget once the urgency passes. A quick log after eating, waking up, or needing the bathroom helps a lot.'
 
 const sleepFocus = [
   'Hours slept and how often you woke up',
@@ -263,30 +263,9 @@ export const conditionCatalogDefinitions: ConditionCatalogEntry[] = [
     tip: nerveTip
   },
   {
-    title: 'GERD',
+    title: 'IBS / Bowel Symptoms',
     category: 'Digestive',
-    description: 'Heartburn, regurgitation, medication, sleep interruption, and diet triggers.',
-    vaFocus: digestiveFocus,
-    tip: digestiveTip
-  },
-  {
-    title: 'IBS',
-    category: 'Digestive',
-    description: 'Pain, diarrhea, constipation, urgency, missed activity, and triggers.',
-    vaFocus: digestiveFocus,
-    tip: digestiveTip
-  },
-  {
-    title: 'Chronic diarrhea',
-    category: 'Digestive',
-    description: 'Frequency, urgency, dehydration, medication, and daily interruptions.',
-    vaFocus: digestiveFocus,
-    tip: digestiveTip
-  },
-  {
-    title: 'Constipation',
-    category: 'Digestive',
-    description: 'Frequency, pain, medication, diet triggers, and functional impact.',
+    description: 'Bowel and stomach symptoms: abdominal pain, urgency, diarrhea, constipation, reflux, medication, and triggers.',
     vaFocus: digestiveFocus,
     tip: digestiveTip
   },
@@ -370,6 +349,14 @@ export function getCatalogConditionByKey(key: string) {
   return conditionCatalog.find((condition) => condition.key === key) || null
 }
 
+const conditionKeyAliases: Record<string, string> = {
+  [conditionKeyFromLabel('GERD')]: conditionKeyFromLabel('IBS / Bowel Symptoms'),
+  [conditionKeyFromLabel('IBS')]: conditionKeyFromLabel('IBS / Bowel Symptoms'),
+  [conditionKeyFromLabel('GERD / IBS')]: conditionKeyFromLabel('IBS / Bowel Symptoms'),
+  [conditionKeyFromLabel('Chronic diarrhea')]: conditionKeyFromLabel('IBS / Bowel Symptoms'),
+  [conditionKeyFromLabel('Constipation')]: conditionKeyFromLabel('IBS / Bowel Symptoms')
+}
+
 export function resolveCatalogConditionByStoredKey(storedKey: string): ConditionCatalogItem | null {
   const trimmedKey = storedKey?.trim()
   if (!trimmedKey) {
@@ -382,6 +369,14 @@ export function resolveCatalogConditionByStoredKey(storedKey: string): Condition
   }
 
   const normalizedKey = conditionKeyFromLabel(trimmedKey)
+  const aliasedKey = conditionKeyAliases[normalizedKey]
+  if (aliasedKey) {
+    const aliasMatch = getCatalogConditionByKey(aliasedKey)
+    if (aliasMatch) {
+      return aliasMatch
+    }
+  }
+
   const normalizedMatch = getCatalogConditionByKey(normalizedKey)
   if (normalizedMatch) {
     return normalizedMatch
@@ -397,6 +392,23 @@ export function normalizeTrackedConditionKeys(keys: string[]) {
   return [...new Set(keys
     .map((storedKey) => resolveCatalogConditionByStoredKey(storedKey)?.key || null)
     .filter(Boolean) as string[])]
+}
+
+export function normalizeConditionLabel(label: string | null | undefined) {
+  const trimmedLabel = label?.trim()
+
+  if (!trimmedLabel) {
+    return 'Untitled condition'
+  }
+
+  const normalizedKey = conditionKeyFromLabel(trimmedLabel)
+  const aliasedKey = conditionKeyAliases[normalizedKey]
+
+  if (aliasedKey) {
+    return getCatalogConditionByKey(aliasedKey)?.title || trimmedLabel
+  }
+
+  return trimmedLabel
 }
 
 export function pickRandomHomeVisitTip(conditions: ConditionCatalogItem[]): { title: string, text: string } | null {
