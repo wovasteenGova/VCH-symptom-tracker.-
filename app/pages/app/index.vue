@@ -21,7 +21,7 @@
             <button
               type="button"
               class="rounded-full px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-800"
-              @click="closeEntryPanel"
+              @click="handleCancelEntry"
             >
               Cancel
             </button>
@@ -968,9 +968,10 @@
 
                     <template v-else>
                       <div
-                        class="absolute inset-0 cursor-pointer"
-                        role="button"
-                        tabindex="0"
+                        class="absolute inset-0"
+                        :class="isConditionSlideEntryEnabled ? 'cursor-pointer' : 'pointer-events-none'"
+                        :role="isConditionSlideEntryEnabled ? 'button' : undefined"
+                        :tabindex="isConditionSlideEntryEnabled ? 0 : -1"
                         :aria-label="`Log ${activeCondition.title} entry`"
                         @click="startEntryFromCurrentSlide"
                         @keydown.enter.prevent="startEntryFromCurrentSlide"
@@ -1190,7 +1191,7 @@
                   data-history-interactive
                   class="relative rounded-full px-4 py-3 text-sm font-semibold transition"
                   :class="activeHistoryTab === tab ? 'bg-white text-slate-950 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 dark:text-slate-400'"
-                  @click="selectHistoryTab(tab)"
+                  @click.stop="selectHistoryTab(tab)"
                 >
                   {{ tab }}
                 </button>
@@ -1899,6 +1900,8 @@ const installPlatform = ref<'ios' | 'android' | 'desktop'>('desktop')
 const deferredInstallPrompt = ref<any>(null)
 const historyExpanded = ref(false)
 const historyScrollEl = ref<HTMLElement | null>(null)
+const conditionSlideEntryBlocked = ref(false)
+let conditionSlideEntryBlockedTimer: ReturnType<typeof setTimeout> | undefined
 const homeVisitTip = ref<{ title: string, text: string } | null>(null)
 const homeSortUsesEntryDates = ref(false)
 const { isDesktopLayout, isMobileLayout, isEmbeddedPreview } = useTrackerLayout()
@@ -2370,6 +2373,10 @@ const historyPanelClass = computed(() => {
   }
 
   return 'relative z-30 flex-[4]'
+})
+
+const isConditionSlideEntryEnabled = computed(() => {
+  return !historyExpanded.value && !conditionSlideEntryBlocked.value
 })
 
 const homeCarouselSlideCount = computed(() => homeConditions.value.length + 1)
@@ -2987,6 +2994,15 @@ watch(isEntryOpen, (open) => {
   }
 
   scheduleEntryDraftSave()
+})
+
+watch(historyExpanded, (expanded) => {
+  if (expanded) {
+    conditionSlideEntryBlocked.value = true
+    return
+  }
+
+  blockConditionSlideEntry(HISTORY_TRANSITION_LOCK_MS)
 })
 
 watch(
@@ -4079,8 +4095,29 @@ function showSlide(index: number) {
   activeIndex.value = index
 }
 
+function handleCancelEntry() {
+  if (
+    isMeaningfulEntryDraft({
+      entryStep: entryStep.value,
+      entryForm: entryForm.value,
+      selectedSearchCondition: selectedSearchCondition.value,
+      customConditionInput: customConditionInput.value
+    })
+  ) {
+    closeEntryPanel()
+    return
+  }
+
+  closeEntryPanel(true)
+}
+
 function startEntryFromCurrentSlide() {
-  if (suppressConditionTap || isHomeOverviewSlide.value) {
+  if (
+    suppressConditionTap
+    || !isConditionSlideEntryEnabled.value
+    || isHomeOverviewSlide.value
+    || isHistoryEntryActivationLocked()
+  ) {
     return
   }
 
@@ -4165,6 +4202,7 @@ function selectSearchCondition(condition: { title: string, category: string, des
 
 function expandHistorySheet() {
   if (!historyExpanded.value) {
+    blockConditionSlideEntry(HISTORY_TRANSITION_LOCK_MS)
     historyExpanded.value = true
     lockHistoryTransition()
   }
@@ -4184,6 +4222,9 @@ function selectHistoryTab(tab: string) {
   if (activeHistoryTab.value === tab && historyExpanded.value) {
     return
   }
+
+  lockHistoryEntryActivation()
+  blockConditionSlideEntry(HISTORY_ENTRY_ACTIVATION_LOCK_MS)
 
   if (!historyExpanded.value) {
     expandHistorySheet()
@@ -4281,14 +4322,20 @@ function handleHistoryPointerUp(event: PointerEvent) {
     const delta = historyPointerDeltaY
 
     if (Math.abs(delta) < HISTORY_DRAG_ACTIVATE_PX) {
+      lockHistoryEntryActivation()
+      blockConditionSlideEntry(HISTORY_ENTRY_ACTIVATION_LOCK_MS)
       if (historyExpanded.value) {
         collapseHistorySheet()
       } else {
         expandHistorySheet()
       }
     } else if (delta > HISTORY_DRAG_SNAP_PX) {
+      lockHistoryEntryActivation()
+      blockConditionSlideEntry(HISTORY_ENTRY_ACTIVATION_LOCK_MS)
       expandHistorySheet()
     } else if (delta < -HISTORY_DRAG_SNAP_PX) {
+      lockHistoryEntryActivation()
+      blockConditionSlideEntry(HISTORY_ENTRY_ACTIVATION_LOCK_MS)
       collapseHistorySheet()
     }
   }
@@ -4305,6 +4352,37 @@ let conditionSwipeStartY = 0
 let conditionSwipeAxis: 'horizontal' | 'vertical' | null = null
 let suppressConditionTap = false
 let conditionSwipeStartedInScrollList = false
+let historyEntryActivationLockUntil = 0
+const HISTORY_ENTRY_ACTIVATION_LOCK_MS = 450
+
+function blockConditionSlideEntry(durationMs = HISTORY_ENTRY_ACTIVATION_LOCK_MS) {
+  conditionSlideEntryBlocked.value = true
+
+  if (conditionSlideEntryBlockedTimer) {
+    clearTimeout(conditionSlideEntryBlockedTimer)
+  }
+
+  conditionSlideEntryBlockedTimer = setTimeout(() => {
+    conditionSlideEntryBlocked.value = historyExpanded.value
+    conditionSlideEntryBlockedTimer = undefined
+  }, durationMs)
+}
+
+function lockHistoryEntryActivation() {
+  historyEntryActivationLockUntil = Date.now() + HISTORY_ENTRY_ACTIVATION_LOCK_MS
+}
+
+function isHistoryEntryActivationLocked() {
+  return Date.now() < historyEntryActivationLockUntil
+}
+
+function suppressConditionTapBriefly() {
+  suppressConditionTap = true
+  blockConditionSlideEntry(320)
+  window.setTimeout(() => {
+    suppressConditionTap = false
+  }, 320)
+}
 
 function handleConditionSwipeStart(event: TouchEvent) {
   if (isDesktopLayout.value || showConditionBrowser.value) {
@@ -4342,10 +4420,7 @@ function handleConditionSwipeEnd(event: TouchEvent) {
 
   if (conditionSwipeAxis === 'horizontal') {
     if (Math.abs(deltaX) >= 50) {
-      suppressConditionTap = true
-      window.setTimeout(() => {
-        suppressConditionTap = false
-      }, 320)
+      suppressConditionTapBriefly()
 
       if (deltaX < -50) {
         showNextCondition()
@@ -4363,6 +4438,8 @@ function handleConditionSwipeEnd(event: TouchEvent) {
     && !conditionSwipeStartedInScrollList
     && !isConditionScrolling.value
   ) {
+    lockHistoryEntryActivation()
+    suppressConditionTapBriefly()
     expandHistorySheet()
   }
 
@@ -4637,6 +4714,10 @@ function handleProfileClick() {
 }
 
 function openEntryForEdit(entryId: string) {
+  if (isHistoryEntryActivationLocked()) {
+    return
+  }
+
   if (!user.value) {
     isAuthPanelOpen.value = true
     return
@@ -4882,6 +4963,8 @@ async function confirmConditionSlot() {
 }
 
 function closeEntryPanel(clearDraft = false, preservePersistedDraft = false) {
+  const wasEntryOpen = isEntryOpen.value
+
   if (isEntryOpen.value && !clearDraft && !editingEntryId.value) {
     persistEntryDraftNow()
   }
@@ -4911,6 +4994,15 @@ function closeEntryPanel(clearDraft = false, preservePersistedDraft = false) {
       selectedSearchCondition: selectedSearchCondition.value,
       customConditionInput: customConditionInput.value
     })
+
+    if (!hasActiveDraft.value) {
+      selectedSearchCondition.value = null
+      customConditionInput.value = ''
+      debouncedCustomConditionPreview.value = ''
+      isConditionPickerOpen.value = false
+      clearPersistedEntryDraft()
+    }
+
     refreshEntryDraftPreview()
   } else {
     editingEntryId.value = null
@@ -4922,6 +5014,10 @@ function closeEntryPanel(clearDraft = false, preservePersistedDraft = false) {
   }
 
   isEntryOpen.value = false
+
+  if (wasEntryOpen) {
+    blockConditionSlideEntry(400)
+  }
 }
 
 function showPreviousEntryStep() {

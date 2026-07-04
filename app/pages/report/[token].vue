@@ -72,13 +72,6 @@
           </p>
         </div>
 
-        <p
-          v-else
-          class="mb-4 shrink-0 text-base leading-6 text-slate-600 dark:text-slate-400"
-        >
-          Share what you personally observed. The veteran reviews these notes before using them.
-        </p>
-
         <div class="relative z-10 mb-4 shrink-0 flex items-center justify-between gap-4 px-1">
           <button
             type="button"
@@ -155,9 +148,13 @@
                       v-model="form.first_name"
                       type="text"
                       autocomplete="given-name"
-                      class="w-full rounded-3xl border border-slate-300 bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-600/70 dark:bg-slate-800/70 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-slate-400"
+                      class="w-full rounded-3xl border bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:bg-slate-800/70 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-slate-400"
+                      :class="fieldInputClass('first_name')"
                       placeholder="First name"
                     >
+                    <p v-if="fieldError('first_name')" class="mt-2 px-1 text-sm font-medium text-red-600 dark:text-red-300">
+                      {{ fieldError('first_name') }}
+                    </p>
                   </label>
 
                   <label class="block">
@@ -166,9 +163,13 @@
                       v-model="form.last_name"
                       type="text"
                       autocomplete="family-name"
-                      class="w-full rounded-3xl border border-slate-300 bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-600/70 dark:bg-slate-800/70 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-slate-400"
+                      class="w-full rounded-3xl border bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:bg-slate-800/70 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-slate-400"
+                      :class="fieldInputClass('last_name')"
                       placeholder="Last name"
                     >
+                    <p v-if="fieldError('last_name')" class="mt-2 px-1 text-sm font-medium text-red-600 dark:text-red-300">
+                      {{ fieldError('last_name') }}
+                    </p>
                   </label>
                 </div>
 
@@ -178,9 +179,13 @@
                     v-model="form.email"
                     type="email"
                     autocomplete="email"
-                    class="w-full rounded-3xl border border-slate-300 bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-600/70 dark:bg-slate-800/70 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-slate-400"
+                    class="w-full rounded-3xl border bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:bg-slate-800/70 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-slate-400"
+                    :class="fieldInputClass('email')"
                     placeholder="you@example.com"
                   >
+                  <p v-if="fieldError('email')" class="mt-2 px-1 text-sm font-medium text-red-600 dark:text-red-300">
+                    {{ fieldError('email') }}
+                  </p>
                 </label>
 
                 <label class="block">
@@ -189,9 +194,13 @@
                     v-model="form.phone"
                     type="tel"
                     autocomplete="tel"
-                    class="w-full rounded-3xl border border-slate-300 bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-600/70 dark:bg-slate-800/70 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-slate-400"
+                    class="w-full rounded-3xl border bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:bg-slate-800/70 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-slate-400"
+                    :class="fieldInputClass('phone')"
                     placeholder="(555) 555-5555"
                   >
+                  <p v-if="fieldError('phone')" class="mt-2 px-1 text-sm font-medium text-red-600 dark:text-red-300">
+                    {{ fieldError('phone') }}
+                  </p>
                 </label>
 
                 <label class="block">
@@ -199,9 +208,13 @@
                   <input
                     v-model="form.relationship"
                     type="text"
-                    class="w-full rounded-3xl border border-slate-300 bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-600/70 dark:bg-slate-800/70 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-slate-400"
+                    class="w-full rounded-3xl border bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:bg-slate-800/70 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-slate-400"
+                    :class="fieldInputClass('relationship')"
                     placeholder="Partner, spouse, parent, friend, caregiver"
                   >
+                  <p v-if="fieldError('relationship')" class="mt-2 px-1 text-sm font-medium text-red-600 dark:text-red-300">
+                    {{ fieldError('relationship') }}
+                  </p>
                   <div class="mt-3 flex flex-wrap gap-2 px-1">
                     <button
                       v-for="suggestion in relationshipSuggestions"
@@ -229,7 +242,8 @@
                   <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Condition</span>
                   <select
                     v-model="form.condition_label"
-                    class="w-full rounded-3xl border border-slate-300 bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none focus:border-slate-500 dark:border-slate-600/70 dark:bg-slate-800/70 dark:text-white dark:focus:border-slate-400 dark:[color-scheme:dark]"
+                    class="w-full rounded-3xl border bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none focus:border-slate-500 dark:bg-slate-800/70 dark:text-white dark:focus:border-slate-400 dark:[color-scheme:dark]"
+                    :class="fieldInputClass('condition_label')"
                   >
                     <option value="" disabled>Select condition</option>
                     <option
@@ -240,6 +254,9 @@
                       {{ condition }}
                     </option>
                   </select>
+                  <p v-if="fieldError('condition_label')" class="mt-2 px-1 text-sm font-medium text-red-600 dark:text-red-300">
+                    {{ fieldError('condition_label') }}
+                  </p>
                 </label>
 
                 <label class="block">
@@ -248,7 +265,8 @@
                     v-model="observedDate"
                     type="date"
                     :max="maxObservedDate"
-                    class="w-full rounded-3xl border border-slate-300 bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none focus:border-slate-500 dark:border-slate-600/70 dark:bg-slate-800/70 dark:text-white dark:focus:border-slate-400 dark:[color-scheme:dark]"
+                    class="w-full rounded-3xl border bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none focus:border-slate-500 dark:bg-slate-800/70 dark:text-white dark:focus:border-slate-400 dark:[color-scheme:dark]"
+                    :class="fieldInputClass('observed_at')"
                   >
                 </label>
 
@@ -261,6 +279,9 @@
                   @update:period="observedTimePeriod = $event"
                   @change="syncObservedAtFromParts"
                 />
+                <p v-if="fieldError('observed_at')" class="px-1 text-sm font-medium text-red-600 dark:text-red-300">
+                  {{ fieldError('observed_at') }}
+                </p>
               </template>
 
               <template v-else-if="observationStep === 2">
@@ -354,9 +375,13 @@
                     <textarea
                       v-model="form.impact"
                       rows="4"
-                      class="w-full resize-none border-0 border-b border-slate-300/80 bg-transparent px-0 py-4 text-base font-medium leading-7 text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-600 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-slate-400"
+                      class="w-full resize-none border-0 border-b bg-transparent px-0 py-4 text-base font-medium leading-7 text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-slate-400"
+                      :class="fieldInputClass('impact', true)"
                       placeholder="I noticed they had trouble..., It seemed to affect..., They appeared to..."
                     />
+                    <p v-if="fieldError('impact')" class="mt-2 text-sm font-medium text-red-600 dark:text-red-300">
+                      {{ fieldError('impact') }}
+                    </p>
                   </label>
 
                   <label class="block">
@@ -400,11 +425,15 @@
                       v-model="hasAffirmedDeclaration"
                       type="checkbox"
                       class="mt-1 size-5 shrink-0 rounded border-slate-300 bg-white text-slate-950 focus:ring-slate-400 dark:border-slate-600 dark:bg-slate-800/70 dark:text-slate-200"
+                      :class="fieldError('affirmation') ? 'border-red-400 ring-1 ring-red-300 dark:border-red-500 dark:ring-red-500/40' : ''"
                     >
                     <span class="text-base font-semibold leading-6 text-slate-950 dark:text-white">
                       I affirm that this statement is true and accurate to the best of my knowledge, and I agree that my name and contact information above will appear on this report.
                     </span>
                   </label>
+                  <p v-if="fieldError('affirmation')" class="mt-2 px-1 text-sm font-medium text-red-600 dark:text-red-300">
+                    {{ fieldError('affirmation') }}
+                  </p>
 
                   <label class="mt-4 block">
                     <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">My electronic signature</span>
@@ -412,11 +441,15 @@
                       v-model="form.signature_name"
                       type="text"
                       autocomplete="name"
-                      class="w-full rounded-3xl border border-slate-300 bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-600/70 dark:bg-slate-800/70 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-slate-400"
+                      class="w-full rounded-3xl border bg-white px-4 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:bg-slate-800/70 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-slate-400"
+                      :class="fieldInputClass('signature_name')"
                       placeholder="Type my full legal name"
                       @input="signatureManuallyEdited = true"
                     >
-                    <p class="mt-2 px-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                    <p v-if="fieldError('signature_name')" class="mt-2 px-1 text-sm font-medium text-red-600 dark:text-red-300">
+                      {{ fieldError('signature_name') }}
+                    </p>
+                    <p v-else class="mt-2 px-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
                       Include first and last name (capitalization does not matter).
                     </p>
                   </label>
@@ -434,26 +467,12 @@
           class="-mx-4 rounded-none border-x-0 sm:-mx-0"
           :keyboard-offset="observationKeyboardInset"
         >
-          <ul
-            v-if="currentStepBlockers.length && !isSubmitting"
-            class="mb-4 rounded-3xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/60 dark:bg-amber-950/30"
-          >
-            <li
-              v-for="blocker in currentStepBlockers"
-              :key="blocker"
-              class="flex items-start gap-2 py-1 text-base text-amber-950 dark:text-amber-100"
-            >
-              <UIcon name="i-lucide-circle-dot" class="mt-0.5 size-4 shrink-0" />
-              <span>{{ blocker }}</span>
-            </li>
-          </ul>
-
           <p v-if="submitError" class="mb-4 text-center text-base font-medium text-red-600 dark:text-red-300">{{ submitError }}</p>
 
           <button
             type="submit"
             class="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-4 text-base font-bold text-white shadow-lg transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600"
-            :disabled="isSubmitting || (isLastObservationStep && !canSubmit)"
+            :disabled="isSubmitting"
           >
             {{ isSubmitting ? 'Submitting...' : isLastObservationStep ? 'Submit observation' : 'Continue' }}
             <UIcon :name="isLastObservationStep ? 'i-lucide-check' : 'i-lucide-arrow-right'" class="size-5" />
@@ -543,6 +562,7 @@ const signatureManuallyEdited = ref(false)
 const severityValue = ref(5)
 const pageError = ref('')
 const submitError = ref('')
+const showStepValidation = ref(false)
 const form = ref({
   first_name: '',
   last_name: '',
@@ -610,65 +630,107 @@ const signatureMatchesName = computed(() => {
 
 const canSubmit = computed(() => getAllSubmitBlockers().length === 0)
 
-function getStepBlockers(step: number) {
-  const blockers: string[] = []
+type ObservationFieldKey =
+  | 'first_name'
+  | 'last_name'
+  | 'email'
+  | 'phone'
+  | 'relationship'
+  | 'condition_label'
+  | 'observed_at'
+  | 'impact'
+  | 'affirmation'
+  | 'signature_name'
+
+type ObservationFieldErrors = Partial<Record<ObservationFieldKey, string>>
+
+function getStepFieldErrors(step: number): ObservationFieldErrors {
+  const errors: ObservationFieldErrors = {}
 
   if (step === 0) {
-    if (!form.value.first_name.trim() || !form.value.last_name.trim()) {
-      blockers.push('Enter your first and last name.')
+    if (!form.value.first_name.trim()) {
+      errors.first_name = 'Enter your first name.'
+    }
+
+    if (!form.value.last_name.trim()) {
+      errors.last_name = 'Enter your last name.'
     }
 
     if (!form.value.email.trim()) {
-      blockers.push('Enter your email address.')
+      errors.email = 'Enter your email address.'
     } else if (!isValidEmail(form.value.email)) {
-      blockers.push('Enter a valid email address.')
+      errors.email = 'Enter a valid email address.'
     }
 
     if (!form.value.phone.trim()) {
-      blockers.push('Enter your phone number.')
+      errors.phone = 'Enter your phone number.'
     }
 
     if (!form.value.relationship.trim()) {
-      blockers.push('Enter your relationship to the veteran.')
+      errors.relationship = 'Enter your relationship to the veteran.'
     }
   }
 
   if (step === 1) {
     if (!form.value.condition_label) {
-      blockers.push('Choose a condition.')
+      errors.condition_label = 'Choose a condition.'
     }
 
     if (!form.value.observed_at) {
-      blockers.push('Choose when you observed this.')
+      errors.observed_at = 'Choose when you observed this.'
     }
   }
 
   if (step === 3) {
     if (!form.value.impact.trim()) {
-      blockers.push('Describe the impact you noticed.')
+      errors.impact = 'Describe the impact you noticed.'
     }
   }
 
   if (step === 4) {
     if (!hasAffirmedDeclaration.value) {
-      blockers.push('Check the affirmation box.')
+      errors.affirmation = 'Check the affirmation box.'
     }
 
     if (!form.value.signature_name.trim()) {
-      blockers.push('Type your electronic signature (full legal name).')
+      errors.signature_name = 'Type your electronic signature (full legal name).'
     } else if (!signatureMatchesName.value) {
-      blockers.push('Signature should include your first and last name.')
+      errors.signature_name = 'Signature should include your first and last name.'
     }
   }
 
-  return blockers
+  return errors
 }
 
 function getAllSubmitBlockers() {
-  return observationStepTitles.flatMap((_, index) => getStepBlockers(index))
+  return observationStepTitles.flatMap((_, index) => Object.values(getStepFieldErrors(index)))
 }
 
-const currentStepBlockers = computed(() => getStepBlockers(observationStep.value))
+const currentStepFieldErrors = computed(() => {
+  if (!showStepValidation.value) {
+    return {} as ObservationFieldErrors
+  }
+
+  return getStepFieldErrors(observationStep.value)
+})
+
+function fieldError(field: ObservationFieldKey) {
+  return currentStepFieldErrors.value[field] || ''
+}
+
+function fieldInputClass(field: ObservationFieldKey, underline = false) {
+  const hasError = Boolean(fieldError(field))
+
+  if (underline) {
+    return hasError
+      ? 'border-red-400 dark:border-red-500'
+      : 'border-slate-300/80 dark:border-slate-600'
+  }
+
+  return hasError
+    ? 'border-red-400 dark:border-red-500 dark:border-slate-600/70'
+    : 'border-slate-300 dark:border-slate-600/70'
+}
 
 function toggleImpactPreset(presetValue: string) {
   form.value.impact = toggleSupporterImpactPreset(form.value.impact, presetValue)
@@ -790,6 +852,7 @@ function resetObservationForm() {
   severityValue.value = 5
   observationStep.value = 0
   submitError.value = ''
+  showStepValidation.value = false
   resetReporterFields()
   setDefaultObservedAt()
 }
@@ -813,6 +876,7 @@ function startAnotherObservation() {
 function showPreviousObservationStep() {
   if (observationStep.value > 0) {
     submitError.value = ''
+    showStepValidation.value = false
     observationStep.value -= 1
   }
 }
@@ -822,21 +886,29 @@ function tryAdvanceObservationStep() {
     return
   }
 
+  showStepValidation.value = false
+
   if (!isLastObservationStep.value) {
     observationStep.value += 1
   }
 }
 
 function validateCurrentStep() {
-  const blockers = getStepBlockers(observationStep.value)
-  submitError.value = blockers[0] || ''
-  return blockers.length === 0
+  const errors = getStepFieldErrors(observationStep.value)
+  const isValid = Object.keys(errors).length === 0
+
+  showStepValidation.value = !isValid
+  submitError.value = ''
+
+  return isValid
 }
 
 function handleObservationPrimaryAction() {
   if (!validateCurrentStep()) {
     return
   }
+
+  showStepValidation.value = false
 
   if (isLastObservationStep.value) {
     submitObservation()
@@ -878,7 +950,8 @@ async function submitObservation() {
   }
 
   if (!canSubmit.value) {
-    submitError.value = getAllSubmitBlockers()[0] || 'Complete all required fields before submitting.'
+    showStepValidation.value = true
+    submitError.value = ''
     return
   }
 

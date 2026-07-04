@@ -68,10 +68,6 @@ export function isMeaningfulEntryDraft(snapshot: {
   selectedSearchCondition?: EntryDraftCondition | null
   customConditionInput?: string
 }) {
-  if (snapshot.selectedSearchCondition) {
-    return true
-  }
-
   if (snapshot.customConditionInput?.trim()) {
     return true
   }
