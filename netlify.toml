@@ -37,5 +37,5 @@
   # VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, REMINDER_CRON_SECRET
 
 [functions."reminder-cron"]
-  # TESTING: every 5 minutes. Production: "0 * * * *" (hourly)
-  schedule = "*/5 * * * *"
+  # TESTING: every minute. Production: "0 * * * *" (hourly)
+  schedule = "* * * * *"

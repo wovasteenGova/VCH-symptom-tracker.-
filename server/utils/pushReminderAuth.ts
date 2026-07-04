@@ -38,12 +38,12 @@ export function isReminderTestMode() {
     || process.env.REMINDER_TEST_MODE === '1'
 }
 
-/** Test pushes dedupe per bucket (default 5 minutes). */
+/** Test pushes dedupe per bucket (default 1 minute). */
 export function getReminderTestIntervalMinutes() {
-  const raw = Number(process.env.REMINDER_TEST_INTERVAL_MINUTES || 5)
+  const raw = Number(process.env.REMINDER_TEST_INTERVAL_MINUTES || 1)
 
   if (!Number.isFinite(raw) || raw < 1) {
-    return 5
+    return 1
   }
 
   return Math.min(60, Math.floor(raw))
