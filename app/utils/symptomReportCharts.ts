@@ -663,7 +663,7 @@ export function drawWeeklyFrequencyGrid(
         } else if (intensity >= 0.3) {
           pillColor = sky500
         } else {
-          pillColor = [148, 163, 184]
+          pillColor = [148, 163, 184] as const
         }
 
         const pillW = weekColWidth - 10

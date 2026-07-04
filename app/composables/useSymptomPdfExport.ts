@@ -395,6 +395,8 @@ export function useSymptomPdfExport() {
           { showConditionChart: showAdvancedCharts }
         )
 
+        const estGridHeight = 66 + allMonthMetrics.length * 26
+        y = ensurePageSpace(doc, y, estGridHeight, margin, pageHeight)
         drawSectionTitle(doc, 'Weekly symptom frequency', margin, y)
         y += 14
         y = drawWeeklyFrequencyGrid(
@@ -407,6 +409,7 @@ export function useSymptomPdfExport() {
           margin
         ) + PDF_SECTION_GAP
 
+        y = ensurePageSpace(doc, y, 160, margin, pageHeight)
         drawSectionTitle(doc, 'Daily log density', margin, y)
         y += 14
         y = drawCompactHeatmapGrid(
@@ -417,7 +420,7 @@ export function useSymptomPdfExport() {
           allMonthMetrics,
           pageHeight,
           margin
-        )
+        ) + PDF_SECTION_GAP
       }
     }
 
