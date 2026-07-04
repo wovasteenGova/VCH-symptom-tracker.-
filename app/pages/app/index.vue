@@ -6,7 +6,12 @@
     <section class="mx-auto flex h-full w-full max-w-md flex-col overflow-hidden pt-4 pb-0 sm:max-w-lg">
       <header class="flex shrink-0 flex-col gap-4 px-4">
         <div class="flex items-center justify-between gap-3">
-          <div class="flex min-w-0 items-center gap-2.5">
+          <button
+            type="button"
+            class="flex min-w-0 items-center gap-2.5 rounded-lg text-left transition hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
+            aria-label="Go to home"
+            @click="goAppHome"
+          >
             <div class="size-10 shrink-0 overflow-hidden rounded-full ring-1 ring-slate-200 dark:ring-slate-700">
               <img
                 :src="reportBranding.logoPath"
@@ -15,7 +20,7 @@
               >
             </div>
             <span class="text-base font-bold tracking-[0.12em] text-slate-950 dark:text-white">VCH</span>
-          </div>
+          </button>
 
           <div v-if="isEntryOpen" class="ml-auto flex shrink-0 items-center gap-2">
             <button
@@ -1927,6 +1932,7 @@ const historyScrollEl = ref<HTMLElement | null>(null)
 const conditionSlideEntryBlocked = ref(false)
 let conditionSlideEntryBlockedTimer: ReturnType<typeof setTimeout> | undefined
 const homeVisitTip = ref<{ title: string, text: string } | null>(null)
+const homeVisitTipSignature = ref('')
 const isHomeTipsOverlayOpen = ref(false)
 const homeVisitTips = computed(() => buildHomeVisitTips(homeConditions.value))
 const {
@@ -2231,14 +2237,42 @@ function trackedConditionKeysSignature(keys: string[]) {
 }
 
 function refreshHomeVisitTip() {
-  if (showConditionBrowser.value || !homeConditions.value.length) {
-    if (!homeConditions.value.length) {
-      homeVisitTip.value = null
-    }
+  if (showConditionBrowser.value) {
     return
   }
 
+  const signature = trackedConditionKeysSignature(trackedConditionKeys.value)
+
+  if (!signature || !homeConditions.value.length) {
+    homeVisitTip.value = null
+    homeVisitTipSignature.value = ''
+    return
+  }
+
+  if (signature === homeVisitTipSignature.value && homeVisitTip.value) {
+    const pool = buildHomeVisitTips(homeConditions.value)
+    const stillValid = pool.some((tip) => {
+      return tip.title === homeVisitTip.value!.title && tip.text === homeVisitTip.value!.text
+    })
+
+    if (stillValid) {
+      return
+    }
+  }
+
+  homeVisitTipSignature.value = signature
   homeVisitTip.value = pickRandomHomeVisitTip(homeConditions.value)
+}
+
+function goAppHome() {
+  if (isEntryOpen.value) {
+    closeEntryPanel(true)
+  }
+
+  isConditionBrowserOpen.value = false
+  isSubmissionDropdownOpen.value = false
+  isHomeTipsOverlayOpen.value = false
+  activeIndex.value = 0
 }
 
 function scheduleLogReminderCheck() {
@@ -3083,17 +3117,7 @@ watch(needsOnboarding, (needsOnboardingNow) => {
   }
 }, { immediate: true })
 
-watch(isHomeOverviewSlide, (isOverview) => {
-  if (isOverview) {
-    refreshHomeVisitTip()
-  }
-}, { immediate: true })
-
 watch(isEntryOpen, (open) => {
-  if (!open && isHomeOverviewSlide.value) {
-    refreshHomeVisitTip()
-  }
-
   if (!open || editingEntryId.value) {
     return
   }
@@ -3123,17 +3147,27 @@ watch(
   { deep: true }
 )
 
-watch(trackedConditionKeys, () => {
-  if (isHomeOverviewSlide.value) {
-    refreshHomeVisitTip()
-  }
-}, { deep: true })
+watch(
+  [
+    isHomeOverviewSlide,
+    () => trackedConditionKeysSignature(trackedConditionKeys.value),
+    showConditionBrowser
+  ],
+  ([isOverview, signature, browserOpen]) => {
+    if (!isOverview || browserOpen) {
+      return
+    }
 
-watch(showConditionBrowser, (isOpen) => {
-  if (!isOpen && isHomeOverviewSlide.value) {
+    if (!signature) {
+      homeVisitTip.value = null
+      homeVisitTipSignature.value = ''
+      return
+    }
+
     refreshHomeVisitTip()
-  }
-})
+  },
+  { immediate: true }
+)
 
 watch(trackedConditionKeys, (keys) => {
   if (!keys.length) {
