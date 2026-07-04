@@ -14,6 +14,7 @@ export const conditionImageAssets = {
   sleepApnea: '/image/sleep-apnea.png',
   sinusitis: '/image/sinusitis.png',
   rhinitis: '/image/rhinitis.png',
+  tinnitus: '/image/tinnitus.png',
   eczema: '/image/eczema.png',
   psoriasis: '/image/psoriasis.png',
   dermatitis: '/image/dermatitis.png',
@@ -32,6 +33,7 @@ const categoryImageMap: Record<string, string> = {
   Nerve: conditionImageAssets.nerveRadiculopathy,
   Digestive: conditionImageAssets.ibsBowelSymptoms,
   Respiratory: conditionImageAssets.asthma,
+  Hearing: conditionImageAssets.tinnitus,
   Skin: conditionImageAssets.eczema,
   'Chronic Pain / Fatigue': conditionImageAssets.chronicPain
 }
@@ -112,6 +114,7 @@ export const conditionImageCatalog = [
   { file: 'sleep-apnea.png', usedFor: ['Sleep apnea'] },
   { file: 'sinusitis.png', usedFor: ['Sinusitis'] },
   { file: 'rhinitis.png', usedFor: ['Rhinitis'] },
+  { file: 'tinnitus.png', usedFor: ['Hearing fallback', 'Tinnitus', 'Hearing loss'] },
   { file: 'eczema.png', usedFor: ['Eczema', 'Skin fallback'] },
   { file: 'psoriasis.png', usedFor: ['Psoriasis'] },
   { file: 'dermatitis.png', usedFor: ['Dermatitis'] },

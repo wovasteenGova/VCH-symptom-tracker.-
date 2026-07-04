@@ -1,5 +1,7 @@
+import { onMounted, useRuntimeConfig, useState } from '#imports'
 import {
   buildLogReminderPayloads,
+  DEFAULT_LOG_REMINDER_EVENING_HOUR,
   defaultLogReminderSettings,
   getBrowserTimezone,
   markReminderSent,
@@ -20,6 +22,7 @@ import {
   resolveVapidPublicKey
 } from '../utils/pushSubscription'
 import type { LoggingCadence } from '../utils/loggingCadence'
+import { usePushSubscriptions } from './usePushSubscriptions'
 
 // Registered once per page load so multiple components using this composable
 // don't stack duplicate listeners.
@@ -35,6 +38,7 @@ export function useLogReminders() {
   } = usePushSubscriptions()
   const remindersEnabled = useState('log-reminders-enabled', () => readLogRemindersEnabled())
   const reminderHour = useState('log-reminder-hour', () => readLogReminderHour())
+  const reminderEveningHour = useState('log-reminder-evening-hour', () => DEFAULT_LOG_REMINDER_EVENING_HOUR)
   const reminderTimezone = useState('log-reminder-timezone', () => readLogReminderTimezone())
   const permissionState = useState<NotificationPermission | 'unsupported'>('log-reminder-permission-state', () => 'default')
   const pushBackendConfigured = useState<boolean | null>('log-reminder-push-configured', () => null)
@@ -85,6 +89,7 @@ export function useLogReminders() {
   function hydrateReminderSettings(input?: {
     log_reminders_enabled?: boolean | null
     reminder_hour?: number | null
+    reminder_evening_hour?: number | null
     reminder_timezone?: string | null
   } | null) {
     const defaults = defaultLogReminderSettings()
@@ -95,10 +100,26 @@ export function useLogReminders() {
       setReminderHour(defaults.hour)
     }
 
-    setReminderTimezone(input?.reminder_timezone || getBrowserTimezone())
+    if (input?.reminder_evening_hour != null && Number.isFinite(input.reminder_evening_hour)) {
+      reminderEveningHour.value = Number(input.reminder_evening_hour)
+    } else {
+      reminderEveningHour.value = defaults.eveningHour
+    }
+
+    const browserTimezone = getBrowserTimezone()
+    setReminderTimezone(input?.reminder_timezone || browserTimezone)
 
     if (input?.log_reminders_enabled) {
       setRemindersEnabled(true)
+    }
+
+    if (input?.log_reminders_enabled && !input?.reminder_timezone) {
+      void syncProfileReminderSettings({
+        enabled: true,
+        reminderHour: reminderHour.value,
+        reminderEveningHour: reminderEveningHour.value,
+        reminderTimezone: browserTimezone
+      })
     }
 
     syncPermissionState()
@@ -120,6 +141,7 @@ export function useLogReminders() {
     await syncProfileReminderSettings({
       enabled,
       reminderHour: hour,
+      reminderEveningHour: reminderEveningHour.value,
       reminderTimezone: timezone
     })
   }
@@ -161,6 +183,11 @@ export function useLogReminders() {
       return
     }
 
+    // Push subscriptions are delivered by the hourly server cron.
+    if (hasRegisteredPushSubscription.value) {
+      return
+    }
+
     syncPermissionState()
 
     if (permissionState.value !== 'granted') {
@@ -172,6 +199,7 @@ export function useLogReminders() {
       weeklyLogDay: input.weeklyLogDay,
       entries: input.entries,
       reminderHour: reminderHour.value,
+      reminderEveningHour: reminderEveningHour.value,
       timeZone: reminderTimezone.value
     })
 
@@ -180,11 +208,9 @@ export function useLogReminders() {
         continue
       }
 
-      const shown = await showReminderNotification(payload.title, payload.body)
+      markReminderSent(payload.dedupeKey)
 
-      if (shown) {
-        markReminderSent(payload.dedupeKey)
-      }
+      await showReminderNotification(payload.title, payload.body)
     }
   }
 
@@ -259,6 +285,7 @@ export function useLogReminders() {
     try {
       await subscribeToLogReminders(publicKey, {
         reminderHour: reminderHour.value,
+        reminderEveningHour: reminderEveningHour.value,
         reminderTimezone: timezone
       })
 
@@ -299,6 +326,7 @@ export function useLogReminders() {
       await syncProfileReminderSettings({
         enabled: false,
         reminderHour: reminderHour.value,
+        reminderEveningHour: reminderEveningHour.value,
         reminderTimezone: reminderTimezone.value
       })
     } catch {
@@ -312,6 +340,7 @@ export function useLogReminders() {
     await syncProfileReminderSettings({
       enabled: remindersEnabled.value,
       reminderHour: hour,
+      reminderEveningHour: reminderEveningHour.value,
       reminderTimezone: reminderTimezone.value
     })
   }
@@ -358,6 +387,7 @@ export function useLogReminders() {
   return {
     remindersEnabled,
     reminderHour,
+    reminderEveningHour,
     reminderTimezone,
     permissionState,
     pushBackendConfigured,

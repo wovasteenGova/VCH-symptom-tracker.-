@@ -334,6 +334,13 @@
               @click="handlePasskeySignIn"
             />
 
+            <p
+              v-else-if="authMode === 'signup' && isPasskeySupported"
+              class="text-center text-xs leading-5 text-slate-500 dark:text-slate-400"
+            >
+              Prefer passkeys? Create your account first, then add one under Profile &rarr; Passkeys.
+            </p>
+
             <button
               v-if="authMode === 'login'"
               type="button"
@@ -1831,7 +1838,7 @@ import { androidAddToHomeScreenVideoUrl, iosAddToHomeScreenVideoUrl } from '../.
 import { filterAndRankConditions } from '../../utils/conditionSearch'
 import { getWeeklyLogCaution, type WeeklyLogCaution } from '../../utils/loggingCadence'
 import { buildLoggingActivityMetrics } from '../../utils/loggingActivityReport'
-import { conditionCatalog, buildHomeVisitTips, normalizeConditionLabel, pickRandomHomeVisitTip, resolveCatalogConditionByStoredKey, VA_CRISIS_LINE_SHORT } from '../../utils/conditionCatalog'
+import { conditionCatalog, buildHomeVisitTips, normalizeConditionLabel, pickRandomHomeVisitTip, resolveCatalogConditionByStoredKey, VA_CRISIS_LINE_SHORT, type HomeVisitTip } from '../../utils/conditionCatalog'
 import { conditionImageAssets } from '../../utils/conditionImages'
 import { getSeverityGuidance, severityQuickPresets } from '../../utils/severityGuidance'
 import { CalendarDate } from '@internationalized/date'
@@ -1944,7 +1951,7 @@ const historyExpanded = ref(false)
 const historyScrollEl = ref<HTMLElement | null>(null)
 const conditionSlideEntryBlocked = ref(false)
 let conditionSlideEntryBlockedTimer: ReturnType<typeof setTimeout> | undefined
-const homeVisitTip = ref<{ title: string, text: string } | null>(null)
+const homeVisitTip = ref<HomeVisitTip | null>(null)
 const homeVisitTipSignature = ref('')
 const isHomeTipsOverlayOpen = ref(false)
 const homeVisitTips = computed(() => buildHomeVisitTips(homeConditions.value))

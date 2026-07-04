@@ -16,13 +16,17 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onBeforeMount, onMounted, onUnmounted, ref } from 'vue'
 
 const { showSubmissionToast } = useSubmissionToast()
 const supabase = useSupabaseClient()
 
 const showAppSplash = ref(true)
 const APP_SPLASH_MIN_MS = 1200
+// Skip the splash when the page reloads shortly after showing it (e.g. the
+// PWA service worker auto-update reload), so users don't see it twice.
+const APP_SPLASH_REPLAY_WINDOW_MS = 60_000
+const APP_SPLASH_SHOWN_AT_KEY = 'symptom-tracker-splash-shown-at'
 
 function dismissAppSplash(mountedAt: number) {
   const elapsed = Date.now() - mountedAt
@@ -30,6 +34,21 @@ function dismissAppSplash(mountedAt: number) {
     showAppSplash.value = false
   }, Math.max(0, APP_SPLASH_MIN_MS - elapsed))
 }
+
+onBeforeMount(() => {
+  try {
+    const shownAt = Number(window.sessionStorage.getItem(APP_SPLASH_SHOWN_AT_KEY) || 0)
+
+    if (shownAt && Date.now() - shownAt < APP_SPLASH_REPLAY_WINDOW_MS) {
+      showAppSplash.value = false
+      return
+    }
+
+    window.sessionStorage.setItem(APP_SPLASH_SHOWN_AT_KEY, String(Date.now()))
+  } catch {
+    // sessionStorage unavailable (private mode edge cases) — keep default splash.
+  }
+})
 
 function updateAppHeight() {
   if (typeof window === 'undefined') {

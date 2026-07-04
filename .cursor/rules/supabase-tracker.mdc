@@ -43,7 +43,7 @@ So: **project = VCH only**. **Symptom data tables = `tracker` schema on that pro
 ## Push reminders
 
 - Tables: `tracker.push_subscriptions`, `tracker.log_reminder_deliveries`
-- Profile flags: `tracker.user_profiles.log_reminders_enabled`, `reminder_hour`
+.cursor/rules/supabase-tracker.mdc
 - Migration: `supabase/migrations/20260704153000_push_log_reminders_tracker.sql`
 
 ## Production data safety (never break this)

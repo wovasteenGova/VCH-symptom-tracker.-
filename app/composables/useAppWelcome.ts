@@ -1,4 +1,6 @@
+import { useSupabaseClient } from '#imports'
 import { computed, ref } from 'vue'
+import { useTrackerDb } from './useTrackerDb'
 import {
   APP_WELCOME_COMPLETED_STORAGE_KEY,
   LOGGING_CADENCE_STORAGE_KEY,
@@ -6,6 +8,7 @@ import {
   WEEKLY_LOG_DAY_STORAGE_KEY,
   type LoggingCadence
 } from '../utils/loggingCadence'
+import { getBrowserTimezone } from '../utils/logReminders'
 
 export type AppWelcomePreferences = {
   loggingCadence: LoggingCadence
@@ -140,7 +143,8 @@ export function useAppWelcome() {
         terms_accepted_at: preferences.termsAcceptedAt,
         log_reminders_enabled: preferences.enableLogReminders ?? false,
         reminder_hour: preferences.reminderHour ?? 10,
-        reminder_timezone: preferences.reminderTimezone ?? null,
+        reminder_evening_hour: 20,
+        reminder_timezone: preferences.reminderTimezone ?? getBrowserTimezone(),
         updated_at: new Date().toISOString()
       })
 

@@ -1,4 +1,9 @@
+import { useState, useSupabaseClient } from '#imports'
 import { computed, ref } from 'vue'
+import {
+  deserializeCredentialCreationOptions,
+  serializeCredentialCreationResponse
+} from '@supabase/auth-js/dist/module/lib/webauthn'
 
 export type TrackerPasskey = {
   id: string
@@ -105,7 +110,37 @@ export function usePasskeys() {
     isPasskeyBusy.value = true
 
     try {
-      const { data, error } = await supabase.auth.registerPasskey()
+      // Two-step ceremony instead of auth.registerPasskey() so we can steer
+      // the browser to the device's built-in authenticator (Windows Hello,
+      // fingerprint, Face ID) instead of security keys / new PIN prompts.
+      const { data: challenge, error: startError } = await supabase.auth.passkey.startRegistration()
+
+      if (startError || !challenge) {
+        throw new Error(getPasskeyErrorMessage(startError, 'Could not add a passkey.'))
+      }
+
+      const publicKey = deserializeCredentialCreationOptions(challenge.options)
+
+      publicKey.authenticatorSelection = {
+        ...publicKey.authenticatorSelection,
+        authenticatorAttachment: 'platform',
+        userVerification: 'preferred',
+        residentKey: 'preferred'
+      }
+      publicKey.hints = ['client-device']
+
+      const credential = await navigator.credentials.create({
+        publicKey: publicKey as PublicKeyCredentialCreationOptions
+      }) as PublicKeyCredential | null
+
+      if (!credential) {
+        throw new Error('Passkey prompt was closed or timed out. Try again when you are ready.')
+      }
+
+      const { data, error } = await supabase.auth.passkey.verifyRegistration({
+        challengeId: challenge.challenge_id,
+        credential: serializeCredentialCreationResponse(credential as Parameters<typeof serializeCredentialCreationResponse>[0])
+      })
 
       if (error) {
         throw new Error(getPasskeyErrorMessage(error, 'Could not add a passkey.'))

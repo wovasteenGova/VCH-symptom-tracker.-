@@ -1,3 +1,4 @@
+import { useRoute, useSupabaseClient } from '#imports'
 import type { Session } from '@supabase/supabase-js'
 
 type EmailLinkResult = {

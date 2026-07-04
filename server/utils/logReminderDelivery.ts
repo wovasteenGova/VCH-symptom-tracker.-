@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { buildLogReminderPayloads, DEFAULT_LOG_REMINDER_HOUR, resolveReminderTimezone } from '../../app/utils/logReminders'
+import { buildLogReminderPayloads, DEFAULT_LOG_REMINDER_EVENING_HOUR, DEFAULT_LOG_REMINDER_HOUR, resolveReminderTimezone } from '../../app/utils/logReminders'
 import {
   isExpiredPushSubscriptionError,
   sendWebPushNotification,
@@ -20,7 +20,7 @@ export async function loadReminderCandidates(
 ) {
   const { data: profiles, error: profilesError } = await supabase
     .from('user_profiles')
-    .select('user_id, logging_cadence, weekly_log_day, reminder_hour, reminder_timezone')
+    .select('user_id, logging_cadence, weekly_log_day, reminder_hour, reminder_evening_hour, reminder_timezone')
     .eq('log_reminders_enabled', true)
 
   if (profilesError) {
@@ -86,6 +86,7 @@ export async function loadReminderCandidates(
       weeklyLogDay: profile.weekly_log_day ?? 0,
       entries: entriesByUser.get(profile.user_id) || [],
       reminderHour: profile.reminder_hour ?? DEFAULT_LOG_REMINDER_HOUR,
+      reminderEveningHour: profile.reminder_evening_hour ?? DEFAULT_LOG_REMINDER_EVENING_HOUR,
       timeZone: resolveReminderTimezone(profile.reminder_timezone),
       now
     })

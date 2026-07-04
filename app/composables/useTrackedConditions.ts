@@ -1,4 +1,6 @@
+import { useSupabaseClient } from '#imports'
 import { computed, ref } from 'vue'
+import { useTrackerDb } from './useTrackerDb'
 import { conditionKeyFromLabel } from '../utils/subscription'
 import { normalizeTrackedConditionKeys, resolveCatalogConditionByStoredKey } from '../utils/conditionCatalog'
 

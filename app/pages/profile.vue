@@ -171,6 +171,13 @@
             :disabled="isAuthSubmitting"
             @click="handlePasskeySignIn"
           />
+
+          <p
+            v-else-if="authMode === 'signup' && isPasskeySupported"
+            class="mt-3 text-center text-xs leading-5 text-slate-400"
+          >
+            Prefer passkeys? Create your account first, then add one under Profile &rarr; Passkeys.
+          </p>
         </StickyActionBar>
       </form>
 
@@ -469,7 +476,7 @@
 
           <div class="mt-4 rounded-3xl border border-slate-700 bg-slate-800/50 px-4 py-4">
             <label class="block text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
-              Reminder time
+              Morning reminder
             </label>
             <select
               :value="reminderHour"
@@ -490,7 +497,7 @@
           </div>
 
           <p class="mt-3 text-xs leading-5 text-slate-500">
-            Install the app for background alerts when the app is closed. One nudge per day after your chosen time if you have not logged yet.
+            Install the app for background alerts when the app is closed. Up to two nudges per day — your morning time and 8 PM — if you have not logged yet.
           </p>
         </section>
 
@@ -1005,7 +1012,11 @@ import {
   buildSupportEmailHref
 } from '../utils/subscription'
 import { WEEKLY_LOG_DAY_OPTIONS, type LoggingCadence } from '../utils/loggingCadence'
-import { describeLogReminderSchedule, formatTimezoneLabel, LOG_REMINDER_HOUR_OPTIONS } from '../utils/logReminders'
+import {
+  describeLogReminderSchedule,
+  formatTimezoneLabel,
+  LOG_REMINDER_HOUR_OPTIONS
+} from '../utils/logReminders'
 import { useTrackerLayout, TRACKER_CLOSE_EMBED_PROFILE_KEY, type TrackerLayoutMode } from '../composables/useTrackerLayout'
 import { mapEntryHistoryItem } from '../utils/entryDisplay'
 import { copyToClipboard } from '../utils/copyToClipboard'
@@ -1077,6 +1088,7 @@ const {
 const {
   remindersEnabled,
   reminderHour,
+  reminderEveningHour,
   reminderTimezone,
   permissionState: logReminderPermissionState,
   pushBackendConfigured,
@@ -1095,7 +1107,8 @@ const logReminderScheduleDescription = computed(() => {
     loggingCadence.value,
     weeklyLogDay.value,
     reminderHour.value,
-    reminderTimezone.value
+    reminderTimezone.value,
+    reminderEveningHour.value
   )
 })
 

@@ -1,6 +1,11 @@
 import { getConditionImage } from './conditionImages'
 import { conditionKeyFromLabel } from './subscription'
 
+export type HomeVisitTipLink = {
+  label: string
+  url: string
+}
+
 export type ConditionCatalogEntry = {
   title: string
   category: string
@@ -8,6 +13,7 @@ export type ConditionCatalogEntry = {
   searchAliases?: readonly string[]
   vaFocus: readonly string[]
   tip: string
+  tipLinks?: readonly HomeVisitTipLink[]
 }
 
 export const EFFECTIVE_DATE_TIP =
@@ -38,9 +44,15 @@ export const LOG_HISTORY_LENGTH_TIP = {
   text: 'There is no hard rule, but about three months of steady entries—roughly 30 to 40 logs—gives you a useful pattern for exams and reviews. Consistency beats volume.'
 } as const
 
+export const FILING_WHEN_READY_TIP = {
+  title: 'Don\'t wait to file',
+  text: 'Don\'t let a symptom tracker hold you back from filing. If you need to submit with the evidence you have now, you can always add a detailed log later.'
+} as const
+
 export type HomeVisitTip = {
   title: string
   text: string
+  links?: readonly HomeVisitTipLink[]
 }
 
 const mentalHealthFocus = [
@@ -154,6 +166,29 @@ const chronicPainFocus = [
 
 const chronicPainTip =
   'On low-function days, write what you had to skip—not only how bad you felt. That shows real-world impact.'
+
+const hearingFocus = [
+  'Which ear or ears and how often symptoms happen',
+  'Missed conversations, louder TV, or asking people to repeat themselves',
+  'Sleep, concentration, and work impact from ringing or hearing trouble'
+] as const
+
+const dutyMosNoiseLinks = [
+  {
+    label: 'Duty MOS Noise Exposure Listing',
+    url: 'https://vesservices.com/Secure/va/training/dutymosnoise.pdf'
+  },
+  {
+    label: 'Fast Letter 10-35',
+    url: 'https://www.valor4vet.com/wp-content/uploads/2025/02/Fast-Letter-10-35-Duty-MOS-Noise-Exposure-Levels.pdf'
+  }
+] as const
+
+const tinnitusTip =
+  'Intermittent tinnitus still counts—log every episode, even the ones that come and go. The VA rates tinnitus at a maximum of 10% (Diagnostic Code 6260) and has proposed removing the standalone rating, so a steady log matters even more. When arguing noise exposure, it is best to stay within your Duty MOS: the VA\'s Duty MOS Noise Exposure Listing (Fast Letter 10-35) concedes hazardous noise based on your military job.'
+
+const hearingLossTip =
+  'The VA rates hearing loss from audiometric testing, but your log still matters. Write down the real-world impact: missed conversations, turning the TV up, or asking people to repeat themselves. Arguing noise exposure within your Duty MOS—using the VA\'s Duty MOS Noise Exposure Listing (Fast Letter 10-35)—supports service connection.'
 
 export const conditionCatalogDefinitions: ConditionCatalogEntry[] = [
   {
@@ -327,6 +362,22 @@ export const conditionCatalogDefinitions: ConditionCatalogEntry[] = [
     tip: respiratoryTip
   },
   {
+    title: 'Tinnitus',
+    category: 'Hearing',
+    description: 'Ringing, buzzing, or hissing episodes, one or both ears, and sleep or focus impact.',
+    vaFocus: hearingFocus,
+    tip: tinnitusTip,
+    tipLinks: dutyMosNoiseLinks
+  },
+  {
+    title: 'Hearing loss',
+    category: 'Hearing',
+    description: 'Missed conversations, TV volume, asking people to repeat themselves, and daily impact.',
+    vaFocus: hearingFocus,
+    tip: hearingLossTip,
+    tipLinks: dutyMosNoiseLinks
+  },
+  {
     title: 'Eczema',
     category: 'Skin',
     description: 'Area affected, itching, flare-ups, treatment, and photos later.',
@@ -469,6 +520,16 @@ const conditionSearchAliasMap: Record<string, readonly string[]> = {
     'runny nose', 'stuffy nose', 'nasal congestion', 'sneezing', 'allergies',
     'post nasal drip', 'itchy nose', 'watery eyes'
   ],
+  Tinnitus: [
+    'ringing ears', 'ear ringing', 'ringing in ears', 'buzzing', 'hissing', 'pulsing',
+    'ear noise', 'high pitched', 'acoustic trauma', 'noise exposure', 'MOS noise',
+    'duty MOS', 'both ears', 'one ear'
+  ],
+  'Hearing loss': [
+    'hearing', 'deaf', 'deafness', 'hard of hearing', 'hearing aids', 'can\'t hear',
+    'cannot hear', 'muffled hearing', 'audiogram', 'audiometric', 'hearing test',
+    'noise exposure', 'acoustic trauma', 'MOS noise', 'repeat themselves', 'TV volume'
+  ],
   Eczema: [
     'rash', 'itching', 'itchy skin', 'dry skin', 'skin flare', 'red skin',
     'cracked skin', 'bleeding skin', 'cream', 'ointment'
@@ -572,9 +633,10 @@ export function normalizeConditionLabel(label: string | null | undefined) {
 }
 
 export function buildHomeVisitTips(conditions: ConditionCatalogItem[]): HomeVisitTip[] {
-  const pool = conditions.map((condition) => ({
+  const pool: HomeVisitTip[] = conditions.map((condition) => ({
     title: `${condition.title} tip`,
-    text: condition.tip
+    text: condition.tip,
+    ...(condition.tipLinks?.length ? { links: condition.tipLinks } : {})
   }))
 
   pool.push(
@@ -585,6 +647,10 @@ export function buildHomeVisitTips(conditions: ConditionCatalogItem[]): HomeVisi
     {
       title: 'Effective date tip',
       text: EFFECTIVE_DATE_TIP
+    },
+    {
+      title: FILING_WHEN_READY_TIP.title,
+      text: FILING_WHEN_READY_TIP.text
     },
     {
       title: 'Mental health tip',

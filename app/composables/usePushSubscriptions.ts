@@ -1,4 +1,7 @@
+import { useSupabaseClient } from '#imports'
 import type { PushSubscriptionJSON } from '../utils/pushSubscription'
+import { useTrackerDb } from './useTrackerDb'
+import { useUserProfiles } from './useUserProfiles'
 
 export function usePushSubscriptions() {
   const supabase = useSupabaseClient()
@@ -85,11 +88,13 @@ export function usePushSubscriptions() {
   async function syncProfileReminderSettings(input: {
     enabled: boolean
     reminderHour?: number
+    reminderEveningHour?: number
     reminderTimezone?: string
   }) {
     await upsertProfile({
       log_reminders_enabled: input.enabled,
       ...(input.reminderHour !== undefined ? { reminder_hour: input.reminderHour } : {}),
+      ...(input.reminderEveningHour !== undefined ? { reminder_evening_hour: input.reminderEveningHour } : {}),
       ...(input.reminderTimezone ? { reminder_timezone: input.reminderTimezone } : {})
     })
   }
@@ -147,6 +152,7 @@ export function usePushSubscriptions() {
     vapidPublicKey: string,
     settings?: {
       reminderHour?: number
+      reminderEveningHour?: number
       reminderTimezone?: string
     }
   ) {
@@ -189,6 +195,7 @@ export function usePushSubscriptions() {
     await syncProfileReminderSettings({
       enabled: true,
       reminderHour: settings?.reminderHour,
+      reminderEveningHour: settings?.reminderEveningHour,
       reminderTimezone: settings?.reminderTimezone
     })
 

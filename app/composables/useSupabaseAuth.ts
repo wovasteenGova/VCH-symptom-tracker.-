@@ -1,3 +1,4 @@
+import { useState, useSupabaseClient } from '#imports'
 import type { User } from '@supabase/supabase-js'
 import { onMounted, onUnmounted } from 'vue'
 import { useTrackerAuthRedirects } from '../utils/authRedirects'

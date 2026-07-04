@@ -1,3 +1,6 @@
+import { useSupabaseClient } from '#imports'
+import { useTrackerDb } from './useTrackerDb'
+
 type UserProfilePayload = {
   full_name?: string | null
   display_name?: string | null
@@ -10,6 +13,7 @@ type UserProfilePayload = {
   terms_accepted_at?: string | null
   log_reminders_enabled?: boolean
   reminder_hour?: number
+  reminder_evening_hour?: number
   reminder_timezone?: string | null
 }
 type SupporterProfilePayload = {

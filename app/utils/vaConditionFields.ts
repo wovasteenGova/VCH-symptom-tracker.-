@@ -95,6 +95,9 @@ const conditionEpisodeConfig: Record<string, ConditionEpisodeConfig> = {
   'Skin Conditions': {
     duration: durationField
   },
+  Hearing: {
+    duration: durationField
+  },
   'Chronic Pain / Fatigue': {
     duration: durationField,
     followUp: stopActivityField
@@ -257,6 +260,23 @@ export const entryFieldsByCondition: Record<string, EntryFieldDef[]> = {
       placeholder: 'Topical cream, steroids, antihistamine, bath/soak, or none.'
     }
   ]),
+  Hearing: buildEntryFields('Hearing', [
+    {
+      label: 'Ear symptoms',
+      type: 'text',
+      placeholder: 'Ringing, buzzing, hissing, pulsing, muffled hearing, one or both ears...'
+    },
+    {
+      label: 'What triggered it',
+      type: 'text',
+      placeholder: 'Loud noise, quiet room, stress, poor sleep, or unknown.'
+    },
+    {
+      label: 'Hearing impact',
+      type: 'text',
+      placeholder: 'Missed conversation, TV louder, trouble sleeping, hard to concentrate...'
+    }
+  ]),
   'Chronic Pain / Fatigue': buildEntryFields('Chronic Pain / Fatigue', [
     {
       label: 'Pain and fatigue symptoms',
@@ -305,6 +325,10 @@ export function getEntryFieldsForSearchCondition(condition: { title: string, cat
   if (category.includes('respiratory') || title.includes('asthma') || title.includes('apnea')
     || title.includes('sinus') || title.includes('rhinitis')) {
     return entryFieldsByCondition.Respiratory!
+  }
+
+  if (category.includes('hearing') || title.includes('tinnitus') || title.includes('hearing')) {
+    return entryFieldsByCondition.Hearing!
   }
 
   if (category.includes('skin') || title.includes('eczema') || title.includes('psoriasis') || title.includes('dermatitis')) {

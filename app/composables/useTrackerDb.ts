@@ -1,3 +1,5 @@
+import { useSupabaseClient } from '#imports'
+
 export const TRACKER_SCHEMA = 'tracker'
 
 /** Production Supabase project ref — verify before migrations. */

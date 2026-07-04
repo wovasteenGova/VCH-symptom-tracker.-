@@ -1,4 +1,7 @@
+import { useState, useSupabaseClient } from '#imports'
 import { computed, ref, watch } from 'vue'
+import { useSupabaseAuth } from './useSupabaseAuth'
+import { useTrackerDb } from './useTrackerDb'
 import { resolveCatalogConditionByStoredKey } from '../utils/conditionCatalog'
 import {
   FREE_CONDITION_LIMIT,

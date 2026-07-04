@@ -1,4 +1,6 @@
+import { useRoute, useState } from '#imports'
 import { useMediaQuery } from '@vueuse/core'
+import { computed, inject, onMounted } from 'vue'
 
 export type TrackerLayoutMode = 'auto' | 'desktop' | 'mobile'
 

@@ -123,6 +123,35 @@ export const respiratoryTreatmentPresets: EntryFieldPreset[] = [
   { label: 'None', value: 'No rescue treatment' }
 ]
 
+export const hearingSymptomPresets: EntryFieldPreset[] = [
+  { label: 'Ringing', value: 'Ringing' },
+  { label: 'Buzzing', value: 'Buzzing' },
+  { label: 'Hissing', value: 'Hissing' },
+  { label: 'Pulsing', value: 'Pulsing' },
+  { label: 'Muffled hearing', value: 'Muffled hearing' },
+  { label: 'One ear', value: 'One ear' },
+  { label: 'Both ears', value: 'Both ears' },
+  { label: 'Constant', value: 'Constant' },
+  { label: 'Intermittent', value: 'Intermittent' }
+]
+
+export const hearingTriggerPresets: EntryFieldPreset[] = [
+  { label: 'Loud noise', value: 'Loud noise' },
+  { label: 'Quiet room', value: 'Quiet room or silence' },
+  { label: 'Stress', value: 'Stress' },
+  { label: 'Poor sleep', value: 'Poor sleep' },
+  { label: 'Unknown', value: 'Unknown trigger' }
+]
+
+export const hearingImpactPresets: EntryFieldPreset[] = [
+  { label: 'Trouble sleeping', value: 'Trouble sleeping' },
+  { label: 'Hard to concentrate', value: 'Hard to concentrate' },
+  { label: 'Missed conversation', value: 'Missed conversation' },
+  { label: 'Needed quiet room', value: 'Needed quiet room' },
+  { label: 'TV/radio louder', value: 'Turned TV or radio louder' },
+  { label: 'Asked to repeat', value: 'Asked people to repeat themselves' }
+]
+
 export const skinSymptomPresets: EntryFieldPreset[] = [
   { label: 'Itching', value: 'Itching' },
   { label: 'Burning', value: 'Burning' },
@@ -166,7 +195,10 @@ const multiSelectPresetFields = new Set([
   'Daytime effect',
   'Breathing symptoms',
   'Rescue treatment used',
-  'Skin symptoms'
+  'Skin symptoms',
+  'Ear symptoms',
+  'What triggered it',
+  'Hearing impact'
 ])
 
 function splitPresetValues(value: string) {
@@ -241,6 +273,12 @@ export function getEntryFieldPresets(fieldLabel: string): EntryFieldPreset[] {
       return respiratoryTreatmentPresets
     case 'Skin symptoms':
       return skinSymptomPresets
+    case 'Ear symptoms':
+      return hearingSymptomPresets
+    case 'What triggered it':
+      return hearingTriggerPresets
+    case 'Hearing impact':
+      return hearingImpactPresets
     default:
       return []
   }
