@@ -32,6 +32,16 @@ export const HOME_HONESTY_TIP = {
   text: 'Log what actually happened—not what you think you should report. Honest entries help you see your real patterns and give raters a timeline they can trust. This is your record, not a performance.'
 } as const
 
+export const LOG_HISTORY_LENGTH_TIP = {
+  title: 'How much to log',
+  text: 'There is no hard rule, but about three months of steady entries—roughly 30 to 40 logs—gives you a useful pattern for exams and reviews. Consistency beats volume.'
+} as const
+
+export type HomeVisitTip = {
+  title: string
+  text: string
+}
+
 const mentalHealthFocus = [
   'How often symptoms happen and how severe they are',
   'Work, relationship, and daily-life impact',
@@ -411,41 +421,48 @@ export function normalizeConditionLabel(label: string | null | undefined) {
   return trimmedLabel
 }
 
-export function pickRandomHomeVisitTip(conditions: ConditionCatalogItem[]): { title: string, text: string } | null {
+export function buildHomeVisitTips(conditions: ConditionCatalogItem[]): HomeVisitTip[] {
   const pool = conditions.map((condition) => ({
     title: `${condition.title} tip`,
     text: condition.tip
   }))
 
-  pool.push({
-    title: 'Effective date tip',
-    text: EFFECTIVE_DATE_TIP
-  })
+  pool.push(
+    {
+      title: LOG_HISTORY_LENGTH_TIP.title,
+      text: LOG_HISTORY_LENGTH_TIP.text
+    },
+    {
+      title: 'Effective date tip',
+      text: EFFECTIVE_DATE_TIP
+    },
+    {
+      title: 'Mental health tip',
+      text: VA_MENTAL_HEALTH_COMBINED_TIP
+    },
+    {
+      title: 'Severity tip',
+      text: VA_MENTAL_HEALTH_SEVERITY_TIP
+    },
+    {
+      title: 'Worst day tip',
+      text: VA_MENTAL_HEALTH_WORST_DAY_TIP
+    },
+    {
+      title: HOME_HONESTY_TIP.title,
+      text: HOME_HONESTY_TIP.text
+    },
+    {
+      title: 'Crisis support',
+      text: VA_MENTAL_HEALTH_CRISIS_TIP
+    }
+  )
 
-  pool.push({
-    title: 'Mental health tip',
-    text: VA_MENTAL_HEALTH_COMBINED_TIP
-  })
+  return pool
+}
 
-  pool.push({
-    title: 'Severity tip',
-    text: VA_MENTAL_HEALTH_SEVERITY_TIP
-  })
-
-  pool.push({
-    title: 'Worst day tip',
-    text: VA_MENTAL_HEALTH_WORST_DAY_TIP
-  })
-
-  pool.push({
-    title: HOME_HONESTY_TIP.title,
-    text: HOME_HONESTY_TIP.text
-  })
-
-  pool.push({
-    title: 'Crisis support',
-    text: VA_MENTAL_HEALTH_CRISIS_TIP
-  })
+export function pickRandomHomeVisitTip(conditions: ConditionCatalogItem[]): HomeVisitTip | null {
+  const pool = buildHomeVisitTips(conditions)
 
   if (!pool.length) {
     return null

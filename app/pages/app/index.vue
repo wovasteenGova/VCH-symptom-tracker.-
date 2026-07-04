@@ -949,13 +949,14 @@
                               />
                             </div>
 
-                            <div class="mt-6">
-                              <p class="text-xs font-bold uppercase tracking-[0.14em] text-sky-700 dark:text-sky-300">
-                                {{ HOME_HONESTY_TIP.title }}
-                              </p>
-                              <p class="mt-1 leading-6 text-slate-600 dark:text-slate-300">
-                                {{ HOME_HONESTY_TIP.text }}
-                              </p>
+                            <div v-if="homeVisitTip" class="mt-6">
+                              <Transition name="home-tip" mode="out-in">
+                                <HomeVisitTipCard
+                                  :key="`${homeVisitTip.title}-${homeVisitTip.text}`"
+                                  :tip="homeVisitTip"
+                                  @show-all="isHomeTipsOverlayOpen = true"
+                                />
+                              </Transition>
                             </div>
 
                             <p class="mt-3 text-xs leading-5 text-slate-500 dark:text-slate-400">
@@ -1015,14 +1016,11 @@
 
                 <div v-if="homeVisitTip" class="mt-6">
                   <Transition name="home-tip" mode="out-in">
-                    <div :key="`${homeVisitTip.title}-${homeVisitTip.text}`">
-                      <p class="text-xs font-bold uppercase tracking-[0.14em] text-sky-700 dark:text-sky-300">
-                        {{ homeVisitTip.title }}
-                      </p>
-                      <p class="mt-1.5 leading-6 text-slate-600 dark:text-slate-300">
-                        {{ homeVisitTip.text }}
-                      </p>
-                    </div>
+                    <HomeVisitTipCard
+                      :key="`${homeVisitTip.title}-${homeVisitTip.text}`"
+                      :tip="homeVisitTip"
+                      @show-all="isHomeTipsOverlayOpen = true"
+                    />
                   </Transition>
                 </div>
 
@@ -1691,6 +1689,12 @@
     @upgrade="handleUpgradeCheckout"
   />
 
+  <HomeTipsOverlay
+    :open="isHomeTipsOverlayOpen"
+    :tips="homeVisitTips"
+    @close="isHomeTipsOverlayOpen = false"
+  />
+
   <Transition
     enter-active-class="transition duration-200 ease-out"
     enter-from-class="opacity-0"
@@ -1793,11 +1797,11 @@ import { androidAddToHomeScreenVideoUrl, iosAddToHomeScreenVideoUrl } from '../.
 import { filterAndRankConditions } from '../../utils/conditionSearch'
 import { getWeeklyLogCaution, type WeeklyLogCaution } from '../../utils/loggingCadence'
 import { buildLoggingActivityMetrics } from '../../utils/loggingActivityReport'
-import { conditionCatalog, HOME_HONESTY_TIP, normalizeConditionLabel, pickRandomHomeVisitTip, resolveCatalogConditionByStoredKey, VA_CRISIS_LINE_SHORT } from '../../utils/conditionCatalog'
+import { conditionCatalog, buildHomeVisitTips, normalizeConditionLabel, pickRandomHomeVisitTip, resolveCatalogConditionByStoredKey, VA_CRISIS_LINE_SHORT } from '../../utils/conditionCatalog'
 import { conditionImageAssets } from '../../utils/conditionImages'
 import { getSeverityGuidance, severityQuickPresets } from '../../utils/severityGuidance'
 import { CalendarDate } from '@internationalized/date'
-import { computed, nextTick, onBeforeMount, onMounted, provide, ref, shallowRef, watch } from 'vue'
+import { computed, nextTick, onBeforeMount, onBeforeUnmount, onMounted, provide, ref, shallowRef, watch } from 'vue'
 import { useKeyboardAwareScroll } from '../../composables/useKeyboardAwareScroll'
 import {
   buildEntryDraftSnapshot,
@@ -1903,6 +1907,9 @@ const historyScrollEl = ref<HTMLElement | null>(null)
 const conditionSlideEntryBlocked = ref(false)
 let conditionSlideEntryBlockedTimer: ReturnType<typeof setTimeout> | undefined
 const homeVisitTip = ref<{ title: string, text: string } | null>(null)
+const isHomeTipsOverlayOpen = ref(false)
+const homeVisitTips = computed(() => buildHomeVisitTips(homeConditions.value))
+const { runLogReminderCheck } = useLogReminders()
 const homeSortUsesEntryDates = ref(false)
 const { isDesktopLayout, isMobileLayout, isEmbeddedPreview } = useTrackerLayout()
 const isEmbedProfileOpen = ref(false)
@@ -2176,6 +2183,27 @@ function refreshHomeVisitTip() {
   }
 
   homeVisitTip.value = pickRandomHomeVisitTip(homeConditions.value)
+}
+
+function scheduleLogReminderCheck() {
+  if (!user.value) {
+    return
+  }
+
+  runLogReminderCheck({
+    cadence: loggingCadence.value,
+    weeklyLogDay: weeklyLogDay.value,
+    entries: savedEntries.value,
+    isAuthenticated: true
+  })
+}
+
+let logReminderIntervalId: ReturnType<typeof setInterval> | undefined
+
+function handleLogReminderVisibilityChange() {
+  if (document.visibilityState === 'visible') {
+    scheduleLogReminderCheck()
+  }
 }
 
 const historyEntries = computed(() => {
@@ -2945,6 +2973,17 @@ onMounted(async () => {
     loadEntries()
     refreshEntryDraftPreview()
   }
+
+  document.addEventListener('visibilitychange', handleLogReminderVisibilityChange)
+  logReminderIntervalId = window.setInterval(scheduleLogReminderCheck, 60 * 60 * 1000)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('visibilitychange', handleLogReminderVisibilityChange)
+
+  if (logReminderIntervalId) {
+    clearInterval(logReminderIntervalId)
+  }
 })
 
 watch(user, async (currentUser) => {
@@ -3522,6 +3561,7 @@ async function loadEntries() {
   } finally {
     isLoadingEntries.value = false
     homeSortUsesEntryDates.value = true
+    scheduleLogReminderCheck()
   }
 }
 

@@ -83,6 +83,9 @@ export default defineNuxtConfig({
   pwa: {
     registerType: 'autoUpdate',
     includeAssets: ['vch-logo.png', 'apple-touch-icon.png', 'pwa-192.png', 'pwa-512.png'],
+    workbox: {
+      importScripts: ['/log-reminder-handlers.js']
+    },
     manifest: {
       name: 'Veteran Symptom Tracker',
       short_name: 'Symptoms',

@@ -293,6 +293,44 @@
           </div>
         </section>
 
+        <section class="rounded-4xl border border-slate-800 bg-slate-900 p-5">
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Reminders</p>
+          <h2 class="mt-1 text-xl font-bold text-white">Logging notifications</h2>
+          <p class="mt-2 text-sm leading-6 text-slate-400">
+            {{ logReminderScheduleDescription }}
+          </p>
+
+          <p v-if="logReminderPermissionState === 'unsupported'" class="mt-3 text-sm leading-6 text-amber-200">
+            Notifications are not supported in this browser.
+          </p>
+          <p v-else-if="logReminderPermissionState === 'denied'" class="mt-3 text-sm leading-6 text-amber-200">
+            Notifications are blocked. Enable them in your phone or browser settings, then try again.
+          </p>
+
+          <div class="mt-4 flex items-center justify-between gap-3 rounded-3xl border border-slate-700 bg-slate-800/50 px-4 py-4">
+            <div>
+              <p class="font-bold text-white">Log reminders</p>
+              <p class="mt-1 text-sm text-slate-400">
+                {{ remindersEnabled ? 'On for this device' : 'Off' }}
+              </p>
+            </div>
+            <button
+              type="button"
+              class="rounded-full px-4 py-2 text-sm font-bold transition"
+              :class="remindersEnabled
+                ? 'bg-white text-slate-950'
+                : 'bg-slate-700 text-slate-200 ring-1 ring-slate-600'"
+              @click="toggleLogReminders"
+            >
+              {{ remindersEnabled ? 'On' : 'Enable' }}
+            </button>
+          </div>
+
+          <p class="mt-3 text-xs leading-5 text-slate-500">
+            Install the app for the best experience. Reminders run on this device when the app is open; background push alerts are the next step.
+          </p>
+        </section>
+
         <section class="rounded-4xl border border-slate-800 bg-slate-900 p-4">
           <div>
             <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Supporter Links</p>
@@ -757,6 +795,7 @@ import {
   buildSupportEmailHref
 } from '../utils/subscription'
 import { WEEKLY_LOG_DAY_OPTIONS, type LoggingCadence } from '../utils/loggingCadence'
+import { describeLogReminderSchedule } from '../utils/logReminders'
 import { useTrackerLayout, TRACKER_CLOSE_EMBED_PROFILE_KEY, type TrackerLayoutMode } from '../composables/useTrackerLayout'
 import { mapEntryHistoryItem } from '../utils/entryDisplay'
 import { copyToClipboard } from '../utils/copyToClipboard'
@@ -811,6 +850,17 @@ const {
   loadAppWelcomeState,
   updateLoggingCadence
 } = useAppWelcome()
+const {
+  remindersEnabled,
+  permissionState: logReminderPermissionState,
+  enableRemindersWithPermission,
+  setRemindersEnabled,
+  syncPermissionState
+} = useLogReminders()
+
+const logReminderScheduleDescription = computed(() => {
+  return describeLogReminderSchedule(loggingCadence.value, weeklyLogDay.value)
+})
 const { layoutMode, setLayoutMode } = useTrackerLayout()
 
 const layoutOptions: Array<{ value: TrackerLayoutMode, label: string, copy: string }> = [
@@ -915,6 +965,7 @@ const deletedHistoryEntries = computed(() => {
 })
 
 onMounted(() => {
+  syncPermissionState()
   applySupporterLinkQuery()
   if (user.value) {
     loadProfilePage()
@@ -1092,6 +1143,23 @@ async function saveWeeklyLogDay(day: number) {
     autoSaveState.value = 'error'
     pageError.value = getErrorMessage(error)
   }
+}
+
+async function toggleLogReminders() {
+  if (remindersEnabled.value) {
+    setRemindersEnabled(false)
+    showSubmissionToast({ message: 'Log reminders turned off.' })
+    return
+  }
+
+  const enabled = await enableRemindersWithPermission()
+
+  if (enabled) {
+    showSubmissionToast({ message: 'Log reminders turned on for this device.' })
+    return
+  }
+
+  showSubmissionToast({ message: 'Allow notifications to turn on reminders.' })
 }
 
 async function createSupporter() {
