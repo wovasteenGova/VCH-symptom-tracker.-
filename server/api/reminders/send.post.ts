@@ -1,4 +1,4 @@
-import { assertReminderCronAuthorized, isReminderTestMode, getReminderTestIntervalMinutes } from '../../utils/pushReminderAuth'
+import { assertReminderCronAuthorized } from '../../utils/pushReminderAuth'
 import { deliverReminderCandidates, loadReminderCandidates } from '../../utils/logReminderDelivery'
 import { getSupabaseAdmin } from '../../utils/supabaseAdmin'
 import { assertWebPushConfigured } from '../../utils/webPush'
@@ -13,8 +13,6 @@ export default defineEventHandler(async (event) => {
 
   return {
     ok: true,
-    testMode: isReminderTestMode(),
-    testIntervalMinutes: isReminderTestMode() ? getReminderTestIntervalMinutes() : null,
     candidateCount: candidates.length,
     sentCount: delivery.sentCount,
     failedCount: delivery.failedCount,

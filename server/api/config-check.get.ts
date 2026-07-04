@@ -1,6 +1,6 @@
 import { getSupabasePublicConfig, inspectSupabaseKey, previewSupabaseKey } from '../utils/supabasePublicConfig'
 import { getSupabaseConfigError, resolveSupabaseEnv } from '../utils/supabaseEnv'
-import { getReminderCronSecret, getReminderTestIntervalMinutes, getVapidPrivateKey, getVapidPublicKey, isReminderTestMode } from '../utils/pushReminderAuth'
+import { getReminderCronSecret, getVapidPrivateKey, getVapidPublicKey } from '../utils/pushReminderAuth'
 
 function extractSupabaseProjectRef(url: string) {
   const match = String(url || '').match(/https:\/\/([^.]+)\.supabase\.co/)
@@ -69,9 +69,7 @@ export default defineEventHandler(() => {
     reminders: {
       hasVapidPublicKey: Boolean(getVapidPublicKey()),
       hasVapidPrivateKey: Boolean(getVapidPrivateKey()),
-      hasReminderCronSecret: Boolean(getReminderCronSecret()),
-      testMode: isReminderTestMode(),
-      testIntervalMinutes: isReminderTestMode() ? getReminderTestIntervalMinutes() : null
+      hasReminderCronSecret: Boolean(getReminderCronSecret())
     },
     environment: process.env.NODE_ENV || 'development',
     fixHint: anonKeyLooksLikeServiceRole || anonKeySameAsServiceKey

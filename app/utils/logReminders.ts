@@ -393,18 +393,3 @@ export function defaultLogReminderSettings(): LogReminderSettings {
     timezone: getBrowserTimezone()
   }
 }
-
-export function buildTestReminderPayload(
-  now = new Date(),
-  intervalMinutes = 5
-): LogReminderPayload {
-  const bucket = Math.floor(now.getTime() / (intervalMinutes * 60 * 1000))
-  const timeLabel = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
-
-  return {
-    kind: 'daily',
-    title: 'VCH — Test log reminder',
-    body: `Push test at ${timeLabel}. Open the app to log an entry.`,
-    dedupeKey: `test:${intervalMinutes}m:${bucket}`
-  }
-}

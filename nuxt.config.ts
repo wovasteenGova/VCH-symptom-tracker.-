@@ -48,7 +48,6 @@ export default defineNuxtConfig({
     supabaseServiceKey,
     vapidPrivateKey: env('VAPID_PRIVATE_KEY'),
     reminderCronSecret: env('REMINDER_CRON_SECRET') || env('NUXT_REMINDER_CRON_SECRET'),
-    reminderTestMode: env('REMINDER_TEST_MODE') === 'true' || env('REMINDER_TEST_MODE') === '1',
     public: {
       supabaseUrl,
       supabaseAnonKey: supabaseAnonKey,

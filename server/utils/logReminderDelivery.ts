@@ -1,6 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { buildLogReminderPayloads, buildTestReminderPayload, DEFAULT_LOG_REMINDER_HOUR, resolveReminderTimezone } from '../../app/utils/logReminders'
-import { getReminderTestIntervalMinutes, isReminderTestMode } from './pushReminderAuth'
+import { buildLogReminderPayloads, DEFAULT_LOG_REMINDER_HOUR, resolveReminderTimezone } from '../../app/utils/logReminders'
 import {
   isExpiredPushSubscriptionError,
   sendWebPushNotification,
@@ -67,8 +66,6 @@ export async function loadReminderCandidates(
   )
 
   const candidates: ReminderCandidate[] = []
-  const testMode = isReminderTestMode()
-  const testIntervalMinutes = getReminderTestIntervalMinutes()
 
   for (const profile of profiles) {
     const userSubscriptions = subscriptionsByUser.get(profile.user_id) || []
@@ -83,25 +80,6 @@ export async function loadReminderCandidates(
       p256dh: String(subscription.p256dh),
       auth_key: String(subscription.auth_key)
     }))
-
-    if (testMode) {
-      const payload = buildTestReminderPayload(now, testIntervalMinutes)
-      const deliveryKey = `${profile.user_id}:${payload.dedupeKey}`
-
-      if (deliveredKeys.has(deliveryKey)) {
-        continue
-      }
-
-      candidates.push({
-        userId: profile.user_id,
-        dedupeKey: payload.dedupeKey,
-        title: payload.title,
-        body: payload.body,
-        subscriptions: mappedSubscriptions
-      })
-
-      continue
-    }
 
     const payloads = buildLogReminderPayloads({
       cadence: profile.logging_cadence === 'daily' ? 'daily' : 'weekly',

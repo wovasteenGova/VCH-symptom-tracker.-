@@ -30,25 +30,6 @@ export function getReminderCronSecret() {
   ).trim()
 }
 
-export function isReminderTestMode() {
-  const config = useRuntimeConfig()
-
-  return config.reminderTestMode === true
-    || process.env.REMINDER_TEST_MODE === 'true'
-    || process.env.REMINDER_TEST_MODE === '1'
-}
-
-/** Test pushes dedupe per bucket (default 1 minute). */
-export function getReminderTestIntervalMinutes() {
-  const raw = Number(process.env.REMINDER_TEST_INTERVAL_MINUTES || 1)
-
-  if (!Number.isFinite(raw) || raw < 1) {
-    return 1
-  }
-
-  return Math.min(60, Math.floor(raw))
-}
-
 export function assertReminderCronAuthorized(event: { headers: Headers | { get: (name: string) => string | null } }) {
   const secret = getReminderCronSecret()
 
