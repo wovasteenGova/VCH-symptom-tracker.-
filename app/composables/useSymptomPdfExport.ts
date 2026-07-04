@@ -2,12 +2,14 @@ import { jsPDF } from 'jspdf'
 import {
   buildReportMetrics,
   drawAggregateLoggingSection,
+  drawCompactHeatmapGrid,
   drawHorizontalBarChart,
   drawLineChart,
   drawLoggingActivitySection,
   drawSectionTitle,
   drawStatCards,
-  drawVerticalBarChart
+  drawVerticalBarChart,
+  drawWeeklyFrequencyGrid
 } from '../utils/symptomReportCharts'
 import { drawEntryLogSection } from '../utils/symptomReportEntryLog'
 import { getLogoFormat, loadReportLogoDataUrl, reportBranding } from '../utils/reportBranding'
@@ -393,19 +395,29 @@ export function useSymptomPdfExport() {
           { showConditionChart: showAdvancedCharts }
         )
 
-        for (const monthMetrics of allMonthMetrics) {
-          y = drawLoggingActivitySection(
-            doc,
-            margin,
-            y,
-            contentWidth,
-            pageHeight,
-            margin,
-            monthMetrics,
-            '',
-            { week: false, condition: false, heatmap: true }
-          )
-        }
+        drawSectionTitle(doc, 'Weekly symptom frequency', margin, y)
+        y += 14
+        y = drawWeeklyFrequencyGrid(
+          doc,
+          margin,
+          y,
+          contentWidth,
+          allMonthMetrics,
+          pageHeight,
+          margin
+        ) + PDF_SECTION_GAP
+
+        drawSectionTitle(doc, 'Daily log density', margin, y)
+        y += 14
+        y = drawCompactHeatmapGrid(
+          doc,
+          margin,
+          y,
+          contentWidth,
+          allMonthMetrics,
+          pageHeight,
+          margin
+        )
       }
     }
 

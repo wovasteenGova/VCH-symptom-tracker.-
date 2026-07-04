@@ -1,4 +1,5 @@
 import type { jsPDF } from 'jspdf'
+import type { LoggingActivityMetrics } from './loggingActivityReport'
 
 type ChartEntry = {
   condition_label: string
@@ -330,10 +331,19 @@ export function drawHorizontalBarChart(
   items.forEach((item, index) => {
     const barWidth = Math.min((item.value / maxValue) * barMaxWidth, barMaxWidth)
     const color = colors[index % colors.length]
-    const label = item.label.length > 22 ? `${item.label.slice(0, 22)}…` : item.label
 
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(8)
+
+    const maxLabelPx = labelWidth - 8
+    let label = item.label
+    if (doc.getTextWidth(label) > maxLabelPx) {
+      while (label.length > 1 && doc.getTextWidth(`${label}…`) > maxLabelPx) {
+        label = label.slice(0, -1)
+      }
+      label = `${label.trimEnd()}…`
+    }
+
     setText(doc, slate900)
     doc.text(label, x + leftPad, rowY + 8)
 
@@ -487,14 +497,6 @@ export function drawHeatmapCalendar(
   return y + resolvedHeight
 }
 
-type LoggingActivityMetrics = {
-  monthLabel: string
-  weeklyBreakdown: Array<{ label: string, count: number }>
-  conditionBreakdown: Array<{ label: string, count: number }>
-  dailyCounts: number[]
-  mondayOffset: number
-}
-
 type LoggingChartSections = {
   week?: boolean
   condition?: boolean
@@ -556,6 +558,245 @@ export function drawAggregateLoggingSection(
       [[16, 185, 129]],
       { labelWidth: 128 }
     ) + CHART_SECTION_GAP
+  }
+
+  return y
+}
+
+export function drawWeeklyFrequencyGrid(
+  doc: jsPDF,
+  x: number,
+  y: number,
+  width: number,
+  allMonthMetrics: LoggingActivityMetrics[],
+  pageHeight: number,
+  margin: number
+): number {
+  if (!allMonthMetrics.length) {
+    return y
+  }
+
+  const maxWeeks = 5
+  const padX = 14
+  const padTop = 16
+  const padBottom = 12
+  const headerHeight = 20
+  const rowHeight = 26
+  const dividerGap = 4
+
+  const monthColWidth = 80
+  const totalColWidth = 52
+  const avgColWidth = 56
+  const weekAreaWidth = width - padX * 2 - monthColWidth - totalColWidth - avgColWidth
+  const weekColWidth = weekAreaWidth / maxWeeks
+
+  const gridHeight = padTop + headerHeight + dividerGap + allMonthMetrics.length * rowHeight + padBottom
+
+  y = ensureChartPageSpace(doc, y, gridHeight + 40, pageHeight, margin)
+
+  setStroke(doc, slate200)
+  setFill(doc, [255, 255, 255])
+  doc.roundedRect(x, y, width, gridHeight, 10, 10, 'FD')
+
+  let dy = y + padTop
+  const lx = x + padX
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(7)
+  setText(doc, slate500)
+
+  doc.text('MONTH', lx, dy + 12)
+
+  for (let w = 0; w < maxWeeks; w++) {
+    const cx = lx + monthColWidth + w * weekColWidth + weekColWidth / 2
+    doc.text(`WK ${w + 1}`, cx, dy + 12, { align: 'center' })
+  }
+
+  const totalCx = lx + monthColWidth + maxWeeks * weekColWidth + totalColWidth / 2
+  doc.text('TOTAL', totalCx, dy + 12, { align: 'center' })
+
+  const avgCx = lx + monthColWidth + maxWeeks * weekColWidth + totalColWidth + avgColWidth / 2
+  doc.text('AVG/WK', avgCx, dy + 12, { align: 'center' })
+
+  dy += headerHeight
+
+  setStroke(doc, slate200)
+  doc.line(lx, dy, lx + width - padX * 2, dy)
+  dy += dividerGap
+
+  const globalMax = Math.max(...allMonthMetrics.flatMap((m) => m.weeklyBreakdown.map((w) => w.count)), 1)
+
+  allMonthMetrics.forEach((month, rowIdx) => {
+    if (rowIdx % 2 === 0) {
+      setFill(doc, [248, 250, 252])
+      doc.roundedRect(x + 3, dy, width - 6, rowHeight, 4, 4, 'F')
+    }
+
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(8)
+    setText(doc, slate900)
+    const shortMonth = new Date(month.year, month.month, 1).toLocaleString('en-US', {
+      month: 'short',
+      year: 'numeric'
+    })
+    doc.text(shortMonth, lx + 2, dy + 16)
+
+    const weeklyAvg = month.totalLogs / Math.max(month.weeklyBreakdown.length, 1)
+
+    for (let w = 0; w < maxWeeks; w++) {
+      const cx = lx + monthColWidth + w * weekColWidth + weekColWidth / 2
+      const count = month.weeklyBreakdown[w]?.count
+
+      if (count === undefined) {
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(7)
+        setText(doc, [203, 213, 225])
+        doc.text('—', cx, dy + 16, { align: 'center' })
+        continue
+      }
+
+      if (count > 0) {
+        const intensity = count / globalMax
+        let pillColor: readonly [number, number, number]
+        if (intensity >= 0.6) {
+          pillColor = emerald500
+        } else if (intensity >= 0.3) {
+          pillColor = sky500
+        } else {
+          pillColor = [148, 163, 184]
+        }
+
+        const pillW = weekColWidth - 10
+        setFill(doc, pillColor)
+        doc.roundedRect(cx - pillW / 2, dy + 5, pillW, 16, 4, 4, 'F')
+
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(8)
+        setText(doc, [255, 255, 255])
+      } else {
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(8)
+        setText(doc, slate500)
+      }
+
+      doc.text(String(count), cx, dy + 16, { align: 'center' })
+    }
+
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(9)
+    setText(doc, slate900)
+    doc.text(String(month.totalLogs), totalCx, dy + 16, { align: 'center' })
+
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(8)
+    setText(doc, sky500)
+    doc.text(weeklyAvg.toFixed(1), avgCx, dy + 16, { align: 'center' })
+
+    dy += rowHeight
+  })
+
+  return y + gridHeight
+}
+
+export function drawCompactHeatmapGrid(
+  doc: jsPDF,
+  x: number,
+  y: number,
+  width: number,
+  allMonthMetrics: LoggingActivityMetrics[],
+  pageHeight: number,
+  margin: number,
+  perRow = 3
+): number {
+  if (!allMonthMetrics.length) {
+    return y
+  }
+
+  const hGap = 12
+  const heatmapWidth = (width - hGap * (perRow - 1)) / perRow
+  const colSpacing = Math.floor((heatmapWidth - 16) / 7)
+  const cellSize = colSpacing - 4
+  const rowSpacing = cellSize + 4
+
+  for (let startIdx = 0; startIdx < allMonthMetrics.length; startIdx += perRow) {
+    const rowMetrics = allMonthMetrics.slice(startIdx, startIdx + perRow)
+
+    let maxCalendarRows = 0
+    for (const m of rowMetrics) {
+      const rows = Math.ceil((m.mondayOffset + m.dailyCounts.length) / 7)
+      if (rows > maxCalendarRows) {
+        maxCalendarRows = rows
+      }
+    }
+
+    const cardHeight = 18 + 14 + maxCalendarRows * rowSpacing + 10
+
+    y = ensureChartPageSpace(doc, y, cardHeight + 20, pageHeight, margin)
+
+    rowMetrics.forEach((month, idx) => {
+      const mx = x + idx * (heatmapWidth + hGap)
+
+      setStroke(doc, slate200)
+      setFill(doc, [255, 255, 255])
+      doc.roundedRect(mx, y, heatmapWidth, cardHeight, 8, 8, 'FD')
+
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(7)
+      setText(doc, slate500)
+      const shortLabel = new Date(month.year, month.month, 1).toLocaleString('en-US', {
+        month: 'short',
+        year: 'numeric'
+      })
+      doc.text(shortLabel.toUpperCase(), mx + 8, y + 12)
+
+      const gridX = mx + 8
+      const headerY = y + 24
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(6)
+      setText(doc, slate500)
+      const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+      dayLabels.forEach((label, i) => {
+        doc.text(label, gridX + i * colSpacing + cellSize / 2, headerY, { align: 'center' })
+      })
+
+      const cellsY = headerY + 8
+      const maxCount = Math.max(...month.dailyCounts, 1)
+
+      month.dailyCounts.forEach((count, dayIdx) => {
+        const cellIndex = month.mondayOffset + dayIdx
+        const row = Math.floor(cellIndex / 7)
+        const col = cellIndex % 7
+        const cx = gridX + col * colSpacing
+        const cy = cellsY + row * rowSpacing
+        const intensity = count / maxCount
+
+        if (count === 0) {
+          setFill(doc, [241, 245, 249])
+        } else if (intensity >= 0.66) {
+          setFill(doc, orange500)
+        } else if (intensity >= 0.33) {
+          setFill(doc, amber500)
+        } else {
+          setFill(doc, emerald500)
+        }
+
+        doc.roundedRect(cx, cy, cellSize, cellSize, 3, 3, 'F')
+
+        if (cellSize >= 12) {
+          doc.setFont('helvetica', count > 1 ? 'bold' : 'normal')
+          doc.setFontSize(count > 1 ? 6 : 5)
+          setText(doc, count > 0 ? slate900 : slate500)
+          doc.text(
+            count > 1 ? String(count) : String(dayIdx + 1),
+            cx + cellSize / 2,
+            cy + cellSize / 2 + 2,
+            { align: 'center' }
+          )
+        }
+      })
+    })
+
+    y += cardHeight + 12
   }
 
   return y
