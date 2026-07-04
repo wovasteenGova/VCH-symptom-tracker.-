@@ -1132,6 +1132,16 @@
                     <UIcon name="i-lucide-check" class="size-[0.55rem] text-emerald-400" />
                   </span>
                 </span>
+                <button
+                  v-else
+                  type="button"
+                  data-history-interactive
+                  class="inline-flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-3 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.12em] text-slate-700 ring-1 ring-slate-300/60 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-600/70 dark:hover:bg-slate-700"
+                  @click="isAuthPanelOpen = true"
+                >
+                  <UIcon name="i-lucide-log-in" class="size-3.5" />
+                  Not logged in
+                </button>
               </div>
             </div>
             <p v-if="exportError" class="mt-2 text-sm font-medium text-red-600 dark:text-red-300">
