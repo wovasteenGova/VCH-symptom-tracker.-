@@ -1,0 +1,230 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 168" role="img" aria-label="Loading">
+  <style>
+    .ground { stroke: #475569; stroke-width: 3; stroke-linecap: round; fill: none; }
+    .dot { fill: #3b82f6; }
+    .d1 { animation: d1 4s linear infinite; }
+    .d2 { animation: d2 4s linear infinite; }
+    .d3 { animation: d3 4s linear infinite; }
+    .spark {
+      fill: #93c5fd;
+      opacity: 0;
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+    .s1 { animation: spark1 4s linear infinite; }
+    .s2 { animation: spark2 4s linear infinite; }
+    .s3 { animation: spark3 4s linear infinite; }
+    .tank-move { animation: drive 4s linear infinite; }
+    .tank-tilt {
+      transform-box: fill-box;
+      transform-origin: 50% 100%;
+      animation: tilt 4s linear infinite;
+    }
+    .wheel {
+      fill: #1f2517;
+      stroke: #55613d;
+      stroke-width: 1.1;
+      stroke-dasharray: 2.6 2.5;
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: roll 4s linear infinite;
+    }
+    .tread {
+      stroke: #171c10;
+      stroke-width: 1.6;
+      stroke-dasharray: 4 4;
+      fill: none;
+      animation: tread 4s linear infinite;
+    }
+    .puff { fill: #64748b; opacity: 0; }
+    .p1 { animation: puff1 4s linear infinite; }
+    .p2 { animation: puff2 4s linear infinite; }
+    .load-label {
+      fill: #94a3b8;
+      font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 5px;
+    }
+    .ldot { fill: #94a3b8; }
+    .ld1 { animation: ldot1 1.2s linear infinite; }
+    .ld2 { animation: ldot2 1.2s linear infinite; }
+    .ld3 { animation: ldot3 1.2s linear infinite; }
+
+    /* Dot 1: first on screen, shoves the tank onto the slope */
+    @keyframes d1 {
+      0%    { transform: translate(-20px, 54px);  opacity: 1; animation-timing-function: ease-in; }
+      4%    { transform: translate(15px, 104px);  animation-timing-function: ease-out; }
+      8.5%  { transform: translate(60px, 78px);   animation-timing-function: ease-in; }
+      13%   { transform: translate(105px, 104px); animation-timing-function: ease-out; }
+      17%   { transform: translate(150px, 88px);  animation-timing-function: ease-in; }
+      20%   { transform: translate(185px, 102px); animation-timing-function: ease-in; }
+      22%   { transform: translate(205px, 104px); opacity: 1; }
+      24.5% { transform: translate(205px, 104px); opacity: 0; }
+      100%  { transform: translate(205px, 104px); opacity: 0; }
+    }
+
+    /* Dot 2: right behind it, second shove */
+    @keyframes d2 {
+      0%, 5.9% { transform: translate(-20px, 54px); opacity: 0; }
+      6%    { transform: translate(-20px, 54px);  opacity: 1; animation-timing-function: ease-in; }
+      10%   { transform: translate(15px, 104px);  animation-timing-function: ease-out; }
+      14.5% { transform: translate(60px, 78px);   animation-timing-function: ease-in; }
+      19%   { transform: translate(110px, 104px); animation-timing-function: ease-out; }
+      23%   { transform: translate(165px, 88px);  animation-timing-function: ease-in; }
+      26.5% { transform: translate(235px, 104px); animation-timing-function: ease-out; }
+      30%   { transform: translate(282px, 100px); opacity: 1; }
+      32.5% { transform: translate(282px, 100px); opacity: 0; }
+      100%  { transform: translate(282px, 100px); opacity: 0; }
+    }
+
+    /* Dot 3: last shove, gets it over the crest */
+    @keyframes d3 {
+      0%, 11.9% { transform: translate(-20px, 54px); opacity: 0; }
+      12%   { transform: translate(-20px, 54px);  opacity: 1; animation-timing-function: ease-in; }
+      16%   { transform: translate(15px, 104px);  animation-timing-function: ease-out; }
+      20.5% { transform: translate(60px, 78px);   animation-timing-function: ease-in; }
+      25%   { transform: translate(115px, 104px); animation-timing-function: ease-out; }
+      29%   { transform: translate(175px, 88px);  animation-timing-function: ease-in; }
+      32.5% { transform: translate(245px, 104px); animation-timing-function: ease-out; }
+      38%   { transform: translate(312px, 86px);  opacity: 1; }
+      40.5% { transform: translate(312px, 86px);  opacity: 0; }
+      100%  { transform: translate(312px, 86px);  opacity: 0; }
+    }
+
+    @keyframes spark1 {
+      0%, 21.4% { opacity: 0; transform: scale(0.3); }
+      22.5%     { opacity: 1; transform: scale(1); }
+      26%       { opacity: 0; transform: scale(1.7); }
+      100%      { opacity: 0; transform: scale(1.7); }
+    }
+
+    @keyframes spark2 {
+      0%, 29.4% { opacity: 0; transform: scale(0.3); }
+      30.5%     { opacity: 1; transform: scale(1); }
+      34%       { opacity: 0; transform: scale(1.7); }
+      100%      { opacity: 0; transform: scale(1.7); }
+    }
+
+    @keyframes spark3 {
+      0%, 37.4% { opacity: 0; transform: scale(0.3); }
+      38.5%     { opacity: 1; transform: scale(1); }
+      42%       { opacity: 0; transform: scale(1.7); }
+      100%      { opacity: 0; transform: scale(1.7); }
+    }
+
+    /* Tank recovery: three quick shoves up the slope, then it crests
+       the hill and drives off under its own power. */
+    @keyframes drive {
+      0%, 22%   { transform: translate(0, 0); animation-timing-function: ease-out; }
+      28%, 30%  { transform: translate(75px, -14px); animation-timing-function: ease-out; }
+      36%, 38%  { transform: translate(105px, -28.5px); animation-timing-function: ease-out; }
+      46%       { transform: translate(125px, -38px); animation-timing-function: linear; }
+      95%, 100% { transform: translate(315px, -38px); }
+    }
+
+    /* Nose-up while it is on the slope. */
+    @keyframes tilt {
+      0%, 22%   { transform: rotate(0deg); }
+      27%, 42%  { transform: rotate(-25deg); }
+      48%, 100% { transform: rotate(0deg); }
+    }
+
+    /* Wheels only turn while the tank is actually moving. */
+    @keyframes roll {
+      0%, 22%   { transform: rotate(0deg); }
+      28%, 30%  { transform: rotate(200deg); }
+      36%, 38%  { transform: rotate(400deg); }
+      95%, 100% { transform: rotate(1800deg); }
+    }
+
+    /* Treads crawl in sync with the wheels. */
+    @keyframes tread {
+      0%, 22%   { stroke-dashoffset: 0; }
+      28%, 30%  { stroke-dashoffset: -8; }
+      36%, 38%  { stroke-dashoffset: -16; }
+      95%, 100% { stroke-dashoffset: -96; }
+    }
+
+    /* Engine fires after the last shove. */
+    @keyframes puff1 {
+      0%, 38% { opacity: 0;   transform: translate(0, 0); }
+      42%     { opacity: 0.7; transform: translate(-4px, -3px); }
+      52%     { opacity: 0;   transform: translate(-12px, -9px); }
+      100%    { opacity: 0;   transform: translate(-12px, -9px); }
+    }
+
+    @keyframes puff2 {
+      0%, 41% { opacity: 0;   transform: translate(0, 0); }
+      45%     { opacity: 0.6; transform: translate(-3px, -2px); }
+      55%     { opacity: 0;   transform: translate(-10px, -6px); }
+      100%    { opacity: 0;   transform: translate(-10px, -6px); }
+    }
+
+    /* Classic loading dots: 1, 2, 3, clear, restart */
+    @keyframes ldot1 {
+      0%, 24%  { opacity: 0; }
+      25%, 99% { opacity: 1; }
+      100%     { opacity: 0; }
+    }
+
+    @keyframes ldot2 {
+      0%, 49%  { opacity: 0; }
+      50%, 99% { opacity: 1; }
+      100%     { opacity: 0; }
+    }
+
+    @keyframes ldot3 {
+      0%, 74%  { opacity: 0; }
+      75%, 99% { opacity: 1; }
+      100%     { opacity: 0; }
+    }
+  </style>
+
+  <path class="ground" d="M0 110 H290 L370 72 H480" />
+
+  <g class="dot d1"><circle r="6" /></g>
+  <g class="dot d2"><circle r="6" /></g>
+  <g class="dot d3"><circle r="6" /></g>
+
+  <g transform="translate(212, 98)">
+    <path class="spark s1" d="M0 -8 L2 -2 L8 0 L2 2 L0 8 L-2 2 L-8 0 L-2 -2 Z" />
+  </g>
+  <g transform="translate(288, 94)">
+    <path class="spark s2" d="M0 -8 L2 -2 L8 0 L2 2 L0 8 L-2 2 L-8 0 L-2 -2 Z" />
+  </g>
+  <g transform="translate(318, 80)">
+    <path class="spark s3" d="M0 -8 L2 -2 L8 0 L2 2 L0 8 L-2 2 L-8 0 L-2 -2 Z" />
+  </g>
+
+  <g transform="translate(245, 110)">
+    <g class="tank-move">
+      <g class="tank-tilt">
+        <g class="tank-body">
+          <g transform="translate(-38, -24)"><circle class="puff p1" r="4" /></g>
+          <g transform="translate(-40, -18)"><circle class="puff p2" r="3" /></g>
+
+          <rect x="-34" y="-10" width="68" height="10" rx="5" fill="#39412c" />
+          <path class="tread" d="M-31 -1.2 H31" />
+          <path class="tread" d="M-31 -8.8 H31" />
+          <circle class="wheel" cx="-26" cy="-5" r="3.2" />
+          <circle class="wheel" cx="-13" cy="-5" r="3.2" />
+          <circle class="wheel" cx="0"   cy="-5" r="3.2" />
+          <circle class="wheel" cx="13"  cy="-5" r="3.2" />
+          <circle class="wheel" cx="26"  cy="-5" r="3.2" />
+
+          <polygon points="-32,-10 32,-10 24,-17 -28,-17" fill="#6b7a52" />
+          <polygon points="-14,-17 12,-17 8,-25 -9,-25" fill="#77865c" />
+          <rect x="8"  y="-23.4" width="30" height="3" fill="#5c6a46" />
+          <rect x="35" y="-24.4" width="6"  height="5" rx="1" fill="#5c6a46" />
+          <rect x="-7" y="-28" width="7" height="3.4" rx="1.6" fill="#5c6a46" />
+        </g>
+      </g>
+    </g>
+  </g>
+
+  <text class="load-label" x="234" y="150" text-anchor="middle">LOADING</text>
+  <circle class="ldot ld1" cx="290" cy="147" r="2.2" />
+  <circle class="ldot ld2" cx="300" cy="147" r="2.2" />
+  <circle class="ldot ld3" cx="310" cy="147" r="2.2" />
+</svg>
