@@ -287,22 +287,27 @@
               >
             </label>
 
-            <label v-if="authMode === 'signup'" class="block">
-              <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Confirm password</span>
-              <PasswordInput
-                v-model="authConfirmPassword"
-                autocomplete="new-password"
-                placeholder="Re-enter password"
-                required
-              />
-            </label>
-
             <label class="block">
               <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Password</span>
               <PasswordInput
                 v-model="authPassword"
                 :autocomplete="authMode === 'signup' ? 'new-password' : 'current-password'"
                 placeholder="At least 6 characters"
+                :revealed="authMode === 'signup' ? signupPasswordReveal.visible : undefined"
+                :countdown="authMode === 'signup' ? signupPasswordReveal.countdown : undefined"
+                @reveal="signupPasswordReveal.start"
+                required
+              />
+            </label>
+
+            <label v-if="authMode === 'signup'" class="block">
+              <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Confirm password</span>
+              <PasswordInput
+                v-model="authConfirmPassword"
+                autocomplete="new-password"
+                placeholder="Re-enter password"
+                :revealed="signupPasswordReveal.visible"
+                :show-toggle="false"
                 required
               />
             </label>
@@ -1782,7 +1787,7 @@ import { useDeletedEntryArchive } from '../../composables/useDeletedEntryArchive
 import { useUserProfiles } from '../../composables/useUserProfiles'
 import { useEntitlements } from '../../composables/useEntitlements'
 import { useAppWelcome } from '../../composables/useAppWelcome'
-import { useTrackedConditions } from '../../composables/useTrackedConditions'
+import { useTimedPasswordReveal } from '../../composables/useTimedPasswordReveal'
 import { FREE_CONDITION_LIMIT, PRO_ANNUAL_PRICE_LABEL, formatConditionKeyLabel, conditionKeyFromLabel } from '../../utils/subscription'
 import { mapEntryHistoryItem } from '../../utils/entryDisplay'
 import { copyToClipboard } from '../../utils/copyToClipboard'
@@ -1899,6 +1904,7 @@ const authName = ref('')
 const authEmail = ref('')
 const authPassword = ref('')
 const authConfirmPassword = ref('')
+const signupPasswordReveal = useTimedPasswordReveal()
 const authMessage = ref('')
 const needsEmailConfirmation = ref(false)
 const isAuthSubmitting = ref(false)
@@ -3117,6 +3123,11 @@ watch(needsOnboarding, (needsOnboardingNow) => {
   }
 }, { immediate: true })
 
+watch(authMode, () => {
+  signupPasswordReveal.hide()
+  authConfirmPassword.value = ''
+})
+
 watch(isEntryOpen, (open) => {
   if (!open || editingEntryId.value) {
     return
@@ -4143,7 +4154,7 @@ async function handleGoogleSignIn() {
     if (import.meta.client) {
       window.sessionStorage.removeItem('symptom-tracker-auth-success')
     }
-    authMessage.value = authError.value || 'Could not sign in. Check your email and password.'
+    authMessage.value = authError.value || 'Could not sign in with Google.'
   } finally {
     isAuthSubmitting.value = false
   }

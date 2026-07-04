@@ -83,18 +83,6 @@
                 >
               </label>
 
-              <label v-if="authMode === 'signup'" class="block">
-                <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Confirm password</span>
-                <PasswordInput
-                  v-model="authConfirmPassword"
-                  name="confirm-password"
-                  autocomplete="new-password"
-                  tone="dark"
-                  placeholder="Re-enter password"
-                  :required="authMode === 'signup'"
-                />
-              </label>
-
               <label class="block">
                 <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Password</span>
                 <PasswordInput
@@ -104,7 +92,24 @@
                   :autocomplete="authMode === 'signup' ? 'new-password' : 'current-password'"
                   placeholder="At least 6 characters"
                   :minlength="6"
+                  :revealed="authMode === 'signup' ? signupPasswordReveal.visible : undefined"
+                  :countdown="authMode === 'signup' ? signupPasswordReveal.countdown : undefined"
+                  @reveal="signupPasswordReveal.start"
                   required
+                />
+              </label>
+
+              <label v-if="authMode === 'signup'" class="block">
+                <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Confirm password</span>
+                <PasswordInput
+                  v-model="authConfirmPassword"
+                  name="confirm-password"
+                  autocomplete="new-password"
+                  tone="dark"
+                  placeholder="Re-enter password"
+                  :revealed="signupPasswordReveal.visible"
+                  :show-toggle="false"
+                  :required="authMode === 'signup'"
                 />
               </label>
 
@@ -823,6 +828,7 @@
 </template>
 
 <script setup lang="ts">
+import { useTimedPasswordReveal } from '../composables/useTimedPasswordReveal'
 import { useSupabaseAuth } from '../composables/useSupabaseAuth'
 import { useUserProfiles } from '../composables/useUserProfiles'
 import { useSymptomEntries } from '../composables/useSymptomEntries'
@@ -1010,9 +1016,15 @@ const authName = ref('')
 const authEmail = ref('')
 const authPassword = ref('')
 const authConfirmPassword = ref('')
+const signupPasswordReveal = useTimedPasswordReveal()
 const authMessage = ref('')
 const needsEmailConfirmation = ref(false)
 const isAuthSubmitting = ref(false)
+
+watch(authMode, () => {
+  signupPasswordReveal.hide()
+  authConfirmPassword.value = ''
+})
 
 // Cached across visits so the page renders instantly with the last known
 // data instead of flashing empty sections on every navigation.

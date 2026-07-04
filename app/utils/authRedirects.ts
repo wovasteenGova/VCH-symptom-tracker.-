@@ -45,13 +45,23 @@ export function resolveAuthRedirectUrl(path: string, configuredSiteUrl?: string 
   return `${resolveAuthSiteOrigin(configuredSiteUrl)}${normalizedPath}`
 }
 
+/** OAuth callback must stay on the same origin where sign-in started (PKCE verifier). */
+export function resolveOAuthCallbackUrl(configuredSiteUrl?: string | null) {
+  if (import.meta.client) {
+    return `${stripTrailingSlash(window.location.origin)}/auth/callback`
+  }
+
+  return resolveAuthRedirectUrl('/auth/callback', configuredSiteUrl)
+}
+
 export function useTrackerAuthRedirects() {
   const config = useRuntimeConfig()
+  const configuredSiteUrl = String(config.public.siteUrl || '')
 
   return {
-    siteOrigin: () => resolveAuthSiteOrigin(String(config.public.siteUrl || '')),
-    confirmUrl: () => resolveAuthRedirectUrl('/auth/confirm', String(config.public.siteUrl || '')),
-    resetPasswordUrl: () => resolveAuthRedirectUrl('/auth/reset-password', String(config.public.siteUrl || '')),
-    callbackUrl: () => resolveAuthRedirectUrl('/auth/callback', String(config.public.siteUrl || ''))
+    siteOrigin: () => resolveAuthSiteOrigin(configuredSiteUrl),
+    confirmUrl: () => resolveAuthRedirectUrl('/auth/confirm', configuredSiteUrl),
+    resetPasswordUrl: () => resolveAuthRedirectUrl('/auth/reset-password', configuredSiteUrl),
+    callbackUrl: () => resolveOAuthCallbackUrl(configuredSiteUrl)
   }
 }

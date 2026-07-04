@@ -50,10 +50,23 @@ definePageMeta({
 })
 
 const router = useRouter()
+const route = useRoute()
 const status = ref<'loading' | 'success' | 'error'>('loading')
 const errorMessage = ref('We could not complete sign-in. Please try again.')
 
 onMounted(async () => {
+  const oauthError = typeof route.query.error_description === 'string'
+    ? route.query.error_description
+    : typeof route.query.error === 'string'
+      ? route.query.error
+      : ''
+
+  if (oauthError) {
+    status.value = 'error'
+    errorMessage.value = oauthError
+    return
+  }
+
   try {
     const { session } = await establishSessionFromEmailLink()
 

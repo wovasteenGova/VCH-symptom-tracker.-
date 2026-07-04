@@ -72,6 +72,13 @@ export function useSupabaseAuth() {
       }
 
       if (
+        /provider is not enabled|unsupported provider|oauth/i.test(message)
+        || failure.error_code === 'provider_disabled'
+      ) {
+        return 'Google sign-in is not enabled yet. Use email and password, or contact support.'
+      }
+
+      if (
         failure.error_code === 'validation_failed'
         || failure.code === 'validation_failed'
         || /unable to validate email address/i.test(message)
@@ -264,6 +271,7 @@ export function useSupabaseAuth() {
   async function signInWithGoogle() {
     authError.value = ''
 
+    // Must match the current browser origin so the PKCE verifier stays in storage.
     const redirectTo = import.meta.client
       ? authRedirects.callbackUrl()
       : undefined
@@ -274,7 +282,10 @@ export function useSupabaseAuth() {
       const result = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo
+          redirectTo,
+          queryParams: {
+            prompt: 'select_account'
+          }
         }
       })
       error = result.error

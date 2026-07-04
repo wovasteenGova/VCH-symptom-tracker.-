@@ -28,6 +28,9 @@
               autocomplete="new-password"
               name="new-password"
               placeholder="At least 8 characters"
+              :revealed="passwordReveal.visible"
+              :countdown="passwordReveal.countdown"
+              @reveal="passwordReveal.start"
               :required="true"
               :minlength="8"
             />
@@ -41,6 +44,8 @@
               autocomplete="new-password"
               name="confirm-password"
               placeholder="Repeat new password"
+              :revealed="passwordReveal.visible"
+              :show-toggle="false"
               :required="true"
               :minlength="8"
             />
@@ -97,6 +102,7 @@
 
 <script setup lang="ts">
 import { establishSessionFromEmailLink } from '~/composables/useAuthEmailLink'
+import { useTimedPasswordReveal } from '~/composables/useTimedPasswordReveal'
 
 definePageMeta({
   layout: false
@@ -107,6 +113,7 @@ const status = ref<'loading' | 'ready' | 'success' | 'error'>('loading')
 const errorMessage = ref('This password reset link may have expired. Request a new one from the sign-in screen.')
 const password = ref('')
 const confirmPassword = ref('')
+const passwordReveal = useTimedPasswordReveal()
 const formError = ref('')
 const isSubmitting = ref(false)
 
