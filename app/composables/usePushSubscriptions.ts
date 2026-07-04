@@ -75,6 +75,26 @@ export function usePushSubscriptions() {
     })
   }
 
+  async function hasActivePushSubscription() {
+    const { data: authData, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !authData.user) {
+      return false
+    }
+
+    const { count, error } = await trackerDb
+      .from('push_subscriptions')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', authData.user.id)
+      .eq('enabled', true)
+
+    if (error) {
+      return false
+    }
+
+    return (count || 0) > 0
+  }
+
   async function subscribeToLogReminders(
     vapidPublicKey: string,
     settings?: {
@@ -124,6 +144,7 @@ export function usePushSubscriptions() {
     savePushSubscription,
     disablePushSubscription,
     syncProfileReminderSettings,
+    hasActivePushSubscription,
     subscribeToLogReminders
   }
 }

@@ -16,7 +16,8 @@ import {
 import {
   PUSH_NOTIFICATION_BADGE,
   PUSH_NOTIFICATION_ICON,
-  PUSH_NOTIFICATION_TAG
+  PUSH_NOTIFICATION_TAG,
+  resolveVapidPublicKey
 } from '../utils/pushSubscription'
 import type { LoggingCadence } from '../utils/loggingCadence'
 
@@ -25,12 +26,15 @@ export function useLogReminders() {
   const {
     subscribeToLogReminders,
     disablePushSubscription,
-    syncProfileReminderSettings
+    syncProfileReminderSettings,
+    hasActivePushSubscription
   } = usePushSubscriptions()
   const remindersEnabled = useState('log-reminders-enabled', () => readLogRemindersEnabled())
   const reminderHour = useState('log-reminder-hour', () => readLogReminderHour())
   const reminderTimezone = useState('log-reminder-timezone', () => readLogReminderTimezone())
   const permissionState = ref<NotificationPermission | 'unsupported'>('default')
+  const pushBackendConfigured = ref<boolean | null>(null)
+  const hasRegisteredPushSubscription = ref<boolean | null>(null)
 
   function syncPermissionState() {
     if (!import.meta.client || typeof Notification === 'undefined') {
@@ -173,42 +177,56 @@ export function useLogReminders() {
     }
   }
 
+  async function refreshPushReminderStatus() {
+    const publicKey = await resolveVapidPublicKey(String(config.public.vapidPublicKey || ''))
+    pushBackendConfigured.value = Boolean(publicKey)
+
+    if (!import.meta.client) {
+      hasRegisteredPushSubscription.value = null
+      return
+    }
+
+    hasRegisteredPushSubscription.value = await hasActivePushSubscription()
+  }
+
   async function enableRemindersWithPermission() {
-    const publicKey = String(config.public.vapidPublicKey || '').trim()
+    const publicKey = await resolveVapidPublicKey(String(config.public.vapidPublicKey || ''))
     const timezone = getBrowserTimezone()
 
+    pushBackendConfigured.value = Boolean(publicKey)
     setReminderTimezone(timezone)
 
     if (!reminderHour.value) {
       setReminderHour(defaultLogReminderSettings().hour)
     }
 
-    try {
-      if (publicKey) {
-        await subscribeToLogReminders(publicKey, {
-          reminderHour: reminderHour.value,
-          reminderTimezone: timezone
-        })
-      } else {
-        const granted = await requestReminderPermission()
-
-        if (!granted) {
-          setRemindersEnabled(false)
-          return false
-        }
-
-        await syncProfileReminderSettings({
-          enabled: true,
-          reminderHour: reminderHour.value,
-          reminderTimezone: timezone
-        })
+    if (!publicKey) {
+      setRemindersEnabled(false)
+      return {
+        ok: false as const,
+        reason: 'missing-vapid' as const
       }
+    }
+
+    try {
+      await subscribeToLogReminders(publicKey, {
+        reminderHour: reminderHour.value,
+        reminderTimezone: timezone
+      })
 
       setRemindersEnabled(true)
-      return true
-    } catch {
+      hasRegisteredPushSubscription.value = true
+
+      return { ok: true as const }
+    } catch (error) {
       setRemindersEnabled(false)
-      return false
+      hasRegisteredPushSubscription.value = false
+
+      return {
+        ok: false as const,
+        reason: 'subscribe-failed' as const,
+        message: error instanceof Error ? error.message : 'Could not register this device for push reminders.'
+      }
     }
   }
 
@@ -239,6 +257,7 @@ export function useLogReminders() {
 
   onMounted(() => {
     syncPermissionState()
+    refreshPushReminderStatus()
 
     if (import.meta.client && !window.localStorage.getItem('symptom-tracker-log-reminder-timezone')) {
       setReminderTimezone(getBrowserTimezone())
@@ -250,6 +269,9 @@ export function useLogReminders() {
     reminderHour,
     reminderTimezone,
     permissionState,
+    pushBackendConfigured,
+    hasRegisteredPushSubscription,
+    refreshPushReminderStatus,
     requestReminderPermission,
     enableRemindersWithPermission,
     disableReminders,

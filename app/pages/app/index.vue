@@ -4952,9 +4952,9 @@ async function handleWelcomeComplete(payload: {
     })
 
     if (payload.enableLogReminders) {
-      const enabled = await enableRemindersWithPermission()
+      const result = await enableRemindersWithPermission()
 
-      if (!enabled) {
+      if (!result.ok) {
         await persistReminderSettings({
           enabled: false,
           hour: payload.reminderHour,

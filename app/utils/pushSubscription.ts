@@ -16,6 +16,25 @@ export const PUSH_NOTIFICATION_BADGE = '/notification-badge.png'
 export const PUSH_NOTIFICATION_TAG = 'vch-log-reminder'
 export const PUSH_APP_NAME = 'VCH'
 
+export async function resolveVapidPublicKey(configKey = '') {
+  const fromConfig = String(configKey || '').trim()
+
+  if (fromConfig) {
+    return fromConfig
+  }
+
+  if (!import.meta.client) {
+    return ''
+  }
+
+  try {
+    const response = await $fetch<{ configured?: boolean, publicKey?: string }>('/api/reminders/vapid-public-key')
+    return String(response.publicKey || '').trim()
+  } catch {
+    return ''
+  }
+}
+
 export function parsePushNotificationPayload(eventData: unknown) {
   if (!eventData) {
     return null

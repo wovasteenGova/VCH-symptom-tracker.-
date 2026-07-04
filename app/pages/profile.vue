@@ -316,6 +316,12 @@
           <p v-else-if="logReminderPermissionState === 'denied'" class="mt-3 text-sm leading-6 text-amber-200">
             Notifications are blocked. Enable them in your phone or browser settings, then try again.
           </p>
+          <p v-else-if="pushBackendConfigured === false" class="mt-3 text-sm leading-6 text-amber-200">
+            Background push is not configured on the server yet (missing VAPID keys in Netlify). Reminders cannot reach this device until that is fixed.
+          </p>
+          <p v-else-if="remindersEnabled && hasRegisteredPushSubscription === false" class="mt-3 text-sm leading-6 text-amber-200">
+            Reminders look enabled, but this device is not registered for push yet. Turn reminders off, then on again after allowing notifications.
+          </p>
 
           <div class="mt-4 flex items-center justify-between gap-3 rounded-3xl border border-slate-700 bg-slate-800/50 px-4 py-4">
             <div>
@@ -888,6 +894,9 @@ const {
   reminderHour,
   reminderTimezone,
   permissionState: logReminderPermissionState,
+  pushBackendConfigured,
+  hasRegisteredPushSubscription,
+  refreshPushReminderStatus,
   enableRemindersWithPermission,
   disableReminders,
   hydrateReminderSettings,
@@ -1089,6 +1098,7 @@ async function loadProfilePage() {
     profileForm.value.full_name = profile?.full_name || user.value?.user_metadata?.full_name || ''
     hydrateReminderSettings(profile)
     supporterProfiles.value = supporters
+    await refreshPushReminderStatus()
   } catch (error) {
     pageError.value = getErrorMessage(error)
   } finally {
@@ -1194,19 +1204,37 @@ async function saveWeeklyLogDay(day: number) {
 async function toggleLogReminders() {
   if (remindersEnabled.value) {
     await disableReminders()
+    await refreshPushReminderStatus()
     showSubmissionToast({ message: 'Log reminders turned off.' })
     return
   }
 
-  const enabled = await enableRemindersWithPermission()
+  const result = await enableRemindersWithPermission()
 
-  if (enabled) {
+  if (result.ok) {
     showSubmissionToast({ message: 'Log reminders turned on for this device.' })
     return
   }
 
+  if (result.reason === 'missing-vapid') {
+    showSubmissionToast({
+      message: 'Push reminders are not configured on the server yet. Add VAPID keys in Netlify, redeploy, then try again.',
+      tone: 'error'
+    })
+    return
+  }
+
+  if (result.reason === 'subscribe-failed') {
+    showSubmissionToast({
+      message: result.message || 'Could not register this device for push reminders.',
+      tone: 'error'
+    })
+    return
+  }
+
   showSubmissionToast({
-    message: 'Allow notifications to turn on reminders.'
+    message: 'Allow notifications to turn on reminders.',
+    tone: 'error'
   })
 }
 
