@@ -3498,7 +3498,7 @@ async function loadEntries() {
   try {
     const { listEntries } = useSymptomEntries()
     savedEntries.value = await listEntries()
-    await updateSubmissionHighlights(savedEntries.value)
+    syncSubmissionSeenState(savedEntries.value)
     refreshMonthlyBackupReminder()
     await refreshTrackedConditions()
   } catch (error) {
@@ -3525,38 +3525,47 @@ function loadSubmissionSeenState() {
     : ''
 }
 
-async function updateSubmissionHighlights(entries: any[]) {
-  loadSubmissionSeenState()
-
-  const lastSeenTime = lastSeenSubmissionAt.value
-    ? new Date(lastSeenSubmissionAt.value).getTime()
-    : 0
-  const latestUnseenSubmission = entries
-    .filter((entry) => {
-      const createdAt = entry.created_at || entry.occurred_at
-      return createdAt && new Date(createdAt).getTime() > lastSeenTime
-    })
-    .sort((a, b) => {
-      const bTime = new Date(b.created_at || b.occurred_at).getTime()
-      const aTime = new Date(a.created_at || a.occurred_at).getTime()
-      return bTime - aTime
-    })[0]
-
-  if (!latestUnseenSubmission) {
+function markSubmissionSeenUpTo(createdAt: string) {
+  if (!import.meta.client || !createdAt) {
     return
   }
 
-  highlightedSubmissionId.value = latestUnseenSubmission.id
-  activeHistoryTab.value = 'Entries'
-  const wasCollapsed = !historyExpanded.value
-  expandHistorySheet()
-  if (wasCollapsed) {
-    await new Promise<void>((resolve) => {
-      window.setTimeout(resolve, 420)
-    })
+  const key = getSubmissionSeenKey()
+  if (!key) {
+    return
   }
-  await scrollHistoryEntryIntoView(latestUnseenSubmission.id)
-  scheduleSubmissionHighlightClear()
+
+  const currentSeenTime = lastSeenSubmissionAt.value
+    ? new Date(lastSeenSubmissionAt.value).getTime()
+    : 0
+  const createdTime = new Date(createdAt).getTime()
+
+  if (createdTime > currentSeenTime) {
+    lastSeenSubmissionAt.value = createdAt
+    window.localStorage.setItem(key, createdAt)
+  }
+}
+
+function syncSubmissionSeenState(entries: any[]) {
+  loadSubmissionSeenState()
+
+  if (!import.meta.client || !user.value) {
+    return
+  }
+
+  const key = getSubmissionSeenKey()
+  if (!key || lastSeenSubmissionAt.value || !entries.length) {
+    return
+  }
+
+  const newestCreatedAt = entries
+    .map((entry) => entry.created_at || entry.occurred_at)
+    .filter(Boolean)
+    .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0]
+
+  if (newestCreatedAt) {
+    markSubmissionSeenUpTo(newestCreatedAt)
+  }
 }
 
 function scheduleSubmissionHighlightClear() {
@@ -3632,6 +3641,12 @@ async function focusSubmission(entryId: string) {
   isSubmissionDropdownOpen.value = false
   highlightedSubmissionId.value = entryId
   scheduleSubmissionHighlightClear()
+
+  const submission = submissionNotifications.value.find((item) => item.id === entryId)
+  if (submission?.createdAt) {
+    markSubmissionSeenUpTo(submission.createdAt)
+  }
+
   if (wasCollapsed) {
     await new Promise<void>((resolve) => {
       window.setTimeout(resolve, 420)
