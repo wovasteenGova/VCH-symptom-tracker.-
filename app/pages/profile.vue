@@ -173,7 +173,7 @@
             </div>
 
             <span
-              v-if="!entitlementsLoaded"
+              v-if="isLoadingEntitlements || !entitlementsLoaded"
               class="inline-flex shrink-0 items-center rounded-full bg-slate-800 px-3 py-1.5 ring-1 ring-slate-700"
               aria-hidden="true"
             >
@@ -195,7 +195,7 @@
             </span>
           </div>
 
-          <template v-if="entitlementsLoaded">
+          <template v-if="entitlementsLoaded && !isLoadingEntitlements">
           <p v-if="!isPro" class="mt-3 text-xs leading-5 text-slate-400">
             Free plan: 1 condition with unlimited entries, calendar logging charts, and entry PDFs with weekly symptom counts. Upgrade for {{ PRO_ANNUAL_PRICE_LABEL }} to unlock more conditions, family reporting, and severity trends in PDFs.
           </p>
@@ -880,6 +880,7 @@ const {
   canUseFamilyReporting,
   canTrackCondition,
   renewalLabel,
+  isLoading: isLoadingEntitlements,
   entitlementsLoaded,
   loadEntitlements
 } = useEntitlements()
