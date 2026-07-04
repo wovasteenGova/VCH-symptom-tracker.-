@@ -54,6 +54,19 @@ const route = useRoute()
 const status = ref<'loading' | 'success' | 'error'>('loading')
 const errorMessage = ref('We could not complete sign-in. Please try again.')
 
+function stripAuthQueryFromUrl() {
+  if (!import.meta.client) {
+    return
+  }
+
+  const url = new URL(window.location.href)
+  url.searchParams.delete('code')
+  url.searchParams.delete('state')
+  url.searchParams.delete('error')
+  url.searchParams.delete('error_description')
+  window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`)
+}
+
 onMounted(async () => {
   const oauthError = typeof route.query.error_description === 'string'
     ? route.query.error_description
@@ -64,6 +77,7 @@ onMounted(async () => {
   if (oauthError) {
     status.value = 'error'
     errorMessage.value = oauthError
+    stripAuthQueryFromUrl()
     return
   }
 
@@ -72,21 +86,40 @@ onMounted(async () => {
 
     if (!session) {
       status.value = 'error'
+      stripAuthQueryFromUrl()
       return
     }
 
     status.value = 'success'
     window.sessionStorage.setItem('symptom-tracker-auth-success', '1')
+    stripAuthQueryFromUrl()
 
     window.setTimeout(() => {
       router.push('/app')
     }, 1200)
   } catch (error) {
+    const supabase = useSupabaseClient()
+    const { data: { session: recoveredSession } } = await supabase.auth.getSession()
+
+    // Supabase may finish OAuth in the background after our first exchange attempt.
+    if (recoveredSession) {
+      status.value = 'success'
+      window.sessionStorage.setItem('symptom-tracker-auth-success', '1')
+      stripAuthQueryFromUrl()
+
+      window.setTimeout(() => {
+        router.push('/app')
+      }, 1200)
+      return
+    }
+
     status.value = 'error'
 
     if (error instanceof Error && error.message) {
       errorMessage.value = error.message
     }
+
+    stripAuthQueryFromUrl()
   }
 })
 </script>

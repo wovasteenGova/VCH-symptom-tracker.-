@@ -54,6 +54,7 @@ import { androidAddToHomeScreenVideoUrl, iosAddToHomeScreenVideoUrl } from '../u
             <li><span class="font-bold text-white">2.</span> Tap Install app if Chrome shows it.</li>
             <li><span class="font-bold text-white">3.</span> If not, tap the three-dot menu.</li>
             <li><span class="font-bold text-white">4.</span> Tap Add to Home screen or Install app.</li>
+            <li><span class="font-bold text-white">4.</span> Process is Similar for Most Other Browsers</li>
           </ol>
 
           <a

@@ -320,15 +320,19 @@
               {{ isAuthSubmitting ? 'Working...' : authMode === 'login' ? 'Sign in' : 'Create account' }}
             </button>
 
-            <button
-              type="button"
-              class="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-100 px-4 py-4 text-base font-bold text-slate-950 ring-1 ring-slate-200 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-white dark:ring-slate-700 dark:hover:bg-slate-700"
+            <GoogleSignInButton
+              :text="authMode === 'signup' ? 'signup_with' : 'signin_with'"
+              :theme="googleButtonTheme"
               :disabled="isAuthSubmitting"
               @click="handleGoogleSignIn"
-            >
-              <UIcon name="i-lucide-chrome" class="size-5" />
-              Continue with Google
-            </button>
+            />
+
+            <PasskeySignInButton
+              v-if="authMode === 'login' && isPasskeySupported"
+              :theme="googleButtonTheme"
+              :disabled="isAuthSubmitting"
+              @click="handlePasskeySignIn"
+            />
 
             <button
               v-if="authMode === 'login'"
@@ -1781,6 +1785,7 @@
 
 <script setup lang="ts">
 import { useSupabaseAuth } from '../../composables/useSupabaseAuth'
+import { usePasskeys } from '../../composables/usePasskeys'
 import { useSymptomEntries } from '../../composables/useSymptomEntries'
 import { useSymptomPdfExport } from '../../composables/useSymptomPdfExport'
 import { useDeletedEntryArchive } from '../../composables/useDeletedEntryArchive'
@@ -1855,6 +1860,7 @@ const {
   sendPasswordReset,
   signOut
 } = useSupabaseAuth()
+const { isPasskeySupported, signInWithPasskey } = usePasskeys()
 const router = useRouter()
 const { getProfile } = useUserProfiles()
 const {
@@ -1867,7 +1873,6 @@ const {
   addFreeCondition,
   canReplaceFreeCondition,
   replaceFreeCondition,
-  syncFreeConditionKey,
   entitlementsLoaded,
   loadEntitlements
 } = useEntitlements()
@@ -1900,6 +1905,8 @@ const customConditionInput = ref('')
 const debouncedCustomConditionPreview = ref('')
 const isAuthPanelOpen = ref(false)
 const authMode = ref<'login' | 'signup'>('login')
+const colorMode = useColorMode()
+const googleButtonTheme = computed(() => colorMode.value === 'dark' ? 'dark' : 'light')
 const authName = ref('')
 const authEmail = ref('')
 const authPassword = ref('')
@@ -3610,12 +3617,18 @@ async function syncHomeConditionsAfterEntrySave(savedConditionKey: string) {
     return
   }
 
-  const trackedAlreadyMatches = trackedConditionKeys.value.length === 1 && trackedConditionKeys.value[0] === key
-  if (!trackedAlreadyMatches) {
-    await updateTrackedConditions([key])
+  if (!canTrackCondition(key)) {
+    return
   }
 
-  await syncFreeConditionKey(key)
+  const trackedKeysNormalized = trackedConditionKeys.value.map(
+    (storedKey) => resolveCatalogConditionByStoredKey(storedKey)?.key ?? storedKey
+  )
+  const keyAlreadyRepresented = trackedKeysNormalized.includes(key)
+
+  if (!keyAlreadyRepresented) {
+    await updateTrackedConditions([key])
+  }
 }
 
 async function confirmConditionOnboarding() {
@@ -3638,8 +3651,15 @@ async function finishConditionBrowser() {
   trackedConditionsError.value = ''
 
   try {
-    await updateTrackedConditions(draftSelectedKeys.value)
-    await syncFreeConditionWithTrackedKeys(draftSelectedKeys.value)
+    let keysToSave = draftSelectedKeys.value
+
+    if (!isPro.value && savedEntries.value.length > 0 && freeConditionKeys.value.length > 0) {
+      const freeKey = resolveCatalogConditionByStoredKey(freeConditionKeys.value[0])?.key ?? freeConditionKeys.value[0]
+      keysToSave = [freeKey]
+    }
+
+    await updateTrackedConditions(keysToSave)
+    await syncFreeConditionWithTrackedKeys(keysToSave)
     isConditionBrowserOpen.value = false
   } catch (error) {
     trackedConditionsError.value = getErrorMessage(error)
@@ -3833,10 +3853,10 @@ async function saveEntry() {
     return
   }
 
-  const entryConditionKey = conditionKey(entryTitle.value)
+  const entryConditionKey = resolveCatalogConditionByStoredKey(conditionKey(entryTitle.value))?.key ?? conditionKey(entryTitle.value)
 
   if (!isPro.value && !editingEntryId.value && !canTrackCondition(entryConditionKey)) {
-    if (canAddFreeCondition(entryConditionKey)) {
+    if (canAddFreeCondition(entryConditionKey, savedEntries.value.length)) {
       try {
         await addFreeCondition(entryConditionKey)
       } catch (error) {
@@ -4155,6 +4175,22 @@ async function handleGoogleSignIn() {
       window.sessionStorage.removeItem('symptom-tracker-auth-success')
     }
     authMessage.value = authError.value || 'Could not sign in with Google.'
+  } finally {
+    isAuthSubmitting.value = false
+  }
+}
+
+async function handlePasskeySignIn() {
+  isAuthSubmitting.value = true
+  authMessage.value = ''
+  authError.value = ''
+
+  try {
+    await signInWithPasskey()
+    showSubmissionToast('Signed in with your passkey.')
+    isAuthPanelOpen.value = false
+  } catch (error) {
+    authMessage.value = error instanceof Error ? error.message : 'Could not sign in with a passkey.'
   } finally {
     isAuthSubmitting.value = false
   }
@@ -4955,7 +4991,7 @@ function ensureFreeConditionAccess(
 
   const loggedEntryCount = savedEntries.value.length
 
-  if (canAddFreeCondition(conditionKey)) {
+  if (canAddFreeCondition(conditionKey, loggedEntryCount)) {
     openConditionSlotModal({
       conditionKey,
       conditionLabel,

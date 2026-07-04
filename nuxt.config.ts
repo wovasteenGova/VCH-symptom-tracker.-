@@ -32,6 +32,14 @@ export default defineNuxtConfig({
     url: supabaseUrl,
     key: supabaseAnonKey,
     serviceKey: supabaseServiceKey,
+    clientOptions: {
+      auth: {
+        // Opt in to Supabase's beta passkey (WebAuthn) API.
+        experimental: {
+          passkey: true
+        }
+      }
+    },
     cookieOptions: isProduction
       ? {
           domain: '.veteranscentralhub.us',

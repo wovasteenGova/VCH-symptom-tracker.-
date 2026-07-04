@@ -1,6 +1,7 @@
 import type { User } from '@supabase/supabase-js'
 import { onMounted, onUnmounted } from 'vue'
 import { useTrackerAuthRedirects } from '../utils/authRedirects'
+import { clearOAuthFlowMarker, markOAuthFlowStarted } from './useAuthEmailLink'
 
 type AuthFailure = {
   message?: string
@@ -279,6 +280,10 @@ export function useSupabaseAuth() {
     let error: unknown
 
     try {
+      if (import.meta.client) {
+        markOAuthFlowStarted()
+      }
+
       const result = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -294,6 +299,7 @@ export function useSupabaseAuth() {
     }
 
     if (error) {
+      clearOAuthFlowMarker()
       authError.value = getAuthErrorMessage(error)
       throw error
     }

@@ -156,15 +156,21 @@
             {{ isAuthSubmitting ? 'Working...' : authMode === 'login' ? 'Sign in' : 'Create account' }}
           </button>
 
-          <button
-            type="button"
-            class="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-800 px-4 py-4 text-base font-bold text-white ring-1 ring-slate-700 transition hover:bg-slate-700 disabled:opacity-60"
+          <GoogleSignInButton
+            class="mt-3"
+            :text="authMode === 'signup' ? 'signup_with' : 'signin_with'"
+            theme="dark"
             :disabled="isAuthSubmitting"
             @click="handleGoogleSignIn"
-          >
-            <UIcon name="i-lucide-chrome" class="size-5" />
-            Continue with Google
-          </button>
+          />
+
+          <PasskeySignInButton
+            v-if="authMode === 'login' && isPasskeySupported"
+            class="mt-3"
+            theme="dark"
+            :disabled="isAuthSubmitting"
+            @click="handlePasskeySignIn"
+          />
         </StickyActionBar>
       </form>
 
@@ -175,6 +181,10 @@
             <div class="min-w-0">
               <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Your Info</p>
               <h2 class="mt-1 truncate text-xl font-bold text-white">{{ user.email }}</h2>
+              <p v-if="signInMethodLabel" class="mt-1.5 flex items-center gap-1.5 text-xs text-slate-400">
+                <UIcon v-if="usesGoogleLogin" name="i-lucide-chrome" class="size-3.5 shrink-0" />
+                {{ signInMethodLabel }}
+              </p>
             </div>
 
             <span
@@ -254,6 +264,113 @@
               >
             </label>
           </div>
+        </section>
+
+        <section class="rounded-4xl border border-slate-800 bg-slate-900 p-5">
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Sign-in &amp; security</p>
+          <h2 class="mt-1 text-xl font-bold text-white">Passkeys</h2>
+          <p class="mt-2 text-sm leading-6 text-slate-400">
+            Sign in with your fingerprint, face, or device PIN instead of a password. Passkeys stay on your device and cannot be phished.
+          </p>
+
+          <p v-if="!isPasskeySupported" class="mt-3 text-sm leading-6 text-amber-200">
+            This browser does not support passkeys. Try a modern browser on your phone or computer.
+          </p>
+
+          <template v-else>
+            <p v-if="passkeysError" class="mt-3 text-sm font-medium text-red-300">{{ passkeysError }}</p>
+            <p v-if="passkeyActionError" class="mt-3 text-sm font-medium text-red-300">{{ passkeyActionError }}</p>
+
+            <div v-if="isLoadingPasskeys && !passkeys.length" class="mt-4 space-y-2">
+              <div class="h-16 animate-pulse rounded-3xl bg-slate-800/70" />
+            </div>
+
+            <div v-else-if="passkeys.length" class="mt-4 space-y-2">
+              <div
+                v-for="passkey in passkeys"
+                :key="passkey.id"
+                class="rounded-3xl border border-slate-700 bg-slate-800/50 px-4 py-4"
+              >
+                <div class="flex items-center justify-between gap-3">
+                  <div class="flex min-w-0 items-center gap-3">
+                    <UIcon name="i-lucide-fingerprint" class="size-5 shrink-0 text-sky-300" />
+                    <div class="min-w-0">
+                      <template v-if="renamingPasskeyId === passkey.id">
+                        <input
+                          v-model="renamePasskeyName"
+                          type="text"
+                          maxlength="120"
+                          class="w-full rounded-2xl border border-slate-600 bg-slate-900 px-3 py-2 text-sm font-semibold text-white outline-none focus:border-slate-400"
+                          placeholder="Name this passkey (e.g. My phone)"
+                          @keydown.enter.prevent="saveRenamePasskey"
+                          @keydown.esc="cancelRenamePasskey"
+                        >
+                      </template>
+                      <template v-else>
+                        <p class="truncate font-bold text-white">{{ passkey.friendly_name || 'Passkey' }}</p>
+                        <p class="mt-0.5 text-xs text-slate-400">
+                          Added {{ formatPasskeyDate(passkey.created_at) }}<template v-if="passkey.last_used_at"> · Last used {{ formatPasskeyDate(passkey.last_used_at) }}</template>
+                        </p>
+                      </template>
+                    </div>
+                  </div>
+
+                  <div class="flex shrink-0 items-center gap-1">
+                    <template v-if="renamingPasskeyId === passkey.id">
+                      <button
+                        type="button"
+                        class="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-slate-950 disabled:opacity-60"
+                        :disabled="isPasskeyBusy"
+                        @click="saveRenamePasskey"
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        class="rounded-full bg-slate-700 px-3 py-1.5 text-xs font-bold text-slate-200"
+                        :disabled="isPasskeyBusy"
+                        @click="cancelRenamePasskey"
+                      >
+                        Cancel
+                      </button>
+                    </template>
+                    <template v-else>
+                      <button
+                        type="button"
+                        class="rounded-full p-2 text-slate-400 transition hover:bg-slate-700 hover:text-white"
+                        aria-label="Rename passkey"
+                        @click="startRenamePasskey(passkey)"
+                      >
+                        <UIcon name="i-lucide-pencil" class="size-4" />
+                      </button>
+                      <button
+                        type="button"
+                        class="rounded-full p-2 text-slate-400 transition hover:bg-red-950 hover:text-red-300"
+                        aria-label="Delete passkey"
+                        @click="requestDeletePasskey(passkey)"
+                      >
+                        <UIcon name="i-lucide-trash-2" class="size-4" />
+                      </button>
+                    </template>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p v-else class="mt-4 text-sm leading-6 text-slate-500">
+              No passkeys yet. Add one to sign in without your password next time.
+            </p>
+
+            <button
+              type="button"
+              class="mt-4 inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-slate-200 disabled:opacity-60"
+              :disabled="isAddingPasskey || isPasskeyBusy"
+              @click="handleAddPasskey"
+            >
+              <UIcon name="i-lucide-plus" class="size-4" />
+              {{ isAddingPasskey ? 'Waiting for your device...' : 'Add a passkey' }}
+            </button>
+          </template>
         </section>
 
         <section class="rounded-4xl border border-slate-800 bg-slate-900 p-5">
@@ -824,12 +941,58 @@
         </form>
       </div>
     </Transition>
+
+    <Transition
+      enter-active-class="transition duration-200 ease-out"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-active-class="transition duration-150 ease-in"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
+    >
+      <div
+        v-if="pendingDeletePasskey"
+        class="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/70 p-4 sm:items-center"
+        @click.self="cancelDeletePasskey"
+      >
+        <div class="w-full max-w-md rounded-[1.75rem] border border-slate-800 bg-slate-900 p-5 shadow-2xl">
+          <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Delete passkey</p>
+          <h3 class="mt-2 text-xl font-bold text-white">Remove this passkey?</h3>
+          <p class="mt-3 text-sm leading-6 text-slate-300">
+            <span class="font-semibold text-white">{{ pendingDeletePasskey.friendly_name || 'This passkey' }}</span>
+            will stop working for sign-in immediately. You can still sign in with your other methods, and you can add a new passkey any time.
+          </p>
+
+          <p v-if="deletePasskeyError" class="mt-3 text-sm font-medium text-red-300">{{ deletePasskeyError }}</p>
+
+          <div class="mt-5 grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              class="rounded-2xl bg-slate-800 px-4 py-3 text-sm font-bold text-white"
+              :disabled="isDeletingPasskey"
+              @click="cancelDeletePasskey"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="rounded-2xl bg-red-600 px-4 py-3 text-sm font-bold text-white disabled:opacity-60"
+              :disabled="isDeletingPasskey"
+              @click="confirmDeletePasskey"
+            >
+              {{ isDeletingPasskey ? 'Deleting...' : 'Delete passkey' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </main>
 </template>
 
 <script setup lang="ts">
 import { useTimedPasswordReveal } from '../composables/useTimedPasswordReveal'
 import { useSupabaseAuth } from '../composables/useSupabaseAuth'
+import { usePasskeys, type TrackerPasskey } from '../composables/usePasskeys'
 import { useUserProfiles } from '../composables/useUserProfiles'
 import { useSymptomEntries } from '../composables/useSymptomEntries'
 import { useDeletedEntryArchive } from '../composables/useDeletedEntryArchive'
@@ -864,6 +1027,19 @@ const {
   signOut,
   verifyPassword
 } = useSupabaseAuth()
+const {
+  passkeys,
+  isLoadingPasskeys,
+  passkeysError,
+  isPasskeyBusy,
+  isPasskeySupported,
+  signInWithPasskey,
+  registerPasskey,
+  loadPasskeys,
+  renamePasskey,
+  deletePasskey,
+  clearPasskeys
+} = usePasskeys()
 const {
   getProfile,
   upsertProfile,
@@ -1082,6 +1258,29 @@ const usesPasswordLogin = computed(() => {
   return Boolean(user.value?.identities?.some((identity) => identity.provider === 'email'))
 })
 
+const usesGoogleLogin = computed(() => {
+  return Boolean(user.value?.identities?.some((identity) => identity.provider === 'google'))
+})
+
+const signInMethodLabel = computed(() => {
+  const providers = new Set(user.value?.identities?.map((identity) => identity.provider) ?? [])
+  const methods: string[] = []
+
+  if (providers.has('google')) {
+    methods.push('Google')
+  }
+
+  if (providers.has('email')) {
+    methods.push('email & password')
+  }
+
+  if (!methods.length) {
+    return ''
+  }
+
+  return `Signed in with ${methods.join(' and ')}`
+})
+
 const deletedHistoryEntries = computed(() => {
   return deletedEntries.value.map((entry) => mapEntryHistoryItem(entry, { deleted: true }))
 })
@@ -1127,6 +1326,7 @@ watch(user, (currentUser) => {
     profileForm.value.full_name = ''
     activeLogCount.value = 0
     profileInitialized.value = false
+    clearPasskeys()
   }
 })
 
@@ -1154,6 +1354,7 @@ async function loadProfilePage() {
   pageError.value = ''
   isHydratingProfile.value = true
   loadDeletedEntries()
+  loadPasskeys()
 
   try {
     const [profile, supporters, entries] = await Promise.all([
@@ -1684,6 +1885,113 @@ async function handleForgotPassword() {
     authMessage.value = authError.value || 'Could not send the reset email.'
   } finally {
     isAuthSubmitting.value = false
+  }
+}
+
+async function handlePasskeySignIn() {
+  isAuthSubmitting.value = true
+  authMessage.value = ''
+  authError.value = ''
+
+  try {
+    await signInWithPasskey()
+    showSubmissionToast('Signed in with your passkey.')
+  } catch (error) {
+    authMessage.value = error instanceof Error ? error.message : 'Could not sign in with a passkey.'
+  } finally {
+    isAuthSubmitting.value = false
+  }
+}
+
+const passkeyActionError = ref('')
+const isAddingPasskey = ref(false)
+const renamingPasskeyId = ref<string | null>(null)
+const renamePasskeyName = ref('')
+const pendingDeletePasskey = ref<TrackerPasskey | null>(null)
+const deletePasskeyError = ref('')
+const isDeletingPasskey = ref(false)
+
+function formatPasskeyDate(value: string) {
+  const parsed = new Date(value)
+
+  if (Number.isNaN(parsed.getTime())) {
+    return 'recently'
+  }
+
+  return parsed.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  })
+}
+
+async function handleAddPasskey() {
+  passkeyActionError.value = ''
+  isAddingPasskey.value = true
+
+  try {
+    await registerPasskey()
+    showSubmissionToast('Passkey added. You can use it to sign in next time.')
+  } catch (error) {
+    passkeyActionError.value = error instanceof Error ? error.message : 'Could not add a passkey.'
+  } finally {
+    isAddingPasskey.value = false
+  }
+}
+
+function startRenamePasskey(passkey: TrackerPasskey) {
+  passkeyActionError.value = ''
+  renamingPasskeyId.value = passkey.id
+  renamePasskeyName.value = passkey.friendly_name || ''
+}
+
+function cancelRenamePasskey() {
+  renamingPasskeyId.value = null
+  renamePasskeyName.value = ''
+}
+
+async function saveRenamePasskey() {
+  if (!renamingPasskeyId.value) {
+    return
+  }
+
+  passkeyActionError.value = ''
+
+  try {
+    await renamePasskey(renamingPasskeyId.value, renamePasskeyName.value)
+    cancelRenamePasskey()
+  } catch (error) {
+    passkeyActionError.value = error instanceof Error ? error.message : 'Could not rename the passkey.'
+  }
+}
+
+function requestDeletePasskey(passkey: TrackerPasskey) {
+  passkeyActionError.value = ''
+  deletePasskeyError.value = ''
+  pendingDeletePasskey.value = passkey
+}
+
+function cancelDeletePasskey() {
+  pendingDeletePasskey.value = null
+  deletePasskeyError.value = ''
+}
+
+async function confirmDeletePasskey() {
+  if (!pendingDeletePasskey.value) {
+    return
+  }
+
+  deletePasskeyError.value = ''
+  isDeletingPasskey.value = true
+
+  try {
+    await deletePasskey(pendingDeletePasskey.value.id)
+    pendingDeletePasskey.value = null
+    showSubmissionToast('Passkey deleted.')
+  } catch (error) {
+    deletePasskeyError.value = error instanceof Error ? error.message : 'Could not delete the passkey.'
+  } finally {
+    isDeletingPasskey.value = false
   }
 }
 

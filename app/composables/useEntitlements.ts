@@ -1,9 +1,14 @@
 import { computed, ref, watch } from 'vue'
+import { resolveCatalogConditionByStoredKey } from '../utils/conditionCatalog'
 import {
   FREE_CONDITION_LIMIT,
   PRO_PRODUCT_KEY,
   isActiveEntitlementStatus
 } from '../utils/subscription'
+
+function normalizeConditionKeyForComparison(conditionKey: string) {
+  return resolveCatalogConditionByStoredKey(conditionKey)?.key ?? conditionKey
+}
 
 type EntitlementRow = {
   user_id: string
@@ -207,23 +212,30 @@ export function useEntitlements() {
       return true
     }
 
-    return freeConditionKeys.value.includes(conditionKey)
+    const normalized = normalizeConditionKeyForComparison(conditionKey)
+    return freeConditionKeys.value.some(
+      (key) => normalizeConditionKeyForComparison(key) === normalized
+    )
   }
 
-  function canAddFreeCondition(conditionKey: string) {
+  function canAddFreeCondition(conditionKey: string, loggedEntryCount = 0) {
     if (!conditionKey || isPro.value) {
       return true
     }
 
-    if (freeConditionKeys.value.includes(conditionKey)) {
+    if (canTrackCondition(conditionKey)) {
       return true
+    }
+
+    if (loggedEntryCount > 0) {
+      return false
     }
 
     return freeConditionKeys.value.length < FREE_CONDITION_LIMIT
   }
 
   async function addFreeCondition(conditionKey: string) {
-    if (!conditionKey || isPro.value || freeConditionKeys.value.includes(conditionKey)) {
+    if (!conditionKey || isPro.value || canTrackCondition(conditionKey)) {
       return freeConditionKeys.value
     }
 
@@ -237,7 +249,8 @@ export function useEntitlements() {
       throw new Error('Sign in to continue.')
     }
 
-    return persistFreeConditionKeys(userData.user.id, [...freeConditionKeys.value, conditionKey])
+    const normalized = normalizeConditionKeyForComparison(conditionKey)
+    return persistFreeConditionKeys(userData.user.id, [...freeConditionKeys.value, normalized])
   }
 
   function canReplaceFreeCondition(conditionKey: string, loggedEntryCount: number) {
@@ -245,7 +258,7 @@ export function useEntitlements() {
       return false
     }
 
-    if (freeConditionKeys.value.includes(conditionKey)) {
+    if (canTrackCondition(conditionKey)) {
       return false
     }
 
@@ -263,21 +276,39 @@ export function useEntitlements() {
       throw new Error('Sign in to continue.')
     }
 
-    return persistFreeConditionKeys(userData.user.id, [conditionKey])
+    const normalized = normalizeConditionKeyForComparison(conditionKey)
+    return persistFreeConditionKeys(userData.user.id, [normalized])
   }
 
   async function syncFreeConditionKey(conditionKey: string) {
-    if (!conditionKey || isPro.value || freeConditionKeys.value.includes(conditionKey)) {
+    if (!conditionKey || isPro.value) {
       return freeConditionKeys.value
     }
 
-    const { data: userData, error: userError } = await supabase.auth.getUser()
+    const normalized = normalizeConditionKeyForComparison(conditionKey)
+    const existingIndex = freeConditionKeys.value.findIndex(
+      (key) => normalizeConditionKeyForComparison(key) === normalized
+    )
 
-    if (userError || !userData.user) {
-      throw new Error('Sign in to continue.')
+    if (existingIndex >= 0) {
+      const existingKey = freeConditionKeys.value[existingIndex]
+
+      if (existingKey === normalized) {
+        return freeConditionKeys.value
+      }
+
+      const { data: userData, error: userError } = await supabase.auth.getUser()
+
+      if (userError || !userData.user) {
+        throw new Error('Sign in to continue.')
+      }
+
+      const updatedKeys = [...freeConditionKeys.value]
+      updatedKeys[existingIndex] = normalized
+      return persistFreeConditionKeys(userData.user.id, updatedKeys)
     }
 
-    return persistFreeConditionKeys(userData.user.id, [conditionKey])
+    return freeConditionKeys.value
   }
 
   async function createEmbeddedCheckoutSession() {
