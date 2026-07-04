@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import {
   FREE_CONDITION_LIMIT,
   PRO_PRODUCT_KEY,
@@ -17,13 +17,31 @@ type EntitlementRow = {
   unlocked_at?: string | null
 }
 
+let entitlementsLoadPromise: Promise<void> | null = null
+
 export function useEntitlements() {
   const supabase = useSupabaseClient()
   const trackerDb = useTrackerDb()
-  const entitlement = ref<EntitlementRow | null>(null)
-  const freeConditionKeys = ref<string[]>([])
-  const isLoading = ref(false)
-  const loadError = ref('')
+  const { user } = useSupabaseAuth()
+  const entitlement = useState<EntitlementRow | null>('tracker-entitlement', () => null)
+  const freeConditionKeys = useState<string[]>('tracker-free-condition-keys', () => [])
+  const isLoading = useState('tracker-entitlements-loading', () => false)
+  const loadError = useState('tracker-entitlements-error', () => '')
+  const entitlementsLoaded = useState('tracker-entitlements-loaded', () => false)
+  const loadedUserId = useState<string | null>('tracker-entitlements-user-id', () => null)
+
+  watch(() => user.value?.id, (userId, previousUserId) => {
+    if (userId === previousUserId) {
+      return
+    }
+
+    if (!userId || (loadedUserId.value && loadedUserId.value !== userId)) {
+      entitlement.value = null
+      freeConditionKeys.value = []
+      entitlementsLoaded.value = false
+      loadedUserId.value = null
+    }
+  })
 
   const isPro = computed(() => isActiveEntitlementStatus(entitlement.value?.status))
   const isComped = computed(() => entitlement.value?.status === 'comped')
@@ -93,73 +111,94 @@ export function useEntitlements() {
     return uniqueKeys
   }
 
+  function clearEntitlements() {
+    entitlement.value = null
+    freeConditionKeys.value = []
+    entitlementsLoaded.value = false
+    loadedUserId.value = null
+  }
+
   async function loadEntitlements() {
-    isLoading.value = true
-    loadError.value = ''
+    if (entitlementsLoadPromise) {
+      return entitlementsLoadPromise
+    }
+
+    entitlementsLoadPromise = (async () => {
+      isLoading.value = true
+      loadError.value = ''
+
+      try {
+        const { data: userData, error: userError } = await supabase.auth.getUser()
+
+        if (userError || !userData.user) {
+          clearEntitlements()
+          return
+        }
+
+        const userId = userData.user.id
+
+        const [
+          { data: entitlementData, error: entitlementError },
+          { data: profile, error: profileError },
+          { data: entries, error: entriesError }
+        ] = await Promise.all([
+          trackerDb
+            .from('user_entitlements')
+            .select('user_id, product_key, status, stripe_customer_id, stripe_subscription_id, current_period_end, granted_by, grant_note, unlocked_at')
+            .eq('user_id', userId)
+            .eq('product_key', PRO_PRODUCT_KEY)
+            .maybeSingle(),
+          trackerDb
+            .from('user_profiles')
+            .select('free_condition_keys')
+            .eq('user_id', userId)
+            .maybeSingle(),
+          trackerDb
+            .from('symptom_entries')
+            .select('condition_key, created_at')
+            .eq('user_id', userId)
+            .eq('source', 'veteran')
+            .order('created_at', { ascending: true })
+        ])
+
+        if (entitlementError) {
+          throw entitlementError
+        }
+
+        if (profileError) {
+          throw profileError
+        }
+
+        if (entriesError) {
+          throw entriesError
+        }
+
+        entitlement.value = entitlementData
+
+        let selectedKeys = [...(profile?.free_condition_keys || [])].filter(Boolean)
+
+        if (!selectedKeys.length && entries?.length) {
+          selectedKeys = [...new Set(entries.map((entry) => entry.condition_key).filter(Boolean))].slice(0, FREE_CONDITION_LIMIT)
+          if (selectedKeys.length) {
+            await persistFreeConditionKeys(userId, selectedKeys)
+          }
+        } else {
+          freeConditionKeys.value = selectedKeys.slice(0, FREE_CONDITION_LIMIT)
+        }
+
+        loadedUserId.value = userId
+        entitlementsLoaded.value = true
+      } catch (error) {
+        loadError.value = error instanceof Error ? error.message : 'Could not load plan details.'
+      } finally {
+        isLoading.value = false
+      }
+    })()
 
     try {
-      const { data: userData, error: userError } = await supabase.auth.getUser()
-
-      if (userError || !userData.user) {
-        entitlement.value = null
-        freeConditionKeys.value = []
-        return
-      }
-
-      const userId = userData.user.id
-
-      const [
-        { data: entitlementData, error: entitlementError },
-        { data: profile, error: profileError },
-        { data: entries, error: entriesError }
-      ] = await Promise.all([
-        trackerDb
-          .from('user_entitlements')
-          .select('user_id, product_key, status, stripe_customer_id, stripe_subscription_id, current_period_end, granted_by, grant_note, unlocked_at')
-          .eq('user_id', userId)
-          .eq('product_key', PRO_PRODUCT_KEY)
-          .maybeSingle(),
-        trackerDb
-          .from('user_profiles')
-          .select('free_condition_keys')
-          .eq('user_id', userId)
-          .maybeSingle(),
-        trackerDb
-          .from('symptom_entries')
-          .select('condition_key, created_at')
-          .eq('user_id', userId)
-          .eq('source', 'veteran')
-          .order('created_at', { ascending: true })
-      ])
-
-      if (entitlementError) {
-        throw entitlementError
-      }
-
-      if (profileError) {
-        throw profileError
-      }
-
-      if (entriesError) {
-        throw entriesError
-      }
-
-      entitlement.value = entitlementData
-
-      let selectedKeys = [...(profile?.free_condition_keys || [])].filter(Boolean)
-
-      if (!selectedKeys.length && entries?.length) {
-        selectedKeys = [...new Set(entries.map((entry) => entry.condition_key).filter(Boolean))].slice(0, FREE_CONDITION_LIMIT)
-        if (selectedKeys.length) {
-          await persistFreeConditionKeys(userId, selectedKeys)
-        }
-      } else {
-        freeConditionKeys.value = selectedKeys.slice(0, FREE_CONDITION_LIMIT)
-      }
-    } catch (error) {
-      loadError.value = error instanceof Error ? error.message : 'Could not load plan details.'
+      await entitlementsLoadPromise
     } finally {
-      isLoading.value = false
+      entitlementsLoadPromise = null
     }
   }
 
@@ -378,6 +417,7 @@ export function useEntitlements() {
     freeConditionKeys,
     isLoading,
     loadError,
+    entitlementsLoaded,
     isPro,
     isComped,
     canUseLoggingCharts,

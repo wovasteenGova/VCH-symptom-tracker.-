@@ -92,7 +92,7 @@
               >
                 <div
                   v-if="isSubmissionDropdownOpen"
-                  class="absolute right-0 top-12 z-[70] w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/15 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/40"
+                  class="absolute right-0 top-[calc(100%+0.5rem)] z-[70] w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/15 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/40"
                 >
                   <div class="border-b border-slate-200 px-4 py-3 dark:border-slate-800">
                     <div class="flex items-center gap-2">
@@ -1112,7 +1112,14 @@
                   @dismiss="dismissMonthlyBackupReminder"
                 />
                 <span
-                  v-if="user"
+                  v-if="user && !entitlementsLoaded"
+                  class="relative inline-flex shrink-0 items-center rounded-full bg-slate-200 px-3 py-1.5 ring-1 ring-slate-300/60 dark:bg-slate-800 dark:ring-slate-600/70"
+                  aria-hidden="true"
+                >
+                  <span class="inline-block h-3 w-10 animate-pulse rounded-full bg-slate-400/70 dark:bg-slate-600/80" />
+                </span>
+                <span
+                  v-else-if="user"
                   class="relative inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.12em] ring-1"
                   :class="isPro
                     ? 'bg-amber-400/15 text-amber-700 ring-amber-400/40 dark:bg-amber-500/20 dark:text-amber-100 dark:ring-amber-400/80'
@@ -1839,6 +1846,7 @@ const {
   canReplaceFreeCondition,
   replaceFreeCondition,
   syncFreeConditionKey,
+  entitlementsLoaded,
   loadEntitlements
 } = useEntitlements()
 const {

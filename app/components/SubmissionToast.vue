@@ -1,6 +1,6 @@
 <template>
   <div
-    class="submission-toast-root pointer-events-none fixed inset-x-0 z-[55] flex justify-center px-4"
+    class="submission-toast-root pointer-events-none fixed inset-x-0 z-[63] flex justify-center px-4"
     aria-live="polite"
     aria-atomic="true"
   >
@@ -54,12 +54,14 @@ const { activeToast, toastKey, clearSubmissionToast } = useSubmissionToast()
 
 <style scoped>
 .submission-toast-root {
-  bottom: 5.5rem;
+  top: calc(env(safe-area-inset-top, 0px) + 4.25rem);
+  bottom: auto;
 }
 
 @media (min-width: 768px) {
   .submission-toast-root {
-    bottom: 1.5rem;
+    top: calc(env(safe-area-inset-top, 0px) + 1rem);
+    bottom: auto;
     justify-content: flex-end;
     padding-right: 1.5rem;
   }
@@ -72,7 +74,7 @@ const { activeToast, toastKey, clearSubmissionToast } = useSubmissionToast()
 
 .submission-toast-enter-from {
   opacity: 0;
-  transform: translateY(1.25rem) scale(0.96);
+  transform: translateY(-0.75rem) scale(0.96);
 }
 
 .submission-toast-leave-to {

@@ -13,7 +13,11 @@ import {
   writeLogReminderTimezone,
   type SymptomEntryLike
 } from '../utils/logReminders'
-import { PUSH_NOTIFICATION_BADGE, PUSH_NOTIFICATION_ICON } from '../utils/pushSubscription'
+import {
+  PUSH_NOTIFICATION_BADGE,
+  PUSH_NOTIFICATION_ICON,
+  PUSH_NOTIFICATION_TAG
+} from '../utils/pushSubscription'
 import type { LoggingCadence } from '../utils/loggingCadence'
 
 export function useLogReminders() {

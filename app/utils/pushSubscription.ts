@@ -7,10 +7,10 @@ export type PushSubscriptionJSON = {
   }
 }
 
-/** Full-color icon in the notification body (right on Android). */
-export const PUSH_NOTIFICATION_ICON = '/vch-shield-mark.png'
+/** Full-color icon in the notification body (right on Android). Keep reasonably small. */
+export const PUSH_NOTIFICATION_ICON = '/pwa-192.png'
 
-/** Monochrome VCH shield for Android status bar / small icon (left). */
+/** Monochrome VCH shield for Android status bar / small icon (left). White on transparent only. */
 export const PUSH_NOTIFICATION_BADGE = '/notification-badge.png'
 
 export const PUSH_NOTIFICATION_TAG = 'vch-log-reminder'
