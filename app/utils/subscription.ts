@@ -2,8 +2,8 @@ export const PRO_PRODUCT_KEY = 'symptom_tracker_pro'
 export const FREE_CONDITION_LIMIT = 1
 /** @deprecated Use FREE_CONDITION_LIMIT */
 export const FREE_ENTRY_LIMIT = FREE_CONDITION_LIMIT
-export const PRO_ANNUAL_PRICE = 12.99
-export const PRO_ANNUAL_PRICE_LABEL = '$12.99/year'
+export const PRO_MONTHLY_PRICE = 14.99
+export const PRO_MONTHLY_PRICE_LABEL = '$14.99/month'
 export const VCH_HUB_URL = 'https://veteranscentralhub.us'
 export const VCH_PRIVACY_URL = `${VCH_HUB_URL}/privacy`
 export const VCH_TERMS_URL = `${VCH_HUB_URL}/terms`

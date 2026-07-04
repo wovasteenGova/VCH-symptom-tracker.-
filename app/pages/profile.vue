@@ -188,7 +188,7 @@
           </div>
 
           <p v-if="!isPro" class="mt-3 text-xs leading-5 text-slate-400">
-            Free plan: 1 condition with unlimited entries, calendar logging charts, and entry PDFs with weekly symptom counts. Upgrade for about $1.08/month to unlock more conditions, family reporting, and severity trends in PDFs.
+            Free plan: 1 condition with unlimited entries, calendar logging charts, and entry PDFs with weekly symptom counts. Upgrade for {{ PRO_MONTHLY_PRICE_LABEL }} to unlock more conditions, family reporting, and severity trends in PDFs.
           </p>
           <div v-if="!isPro" class="mt-4 rounded-3xl border border-slate-800 bg-slate-950/60 p-4">
             <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Your free conditions</p>
@@ -224,7 +224,7 @@
                 : 'bg-amber-400 text-slate-950 hover:bg-amber-300'"
             >
               <UIcon :name="isPro ? 'i-lucide-receipt' : 'i-lucide-crown'" class="size-4" />
-              {{ isPro ? 'Payment center' : `Upgrade — ${PRO_ANNUAL_PRICE_LABEL}` }}
+              {{ isPro ? 'Payment center' : `Upgrade — ${PRO_MONTHLY_PRICE_LABEL}` }}
             </NuxtLink>
           </div>
 
@@ -753,7 +753,7 @@ import { useAppWelcome } from '../composables/useAppWelcome'
 import {
   FREE_CONDITION_LIMIT,
   formatConditionKeyLabel,
-  PRO_ANNUAL_PRICE_LABEL,
+  PRO_MONTHLY_PRICE_LABEL,
   buildSupportEmailHref
 } from '../utils/subscription'
 import { WEEKLY_LOG_DAY_OPTIONS, type LoggingCadence } from '../utils/loggingCadence'

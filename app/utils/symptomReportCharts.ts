@@ -1,5 +1,5 @@
 import type { jsPDF } from 'jspdf'
-import type { LoggingActivityMetrics } from './loggingActivityReport'
+import type { ConditionWeeklyFrequencyGroup, LoggingActivityMetrics } from './loggingActivityReport'
 
 type ChartEntry = {
   condition_label: string
@@ -501,6 +501,7 @@ type LoggingChartSections = {
   week?: boolean
   condition?: boolean
   heatmap?: boolean
+  skipHeader?: boolean
 }
 
 type AggregateLoggingMetrics = {
@@ -563,139 +564,174 @@ export function drawAggregateLoggingSection(
   return y
 }
 
-export function drawWeeklyFrequencyGrid(
+function truncateLabelToWidth(doc: jsPDF, label: string, maxWidth: number) {
+  let truncated = label
+  if (doc.getTextWidth(truncated) <= maxWidth) {
+    return truncated
+  }
+
+  while (truncated.length > 1 && doc.getTextWidth(`${truncated}…`) > maxWidth) {
+    truncated = truncated.slice(0, -1)
+  }
+
+  return `${truncated.trimEnd()}…`
+}
+
+export function drawConditionWeeklyFrequencyGrid(
   doc: jsPDF,
   x: number,
   y: number,
   width: number,
-  allMonthMetrics: LoggingActivityMetrics[],
+  groups: ConditionWeeklyFrequencyGroup[],
   pageHeight: number,
   margin: number
 ): number {
-  if (!allMonthMetrics.length) {
+  if (!groups.length) {
     return y
   }
 
   const maxWeeks = 5
   const padX = 14
-  const padTop = 16
-  const padBottom = 12
-  const headerHeight = 20
-  const rowHeight = 26
+  const padBottom = 10
+  const groupGap = 14
+  const conditionHeaderHeight = 28
+  const tableHeaderHeight = 18
   const dividerGap = 4
-
-  const monthColWidth = 80
-  const totalColWidth = 52
-  const avgColWidth = 56
+  const rowHeight = 24
+  const monthColWidth = 68
+  const totalColWidth = 40
+  const avgColWidth = 44
   const weekAreaWidth = width - padX * 2 - monthColWidth - totalColWidth - avgColWidth
   const weekColWidth = weekAreaWidth / maxWeeks
 
-  const gridHeight = padTop + headerHeight + dividerGap + allMonthMetrics.length * rowHeight + padBottom
+  const globalMax = Math.max(
+    ...groups.flatMap((group) => group.rows.flatMap((row) => row.weeklyBreakdown.map((week) => week.count))),
+    1
+  )
 
-  y = ensureChartPageSpace(doc, y, gridHeight + 40, pageHeight, margin)
+  for (const group of groups) {
+    const groupHeight = conditionHeaderHeight
+      + tableHeaderHeight
+      + dividerGap
+      + group.rows.length * rowHeight
+      + padBottom
 
-  setStroke(doc, slate200)
-  setFill(doc, [255, 255, 255])
-  doc.roundedRect(x, y, width, gridHeight, 10, 10, 'FD')
+    y = ensureChartPageSpace(doc, y, groupHeight + 24, pageHeight, margin)
 
-  let dy = y + padTop
-  const lx = x + padX
+    setStroke(doc, slate200)
+    setFill(doc, [255, 255, 255])
+    doc.roundedRect(x, y, width, groupHeight, 10, 10, 'FD')
 
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(7)
-  setText(doc, slate500)
-
-  doc.text('MONTH', lx, dy + 12)
-
-  for (let w = 0; w < maxWeeks; w++) {
-    const cx = lx + monthColWidth + w * weekColWidth + weekColWidth / 2
-    doc.text(`WK ${w + 1}`, cx, dy + 12, { align: 'center' })
-  }
-
-  const totalCx = lx + monthColWidth + maxWeeks * weekColWidth + totalColWidth / 2
-  doc.text('TOTAL', totalCx, dy + 12, { align: 'center' })
-
-  const avgCx = lx + monthColWidth + maxWeeks * weekColWidth + totalColWidth + avgColWidth / 2
-  doc.text('AVG/WK', avgCx, dy + 12, { align: 'center' })
-
-  dy += headerHeight
-
-  setStroke(doc, slate200)
-  doc.line(lx, dy, lx + width - padX * 2, dy)
-  dy += dividerGap
-
-  const globalMax = Math.max(...allMonthMetrics.flatMap((m) => m.weeklyBreakdown.map((w) => w.count)), 1)
-
-  allMonthMetrics.forEach((month, rowIdx) => {
-    if (rowIdx % 2 === 0) {
-      setFill(doc, [248, 250, 252])
-      doc.roundedRect(x + 3, dy, width - 6, rowHeight, 4, 4, 'F')
-    }
-
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(8)
-    setText(doc, slate900)
-    const shortMonth = new Date(month.year, month.month, 1).toLocaleString('en-US', {
-      month: 'short',
-      year: 'numeric'
-    })
-    doc.text(shortMonth, lx + 2, dy + 16)
-
-    const weeklyAvg = month.totalLogs / Math.max(month.weeklyBreakdown.length, 1)
-
-    for (let w = 0; w < maxWeeks; w++) {
-      const cx = lx + monthColWidth + w * weekColWidth + weekColWidth / 2
-      const count = month.weeklyBreakdown[w]?.count
-
-      if (count === undefined) {
-        doc.setFont('helvetica', 'normal')
-        doc.setFontSize(7)
-        setText(doc, [203, 213, 225])
-        doc.text('—', cx, dy + 16, { align: 'center' })
-        continue
-      }
-
-      if (count > 0) {
-        const intensity = count / globalMax
-        let pillColor: readonly [number, number, number]
-        if (intensity >= 0.6) {
-          pillColor = emerald500
-        } else if (intensity >= 0.3) {
-          pillColor = sky500
-        } else {
-          pillColor = [148, 163, 184] as const
-        }
-
-        const pillW = weekColWidth - 10
-        setFill(doc, pillColor)
-        doc.roundedRect(cx - pillW / 2, dy + 5, pillW, 16, 4, 4, 'F')
-
-        doc.setFont('helvetica', 'bold')
-        doc.setFontSize(8)
-        setText(doc, [255, 255, 255])
-      } else {
-        doc.setFont('helvetica', 'normal')
-        doc.setFontSize(8)
-        setText(doc, slate500)
-      }
-
-      doc.text(String(count), cx, dy + 16, { align: 'center' })
-    }
+    setFill(doc, [241, 245, 249])
+    doc.roundedRect(x + 1, y + 1, width - 2, conditionHeaderHeight - 1, 9, 9, 'F')
 
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(9)
     setText(doc, slate900)
-    doc.text(String(month.totalLogs), totalCx, dy + 16, { align: 'center' })
+    doc.text(
+      truncateLabelToWidth(doc, group.conditionLabel, width - padX * 2),
+      x + padX,
+      y + 18
+    )
+
+    let dy = y + conditionHeaderHeight
+    const lx = x + padX
 
     doc.setFont('helvetica', 'bold')
-    doc.setFontSize(8)
-    setText(doc, sky500)
-    doc.text(weeklyAvg.toFixed(1), avgCx, dy + 16, { align: 'center' })
+    doc.setFontSize(7)
+    setText(doc, slate500)
+    doc.text('MONTH', lx, dy + 11)
 
-    dy += rowHeight
-  })
+    for (let weekIndex = 0; weekIndex < maxWeeks; weekIndex += 1) {
+      const cx = lx + monthColWidth + weekIndex * weekColWidth + weekColWidth / 2
+      doc.text(`WK ${weekIndex + 1}`, cx, dy + 11, { align: 'center' })
+    }
 
-  return y + gridHeight
+    const totalCx = lx + monthColWidth + maxWeeks * weekColWidth + totalColWidth / 2
+    doc.text('TOTAL', totalCx, dy + 11, { align: 'center' })
+
+    const avgCx = lx + monthColWidth + maxWeeks * weekColWidth + totalColWidth + avgColWidth / 2
+    doc.text('AVG/WK', avgCx, dy + 11, { align: 'center' })
+
+    dy += tableHeaderHeight
+
+    setStroke(doc, slate200)
+    doc.line(lx, dy, lx + width - padX * 2, dy)
+    dy += dividerGap
+
+    group.rows.forEach((row, rowIndex) => {
+      if (rowIndex % 2 === 0) {
+        setFill(doc, [248, 250, 252])
+        doc.roundedRect(x + 3, dy, width - 6, rowHeight, 4, 4, 'F')
+      }
+
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(8)
+      setText(doc, slate900)
+      const shortMonth = new Date(row.year, row.month, 1).toLocaleString('en-US', {
+        month: 'short',
+        year: 'numeric'
+      })
+      doc.text(shortMonth, lx + 2, dy + 15)
+
+      const weeklyAvg = row.totalLogs / Math.max(row.weeklyBreakdown.length, 1)
+
+      for (let weekIndex = 0; weekIndex < maxWeeks; weekIndex += 1) {
+        const cx = lx + monthColWidth + weekIndex * weekColWidth + weekColWidth / 2
+        const count = row.weeklyBreakdown[weekIndex]?.count
+
+        if (count === undefined) {
+          doc.setFont('helvetica', 'normal')
+          doc.setFontSize(7)
+          setText(doc, [203, 213, 225])
+          doc.text('—', cx, dy + 15, { align: 'center' })
+          continue
+        }
+
+        if (count > 0) {
+          const intensity = count / globalMax
+          let pillColor: readonly [number, number, number]
+          if (intensity >= 0.6) {
+            pillColor = emerald500
+          } else if (intensity >= 0.3) {
+            pillColor = sky500
+          } else {
+            pillColor = [148, 163, 184] as const
+          }
+
+          const pillW = weekColWidth - 10
+          setFill(doc, pillColor)
+          doc.roundedRect(cx - pillW / 2, dy + 4, pillW, 16, 4, 4, 'F')
+
+          doc.setFont('helvetica', 'bold')
+          doc.setFontSize(8)
+          setText(doc, [255, 255, 255])
+        } else {
+          doc.setFont('helvetica', 'normal')
+          doc.setFontSize(8)
+          setText(doc, slate500)
+        }
+
+        doc.text(String(count), cx, dy + 15, { align: 'center' })
+      }
+
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(9)
+      setText(doc, slate900)
+      doc.text(String(row.totalLogs), totalCx, dy + 15, { align: 'center' })
+
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(8)
+      setText(doc, sky500)
+      doc.text(weeklyAvg.toFixed(1), avgCx, dy + 15, { align: 'center' })
+
+      dy += rowHeight
+    })
+
+    y += groupHeight + groupGap
+  }
+
+  return y - groupGap
 }
 
 export function drawCompactHeatmapGrid(
@@ -816,9 +852,10 @@ export function drawLoggingActivitySection(
   const showWeek = sections.week !== false
   const showCondition = sections.condition === true
   const showHeatmap = sections.heatmap === true
+  const skipHeader = sections.skipHeader === true
   const heatmapOnly = showHeatmap && !showWeek && !showCondition
 
-  if (!heatmapOnly) {
+  if (!heatmapOnly && !skipHeader) {
     drawSectionTitle(doc, `Logging activity — ${metrics.monthLabel}`, x, y)
     y += 14
 

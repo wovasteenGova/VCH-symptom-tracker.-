@@ -113,8 +113,8 @@
             <div class="flex items-start justify-between gap-3 pr-24">
               <div>
                 <p class="text-xs font-bold uppercase tracking-[0.16em] text-amber-200">Pro</p>
-                <h2 class="mt-1 text-2xl font-bold text-white">{{ PRO_ANNUAL_PRICE_LABEL }}</h2>
-                <p class="mt-1 text-xs text-amber-100/80">Less than $1.10/month — billed yearly</p>
+                <h2 class="mt-1 text-2xl font-bold text-white">{{ PRO_MONTHLY_PRICE_LABEL }}</h2>
+                <p class="mt-1 text-xs text-amber-100/80">Billed monthly — cancel anytime</p>
               </div>
             </div>
 
@@ -219,7 +219,7 @@
           :disabled="isCheckoutLoading"
           @click="handleUpgrade"
         >
-          {{ isCheckoutLoading ? 'Loading checkout...' : `Upgrade to Pro — ${PRO_ANNUAL_PRICE_LABEL}` }}
+          {{ isCheckoutLoading ? 'Loading checkout...' : `Upgrade to Pro — ${PRO_MONTHLY_PRICE_LABEL}` }}
         </button>
 
         <NuxtLink
@@ -246,7 +246,7 @@ import { useEntitlements } from '../composables/useEntitlements'
 import {
   FREE_CONDITION_LIMIT,
   FREE_TIER_FEATURES,
-  PRO_ANNUAL_PRICE_LABEL,
+  PRO_MONTHLY_PRICE_LABEL,
   PRO_TIER_FEATURES,
   VCH_CLAIM_MAKER_URL,
   VCH_CONTACT_URL,
@@ -280,8 +280,8 @@ const paymentSteps = [
     body: 'Tap upgrade and pay right here in the app with Stripe — no redirect to another site until you finish.'
   },
   {
-    title: 'Pay once per year',
-    body: `${PRO_ANNUAL_PRICE_LABEL} renews automatically each year. You can cancel before renewal from billing settings.`
+    title: 'Pay monthly',
+    body: `${PRO_MONTHLY_PRICE_LABEL} renews automatically each month. You can cancel anytime from billing settings.`
   },
   {
     title: 'Unlock instantly',

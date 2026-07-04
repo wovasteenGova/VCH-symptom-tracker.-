@@ -44,7 +44,7 @@
         </ul>
 
         <p class="mt-4 rounded-2xl border border-sky-900/60 bg-sky-950/30 px-4 py-3 text-xs leading-5 text-sky-100">
-          {{ PRO_ANNUAL_PRICE_LABEL }} helps fund the upcoming VCH Claim Maker build. It is not live yet — Pro subscriptions help cover development until it ships.
+          {{ PRO_MONTHLY_PRICE_LABEL }} helps fund the upcoming VCH Claim Maker build. It is not live yet — Pro subscriptions help cover development until it ships.
         </p>
 
         <div class="mt-5 grid gap-3">
@@ -54,7 +54,7 @@
             :disabled="isCheckoutLoading"
             @click="emit('upgrade')"
           >
-            {{ isCheckoutLoading ? 'Continue to checkout...' : `Upgrade — ${PRO_ANNUAL_PRICE_LABEL}` }}
+            {{ isCheckoutLoading ? 'Continue to checkout...' : `Upgrade — ${PRO_MONTHLY_PRICE_LABEL}` }}
           </button>
           <NuxtLink
             to="/upgrade"
@@ -76,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import { PRO_ANNUAL_PRICE_LABEL, PRO_TIER_FEATURES, buildSupportEmailHref } from '../utils/subscription'
+import { PRO_MONTHLY_PRICE_LABEL, PRO_TIER_FEATURES, buildSupportEmailHref } from '../utils/subscription'
 
 defineProps<{
   open: boolean

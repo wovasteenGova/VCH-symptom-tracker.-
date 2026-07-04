@@ -3,13 +3,13 @@ import {
   buildReportMetrics,
   drawAggregateLoggingSection,
   drawCompactHeatmapGrid,
+  drawConditionWeeklyFrequencyGrid,
   drawHorizontalBarChart,
   drawLineChart,
   drawLoggingActivitySection,
   drawSectionTitle,
   drawStatCards,
   drawVerticalBarChart,
-  drawWeeklyFrequencyGrid
 } from '../utils/symptomReportCharts'
 import { drawEntryLogSection } from '../utils/symptomReportEntryLog'
 import { getLogoFormat, loadReportLogoDataUrl, reportBranding } from '../utils/reportBranding'
@@ -18,6 +18,7 @@ import { PDF_EXPORT_CERTIFICATION_TEXT } from '../utils/pdfExportCertification'
 import {
   buildAllMonthMetrics,
   buildAggregateLoggingMetrics,
+  buildConditionWeeklyFrequencyGroups,
   formatAggregateLoggingSummary
 } from '../utils/loggingActivityReport'
 
@@ -234,6 +235,37 @@ function buildPdfDownloadFilename(conditionLabel: string | null | undefined) {
 
 const PDF_SECTION_GAP = 28
 
+function appendConditionWeeklyFrequencySection(
+  doc: jsPDF,
+  y: number,
+  margin: number,
+  contentWidth: number,
+  pageHeight: number,
+  groups: ReturnType<typeof buildConditionWeeklyFrequencyGroups>
+) {
+  if (!groups.length) {
+    return y
+  }
+
+  const estimatedHeight = groups.reduce((total, group) => {
+    return total + 66 + group.rows.length * 24
+  }, 0)
+
+  y = ensurePageSpace(doc, y, Math.min(estimatedHeight, 220), margin, pageHeight)
+  drawSectionTitle(doc, 'Weekly symptom frequency by condition', margin, y)
+  y += 14
+
+  return drawConditionWeeklyFrequencyGrid(
+    doc,
+    margin,
+    y,
+    contentWidth,
+    groups,
+    pageHeight,
+    margin
+  ) + PDF_SECTION_GAP
+}
+
 function ensurePageSpace(
   doc: jsPDF,
   y: number,
@@ -278,6 +310,7 @@ export function useSymptomPdfExport() {
     const metrics = buildReportMetrics(entries)
     const allMonthMetrics = buildAllMonthMetrics(entries)
     const aggregateMetrics = buildAggregateLoggingMetrics(entries)
+    const conditionWeeklyGroups = buildConditionWeeklyFrequencyGroups(entries)
     const hasLogs = aggregateMetrics.totalLogs > 0
     const logoDataUrl = await loadReportLogoDataUrl()
 
@@ -380,7 +413,28 @@ export function useSymptomPdfExport() {
           margin,
           allMonthMetrics[0],
           formatAggregateLoggingSummary(aggregateMetrics),
-          { week: true, condition: showAdvancedCharts, heatmap: true }
+          { week: false, condition: false, heatmap: false }
+        )
+
+        y = appendConditionWeeklyFrequencySection(
+          doc,
+          y,
+          margin,
+          contentWidth,
+          pageHeight,
+          conditionWeeklyGroups
+        )
+
+        y = drawLoggingActivitySection(
+          doc,
+          margin,
+          y,
+          contentWidth,
+          pageHeight,
+          margin,
+          allMonthMetrics[0],
+          '',
+          { week: false, condition: showAdvancedCharts, heatmap: true, skipHeader: true }
         )
       } else {
         y = drawAggregateLoggingSection(
@@ -395,19 +449,14 @@ export function useSymptomPdfExport() {
           { showConditionChart: showAdvancedCharts }
         )
 
-        const estGridHeight = 66 + allMonthMetrics.length * 26
-        y = ensurePageSpace(doc, y, estGridHeight, margin, pageHeight)
-        drawSectionTitle(doc, 'Weekly symptom frequency', margin, y)
-        y += 14
-        y = drawWeeklyFrequencyGrid(
+        y = appendConditionWeeklyFrequencySection(
           doc,
-          margin,
           y,
+          margin,
           contentWidth,
-          allMonthMetrics,
           pageHeight,
-          margin
-        ) + PDF_SECTION_GAP
+          conditionWeeklyGroups
+        )
 
         y = ensurePageSpace(doc, y, 160, margin, pageHeight)
         drawSectionTitle(doc, 'Daily log density', margin, y)

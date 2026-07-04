@@ -128,6 +128,69 @@ export function buildAllMonthMetrics(
     })
 }
 
+export type ConditionWeeklyFrequencyGroup = {
+  conditionLabel: string
+  rows: Array<{
+    year: number
+    month: number
+    weeklyBreakdown: Array<{ label: string, count: number }>
+    totalLogs: number
+  }>
+}
+
+export function buildConditionWeeklyFrequencyGroups(
+  entries: LoggingEntry[]
+): ConditionWeeklyFrequencyGroup[] {
+  const byConditionMonth = new Map<string, LoggingEntry[]>()
+
+  for (const entry of entries) {
+    const date = getEntryDate(entry)
+    if (!isValidEntryDate(date)) {
+      continue
+    }
+
+    const conditionLabel = entry.condition_label?.trim() || 'Untitled condition'
+    const monthKey = `${conditionLabel}\0${date.getFullYear()}-${date.getMonth()}`
+    const bucket = byConditionMonth.get(monthKey) || []
+    bucket.push(entry)
+    byConditionMonth.set(monthKey, bucket)
+  }
+
+  const byCondition = new Map<string, ConditionWeeklyFrequencyGroup['rows']>()
+  const conditionTotals = new Map<string, number>()
+
+  for (const [key, monthEntries] of byConditionMonth.entries()) {
+    const separatorIndex = key.indexOf('\0')
+    const conditionLabel = key.slice(0, separatorIndex)
+    const [year, month] = key.slice(separatorIndex + 1).split('-').map(Number)
+
+    const row = {
+      year,
+      month,
+      weeklyBreakdown: buildWeeklyBreakdown(monthEntries, year, month),
+      totalLogs: monthEntries.length
+    }
+
+    const rows = byCondition.get(conditionLabel) || []
+    rows.push(row)
+    byCondition.set(conditionLabel, rows)
+    conditionTotals.set(conditionLabel, (conditionTotals.get(conditionLabel) || 0) + monthEntries.length)
+  }
+
+  return [...byCondition.entries()]
+    .sort((left, right) => (conditionTotals.get(right[0]) || 0) - (conditionTotals.get(left[0]) || 0))
+    .map(([conditionLabel, rows]) => ({
+      conditionLabel,
+      rows: rows.sort((left, right) => {
+        if (left.year !== right.year) {
+          return left.year - right.year
+        }
+
+        return left.month - right.month
+      })
+    }))
+}
+
 export type AggregateLoggingMetrics = {
   rangeLabel: string
   totalLogs: number

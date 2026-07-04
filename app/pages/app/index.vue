@@ -1644,7 +1644,7 @@ import { useUserProfiles } from '../../composables/useUserProfiles'
 import { useEntitlements } from '../../composables/useEntitlements'
 import { useAppWelcome } from '../../composables/useAppWelcome'
 import { useTrackedConditions } from '../../composables/useTrackedConditions'
-import { FREE_CONDITION_LIMIT, formatConditionKeyLabel, conditionKeyFromLabel } from '../../utils/subscription'
+import { FREE_CONDITION_LIMIT, PRO_MONTHLY_PRICE_LABEL, formatConditionKeyLabel, conditionKeyFromLabel } from '../../utils/subscription'
 import { mapEntryHistoryItem } from '../../utils/entryDisplay'
 import { copyToClipboard } from '../../utils/copyToClipboard'
 import { PDF_EXPORT_ACKNOWLEDGMENT_LABEL } from '../../utils/pdfExportCertification'
@@ -3265,7 +3265,7 @@ async function saveEntry() {
     } else {
       openUpgradePrompt(
         'Free plan: 1 condition',
-        `Free lets you pick ${FREE_CONDITION_LIMIT} condition with unlimited entries. Upgrade to Pro for about $1.08/month to track more conditions, family reporting, and advanced charts in PDF exports.`
+        `Free lets you pick ${FREE_CONDITION_LIMIT} condition with unlimited entries. Upgrade to Pro for ${PRO_MONTHLY_PRICE_LABEL} to track more conditions, family reporting, and advanced charts in PDF exports.`
       )
       return
     }
@@ -4301,7 +4301,7 @@ function ensureFreeConditionAccess(
 
   openUpgradePrompt(
     'Free plan: 1 condition',
-    `You already picked ${freeConditionLabels.value[0] || 'your free condition'}. Upgrade to Pro for about $1.08/month to track ${conditionLabel || formatConditionKeyLabel(conditionKey)} and more.`
+    `You already picked ${freeConditionLabels.value[0] || 'your free condition'}. Upgrade to Pro for ${PRO_MONTHLY_PRICE_LABEL} to track ${conditionLabel || formatConditionKeyLabel(conditionKey)} and more.`
   )
   return false
 }
