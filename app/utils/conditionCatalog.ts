@@ -27,6 +27,11 @@ export const VA_MENTAL_HEALTH_CRISIS_TIP =
 export const VA_CRISIS_LINE_SHORT =
   'In crisis? Call 988 and press 1, text 838255, or visit veteranscrisisline.net.'
 
+export const HOME_HONESTY_TIP = {
+  title: 'Honestly is a virtue',
+  text: 'Log what actually happened—not what you think you should report. Honest entries help you see your real patterns and give raters a timeline they can trust. This is your record, not a performance.'
+} as const
+
 const mentalHealthFocus = [
   'How often symptoms happen and how severe they are',
   'Work, relationship, and daily-life impact',
@@ -418,6 +423,11 @@ export function pickRandomHomeVisitTip(conditions: ConditionCatalogItem[]): { ti
   pool.push({
     title: 'Worst day tip',
     text: VA_MENTAL_HEALTH_WORST_DAY_TIP
+  })
+
+  pool.push({
+    title: HOME_HONESTY_TIP.title,
+    text: HOME_HONESTY_TIP.text
   })
 
   pool.push({

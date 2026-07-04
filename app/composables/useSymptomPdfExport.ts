@@ -21,6 +21,8 @@ import {
   buildConditionWeeklyFrequencyGroups,
   formatAggregateLoggingSummary
 } from '../utils/loggingActivityReport'
+import { buildCpExamReportTitle, buildCpExamSummaries } from '../utils/cpExamReport'
+import { buildCpExamPdfFilename, drawCpExamReportPdf } from '../utils/cpExamReportPdf'
 
 type SymptomEntryRecord = {
   id: string
@@ -613,7 +615,39 @@ export function useSymptomPdfExport() {
     doc.save(buildPdfDownloadFilename(conditionLabel))
   }
 
+  async function downloadCpExamPdf(
+    entries: SymptomEntryRecord[],
+    options: Pick<PdfExportOptions, 'veteranName' | 'conditionLabel'> = {}
+  ) {
+    const { veteranName = null, conditionLabel = null } = options
+
+    if (!entries.length) {
+      throw new Error('Add at least one symptom entry before exporting.')
+    }
+
+    const summaries = buildCpExamSummaries(entries)
+    if (!summaries.length) {
+      throw new Error('No valid symptom entries found for C&P prep export.')
+    }
+
+    const doc = new jsPDF({
+      unit: 'pt',
+      format: 'letter'
+    })
+
+    drawCpExamReportPdf({
+      doc,
+      summaries,
+      veteranName,
+      reportTitle: buildCpExamReportTitle(conditionLabel),
+      conditionLabel
+    })
+
+    doc.save(buildCpExamPdfFilename(conditionLabel))
+  }
+
   return {
-    downloadEntriesPdf
+    downloadEntriesPdf,
+    downloadCpExamPdf
   }
 }

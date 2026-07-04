@@ -124,7 +124,7 @@
                       <span
                         class="mt-0.5 grid size-9 shrink-0 place-items-center rounded-full"
                         :class="highlightedSubmissionId === submission.id
-                          ? 'bg-sky-500 text-white'
+                          ? 'bg-sky-400/15 text-sky-600 ring-1 ring-sky-300 dark:bg-sky-500/20 dark:text-sky-300 dark:ring-sky-500/50'
                           : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300'"
                       >
                         <UIcon name="i-lucide-message-square-text" class="size-4" />
@@ -928,17 +928,13 @@
                               />
                             </div>
 
-                            <div v-if="homeVisitTip" class="mt-6">
-                              <Transition name="home-tip" mode="out-in">
-                                <div :key="`${homeVisitTip.title}-${homeVisitTip.text}`">
-                                  <p class="text-xs font-bold uppercase tracking-[0.14em] text-sky-700 dark:text-sky-300">
-                                    {{ homeVisitTip.title }}
-                                  </p>
-                                  <p class="mt-1 leading-6 text-slate-600 dark:text-slate-300">
-                                    {{ homeVisitTip.text }}
-                                  </p>
-                                </div>
-                              </Transition>
+                            <div class="mt-6">
+                              <p class="text-xs font-bold uppercase tracking-[0.14em] text-sky-700 dark:text-sky-300">
+                                {{ HOME_HONESTY_TIP.title }}
+                              </p>
+                              <p class="mt-1 leading-6 text-slate-600 dark:text-slate-300">
+                                {{ HOME_HONESTY_TIP.text }}
+                              </p>
                             </div>
 
                             <p class="mt-3 text-xs leading-5 text-slate-500 dark:text-slate-400">
@@ -1085,43 +1081,26 @@
                   :open="isMonthlyBackupReminderVisible"
                   @dismiss="dismissMonthlyBackupReminder"
                 />
-                <NuxtLink
-                  v-if="user && !isPro"
-                  to="/upgrade"
-                  data-history-interactive
-                  class="inline-flex items-center gap-1 rounded-full bg-amber-400/15 px-3 py-2 text-xs font-bold text-amber-700 ring-1 ring-amber-400/40 dark:text-amber-200"
+                <span
+                  v-if="user"
+                  class="relative inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.12em] ring-1"
+                  :class="isPro
+                    ? 'bg-amber-400/15 text-amber-700 ring-amber-400/40 dark:bg-amber-500/20 dark:text-amber-100 dark:ring-amber-400/80'
+                    : 'bg-sky-100 text-sky-700 ring-sky-300/60 dark:bg-sky-950 dark:text-sky-200 dark:ring-sky-600/70'"
                 >
-                  <UIcon name="i-lucide-crown" class="size-3.5" />
-                  Pro
-                </NuxtLink>
-                <UDropdownMenu
-                  v-if="hasMultipleExportConditions"
-                  :items="pdfExportMenuItems"
-                  :content="{ align: 'end' }"
-                  :ui="{ content: 'min-w-56' }"
-                >
-                  <button
-                    type="button"
-                    data-history-interactive
-                    class="inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-slate-600 transition hover:text-slate-950 disabled:opacity-40 dark:text-slate-300 dark:hover:text-white"
-                    :disabled="!savedEntries.length || isExportingPdf"
+                  <UIcon
+                    :name="isPro ? 'i-lucide-crown' : 'i-lucide-sparkles'"
+                    class="size-3.5"
+                    :class="isPro ? 'text-amber-600 dark:text-amber-300' : 'text-sky-600 dark:text-sky-300'"
+                  />
+                  {{ isPro ? 'Pro' : 'Free' }}
+                  <span
+                    class="absolute -right-0.5 -top-0.5 grid size-[0.825rem] place-items-center rounded-full bg-slate-950 ring-[1.5px] ring-white dark:bg-black dark:ring-slate-900"
+                    aria-hidden="true"
                   >
-                    <UIcon name="i-lucide-download" class="size-4" />
-                    {{ isExportingPdf ? 'Exporting...' : 'PDF' }}
-                    <UIcon name="i-lucide-chevron-down" class="size-3.5 opacity-60" />
-                  </button>
-                </UDropdownMenu>
-                <button
-                  v-else
-                  type="button"
-                  data-history-interactive
-                  class="inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-slate-600 transition hover:text-slate-950 disabled:opacity-40 dark:text-slate-300 dark:hover:text-white"
-                  :disabled="!savedEntries.length || isExportingPdf"
-                  @click="openPdfExportModal(null)"
-                >
-                  <UIcon name="i-lucide-download" class="size-4" />
-                  {{ isExportingPdf ? 'Exporting...' : 'PDF' }}
-                </button>
+                    <UIcon name="i-lucide-check" class="size-[0.55rem] text-emerald-400" />
+                  </span>
+                </span>
               </div>
             </div>
             <p v-if="exportError" class="mt-2 text-sm font-medium text-red-600 dark:text-red-300">
@@ -1138,11 +1117,31 @@
             </p>
 
             <div
+              v-if="highlightedSubmissionNotice"
+              class="mt-3 flex items-start gap-2.5 rounded-2xl border border-sky-200 bg-sky-50 px-3 py-2.5 dark:border-sky-700/60 dark:bg-sky-950/40"
+            >
+              <span class="mt-0.5 grid size-7 shrink-0 place-items-center rounded-full bg-sky-400/15 text-sky-600 dark:bg-sky-500/20 dark:text-sky-300">
+                <UIcon name="i-lucide-message-square-text" class="size-3.5" />
+              </span>
+              <div class="min-w-0 flex-1">
+                <p class="text-[0.875rem] font-bold text-slate-950 dark:text-white">
+                  {{ highlightedSubmissionNotice.source === 'Family' ? 'New family observation' : 'Highlighted entry' }}
+                </p>
+                <p class="mt-0.5 truncate text-xs font-semibold text-slate-700 dark:text-slate-200">
+                  {{ highlightedSubmissionNotice.title }}
+                </p>
+                <p class="mt-0.5 text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-sky-600 dark:text-sky-400">
+                  {{ highlightedSubmissionNotice.condition }} · {{ highlightedSubmissionNotice.timeLabel }}
+                </p>
+              </div>
+            </div>
+
+            <div
               class="mt-4 rounded-full bg-slate-100 p-1 dark:bg-slate-800/80"
               @touchstart.passive="handleHistoryTabSwipeStart"
               @touchend="handleHistoryTabSwipeEnd"
             >
-              <div class="grid grid-cols-2 gap-1">
+              <div class="grid grid-cols-3 gap-1">
                 <button
                   v-for="tab in historyTabs"
                   :key="tab"
@@ -1274,7 +1273,7 @@
             </div>
 
             <div
-              v-else
+              v-else-if="activeHistoryTab === 'Calendar'"
               class="py-1"
               @touchstart.passive="handleCalendarSwipeStart"
               @touchend="handleCalendarSwipeEnd"
@@ -1341,7 +1340,138 @@
               <LoggingActivityReport :metrics="loggingActivityMetrics" />
             </div>
 
-            <div class="mt-2 flex items-center justify-center gap-3 pb-1 text-xs font-semibold text-slate-500">
+            <div v-else-if="activeHistoryTab === 'Export'" class="pb-4">
+              <div
+                class="rounded-full bg-slate-100 p-1 dark:bg-slate-800/80"
+              >
+                <div class="grid grid-cols-2 gap-1">
+                  <button
+                    type="button"
+                    data-history-interactive
+                    class="rounded-full px-3 py-2.5 text-xs font-semibold transition"
+                    :class="pdfExportType === 'full'
+                      ? 'bg-white text-slate-950 shadow-sm dark:bg-slate-700 dark:text-white'
+                      : 'text-slate-500 dark:text-slate-400'"
+                    @click="pdfExportType = 'full'"
+                  >
+                    Full report
+                  </button>
+                  <button
+                    type="button"
+                    data-history-interactive
+                    class="rounded-full px-3 py-2.5 text-xs font-semibold transition"
+                    :class="pdfExportType === 'cp-exam'
+                      ? 'bg-white text-slate-950 shadow-sm dark:bg-slate-700 dark:text-white'
+                      : 'text-slate-500 dark:text-slate-400'"
+                    @click="pdfExportType = 'cp-exam'"
+                  >
+                    C&P prep
+                  </button>
+                </div>
+              </div>
+
+              <p class="mt-3 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                {{ pdfExportDescription }}
+              </p>
+
+              <div v-if="!user && !isAuthLoading" class="py-8 text-center">
+                <p class="font-bold text-slate-950 dark:text-white">Sign in to export</p>
+                <p class="mt-1 text-xs text-slate-600 dark:text-slate-400">
+                  Your symptom logs need to be saved to your account before you can download a PDF.
+                </p>
+                <button
+                  type="button"
+                  data-history-interactive
+                  class="mt-4 rounded-full bg-slate-950 px-5 py-3 text-xs font-bold text-white dark:bg-white dark:text-slate-950"
+                  @click="toggleAuthPanel"
+                >
+                  Sign in
+                </button>
+              </div>
+
+              <div v-else-if="!exportableConditions.length" class="py-8 text-center">
+                <p class="font-bold text-slate-950 dark:text-white">Nothing to export yet</p>
+                <p class="mt-1 text-xs text-slate-600 dark:text-slate-400">
+                  Log at least one symptom entry, then come back here to build your PDF.
+                </p>
+              </div>
+
+              <template v-else>
+                <div class="mt-4 flex items-center justify-between gap-3">
+                  <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                    Conditions
+                  </p>
+                  <button
+                    type="button"
+                    data-history-interactive
+                    class="text-xs font-semibold text-sky-600 transition hover:text-sky-700 dark:text-sky-300 dark:hover:text-sky-200"
+                    @click="toggleAllExportConditions"
+                  >
+                    {{ allExportConditionsSelected ? 'Clear all' : 'Select all' }}
+                  </button>
+                </div>
+
+                <div class="mt-2 space-y-2">
+                  <label
+                    v-for="condition in exportableConditions"
+                    :key="condition.key"
+                    data-history-interactive
+                    class="flex cursor-pointer items-center gap-3 rounded-2xl px-4 py-3 transition"
+                    :class="isExportConditionSelected(condition.key)
+                      ? 'bg-slate-100 dark:bg-slate-800/80'
+                      : 'bg-transparent'"
+                  >
+                    <input
+                      type="checkbox"
+                      class="size-4 shrink-0 rounded border-slate-300 text-slate-950 focus:ring-slate-400 dark:border-slate-600 dark:bg-slate-900"
+                      :checked="isExportConditionSelected(condition.key)"
+                      @change="toggleExportCondition(condition.key)"
+                    >
+                    <span class="min-w-0 flex-1">
+                      <span class="block truncate font-semibold text-slate-950 dark:text-white">{{ condition.label }}</span>
+                      <span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">
+                        {{ condition.entryCount }} {{ condition.entryCount === 1 ? 'entry' : 'entries' }}
+                      </span>
+                    </span>
+                  </label>
+                </div>
+
+                <p
+                  v-if="!selectedExportConditionKeys.length"
+                  class="mt-3 text-xs font-medium text-amber-700 dark:text-amber-200"
+                >
+                  Select at least one condition to include in the PDF.
+                </p>
+
+                <label
+                  v-if="pdfExportType === 'full'"
+                  class="mt-4 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 dark:border-amber-900/60 dark:bg-amber-950/30"
+                >
+                  <input
+                    v-model="pdfExportAcknowledged"
+                    type="checkbox"
+                    data-history-interactive
+                    class="mt-0.5 size-4 rounded border-slate-300 text-slate-950 focus:ring-slate-400 dark:border-slate-600 dark:bg-slate-900"
+                  >
+                  <span class="text-xs leading-5 text-amber-950 dark:text-amber-100">
+                    {{ PDF_EXPORT_ACKNOWLEDGMENT_LABEL }}
+                  </span>
+                </label>
+
+                <button
+                  type="button"
+                  data-history-interactive
+                  class="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3.5 text-xs font-bold text-white transition hover:bg-slate-800 disabled:opacity-40 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+                  :disabled="!canConfirmPdfExport"
+                  @click="runPdfExport"
+                >
+                  <UIcon name="i-lucide-download" class="size-4" />
+                  {{ exportButtonLabel }}
+                </button>
+              </template>
+            </div>
+
+            <div v-if="activeHistoryTab !== 'Export'" class="mt-2 flex items-center justify-center gap-3 pb-1 text-xs font-semibold text-slate-500">
               <NuxtLink to="/install" data-history-interactive class="hover:text-slate-700 dark:hover:text-slate-300">Install</NuxtLink>
               <NuxtLink to="/privacy" data-history-interactive class="hover:text-slate-700 dark:hover:text-slate-300">Privacy</NuxtLink>
               <NuxtLink to="/disclaimer" data-history-interactive class="hover:text-slate-700 dark:hover:text-slate-300">Disclaimer</NuxtLink>
@@ -1528,67 +1658,6 @@
     leave-to-class="opacity-0"
   >
     <div
-      v-if="isPdfExportModalOpen"
-      class="fixed inset-0 z-[70] flex items-end justify-center bg-slate-950/70 p-4 sm:items-center"
-      @click.self="closePdfExportModal"
-    >
-      <div class="w-full max-w-md rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
-        <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-          Sign before download
-        </p>
-        <h3 class="mt-2 text-xl font-bold text-slate-950 dark:text-white">
-          {{ pdfExportModalTitle }}
-        </h3>
-        <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-          Your report includes summary stats, charts, and your full entry log.
-          Your full name from Account Settings will appear as your electronic signature on the PDF.
-        </p>
-
-        <label class="mt-5 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 dark:border-amber-900/60 dark:bg-amber-950/30">
-          <input
-            v-model="pdfExportAcknowledged"
-            type="checkbox"
-            class="mt-1 size-4 rounded border-slate-300 text-slate-950 focus:ring-slate-400 dark:border-slate-600 dark:bg-slate-900"
-          >
-          <span class="text-sm leading-6 text-amber-950 dark:text-amber-100">
-            {{ PDF_EXPORT_ACKNOWLEDGMENT_LABEL }}
-          </span>
-        </label>
-
-        <p v-if="exportError" class="mt-4 text-center text-sm font-medium text-red-600 dark:text-red-300">
-          {{ exportError }}
-        </p>
-
-        <div class="mt-5 grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            class="rounded-2xl bg-slate-100 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
-            @click="closePdfExportModal"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            class="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:opacity-40 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
-            :disabled="!pdfExportAcknowledged || isExportingPdf"
-            @click="confirmPdfExport"
-          >
-            {{ isExportingPdf ? 'Preparing...' : 'Download PDF' }}
-          </button>
-        </div>
-      </div>
-    </div>
-  </Transition>
-
-  <Transition
-    enter-active-class="transition duration-200 ease-out"
-    enter-from-class="opacity-0"
-    enter-to-class="opacity-100"
-    leave-active-class="transition duration-150 ease-in"
-    leave-from-class="opacity-100"
-    leave-to-class="opacity-0"
-  >
-    <div
       v-if="isConditionSlotOpen"
       class="fixed inset-0 z-[70] flex items-end justify-center bg-slate-950/70 p-4 sm:items-center"
       @click.self="closeConditionSlotModal"
@@ -1682,7 +1751,7 @@ import { androidAddToHomeScreenVideoUrl, iosAddToHomeScreenVideoUrl } from '../.
 import { filterAndRankConditions } from '../../utils/conditionSearch'
 import { getWeeklyLogCaution, type WeeklyLogCaution } from '../../utils/loggingCadence'
 import { buildLoggingActivityMetrics } from '../../utils/loggingActivityReport'
-import { conditionCatalog, pickRandomHomeVisitTip, resolveCatalogConditionByStoredKey, VA_CRISIS_LINE_SHORT } from '../../utils/conditionCatalog'
+import { conditionCatalog, HOME_HONESTY_TIP, pickRandomHomeVisitTip, resolveCatalogConditionByStoredKey, VA_CRISIS_LINE_SHORT } from '../../utils/conditionCatalog'
 import { conditionImageAssets } from '../../utils/conditionImages'
 import { getSeverityGuidance, severityQuickPresets } from '../../utils/severityGuidance'
 import { CalendarDate } from '@internationalized/date'
@@ -1770,8 +1839,8 @@ const savedEntries = ref<any[]>([])
 const isExportingPdf = ref(false)
 const exportError = ref('')
 const exportNotice = ref('')
-const isPdfExportModalOpen = ref(false)
-const pendingPdfExportKey = ref<string | null>(null)
+const pdfExportType = ref<'full' | 'cp-exam'>('full')
+const selectedExportConditionKeys = ref<string[]>([])
 const pdfExportAcknowledged = ref(false)
 const transitionDirection = ref('next')
 const installPlatform = ref<'ios' | 'android' | 'desktop'>('desktop')
@@ -1807,7 +1876,7 @@ const selectedSearchCondition = ref<null | {
   image: string
 }>(null)
 
-const { downloadEntriesPdf } = useSymptomPdfExport()
+const { downloadEntriesPdf, downloadCpExamPdf } = useSymptomPdfExport()
 const { archiveDeletedEntry } = useDeletedEntryArchive()
 const {
   isMonthlyBackupReminderVisible,
@@ -1920,7 +1989,7 @@ const entryPickerDays = computed(() => {
   return days
 })
 
-const historyTabs = ['Entries', 'Calendar']
+const historyTabs = ['Entries', 'Calendar', 'Export']
 const installDismissedKey = 'symptom-tracker-install-dismissed'
 
 function readInstallPlatform(): 'ios' | 'android' | 'desktop' {
@@ -1935,7 +2004,7 @@ function readInstallPlatform(): 'ios' | 'android' | 'desktop' {
   return isIos ? 'ios' : isAndroid ? 'android' : 'desktop'
 }
 
-const submissionHighlightDurationMs = 1_400
+const submissionHighlightDurationMs = 5_000
 
 const pendingDelete = ref<null | {
   id: string
@@ -2096,6 +2165,16 @@ const unreadSubmissionCount = computed(() => {
   return submissionNotifications.value.filter((submission) => {
     return new Date(submission.createdAt).getTime() > lastSeenTime
   }).length
+})
+
+const highlightedSubmissionNotice = computed(() => {
+  if (!highlightedSubmissionId.value) {
+    return null
+  }
+
+  return submissionNotifications.value.find((submission) => {
+    return submission.id === highlightedSubmissionId.value
+  }) ?? null
 })
 
 const weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
@@ -2315,44 +2394,114 @@ const exportableConditions = computed((): ExportableCondition[] => {
     .sort((a, b) => a.label.localeCompare(b.label))
 })
 
-const hasMultipleExportConditions = computed(() => exportableConditions.value.length > 1)
 
-const pdfExportModalTitle = computed(() => {
-  if (pendingPdfExportKey.value) {
-    const condition = exportableConditions.value.find((item) => item.key === pendingPdfExportKey.value)
-    return condition?.label ? `Export ${condition.label} PDF` : 'Export condition PDF'
+const allExportConditionsSelected = computed(() => {
+  if (!exportableConditions.value.length) {
+    return false
   }
 
-  return hasMultipleExportConditions.value
-    ? 'Export all conditions PDF'
-    : 'Export symptom PDF'
+  return exportableConditions.value.every((condition) => (
+    selectedExportConditionKeys.value.includes(condition.key)
+  ))
 })
 
-const pdfExportMenuItems = computed(() => {
-  const conditions = exportableConditions.value
-
-  if (!conditions.length) {
-    return []
+const pdfExportDescription = computed(() => {
+  if (pdfExportType.value === 'cp-exam') {
+    return 'Compact reference from your logs — frequency per week, severity, functional impact, and notes exactly as you entered them.'
   }
 
-  const conditionItems = conditions.map((condition) => ({
-    label: `${condition.label} (${condition.entryCount})`,
-    onSelect: () => openPdfExportModal(condition.key)
-  }))
-
-  if (conditions.length <= 1) {
-    return conditionItems
-  }
-
-  return [
-    {
-      label: `All conditions (${savedEntries.value.length})`,
-      onSelect: () => openPdfExportModal(null)
-    },
-    { type: 'separator' as const },
-    ...conditionItems
-  ]
+  return 'Signed report with summary stats, charts, and your full entry log for VA records.'
 })
+
+const canConfirmPdfExport = computed(() => {
+  if (isExportingPdf.value || !selectedExportConditionKeys.value.length) {
+    return false
+  }
+
+  if (pdfExportType.value === 'full') {
+    return pdfExportAcknowledged.value
+  }
+
+  return true
+})
+
+const exportButtonLabel = computed(() => {
+  if (isExportingPdf.value) {
+    return 'Preparing...'
+  }
+
+  const count = selectedExportConditionKeys.value.length
+
+  if (pdfExportType.value === 'cp-exam') {
+    return count === 1 ? 'Download C&P prep sheet' : `Download C&P prep (${count} conditions)`
+  }
+
+  return count === 1 ? 'Download signed PDF' : `Download signed PDF (${count} conditions)`
+})
+
+function isExportConditionSelected(conditionKey: string) {
+  return selectedExportConditionKeys.value.includes(conditionKey)
+}
+
+function toggleExportCondition(conditionKey: string) {
+  if (isExportConditionSelected(conditionKey)) {
+    selectedExportConditionKeys.value = selectedExportConditionKeys.value.filter((key) => key !== conditionKey)
+    return
+  }
+
+  selectedExportConditionKeys.value = [...selectedExportConditionKeys.value, conditionKey]
+}
+
+function toggleAllExportConditions() {
+  if (allExportConditionsSelected.value) {
+    selectedExportConditionKeys.value = []
+    return
+  }
+
+  selectedExportConditionKeys.value = exportableConditions.value.map((condition) => condition.key)
+}
+
+function ensureExportConditionSelection() {
+  if (!exportableConditions.value.length) {
+    selectedExportConditionKeys.value = []
+    return
+  }
+
+  const validKeys = new Set(exportableConditions.value.map((condition) => condition.key))
+  const retained = selectedExportConditionKeys.value.filter((key) => validKeys.has(key))
+
+  selectedExportConditionKeys.value = retained.length
+    ? retained
+    : exportableConditions.value.map((condition) => condition.key)
+}
+
+function resolveExportEntries(conditionKeys: string[]) {
+  const keySet = new Set(conditionKeys)
+
+  return savedEntries.value.filter((entry) => {
+    const entryKey = entry.condition_key || conditionKey(entry.condition_label)
+    return keySet.has(entryKey)
+  })
+}
+
+function buildExportConditionLabel(conditionKeys: string[]) {
+  const selected = exportableConditions.value.filter((condition) => conditionKeys.includes(condition.key))
+
+  if (selected.length === 1) {
+    return selected[0].label
+  }
+
+  if (selected.length === exportableConditions.value.length) {
+    return null
+  }
+
+  return `${selected.length} conditions`
+}
+
+watch(exportableConditions, () => {
+  ensureExportConditionSelection()
+})
+
 const activeEntryImage = computed(() => {
   if (selectedSearchCondition.value?.image) {
     return selectedSearchCondition.value.image
@@ -2871,25 +3020,48 @@ function validateEntryDateTimeStep() {
   return true
 }
 
-async function exportEntriesPdf(exportConditionKey: string | null = null) {
+async function exportCpExamPdf(conditionKeys: string[]) {
   isExportingPdf.value = true
   exportError.value = ''
   exportNotice.value = ''
 
   try {
-    let entries = savedEntries.value
-    let conditionLabel: string | null = null
-
-    if (exportConditionKey) {
-      entries = savedEntries.value.filter((entry) => {
-        const entryKey = entry.condition_key || conditionKey(entry.condition_label)
-        return entryKey === exportConditionKey
-      })
-      conditionLabel = entries[0]?.condition_label || formatConditionKeyLabel(exportConditionKey)
-    }
+    const entries = resolveExportEntries(conditionKeys)
+    const conditionLabel = buildExportConditionLabel(conditionKeys)
 
     if (!entries.length) {
-      exportError.value = 'No entries found for that condition.'
+      exportError.value = 'No entries found for the selected conditions.'
+      return
+    }
+
+    const profile = await getProfile()
+    const veteranName = profile?.full_name?.trim()
+      || (typeof user.value?.user_metadata?.full_name === 'string'
+        ? user.value.user_metadata.full_name.trim()
+        : '')
+
+    await downloadCpExamPdf(entries, {
+      veteranName: veteranName || null,
+      conditionLabel
+    })
+  } catch (error) {
+    exportError.value = getErrorMessage(error)
+  } finally {
+    isExportingPdf.value = false
+  }
+}
+
+async function exportEntriesPdf(conditionKeys: string[]) {
+  isExportingPdf.value = true
+  exportError.value = ''
+  exportNotice.value = ''
+
+  try {
+    const entries = resolveExportEntries(conditionKeys)
+    const conditionLabel = buildExportConditionLabel(conditionKeys)
+
+    if (!entries.length) {
+      exportError.value = 'No entries found for the selected conditions.'
       return
     }
 
@@ -2919,35 +3091,18 @@ async function exportEntriesPdf(exportConditionKey: string | null = null) {
   }
 }
 
-function openPdfExportModal(exportConditionKey: string | null = null) {
+async function runPdfExport() {
+  if (!canConfirmPdfExport.value) {
+    return
+  }
+
   exportError.value = ''
   dismissMonthlyBackupReminder()
-  pendingPdfExportKey.value = exportConditionKey
-  pdfExportAcknowledged.value = false
-  isPdfExportModalOpen.value = true
-}
 
-function closePdfExportModal() {
-  if (isExportingPdf.value) {
-    return
-  }
-
-  isPdfExportModalOpen.value = false
-  pendingPdfExportKey.value = null
-  pdfExportAcknowledged.value = false
-}
-
-async function confirmPdfExport() {
-  if (!pdfExportAcknowledged.value || isExportingPdf.value) {
-    return
-  }
-
-  await exportEntriesPdf(pendingPdfExportKey.value)
-
-  if (!exportError.value) {
-    isPdfExportModalOpen.value = false
-    pendingPdfExportKey.value = null
-    pdfExportAcknowledged.value = false
+  if (pdfExportType.value === 'cp-exam') {
+    await exportCpExamPdf(selectedExportConditionKeys.value)
+  } else {
+    await exportEntriesPdf(selectedExportConditionKeys.value)
   }
 }
 
@@ -3123,7 +3278,7 @@ async function loadEntries() {
   try {
     const { listEntries } = useSymptomEntries()
     savedEntries.value = await listEntries()
-    updateSubmissionHighlights(savedEntries.value)
+    await updateSubmissionHighlights(savedEntries.value)
     refreshMonthlyBackupReminder()
     await refreshTrackedConditions()
   } catch (error) {
@@ -3150,7 +3305,7 @@ function loadSubmissionSeenState() {
     : ''
 }
 
-function updateSubmissionHighlights(entries: any[]) {
+async function updateSubmissionHighlights(entries: any[]) {
   loadSubmissionSeenState()
 
   const lastSeenTime = lastSeenSubmissionAt.value
@@ -3172,7 +3327,19 @@ function updateSubmissionHighlights(entries: any[]) {
   }
 
   highlightedSubmissionId.value = latestUnseenSubmission.id
+  activeHistoryTab.value = 'Entries'
+  const wasCollapsed = !historyExpanded.value
+  expandHistorySheet()
+  if (wasCollapsed) {
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, 420)
+    })
+  }
+  await scrollHistoryEntryIntoView(latestUnseenSubmission.id)
+  scheduleSubmissionHighlightClear()
+}
 
+function scheduleSubmissionHighlightClear() {
   if (submissionHighlightTimer) {
     clearTimeout(submissionHighlightTimer)
   }
@@ -3180,6 +3347,34 @@ function updateSubmissionHighlights(entries: any[]) {
   submissionHighlightTimer = setTimeout(() => {
     highlightedSubmissionId.value = null
   }, submissionHighlightDurationMs)
+}
+
+async function scrollHistoryEntryIntoView(entryId: string) {
+  await nextTick()
+
+  if (!import.meta.client) {
+    return
+  }
+
+  await new Promise<void>((resolve) => {
+    window.requestAnimationFrame(() => resolve())
+  })
+
+  const container = historyScrollEl.value
+  const entryElement = container?.querySelector(`[data-entry-id="${entryId}"]`) as HTMLElement | null
+
+  if (!container || !entryElement) {
+    return
+  }
+
+  const scrollTarget = entryElement.getBoundingClientRect().top
+    - container.getBoundingClientRect().top
+    + container.scrollTop
+
+  container.scrollTo({
+    top: Math.max(0, scrollTarget - 4),
+    behavior: 'smooth'
+  })
 }
 
 function markSubmissionsSeen() {
@@ -3212,26 +3407,17 @@ function closeSubmissionDropdown() {
 
 async function focusSubmission(entryId: string) {
   activeHistoryTab.value = 'Entries'
-  historyExpanded.value = true
+  const wasCollapsed = !historyExpanded.value
+  expandHistorySheet()
   isSubmissionDropdownOpen.value = false
   highlightedSubmissionId.value = entryId
-
-  if (submissionHighlightTimer) {
-    clearTimeout(submissionHighlightTimer)
+  scheduleSubmissionHighlightClear()
+  if (wasCollapsed) {
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, 420)
+    })
   }
-
-  submissionHighlightTimer = setTimeout(() => {
-    highlightedSubmissionId.value = null
-  }, submissionHighlightDurationMs)
-
-  await nextTick()
-
-  if (!import.meta.client) {
-    return
-  }
-
-  const entryElement = document.querySelector(`[data-entry-id="${entryId}"]`)
-  entryElement?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  await scrollHistoryEntryIntoView(entryId)
 }
 
 async function saveEntry() {
@@ -3766,6 +3952,10 @@ function selectHistoryTab(tab: string) {
     expandHistorySheet()
   }
 
+  if (tab === 'Export') {
+    ensureExportConditionSelection()
+  }
+
   activeHistoryTab.value = tab
 }
 
@@ -4024,13 +4214,15 @@ function handleHistoryTabSwipeEnd(event: TouchEvent) {
     return
   }
 
-  if (deltaX < 0 && activeHistoryTab.value === 'Entries') {
-    selectHistoryTab('Calendar')
+  const currentIndex = historyTabs.indexOf(activeHistoryTab.value)
+
+  if (deltaX < 0 && currentIndex < historyTabs.length - 1) {
+    selectHistoryTab(historyTabs[currentIndex + 1])
     return
   }
 
-  if (deltaX > 0 && activeHistoryTab.value === 'Calendar') {
-    selectHistoryTab('Entries')
+  if (deltaX > 0 && currentIndex > 0) {
+    selectHistoryTab(historyTabs[currentIndex - 1])
   }
 }
 
