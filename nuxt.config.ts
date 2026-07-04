@@ -86,13 +86,13 @@ export default defineNuxtConfig({
   },
   pwa: {
     registerType: 'autoUpdate',
-    includeAssets: ['vch-logo.png', 'apple-touch-icon.png', 'pwa-192.png', 'pwa-512.png'],
+    includeAssets: ['vch-logo.png', 'vch-shield-mark.png', 'apple-touch-icon.png', 'pwa-192.png', 'pwa-512.png', 'notification-badge.png'],
     workbox: {
       importScripts: ['/log-reminder-handlers.js']
     },
     manifest: {
-      name: 'Veteran Symptom Tracker',
-      short_name: 'Symptoms',
+      name: 'VCH Symptom Tracker',
+      short_name: 'VCH',
       description: 'A mobile-first symptom tracker for veterans to log symptoms and supporter observations.',
       theme_color: '#0f172a',
       background_color: '#020617',

@@ -13,6 +13,7 @@ import {
   writeLogReminderTimezone,
   type SymptomEntryLike
 } from '../utils/logReminders'
+import { PUSH_NOTIFICATION_BADGE, PUSH_NOTIFICATION_ICON } from '../utils/pushSubscription'
 import type { LoggingCadence } from '../utils/loggingCadence'
 
 export function useLogReminders() {
@@ -110,9 +111,9 @@ export function useLogReminders() {
 
     const options: NotificationOptions = {
       body,
-      icon: '/pwa-192.png',
-      badge: '/pwa-192.png',
-      tag: 'symptom-log-reminder',
+      icon: PUSH_NOTIFICATION_ICON,
+      badge: PUSH_NOTIFICATION_BADGE,
+      tag: PUSH_NOTIFICATION_TAG,
       data: { url: '/app' }
     }
 

@@ -296,7 +296,7 @@ export function buildLogReminderPayloads(input: {
 
     payloads.push({
       kind: 'daily',
-      title: 'Time to log symptoms',
+      title: 'VCH — Time to log symptoms',
       body: 'Add a quick entry while today is still fresh.',
       dedupeKey: `daily:${dateKey}`
     })
@@ -313,7 +313,7 @@ export function buildLogReminderPayloads(input: {
   if (today === dayBefore) {
     payloads.push({
       kind: 'weekly-eve',
-      title: 'Log day is tomorrow',
+      title: 'VCH — Log day is tomorrow',
       body: `You chose ${logDayLabel}s for weekly logging. Plan a few minutes tomorrow to capture the week.`,
       dedupeKey: `weekly-eve:${dateKey}`
     })
@@ -322,7 +322,7 @@ export function buildLogReminderPayloads(input: {
   if (today === input.weeklyLogDay && !loggedThisWeek) {
     payloads.push({
       kind: 'weekly-day',
-      title: 'Today is your log day',
+      title: 'VCH — Today is your log day',
       body: `It is ${logDayLabel}. Log once and capture the week together.`,
       dedupeKey: `weekly-day:${dateKey}`
     })
@@ -331,7 +331,7 @@ export function buildLogReminderPayloads(input: {
   if (today === dayAfter && !loggedThisWeek) {
     payloads.push({
       kind: 'weekly-followup',
-      title: 'Catch up on your weekly log',
+      title: 'VCH — Catch up on your weekly log',
       body: `You planned to log on ${logDayLabel}. Add an entry when you can while the week is still fresh.`,
       dedupeKey: `weekly-followup:${dateKey}`
     })
@@ -403,8 +403,8 @@ export function buildTestReminderPayload(
 
   return {
     kind: 'daily',
-    title: 'Test log reminder',
-    body: `Push test at ${timeLabel} — reminders are working.`,
+    title: 'VCH — Test log reminder',
+    body: `Push test at ${timeLabel}. Open the app to log an entry.`,
     dedupeKey: `test:${intervalMinutes}m:${bucket}`
   }
 }
