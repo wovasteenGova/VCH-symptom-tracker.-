@@ -173,7 +173,7 @@
             </div>
 
             <span
-              v-if="isLoadingEntitlements || !entitlementsLoaded"
+              v-if="!entitlementsLoaded"
               class="inline-flex shrink-0 items-center rounded-full bg-slate-800 px-3 py-1.5 ring-1 ring-slate-700"
               aria-hidden="true"
             >
@@ -195,7 +195,7 @@
             </span>
           </div>
 
-          <template v-if="entitlementsLoaded && !isLoadingEntitlements">
+          <template v-if="entitlementsLoaded">
           <p v-if="!isPro" class="mt-3 text-xs leading-5 text-slate-400">
             Free plan: 1 condition with unlimited entries, calendar logging charts, and entry PDFs with weekly symptom counts. Upgrade for {{ PRO_ANNUAL_PRICE_LABEL }} to unlock more conditions, family reporting, and severity trends in PDFs.
           </p>
@@ -883,7 +883,6 @@ const {
   canUseFamilyReporting,
   canTrackCondition,
   renewalLabel,
-  isLoading: isLoadingEntitlements,
   entitlementsLoaded,
   loadEntitlements
 } = useEntitlements()
@@ -1002,6 +1001,7 @@ const conditionOptions = [
   'Nerve / Radiculopathy',
   'Migraine / Headache',
   'IBS / Bowel Symptoms',
+  'GERD / Acid Reflux',
   'Sleep Issues'
 ]
 
@@ -1014,14 +1014,16 @@ const authMessage = ref('')
 const needsEmailConfirmation = ref(false)
 const isAuthSubmitting = ref(false)
 
-const profileForm = ref({
+// Cached across visits so the page renders instantly with the last known
+// data instead of flashing empty sections on every navigation.
+const profileForm = useState('profile-page-form', () => ({
   full_name: ''
-})
+}))
 const supporterForm = ref({
   link_label: '',
   visible_conditions: [] as string[]
 })
-const supporterProfiles = ref<any[]>([])
+const supporterProfiles = useState<any[]>('profile-page-supporters', () => [])
 const deletedEntries = ref<any[]>([])
 const createdLink = ref('')
 const createdLinkCopied = ref(false)
@@ -1029,7 +1031,8 @@ const linkedEntryId = ref<string | null>(null)
 const linkedEntryContext = ref<null | { summary: string, condition: string }>(null)
 const pageError = ref('')
 const isSavingProfile = ref(false)
-const profileInitialized = ref(false)
+const profileInitialized = useState('profile-page-initialized', () => false)
+const isHydratingProfile = ref(false)
 const autoSaveState = ref<'idle' | 'saving' | 'saved' | 'error'>('idle')
 const autoSaveLabel = computed(() => {
   if (autoSaveState.value === 'saving') {
@@ -1056,7 +1059,7 @@ const isCopyingSupporterId = ref<string | null>(null)
 const copiedSupporterId = ref<string | null>(null)
 const pendingPurgeEntry = ref<null | { id: string, title: string }>(null)
 const pendingDeleteSupporter = ref<null | { id: string, display_name: string }>(null)
-const activeLogCount = ref(0)
+const activeLogCount = useState('profile-page-log-count', () => 0)
 const isDeleteAllLogsModalOpen = ref(false)
 const deleteAllLogsPassword = ref('')
 const deleteAllLogsConfirmPhrase = ref('')
@@ -1109,6 +1112,9 @@ watch(user, (currentUser) => {
   } else {
     deletedEntries.value = []
     supporterProfiles.value = []
+    profileForm.value.full_name = ''
+    activeLogCount.value = 0
+    profileInitialized.value = false
   }
 })
 
@@ -1134,7 +1140,7 @@ function chooseLayoutMode(mode: TrackerLayoutMode) {
 
 async function loadProfilePage() {
   pageError.value = ''
-  profileInitialized.value = false
+  isHydratingProfile.value = true
   loadDeletedEntries()
 
   try {
@@ -1156,6 +1162,7 @@ async function loadProfilePage() {
     pageError.value = getErrorMessage(error)
   } finally {
     profileInitialized.value = true
+    isHydratingProfile.value = false
   }
 }
 
@@ -1178,7 +1185,7 @@ function markAutoSaveSaved() {
 }
 
 function scheduleProfileAutoSave() {
-  if (!user.value || !profileInitialized.value) {
+  if (!user.value || !profileInitialized.value || isHydratingProfile.value) {
     return
   }
 

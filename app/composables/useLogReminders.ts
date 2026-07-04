@@ -21,6 +21,10 @@ import {
 } from '../utils/pushSubscription'
 import type { LoggingCadence } from '../utils/loggingCadence'
 
+// Registered once per page load so multiple components using this composable
+// don't stack duplicate listeners.
+let permissionWatchersStarted = false
+
 export function useLogReminders() {
   const config = useRuntimeConfig()
   const {
@@ -32,9 +36,9 @@ export function useLogReminders() {
   const remindersEnabled = useState('log-reminders-enabled', () => readLogRemindersEnabled())
   const reminderHour = useState('log-reminder-hour', () => readLogReminderHour())
   const reminderTimezone = useState('log-reminder-timezone', () => readLogReminderTimezone())
-  const permissionState = ref<NotificationPermission | 'unsupported'>('default')
-  const pushBackendConfigured = ref<boolean | null>(null)
-  const hasRegisteredPushSubscription = ref<boolean | null>(null)
+  const permissionState = useState<NotificationPermission | 'unsupported'>('log-reminder-permission-state', () => 'default')
+  const pushBackendConfigured = useState<boolean | null>('log-reminder-push-configured', () => null)
+  const hasRegisteredPushSubscription = useState<boolean | null>('log-reminder-push-registered', () => null)
 
   function syncPermissionState() {
     if (!import.meta.client || typeof Notification === 'undefined') {
@@ -200,7 +204,14 @@ export function useLogReminders() {
 
     hasRegisteredPushSubscription.value = await hasActivePushSubscription()
 
-    if (!hasRegisteredPushSubscription.value) {
+    // The database + device permission are the source of truth: if this device
+    // holds an active registration and the OS allows notifications, reminders
+    // are really on (e.g. the user re-allowed them in device settings).
+    if (hasRegisteredPushSubscription.value) {
+      if (!remindersEnabled.value) {
+        setRemindersEnabled(true)
+      }
+    } else {
       setRemindersEnabled(false)
     }
   }
@@ -305,9 +316,39 @@ export function useLogReminders() {
     })
   }
 
+  function startPermissionWatchers() {
+    if (!import.meta.client || permissionWatchersStarted) {
+      return
+    }
+
+    permissionWatchersStarted = true
+
+    // Re-check whenever the user comes back to the app (e.g. after flipping
+    // notifications in Samsung/Android/iOS settings).
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        refreshPushReminderStatus()
+      }
+    })
+
+    // Some browsers fire this live when the OS/browser permission changes,
+    // without needing an app switch.
+    if ('permissions' in navigator && typeof navigator.permissions?.query === 'function') {
+      navigator.permissions
+        .query({ name: 'notifications' as PermissionName })
+        .then((status) => {
+          status.onchange = () => {
+            refreshPushReminderStatus()
+          }
+        })
+        .catch(() => undefined)
+    }
+  }
+
   onMounted(() => {
     syncPermissionState()
     refreshPushReminderStatus()
+    startPermissionWatchers()
 
     if (import.meta.client && !window.localStorage.getItem('symptom-tracker-log-reminder-timezone')) {
       setReminderTimezone(getBrowserTimezone())

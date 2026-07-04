@@ -5,6 +5,7 @@ export type ConditionCatalogEntry = {
   title: string
   category: string
   description: string
+  searchAliases?: readonly string[]
   vaFocus: readonly string[]
   tip: string
 }
@@ -101,13 +102,22 @@ const nerveTip =
   'Be specific about left vs. right and whether symptoms radiate down an arm or leg. That detail helps tie logs to your diagnosis.'
 
 const digestiveFocus = [
-  'Bowel urgency, diarrhea, constipation, abdominal pain, reflux, or nausea',
+  'Bowel urgency, diarrhea, constipation, abdominal pain, or nausea',
   'Food, medication, or bathroom-urgency triggers when you know them',
   'Sleep interruption, missed meals, avoided travel, or interrupted activities'
 ] as const
 
 const digestiveTip =
   'Bowel and stomach flares are easy to forget once the urgency passes. A quick log after eating, waking up, or needing the bathroom helps a lot.'
+
+const gerdFocus = [
+  'Heartburn, reflux, regurgitation, chest or throat burning, nausea, or trouble swallowing',
+  'Food, medication, stress, position, or sleep triggers when you know them',
+  'Sleep interruption, missed meals, avoided foods, or activity limits'
+] as const
+
+const gerdTip =
+  'Reflux symptoms can feel routine until they disrupt sleep, eating, or work. Log timing, triggers, medication used, and what you had to avoid.'
 
 const sleepFocus = [
   'Hours slept and how often you woke up',
@@ -275,9 +285,18 @@ export const conditionCatalogDefinitions: ConditionCatalogEntry[] = [
   {
     title: 'IBS / Bowel Symptoms',
     category: 'Digestive',
-    description: 'Bowel and stomach symptoms: abdominal pain, urgency, diarrhea, constipation, reflux, medication, and triggers.',
+    description: 'Bowel and stomach symptoms: abdominal pain, urgency, diarrhea, constipation, medication, and triggers.',
+    searchAliases: ['IBS', 'bowel symptoms', 'irritable bowel syndrome', 'diarrhea', 'constipation', 'stomach cramps', 'abdominal pain'],
     vaFocus: digestiveFocus,
     tip: digestiveTip
+  },
+  {
+    title: 'GERD / Acid Reflux',
+    category: 'Digestive',
+    description: 'Reflux, heartburn, regurgitation, throat burning, swallowing trouble, medication use, and food or sleep triggers.',
+    searchAliases: ['GERD', 'acid reflux', 'heartburn', 'reflux', 'regurgitation', 'esophagus', 'esophageal reflux', 'throat burning', 'difficulty swallowing'],
+    vaFocus: gerdFocus,
+    tip: gerdTip
   },
   {
     title: 'Asthma',
@@ -349,8 +368,136 @@ export type ConditionCatalogItem = ConditionCatalogEntry & {
   image: string
 }
 
+const conditionSearchAliasMap: Record<string, readonly string[]> = {
+  'Mental Health': [
+    'mental health', 'mood', 'stress', 'trauma', 'anger', 'irritability', 'isolation', 'avoidance',
+    'social withdrawal', 'concentration', 'memory', 'motivation', 'hygiene', 'suicidal thoughts',
+    'panic', 'anxiety', 'depression', 'nightmares', 'flashbacks'
+  ],
+  'Lower back pain': [
+    'back pain', 'low back', 'lower back', 'lumbar', 'spine', 'spinal pain', 'back flare',
+    'bending', 'lifting', 'sitting pain', 'standing pain', 'walking pain', 'back stiffness'
+  ],
+  PTSD: [
+    'post traumatic stress', 'post-traumatic stress', 'trauma', 'combat stress', 'military trauma',
+    'nightmares', 'flashbacks', 'hypervigilance', 'startle response', 'avoidance', 'anger',
+    'irritability', 'panic', 'isolation', 'crowds'
+  ],
+  Migraine: [
+    'migraines', 'head pain', 'severe headache', 'prostrating', 'aura', 'light sensitivity',
+    'sound sensitivity', 'nausea', 'vomiting', 'dark room', 'missed work'
+  ],
+  'Tension headaches': [
+    'headache', 'headaches', 'tension headache', 'head pressure', 'forehead pain', 'temple pain',
+    'neck headache', 'stress headache', 'band headache'
+  ],
+  Anxiety: [
+    'worry', 'anxious', 'nerves', 'fear', 'panic', 'racing thoughts', 'avoidance',
+    'social anxiety', 'restlessness', 'chest tightness', 'shortness of breath'
+  ],
+  'Neck pain': [
+    'cervical', 'neck stiffness', 'neck flare', 'range of motion', 'turning head',
+    'shoulder blade pain', 'radiating arm pain', 'neck spasm'
+  ],
+  Depression: [
+    'depressed', 'sadness', 'low mood', 'motivation', 'no energy', 'fatigue', 'hopeless',
+    'hygiene', 'isolation', 'sleep too much', 'not eating', 'loss of interest'
+  ],
+  'Knee conditions': [
+    'knee pain', 'knees', 'instability', 'buckling', 'swelling', 'stairs', 'standing',
+    'walking', 'squatting', 'kneeling', 'brace'
+  ],
+  'Panic attacks': [
+    'panic attack', 'panic', 'racing heart', 'heart pounding', 'shortness of breath',
+    'fear', 'sweating', 'shaking', 'dizzy', 'chest tightness', 'impending doom'
+  ],
+  'Vertigo / Dizziness': [
+    'vertigo', 'dizzy', 'dizziness', 'spinning', 'balance', 'falls', 'nausea',
+    'lightheaded', 'room spinning', 'unsteady'
+  ],
+  Seizures: [
+    'seizure', 'convulsion', 'blackout', 'loss of consciousness', 'aura', 'staring spells',
+    'postictal', 'confusion', 'witness', 'injury'
+  ],
+  'Insomnia / Sleep disturbances': [
+    'insomnia', 'sleep', 'can’t sleep', 'cannot sleep', 'waking up', 'wake ups',
+    'nightmares', 'restless', 'tired', 'fatigue', 'daytime sleepiness', 'poor sleep'
+  ],
+  'Shoulder conditions': [
+    'shoulder pain', 'rotator cuff', 'arm lift', 'overhead', 'range of motion',
+    'lifting', 'sleep on shoulder', 'shoulder stiffness'
+  ],
+  Arthritis: [
+    'joint pain', 'joint stiffness', 'degenerative arthritis', 'osteoarthritis',
+    'swelling', 'flare ups', 'limited motion', 'painful motion'
+  ],
+  Radiculopathy: [
+    'nerve pain', 'pinched nerve', 'radiating pain', 'shooting pain', 'numbness',
+    'tingling', 'burning', 'weakness', 'sciatic', 'arm numbness', 'leg numbness'
+  ],
+  Sciatica: [
+    'sciatic pain', 'sciatic nerve', 'leg pain', 'buttock pain', 'shooting leg pain',
+    'radiating down leg', 'numb leg', 'tingling leg', 'sitting pain'
+  ],
+  'Peripheral neuropathy': [
+    'neuropathy', 'feet numb', 'hands numb', 'numbness', 'tingling', 'burning feet',
+    'burning hands', 'pins and needles', 'balance', 'falls'
+  ],
+  'IBS / Bowel Symptoms': [
+    'IBS', 'bowel symptoms', 'irritable bowel syndrome', 'diarrhea', 'constipation',
+    'stomach cramps', 'abdominal pain', 'bathroom urgency', 'loose stool', 'bloating',
+    'gas', 'cramping', 'bowel movement'
+  ],
+  'GERD / Acid Reflux': [
+    'GERD', 'acid reflux', 'heartburn', 'reflux', 'regurgitation', 'esophagus',
+    'esophageal reflux', 'throat burning', 'difficulty swallowing', 'swallowing trouble',
+    'acid', 'stomach acid', 'burning chest', 'sour taste'
+  ],
+  Asthma: [
+    'asthma attack', 'wheezing', 'shortness of breath', 'inhaler', 'rescue inhaler',
+    'breathing', 'cough', 'chest tightness', 'exercise trigger'
+  ],
+  'Sleep apnea': [
+    'sleep apnea', 'CPAP', 'BiPAP', 'snoring', 'stopped breathing', 'daytime fatigue',
+    'morning headache', 'mask', 'sleep study', 'apnea'
+  ],
+  Sinusitis: [
+    'sinus', 'sinus infection', 'congestion', 'facial pain', 'facial pressure',
+    'headache', 'drainage', 'antibiotics', 'nasal discharge'
+  ],
+  Rhinitis: [
+    'runny nose', 'stuffy nose', 'nasal congestion', 'sneezing', 'allergies',
+    'post nasal drip', 'itchy nose', 'watery eyes'
+  ],
+  Eczema: [
+    'rash', 'itching', 'itchy skin', 'dry skin', 'skin flare', 'red skin',
+    'cracked skin', 'bleeding skin', 'cream', 'ointment'
+  ],
+  Psoriasis: [
+    'plaques', 'scales', 'scaly skin', 'rash', 'itching', 'skin patches',
+    'elbow rash', 'knee rash', 'flare'
+  ],
+  Dermatitis: [
+    'rash', 'contact dermatitis', 'skin irritation', 'itching', 'redness',
+    'burning skin', 'allergic skin', 'flare'
+  ],
+  Fibromyalgia: [
+    'fibro', 'widespread pain', 'body pain', 'tender points', 'fatigue',
+    'brain fog', 'flare', 'aches', 'chronic pain'
+  ],
+  'Chronic fatigue': [
+    'fatigue', 'exhaustion', 'tired', 'brain fog', 'post exertional malaise',
+    'PEM', 'crash', 'rest', 'low energy', 'chronic fatigue syndrome'
+  ]
+} as const
+
 export const conditionCatalog = conditionCatalogDefinitions.map((condition) => ({
   ...condition,
+  searchAliases: [
+    ...(conditionSearchAliasMap[condition.title] || []),
+    ...(condition.searchAliases || []),
+    ...condition.vaFocus
+  ],
   key: conditionKeyFromLabel(condition.title),
   image: getConditionImage(condition.title, condition.category)
 }))
@@ -360,9 +507,12 @@ export function getCatalogConditionByKey(key: string) {
 }
 
 const conditionKeyAliases: Record<string, string> = {
-  [conditionKeyFromLabel('GERD')]: conditionKeyFromLabel('IBS / Bowel Symptoms'),
+  [conditionKeyFromLabel('GERD')]: conditionKeyFromLabel('GERD / Acid Reflux'),
+  [conditionKeyFromLabel('Acid reflux')]: conditionKeyFromLabel('GERD / Acid Reflux'),
+  [conditionKeyFromLabel('Heartburn')]: conditionKeyFromLabel('GERD / Acid Reflux'),
+  [conditionKeyFromLabel('Reflux')]: conditionKeyFromLabel('GERD / Acid Reflux'),
   [conditionKeyFromLabel('IBS')]: conditionKeyFromLabel('IBS / Bowel Symptoms'),
-  [conditionKeyFromLabel('GERD / IBS')]: conditionKeyFromLabel('IBS / Bowel Symptoms'),
+  [conditionKeyFromLabel('GERD / IBS')]: conditionKeyFromLabel('GERD / Acid Reflux'),
   [conditionKeyFromLabel('Chronic diarrhea')]: conditionKeyFromLabel('IBS / Bowel Symptoms'),
   [conditionKeyFromLabel('Constipation')]: conditionKeyFromLabel('IBS / Bowel Symptoms')
 }

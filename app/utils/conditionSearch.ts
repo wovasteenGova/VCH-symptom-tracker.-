@@ -2,6 +2,7 @@ export type SearchableCondition = {
   title: string
   category: string
   description: string
+  searchAliases?: readonly string[]
 }
 
 function tokenize(text: string) {
@@ -23,6 +24,15 @@ function fieldMatchesToken(field: string, token: string) {
   return tokenize(field).some((word) => wordMatchesToken(word, token))
 }
 
+function fieldsFromCondition(condition: SearchableCondition) {
+  return [
+    condition.title,
+    condition.category,
+    condition.description,
+    ...(condition.searchAliases || [])
+  ]
+}
+
 function scoreTokenMatch(condition: SearchableCondition, token: string) {
   if (fieldMatchesToken(condition.title, token)) {
     let score = 100
@@ -36,6 +46,10 @@ function scoreTokenMatch(condition: SearchableCondition, token: string) {
 
   if (fieldMatchesToken(condition.category, token)) {
     return 50
+  }
+
+  if (condition.searchAliases?.some((alias) => fieldMatchesToken(alias, token))) {
+    return 70
   }
 
   if (fieldMatchesToken(condition.description, token)) {
@@ -68,6 +82,16 @@ export function scoreConditionSearch(condition: SearchableCondition, query: stri
 
   if (condition.title.toLowerCase().includes(normalizedQuery)) {
     totalScore += 30
+  }
+
+  for (const field of fieldsFromCondition(condition)) {
+    const normalizedField = field.toLowerCase()
+
+    if (normalizedField === normalizedQuery) {
+      totalScore += 80
+    } else if (normalizedField.includes(normalizedQuery)) {
+      totalScore += 35
+    }
   }
 
   return totalScore

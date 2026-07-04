@@ -101,10 +101,39 @@ export function usePushSubscriptions() {
       return false
     }
 
+    if (!import.meta.client || !('serviceWorker' in navigator)) {
+      return false
+    }
+
+    // "Registered" means THIS device: the browser holds a push subscription
+    // and that same endpoint is enabled in the database.
+    let endpoint: string | undefined
+
+    try {
+      const registration = await Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 4000))
+      ])
+
+      if (!registration) {
+        return false
+      }
+
+      const subscription = await registration.pushManager.getSubscription()
+      endpoint = subscription?.endpoint
+    } catch {
+      return false
+    }
+
+    if (!endpoint) {
+      return false
+    }
+
     const { count, error } = await trackerDb
       .from('push_subscriptions')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', authData.user.id)
+      .eq('endpoint', endpoint)
       .eq('enabled', true)
 
     if (error) {
@@ -140,18 +169,21 @@ export function usePushSubscriptions() {
     }
 
     const registration = await navigator.serviceWorker.ready
-    await registration.update().catch(() => undefined)
+    const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey)
     let subscription = await registration.pushManager.getSubscription()
 
-    if (subscription) {
+    // Reuse the existing browser subscription when it already uses the current
+    // VAPID key. Unsubscribe/resubscribe only on key mismatch, since that churn
+    // can transiently fail on some Android push services.
+    if (subscription && !subscriptionKeyMatches(subscription, applicationServerKey)) {
       await disablePushSubscription(subscription.endpoint)
       await subscription.unsubscribe().catch(() => false)
+      subscription = null
     }
 
-    subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
-    })
+    if (!subscription) {
+      subscription = await subscribeWithRetry(registration, applicationServerKey)
+    }
 
     await savePushSubscription(subscription.toJSON())
     await syncProfileReminderSettings({
@@ -169,6 +201,50 @@ export function usePushSubscriptions() {
     syncProfileReminderSettings,
     hasActivePushSubscription,
     subscribeToLogReminders
+  }
+}
+
+function subscriptionKeyMatches(subscription: PushSubscription, expectedKey: Uint8Array) {
+  const existingKey = subscription.options?.applicationServerKey
+
+  if (!existingKey) {
+    return false
+  }
+
+  const existing = new Uint8Array(existingKey)
+
+  if (existing.length !== expectedKey.length) {
+    return false
+  }
+
+  return existing.every((byte, index) => byte === expectedKey[index])
+}
+
+async function subscribeWithRetry(registration: ServiceWorkerRegistration, applicationServerKey: Uint8Array) {
+  try {
+    return await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey
+    })
+  } catch (firstError) {
+    // Push services occasionally fail transiently right after permission
+    // changes or an unsubscribe; one retry resolves most of those.
+    await new Promise((resolve) => setTimeout(resolve, 500))
+
+    try {
+      return await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey
+      })
+    } catch (secondError) {
+      const error = secondError instanceof Error ? secondError : firstError
+
+      throw new Error(
+        error instanceof Error && error.message
+          ? `Push registration failed: ${error.message}`
+          : 'Push registration failed on this device. Close and reopen the app, then try again.'
+      )
+    }
   }
 }
 

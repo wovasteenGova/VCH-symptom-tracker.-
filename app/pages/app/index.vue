@@ -2569,7 +2569,7 @@ const allExportConditionsSelected = computed(() => {
 
 const pdfExportDescription = computed(() => {
   if (pdfExportType.value === 'cp-exam') {
-    return 'Personal review summary from your logs — frequency, severity, functional impact, and topics you reported most often. Not for VA upload.'
+    return 'Designed to help you prepare for a C&P exam by summarizing patterns in your logs, including frequency, severity, functional impact, and recurring topics. For personal use only and not intended as medical, legal, or VA evidence.'
   }
 
   return 'Signed Veteran Symptom History Report with summary stats, logging consistency charts, and your full entry log.'
