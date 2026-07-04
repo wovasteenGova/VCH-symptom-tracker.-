@@ -39,10 +39,16 @@ export function useLogReminders() {
   function syncPermissionState() {
     if (!import.meta.client || typeof Notification === 'undefined') {
       permissionState.value = 'unsupported'
+      setRemindersEnabled(false)
       return
     }
 
     permissionState.value = Notification.permission
+
+    if (permissionState.value === 'denied') {
+      setRemindersEnabled(false)
+      hasRegisteredPushSubscription.value = false
+    }
   }
 
   async function requestReminderPermission() {
@@ -90,6 +96,8 @@ export function useLogReminders() {
     if (input?.log_reminders_enabled) {
       setRemindersEnabled(true)
     }
+
+    syncPermissionState()
   }
 
   async function persistReminderSettings(input?: {
@@ -180,13 +188,22 @@ export function useLogReminders() {
   async function refreshPushReminderStatus() {
     const publicKey = await resolveVapidPublicKey(String(config.public.vapidPublicKey || ''))
     pushBackendConfigured.value = Boolean(publicKey)
+    syncPermissionState()
 
-    if (!import.meta.client) {
+    if (!import.meta.client || permissionState.value !== 'granted') {
       hasRegisteredPushSubscription.value = null
+      if (permissionState.value === 'denied' || permissionState.value === 'unsupported') {
+        hasRegisteredPushSubscription.value = false
+        setRemindersEnabled(false)
+      }
       return
     }
 
     hasRegisteredPushSubscription.value = await hasActivePushSubscription()
+
+    if (!hasRegisteredPushSubscription.value) {
+      setRemindersEnabled(false)
+    }
   }
 
   async function enableRemindersWithPermission() {
@@ -194,10 +211,31 @@ export function useLogReminders() {
     const timezone = getBrowserTimezone()
 
     pushBackendConfigured.value = Boolean(publicKey)
+    syncPermissionState()
     setReminderTimezone(timezone)
 
     if (!reminderHour.value) {
       setReminderHour(defaultLogReminderSettings().hour)
+    }
+
+    if (permissionState.value === 'denied') {
+      setRemindersEnabled(false)
+      hasRegisteredPushSubscription.value = false
+
+      return {
+        ok: false as const,
+        reason: 'permission-denied' as const
+      }
+    }
+
+    if (permissionState.value === 'unsupported') {
+      setRemindersEnabled(false)
+      hasRegisteredPushSubscription.value = false
+
+      return {
+        ok: false as const,
+        reason: 'unsupported' as const
+      }
     }
 
     if (!publicKey) {

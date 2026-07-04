@@ -314,20 +314,20 @@
             Notifications are not supported in this browser.
           </p>
           <p v-else-if="logReminderPermissionState === 'denied'" class="mt-3 text-sm leading-6 text-amber-200">
-            Notifications are blocked. Enable them in your phone or browser settings, then try again.
+            Notifications are blocked for this app. Enable them in your phone or browser settings, then come back and tap Enable.
           </p>
           <p v-else-if="pushBackendConfigured === false" class="mt-3 text-sm leading-6 text-amber-200">
             Background push is not configured on the server yet (missing VAPID keys in Netlify). Reminders cannot reach this device until that is fixed.
           </p>
-          <p v-else-if="remindersEnabled && hasRegisteredPushSubscription === false" class="mt-3 text-sm leading-6 text-amber-200">
-            Reminders look enabled, but this device is not registered for push yet. Turn reminders off, then on again after allowing notifications.
+          <p v-else-if="hasRegisteredPushSubscription === false" class="mt-3 text-sm leading-6 text-amber-200">
+            This device is not registered for push reminders yet. Tap Enable after notifications are allowed.
           </p>
 
           <div class="mt-4 flex items-center justify-between gap-3 rounded-3xl border border-slate-700 bg-slate-800/50 px-4 py-4">
             <div>
               <p class="font-bold text-white">Log reminders</p>
               <p class="mt-1 text-sm text-slate-400">
-                {{ remindersEnabled ? 'On for this device' : 'Off' }}
+                {{ logReminderStatusLabel }}
               </p>
             </div>
             <button
@@ -338,7 +338,7 @@
                 : 'bg-slate-700 text-slate-200 ring-1 ring-slate-600'"
               @click="toggleLogReminders"
             >
-              {{ remindersEnabled ? 'On' : 'Enable' }}
+              {{ logReminderButtonLabel }}
             </button>
           </div>
 
@@ -916,6 +916,36 @@ const logReminderScheduleDescription = computed(() => {
 })
 
 const logReminderTimezoneLabel = computed(() => formatTimezoneLabel(reminderTimezone.value))
+const logReminderStatusLabel = computed(() => {
+  if (logReminderPermissionState.value === 'denied') {
+    return 'Blocked in phone/browser settings'
+  }
+
+  if (logReminderPermissionState.value === 'unsupported') {
+    return 'Not supported on this browser'
+  }
+
+  if (pushBackendConfigured.value === false) {
+    return 'Server setup needed'
+  }
+
+  if (hasRegisteredPushSubscription.value === false) {
+    return 'Needs setup on this device'
+  }
+
+  return remindersEnabled.value ? 'On for this device' : 'Off'
+})
+const logReminderButtonLabel = computed(() => {
+  if (remindersEnabled.value && hasRegisteredPushSubscription.value) {
+    return 'On'
+  }
+
+  if (logReminderPermissionState.value === 'denied') {
+    return 'Blocked'
+  }
+
+  return 'Enable'
+})
 const { layoutMode, setLayoutMode } = useTrackerLayout()
 
 const layoutOptions: Array<{ value: TrackerLayoutMode, label: string, copy: string }> = [
@@ -1220,6 +1250,22 @@ async function toggleLogReminders() {
   if (result.reason === 'missing-vapid') {
     showSubmissionToast({
       message: 'Push reminders are not configured on the server yet. Add VAPID keys in Netlify, redeploy, then try again.',
+      tone: 'error'
+    })
+    return
+  }
+
+  if (result.reason === 'permission-denied') {
+    showSubmissionToast({
+      message: 'Notifications are blocked for this app. Enable them in phone or browser settings, then tap Enable again.',
+      tone: 'error'
+    })
+    return
+  }
+
+  if (result.reason === 'unsupported') {
+    showSubmissionToast({
+      message: 'Notifications are not supported in this browser.',
       tone: 'error'
     })
     return
@@ -1605,11 +1651,11 @@ async function handleGoogleSignIn() {
   authMessage.value = ''
 
   try {
-    if (import.meta.client) {
-      window.sessionStorage.setItem('symptom-tracker-auth-success', 'google')
-    }
     await signInWithGoogle()
   } catch {
+    if (import.meta.client) {
+      window.sessionStorage.removeItem('symptom-tracker-auth-success')
+    }
     authMessage.value = authError.value || 'Could not sign in with Google.'
   } finally {
     isAuthSubmitting.value = false

@@ -10,6 +10,7 @@
 import { onMounted, onUnmounted } from 'vue'
 
 const { showSubmissionToast } = useSubmissionToast()
+const supabase = useSupabaseClient()
 
 function updateAppHeight() {
   if (typeof window === 'undefined') {
@@ -20,11 +21,16 @@ function updateAppHeight() {
   document.documentElement.style.setProperty('--app-height', `${Math.round(viewportHeight)}px`)
 }
 
-onMounted(() => {
+onMounted(async () => {
   updateAppHeight()
   if (import.meta.client && window.sessionStorage.getItem('symptom-tracker-auth-success')) {
     window.sessionStorage.removeItem('symptom-tracker-auth-success')
-    showSubmissionToast('Signed in.')
+
+    const { data } = await supabase.auth.getSession()
+
+    if (data.session) {
+      showSubmissionToast('Signed in.')
+    }
   }
   window.addEventListener('resize', updateAppHeight)
   window.addEventListener('orientationchange', updateAppHeight)

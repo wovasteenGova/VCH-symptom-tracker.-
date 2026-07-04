@@ -41,6 +41,18 @@
               class="header-color-toggle"
             />
 
+            <button
+              v-if="notificationNeedsAttention"
+              type="button"
+              class="relative grid size-10 place-items-center rounded-full bg-amber-100 text-amber-700 shadow-sm ring-1 ring-amber-300/70 transition hover:bg-amber-200 dark:bg-amber-950/60 dark:text-amber-200 dark:ring-amber-700/70 dark:hover:bg-amber-900"
+              :aria-label="notificationAttentionLabel"
+              :title="notificationAttentionLabel"
+              @click="handleNotificationStatusClick"
+            >
+              <UIcon name="i-lucide-bell-off" class="size-5" />
+              <span class="absolute -right-0.5 -top-0.5 grid size-3 place-items-center rounded-full bg-amber-400 ring-2 ring-slate-50 dark:ring-slate-950" aria-hidden="true" />
+            </button>
+
             <div v-if="user" class="relative">
               <button
                 type="button"
@@ -1918,6 +1930,10 @@ const homeVisitTip = ref<{ title: string, text: string } | null>(null)
 const isHomeTipsOverlayOpen = ref(false)
 const homeVisitTips = computed(() => buildHomeVisitTips(homeConditions.value))
 const {
+  remindersEnabled,
+  permissionState: logReminderPermissionState,
+  pushBackendConfigured,
+  hasRegisteredPushSubscription,
   runLogReminderCheck,
   hydrateReminderSettings,
   persistReminderSettings,
@@ -1926,6 +1942,33 @@ const {
 const homeSortUsesEntryDates = ref(false)
 const { isDesktopLayout, isMobileLayout, isEmbeddedPreview } = useTrackerLayout()
 const isEmbedProfileOpen = ref(false)
+
+const notificationNeedsAttention = computed(() => {
+  if (!user.value || logReminderPermissionState.value === 'unsupported') {
+    return false
+  }
+
+  return !remindersEnabled.value
+    || logReminderPermissionState.value !== 'granted'
+    || pushBackendConfigured.value === false
+    || hasRegisteredPushSubscription.value === false
+})
+
+const notificationAttentionLabel = computed(() => {
+  if (logReminderPermissionState.value === 'denied') {
+    return 'Notifications are blocked. Open profile to enable them.'
+  }
+
+  if (pushBackendConfigured.value === false) {
+    return 'Notification server setup is missing. Open profile.'
+  }
+
+  if (hasRegisteredPushSubscription.value === false) {
+    return 'Notifications need setup on this device. Open profile.'
+  }
+
+  return 'Notifications are off. Open profile to enable reminders.'
+})
 
 function closeEmbedProfile() {
   isEmbedProfileOpen.value = false
@@ -4051,11 +4094,11 @@ async function handleGoogleSignIn() {
   authMessage.value = ''
 
   try {
-    if (import.meta.client) {
-      window.sessionStorage.setItem('symptom-tracker-auth-success', 'google')
-    }
     await signInWithGoogle()
   } catch {
+    if (import.meta.client) {
+      window.sessionStorage.removeItem('symptom-tracker-auth-success')
+    }
     authMessage.value = authError.value || 'Could not sign in. Check your email and password.'
   } finally {
     isAuthSubmitting.value = false
@@ -4764,6 +4807,20 @@ function handleProfileClick() {
   }
 
   toggleAuthPanel()
+}
+
+function handleNotificationStatusClick() {
+  if (!user.value) {
+    toggleAuthPanel()
+    return
+  }
+
+  if (isEmbeddedPreview) {
+    openEmbedProfile()
+    return
+  }
+
+  router.push('/profile')
 }
 
 function openEntryForEdit(entryId: string) {

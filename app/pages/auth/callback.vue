@@ -63,6 +63,7 @@ onMounted(async () => {
     }
 
     status.value = 'success'
+    window.sessionStorage.setItem('symptom-tracker-auth-success', '1')
 
     window.setTimeout(() => {
       router.push('/app')
