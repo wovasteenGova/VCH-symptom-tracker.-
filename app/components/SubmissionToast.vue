@@ -4,11 +4,11 @@
     aria-live="polite"
     aria-atomic="true"
   >
-    <Transition name="submission-toast">
+    <Transition name="submission-toast" mode="out-in">
       <div
         v-if="activeToast"
         :key="toastKey"
-        class="pointer-events-auto flex w-full max-w-sm items-center gap-3 rounded-2xl border px-4 py-3 shadow-xl shadow-emerald-950/10 backdrop-blur-sm"
+        class="submission-toast-panel pointer-events-auto flex w-full max-w-sm shrink-0 items-center gap-3 rounded-2xl border px-4 py-3 shadow-xl shadow-emerald-950/10 backdrop-blur-sm md:w-sm"
         :class="activeToast.tone === 'error'
           ? 'border-red-300/80 bg-red-50/95 text-red-950 dark:border-red-800/70 dark:bg-red-950/90 dark:text-red-100'
           : 'border-emerald-300/80 bg-emerald-50/95 text-emerald-950 dark:border-emerald-700/70 dark:bg-emerald-950/90 dark:text-emerald-100'"
@@ -64,6 +64,16 @@ const { activeToast, toastKey, clearSubmissionToast } = useSubmissionToast()
     bottom: auto;
     justify-content: flex-end;
     padding-right: 1.5rem;
+  }
+}
+
+.submission-toast-panel {
+  transform-origin: top center;
+}
+
+@media (min-width: 768px) {
+  .submission-toast-panel {
+    transform-origin: top right;
   }
 }
 

@@ -16,7 +16,7 @@
         class="grid size-[7.5rem] place-items-center bg-slate-100 dark:bg-slate-800"
         aria-hidden="true"
       >
-        <UIcon name="i-lucide-loader-circle" class="size-6 animate-spin text-slate-400" />
+        <VchLoader :width="64" />
       </div>
     </div>
     <div class="min-w-0">

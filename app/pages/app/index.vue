@@ -203,7 +203,7 @@
         leave-to-class="opacity-0"
       >
         <div
-          v-if="isAuthPanelOpen"
+          v-if="isAuthPanelOpen && !isAuthLoading"
           class="fixed inset-0 z-50 overflow-y-auto overscroll-y-contain bg-slate-200/70 backdrop-blur-sm dark:bg-slate-950/70"
           @click.self="isAuthPanelOpen = false"
         >
@@ -380,10 +380,10 @@
       <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
         <Transition
           mode="out-in"
-          enter-active-class="transition duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+          enter-active-class="transition duration-[550ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
           enter-from-class="translate-y-6 opacity-0"
           enter-to-class="translate-y-0 opacity-100"
-          leave-active-class="transition duration-350 ease-[cubic-bezier(0.55,0,1,0.45)]"
+          leave-active-class="transition duration-[450ms] ease-[cubic-bezier(0.55,0,1,0.45)]"
           leave-from-class="translate-y-0 opacity-100"
           leave-to-class="translate-y-4 opacity-0"
         >
@@ -858,209 +858,241 @@
             class="mt-2 flex min-h-0 flex-1 flex-col gap-2 overflow-hidden"
           >
         <div
-          class="flex min-h-0 flex-col px-4 transition-[flex] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+          class="flex min-h-0 flex-col px-4 transition-[flex] duration-[550ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
           :class="carouselWorkspaceClass"
           @wheel.passive="handleConditionWheel"
-          @touchstart.passive="handleConditionTouchStart"
+          @touchstart.passive="handleConditionSwipeStart"
           @touchmove.passive="handleConditionTouchMove"
+          @touchend="handleConditionSwipeEnd"
         >
-          <div class="relative flex min-h-0 flex-1 flex-col">
+          <div
+            class="relative flex min-h-0 flex-1 flex-col"
+            :style="homeTransitionStyleVars"
+          >
             <div
               class="relative min-h-0 w-full flex-1 overflow-hidden rounded-[1.75rem]"
-              @touchstart.passive="handleConditionSwipeStart"
-              @touchend="handleConditionSwipeEnd"
             >
-              <ConditionBrowser
-                v-if="showConditionBrowser"
-                class="absolute inset-0 z-20 bg-slate-50 dark:bg-slate-950"
-                :mode="needsOnboarding ? 'onboarding' : 'manage'"
-                :conditions="conditionPickerOptions"
-                :selected-keys="draftSelectedKeys"
-                :locked-keys="[]"
-                :show-pro-limit="false"
-                :saving="isSavingTrackedConditions"
-                :error="trackedConditionsError"
-                @toggle="toggleDraftCondition"
-                @confirm="confirmConditionOnboarding"
-                @done="finishConditionBrowser"
-              />
+              <Transition name="home-state-fade">
+                <ConditionBrowser
+                  v-if="showConditionBrowser"
+                  key="condition-browser"
+                  class="absolute inset-0 z-20 bg-slate-50 dark:bg-slate-950"
+                  :mode="needsOnboarding ? 'onboarding' : 'manage'"
+                  :conditions="conditionPickerOptions"
+                  :selected-keys="draftSelectedKeys"
+                  :locked-keys="[]"
+                  :show-pro-limit="false"
+                  :saving="isSavingTrackedConditions"
+                  :error="trackedConditionsError"
+                  @toggle="toggleDraftCondition"
+                  @confirm="confirmConditionOnboarding"
+                  @done="finishConditionBrowser"
+                />
 
-              <template v-else-if="homeConditions.length">
-                <Transition
-                  :enter-active-class="slideEnterActiveClass"
-                  :enter-from-class="slideEnterFromClass"
-                  enter-to-class="translate-y-0 opacity-100"
-                  :leave-active-class="slideLeaveActiveClass"
-                  leave-from-class="translate-y-0 opacity-100"
-                  :leave-to-class="slideLeaveToClass"
+                <div
+                  v-else-if="homeConditions.length"
+                  key="home-carousel"
+                  ref="homeCarouselStageEl"
+                  class="home-carousel-stage absolute inset-0 flex min-h-0 flex-col overflow-hidden bg-slate-50 dark:bg-slate-950"
+                  :class="[
+                    isHomeOverviewSlide ? 'is-overview justify-start' : 'is-condition',
+                    homeSharedTransitionActive ? 'is-shared-transition' : '',
+                    homeSharedTransitionActive ? `is-shared-${transitionDirection}` : ''
+                  ]"
                 >
-                  <div
-                    :key="isHomeOverviewSlide ? 'home-overview' : activeCondition.key"
-                    class="absolute inset-0"
-                  >
-                    <div
-                      v-if="isHomeOverviewSlide"
-                      class="flex h-full min-h-0 flex-col overflow-hidden bg-slate-50 dark:bg-slate-950"
+                <div ref="homeCarouselHeroEl" class="home-carousel-hero relative shrink-0 overflow-hidden">
+                  <Transition :name="heroSlideTransitionName">
+                    <img
+                      :key="`${activeIndex}-${activeCondition.key}`"
+                      :src="activeCondition.image"
+                      :alt="activeCondition.title"
+                      class="absolute inset-0 h-full w-full object-cover"
+                      :class="homeImageTransitionKey === activeCondition.key ? 'opacity-0' : ''"
                     >
-                      <div class="shrink-0 px-4 pt-2 pb-5">
-                        <div class="flex items-center justify-between gap-2">
-                          <h2 class="text-lg font-bold text-slate-950 dark:text-white">
-                            Your conditions
-                          </h2>
-                          <div class="flex shrink-0 items-center gap-2">
-                            <span class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-                              {{ trackedConditionCount }} picked
-                            </span>
-                            <button
-                              type="button"
-                              class="rounded-full bg-slate-950 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
-                              @click.stop="openConditionBrowser"
-                            >
-                              All conditions
-                            </button>
-                          </div>
-                        </div>
-                      </div>
+                  </Transition>
 
-                      <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
-                        <div
-                          data-home-conditions-scroll
-                          class="no-scrollbar min-h-0 flex-1 overflow-y-auto px-2 pt-4"
-                          @scroll="handleConditionScroll"
+                  <div class="home-carousel-hero-title pointer-events-none absolute inset-x-0 top-0 bg-linear-to-b from-black/70 via-black/20 to-transparent p-5 pb-10">
+                    <h2 class="text-2xl font-bold text-white">
+                      {{ activeCondition.title }}
+                    </h2>
+                  </div>
+
+                  <button
+                    v-if="!isHomeOverviewSlide"
+                    type="button"
+                    class="absolute inset-0 z-10"
+                    :class="isConditionSlideEntryEnabled ? 'cursor-pointer' : 'pointer-events-none'"
+                    :tabindex="isConditionSlideEntryEnabled ? 0 : -1"
+                    :aria-label="`Log ${activeCondition.title} entry`"
+                    @click="startEntryFromCurrentSlide"
+                    @keydown.enter.prevent="startEntryFromCurrentSlide"
+                    @keydown.space.prevent="startEntryFromCurrentSlide"
+                  />
+                </div>
+
+                <div ref="homeCarouselOverviewEl" class="home-carousel-overview flex min-h-0 flex-col overflow-hidden">
+                  <div data-home-overview-header class="shrink-0 px-4 pt-2 pb-3">
+                    <div class="flex items-center justify-between gap-2">
+                      <h2 class="text-lg font-bold text-slate-950 dark:text-white">
+                        Your conditions
+                      </h2>
+                      <div class="flex shrink-0 items-center gap-2">
+                        <span class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+                          {{ trackedConditionCount }} picked
+                        </span>
+                        <button
+                          type="button"
+                          class="rounded-full bg-slate-950 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+                          @click.stop="openConditionBrowser"
                         >
-                          <div class="space-y-1">
-                            <button
-                              v-for="condition in homeConditions"
-                              :key="condition.key"
-                              type="button"
-                              class="flex w-full items-center gap-3 rounded-2xl px-2 py-3 text-left transition hover:bg-slate-100 active:scale-[0.995] dark:hover:bg-slate-800/80"
-                              @click="logHomeCondition(condition)"
-                            >
-                              <img
-                                :src="condition.image"
-                                :alt="condition.title"
-                                class="size-16 shrink-0 rounded-2xl object-cover"
-                              >
-
-                              <span class="min-w-0 flex-1">
-                                <span class="block text-lg font-bold leading-snug text-slate-950 dark:text-white">
-                                  {{ condition.title }}
-                                </span>
-                                <span class="mt-1 block text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-                                  {{ condition.category }}
-                                </span>
-                              </span>
-
-                              <UIcon
-                                v-if="isConditionLogLocked(condition.key)"
-                                name="i-lucide-lock"
-                                class="size-5 shrink-0 text-amber-600 dark:text-amber-300"
-                                aria-hidden="true"
-                              />
-                              <UIcon
-                                v-else
-                                name="i-lucide-chevron-right"
-                                class="size-5 shrink-0 text-slate-400 dark:text-slate-500"
-                                aria-hidden="true"
-                              />
-                            </button>
-                          </div>
-
-                          <!-- Overview only: dots → tip → crisis stay in scroll under conditions. DO NOT move to footer. -->
-                          <div class="mt-8 px-2 pb-1">
-                            <div class="flex justify-center gap-2">
-                              <button
-                                v-for="slideIndex in homeCarouselSlideCount"
-                                :key="`overview-dot-${slideIndex - 1}`"
-                                type="button"
-                                class="h-2 rounded-full transition-all"
-                                :class="[
-                                  slideIndex - 1 === activeIndex ? 'w-7 bg-slate-950 dark:bg-white' : 'w-2 bg-slate-300 dark:bg-slate-600'
-                                ]"
-                                :aria-label="slideIndex === 1 ? 'Show your conditions overview' : `Show ${homeConditions[slideIndex - 2]?.title}`"
-                                @click="showSlide(slideIndex - 1)"
-                              />
-                            </div>
-
-                            <div v-if="homeVisitTip" class="mt-6">
-                              <Transition name="home-tip" mode="out-in">
-                                <HomeVisitTipCard
-                                  :key="`${homeVisitTip.title}-${homeVisitTip.text}`"
-                                  :tip="homeVisitTip"
-                                  @show-all="isHomeTipsOverlayOpen = true"
-                                />
-                              </Transition>
-                            </div>
-
-                            <p class="mt-3 text-xs leading-5 text-slate-500 dark:text-slate-400">
-                              {{ VA_CRISIS_LINE_SHORT }}
-                            </p>
-                          </div>
-                        </div>
+                          All conditions
+                        </button>
                       </div>
                     </div>
+                  </div>
 
-                    <template v-else>
-                      <div
-                        class="absolute inset-0"
-                        :class="isConditionSlideEntryEnabled ? 'cursor-pointer' : 'pointer-events-none'"
-                        :role="isConditionSlideEntryEnabled ? 'button' : undefined"
-                        :tabindex="isConditionSlideEntryEnabled ? 0 : -1"
-                        :aria-label="`Log ${activeCondition.title} entry`"
-                        @click="startEntryFromCurrentSlide"
-                        @keydown.enter.prevent="startEntryFromCurrentSlide"
-                        @keydown.space.prevent="startEntryFromCurrentSlide"
+                  <div
+                    data-home-conditions-scroll
+                    class="no-scrollbar max-h-[min(18rem,42vh)] overflow-y-auto px-2 pb-0"
+                    @scroll="handleConditionScroll"
+                  >
+                    <div class="space-y-1">
+                      <button
+                        v-for="condition in homeConditions"
+                        :key="condition.key"
+                        type="button"
+                        class="flex w-full items-center gap-3 rounded-2xl px-2 py-3 text-left transition hover:bg-slate-100 active:scale-[0.995] dark:hover:bg-slate-800/80"
+                        @click="logHomeCondition(condition)"
                       >
                         <img
-                          :src="activeCondition.image"
-                          :alt="activeCondition.title"
-                          class="h-full w-full object-cover"
+                          :ref="(el) => setHomeConditionImageRef(condition.key, el)"
+                          :src="condition.image"
+                          :alt="condition.title"
+                          class="size-16 shrink-0 rounded-2xl object-cover"
+                          :class="homeImageTransitionKey === condition.key ? 'opacity-0' : ''"
                         >
 
-                        <div class="pointer-events-none absolute inset-x-0 top-0 bg-linear-to-b from-black/70 via-black/20 to-transparent p-5 pb-10">
-                          <h2 class="text-2xl font-bold text-white">{{ activeCondition.title }}</h2>
-                        </div>
-                      </div>
-                    </template>
+                        <span class="min-w-0 flex-1">
+                          <span class="block text-lg font-bold leading-snug text-slate-950 dark:text-white">
+                            {{ condition.title }}
+                          </span>
+                          <span class="mt-1 block text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+                            {{ condition.category }}
+                          </span>
+                        </span>
+
+                        <span
+                          v-if="!entitlementsLoaded"
+                          class="size-5 shrink-0 animate-pulse rounded-full bg-slate-300 dark:bg-slate-600"
+                          aria-hidden="true"
+                        />
+                        <UIcon
+                          v-else-if="isConditionLogLocked(condition.key)"
+                          name="i-lucide-lock"
+                          class="size-5 shrink-0 text-amber-600 dark:text-amber-300"
+                          aria-hidden="true"
+                        />
+                        <UIcon
+                          v-else
+                          name="i-lucide-chevron-right"
+                          class="size-5 shrink-0 text-slate-400 dark:text-slate-500"
+                          aria-hidden="true"
+                        />
+                      </button>
+                    </div>
                   </div>
-                </Transition>
-              </template>
+                </div>
+
+                <!-- Dots → tip → crisis: grid row under list (overview) or under hero (slideshow). DO NOT move to footer. -->
+                <div
+                  data-home-carousel-chrome
+                  class="home-carousel-chrome shrink-0 px-2 pb-1"
+                  :class="{ 'is-chrome-retreat': homeChromeRetreat }"
+                >
+                  <div class="flex justify-center gap-2">
+                    <button
+                      v-for="slideIndex in homeCarouselSlideCount"
+                      :key="`chrome-dot-${slideIndex - 1}`"
+                      type="button"
+                      class="home-carousel-dot h-2 rounded-full"
+                      :class="[
+                        slideIndex - 1 === activeIndex ? 'w-7 bg-slate-950 dark:bg-white' : 'w-2 bg-slate-300 dark:bg-slate-600'
+                      ]"
+                      :aria-label="slideIndex === 1 ? 'Show your conditions overview' : `Show ${homeConditions[slideIndex - 2]?.title}`"
+                      @click="showSlide(slideIndex - 1)"
+                    />
+                  </div>
+
+                  <div v-if="homeVisitTip" class="mt-3">
+                    <Transition name="home-tip-fade" mode="out-in">
+                      <HomeVisitTipCard
+                        :key="`${homeVisitTip.title}-${homeVisitTip.text}`"
+                        :tip="homeVisitTip"
+                        @show-all="isHomeTipsOverlayOpen = true"
+                      />
+                    </Transition>
+                  </div>
+
+                  <p class="mt-3 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                    {{ VA_CRISIS_LINE_SHORT }}
+                  </p>
+                </div>
+
+                <img
+                  v-if="homeImageTransitionKey"
+                  :src="homeImageTransitionImage"
+                  :alt="homeImageTransitionAlt"
+                  class="home-image-transition fixed z-[80] object-cover"
+                  :style="homeImageTransitionStyle"
+                  aria-hidden="true"
+                >
+              </div>
+
+                <div
+                  v-else-if="!showConditionBrowser && hasLoadedTrackedConditions"
+                  key="empty-conditions"
+                  class="absolute inset-0 z-10 flex flex-col bg-slate-50 dark:bg-slate-950"
+                >
+                  <div class="flex min-h-0 flex-1 flex-col items-center justify-center px-6 text-center">
+                    <h2 class="text-xl font-bold text-slate-950 dark:text-white">
+                      No conditions on your home screen
+                    </h2>
+                    <p class="mt-2 max-w-xs text-sm leading-6 text-slate-600 dark:text-slate-300">
+                      Tap conditions below to add them to your home screen.
+                    </p>
+                    <button
+                      type="button"
+                      class="mt-5 rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+                      @click="openConditionBrowser"
+                    >
+                      Browse conditions
+                    </button>
+                  </div>
+                </div>
+              </Transition>
             </div>
 
             <div
               v-if="homeConditions.length && !showConditionBrowser"
-              class="shrink-0 pt-3"
+              class="home-carousel-footer shrink-0 pt-3"
             >
-              <!-- Condition slides only: dots → tip → crisis below the image. Overview chrome stays in scroll above. -->
-              <template v-if="!isHomeOverviewSlide">
-                <div class="flex justify-center gap-2">
+              <Transition name="home-log-btn">
+                <div
+                  v-if="!isDesktopLayout && !isHomeOverviewSlide"
+                  key="condition-log-btn"
+                  class="mt-4 flex w-full justify-center"
+                >
                   <button
-                    v-for="slideIndex in homeCarouselSlideCount"
-                    :key="slideIndex - 1"
                     type="button"
-                    class="h-2 rounded-full transition-all"
-                    :class="[
-                      slideIndex - 1 === activeIndex ? 'w-7 bg-slate-950 dark:bg-white' : 'w-2 bg-slate-300 dark:bg-slate-600'
-                    ]"
-                    :aria-label="slideIndex === 1 ? 'Show your conditions overview' : `Show ${homeConditions[slideIndex - 2]?.title}`"
-                    @click="showSlide(slideIndex - 1)"
-                  />
+                    class="flex w-full max-w-xs items-center justify-center gap-2 rounded-full bg-slate-950 px-6 py-3.5 text-base font-bold text-white shadow-xl transition active:scale-[0.98] dark:bg-white dark:text-slate-950"
+                    :aria-label="`Log ${activeCondition.title} entry`"
+                    @click="startEntryFromCurrentSlide"
+                  >
+                    <UIcon name="i-lucide-plus" class="size-5" />
+                    Log {{ activeCondition.title }}
+                  </button>
                 </div>
-
-                <div v-if="homeVisitTip" class="mt-6">
-                  <Transition name="home-tip" mode="out-in">
-                    <HomeVisitTipCard
-                      :key="`${homeVisitTip.title}-${homeVisitTip.text}`"
-                      :tip="homeVisitTip"
-                      @show-all="isHomeTipsOverlayOpen = true"
-                    />
-                  </Transition>
-                </div>
-
-                <p class="mt-3 text-xs leading-5 text-slate-500 dark:text-slate-400">
-                  {{ VA_CRISIS_LINE_SHORT }}
-                </p>
-              </template>
+              </Transition>
 
               <div
                 v-if="isDesktopLayout && !historyExpanded"
@@ -1106,24 +1138,12 @@
                 </button>
               </div>
 
-              <div v-else-if="!isHomeOverviewSlide" class="mt-4 flex w-full justify-center">
-                <button
-                  type="button"
-                  class="flex w-full max-w-xs items-center justify-center gap-2 rounded-full bg-slate-950 px-6 py-3.5 text-base font-bold text-white shadow-xl transition active:scale-[0.98] dark:bg-white dark:text-slate-950"
-                  :aria-label="`Log ${activeCondition.title} entry`"
-                  @click="startEntryFromCurrentSlide"
-                >
-                  <UIcon name="i-lucide-plus" class="size-5" />
-                  Log {{ activeCondition.title }}
-                </button>
-              </div>
-
             </div>
           </div>
         </div>
 
         <section
-          class="flex min-h-0 flex-col overflow-hidden rounded-t-[1.75rem] border-t border-slate-200/80 bg-white transition-[flex,height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] dark:border-slate-800 dark:bg-slate-900"
+          class="flex min-h-0 flex-col overflow-hidden rounded-t-[1.75rem] border-t border-slate-200/80 bg-white transition-[flex,height] duration-[550ms] ease-[cubic-bezier(0.22,1,0.36,1)] dark:border-slate-800 dark:bg-slate-900"
           :class="historyPanelClass"
           @pointerdown="handleHistoryPointerDown"
           @pointermove="handleHistoryPointerMove"
@@ -1172,7 +1192,7 @@
                   </span>
                 </span>
                 <button
-                  v-else
+                  v-else-if="!isAuthLoading"
                   type="button"
                   data-history-interactive
                   class="inline-flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-3 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.12em] text-slate-700 ring-1 ring-slate-300/60 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-600/70 dark:hover:bg-slate-700"
@@ -1336,7 +1356,16 @@
                     :aria-label="canUseFamilyReporting ? `Create private link for ${entry.title}` : 'Family reporting requires Pro'"
                     @click.stop="openShareLinkForEntry(entry.id)"
                   >
-                    <UIcon :name="canUseFamilyReporting ? 'i-lucide-link' : 'i-lucide-lock'" class="size-4" />
+                    <UIcon
+                      v-if="!entitlementsLoaded"
+                      name="i-lucide-minus"
+                      class="size-4 opacity-40"
+                    />
+                    <UIcon
+                      v-else
+                      :name="canUseFamilyReporting ? 'i-lucide-link' : 'i-lucide-lock'"
+                      class="size-4"
+                    />
                   </button>
 
                   <button
@@ -1902,9 +1931,78 @@ const {
 const { showSubmissionToast } = useSubmissionToast()
 
 const profileDisplayName = ref('')
+const profileDisplayNameReady = ref(false)
 const homeGreetingWord = ref<'Hello' | 'Hey'>('Hello')
 
+type HomeTransitionDirection = 'expand' | 'collapse' | 'previous' | 'next'
+
+const HOME_TRANSITION = {
+  ease: 'cubic-bezier(0.22, 1, 0.36, 1)',
+  // heroMs = flying image + grid morph
+  // chromeOutMs = tips/dots slide down in parallel with hero start
+  // chromeInMs = tips/dots slide back up after hero lands
+  expand: { heroMs: 680, chromeOutMs: 420, chromeInMs: 520, logDelayMs: 140 },
+  collapse: { heroMs: 600, chromeOutMs: 360, chromeInMs: 480, logDelayMs: 0 }
+} as const
+
+function getHomeHeroTransitionMs(direction: 'expand' | 'collapse') {
+  return HOME_TRANSITION[direction].heroMs
+}
+
+function getHomeSharedTransitionMs(direction: HomeTransitionDirection) {
+  return direction === 'collapse'
+    ? HOME_TRANSITION.collapse.heroMs
+    : HOME_TRANSITION.expand.heroMs
+}
+
+function getHomeTransitionStyleVars(direction: HomeTransitionDirection | null) {
+  if (direction !== 'expand' && direction !== 'collapse') {
+    return {
+      '--home-hero-ms': `${HOME_TRANSITION.expand.heroMs}ms`,
+      '--home-chrome-out-ms': `${HOME_TRANSITION.expand.chromeOutMs}ms`,
+      '--home-chrome-in-ms': `${HOME_TRANSITION.expand.chromeInMs}ms`,
+      '--home-ui-ms': `${HOME_TRANSITION.collapse.heroMs}ms`,
+      '--home-log-ms': `${HOME_TRANSITION.collapse.heroMs}ms`,
+      '--home-log-delay-ms': '0ms',
+      '--home-ease': HOME_TRANSITION.ease
+    }
+  }
+
+  const timing = HOME_TRANSITION[direction]
+
+  return {
+    '--home-hero-ms': `${timing.heroMs}ms`,
+    '--home-chrome-out-ms': `${timing.chromeOutMs}ms`,
+    '--home-chrome-in-ms': `${timing.chromeInMs}ms`,
+    '--home-ui-ms': `${timing.heroMs}ms`,
+    '--home-log-ms': `${timing.heroMs}ms`,
+    '--home-log-delay-ms': `${direction === 'expand' ? timing.logDelayMs : 0}ms`,
+    '--home-ease': HOME_TRANSITION.ease
+  }
+}
+
+const homeTransitionStyleVars = computed(() => {
+  if (homeSharedTransitionActive.value) {
+    return getHomeTransitionStyleVars(transitionDirection.value)
+  }
+
+  return getHomeTransitionStyleVars(null)
+})
+
 const activeIndex = ref(0)
+const homeChromeRetreat = ref(false)
+let homeChromeRevealTimer: ReturnType<typeof setTimeout> | undefined
+const homeSharedTransitionActive = ref(false)
+let homeSharedTransitionToken = 0
+let homeSharedTransitionTimer: ReturnType<typeof setTimeout> | undefined
+const homeCarouselStageEl = ref<HTMLElement | null>(null)
+const homeCarouselHeroEl = ref<HTMLElement | null>(null)
+const homeCarouselOverviewEl = ref<HTMLElement | null>(null)
+const homeImageTransitionKey = ref('')
+const homeImageTransitionImage = ref('')
+const homeImageTransitionAlt = ref('')
+const homeImageTransitionStyle = ref<Record<string, string>>({})
+const homeConditionImageEls = new Map<string, HTMLImageElement>()
 const activeHistoryTab = ref('Entries')
 const isEntryOpen = ref(false)
 const isConditionPickerOpen = ref(false)
@@ -1944,7 +2042,7 @@ const exportNotice = ref('')
 const pdfExportType = ref<'full' | 'cp-exam'>('full')
 const selectedExportConditionKeys = ref<string[]>([])
 const pdfExportAcknowledged = ref(false)
-const transitionDirection = ref('next')
+const transitionDirection = ref<HomeTransitionDirection>('next')
 const installPlatform = ref<'ios' | 'android' | 'desktop'>('desktop')
 const deferredInstallPrompt = ref<any>(null)
 const historyExpanded = ref(false)
@@ -2493,6 +2591,21 @@ const calendarDays = computed(() => {
 
 const isHomeOverviewSlide = computed(() => activeIndex.value === 0)
 
+const heroSlideTransitionName = computed(() => {
+  if (
+    homeSharedTransitionActive.value
+    && (transitionDirection.value === 'expand' || transitionDirection.value === 'collapse')
+  ) {
+    return 'hero-shared'
+  }
+
+  if (transitionDirection.value === 'previous') {
+    return 'hero-previous'
+  }
+
+  return 'hero-next'
+})
+
 const carouselWorkspaceClass = computed(() => {
   if (!historyExpanded.value) {
     return 'flex-1 pb-3'
@@ -2520,7 +2633,7 @@ const isConditionSlideEntryEnabled = computed(() => {
 const homeCarouselSlideCount = computed(() => homeConditions.value.length + 1)
 
 function isConditionLogLocked(key: string) {
-  if (isPro.value || !user.value) {
+  if (!entitlementsLoaded.value || isPro.value || !user.value) {
     return false
   }
 
@@ -2566,9 +2679,15 @@ const homeGreetingLine = computed(() => {
     return 'Today'
   }
 
+  if (!profileDisplayNameReady.value) {
+    return homeGreetingWord.value
+  }
+
   const firstName = profileDisplayName.value.trim().split(/\s+/)[0]
-    || user.value.email?.split('@')[0]
-    || 'there'
+
+  if (!firstName) {
+    return homeGreetingWord.value
+  }
 
   return `${homeGreetingWord.value}, ${firstName}`
 })
@@ -2809,58 +2928,6 @@ const activeEntryIsMentalHealth = computed(() => {
     || ''
 
   return category.toLowerCase().includes('mental')
-})
-const slideEnterActiveClass = computed(() => {
-  if (transitionDirection.value === 'expand') {
-    return 'transition duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]'
-  }
-
-  return 'transition duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]'
-})
-const slideLeaveActiveClass = computed(() => {
-  if (transitionDirection.value === 'expand' || transitionDirection.value === 'collapse') {
-    return 'transition duration-350 ease-[cubic-bezier(0.55,0,1,0.45)]'
-  }
-
-  return 'transition duration-300 ease-[cubic-bezier(0.55,0,1,0.45)]'
-})
-const slideEnterFromClass = computed(() => {
-  if (transitionDirection.value === 'expand') {
-    return 'translate-y-5 opacity-0'
-  }
-
-  if (transitionDirection.value === 'previous') {
-    return 'translate-x-8 opacity-0'
-  }
-
-  if (transitionDirection.value === 'next') {
-    return '-translate-x-8 opacity-0'
-  }
-
-  if (transitionDirection.value === 'collapse') {
-    return '-translate-y-3 opacity-0'
-  }
-
-  return 'translate-y-3 opacity-0'
-})
-const slideLeaveToClass = computed(() => {
-  if (transitionDirection.value === 'expand') {
-    return 'translate-y-3 opacity-0'
-  }
-
-  if (transitionDirection.value === 'previous') {
-    return '-translate-x-8 opacity-0'
-  }
-
-  if (transitionDirection.value === 'next') {
-    return 'translate-x-8 opacity-0'
-  }
-
-  if (transitionDirection.value === 'collapse') {
-    return 'translate-y-3 opacity-0'
-  }
-
-  return '-translate-y-3 opacity-0'
 })
 function filterConditionResults(query: string) {
   return filterAndRankConditions(conditionResults, query)
@@ -3119,6 +3186,7 @@ watch(user, async (currentUser) => {
   }
 
   profileDisplayName.value = ''
+  profileDisplayNameReady.value = false
   savedEntries.value = []
   closeEntryPanel(true, true)
   refreshEntryDraftPreview()
@@ -3208,8 +3276,11 @@ watch(trackedConditionKeys, (keys) => {
 async function loadProfileDisplayName() {
   if (!user.value) {
     profileDisplayName.value = ''
+    profileDisplayNameReady.value = false
     return
   }
+
+  profileDisplayNameReady.value = false
 
   try {
     const profile = await getProfile()
@@ -3221,6 +3292,8 @@ async function loadProfileDisplayName() {
     profileDisplayName.value = typeof user.value.user_metadata?.full_name === 'string'
       ? user.value.user_metadata.full_name.trim()
       : ''
+  } finally {
+    profileDisplayNameReady.value = true
   }
 }
 
@@ -3560,11 +3633,6 @@ function toggleDraftCondition(key: string) {
   trackedConditionsError.value = ''
 
   if (draftSelectedKeys.value.includes(key)) {
-    if (!needsOnboarding.value && draftSelectedKeys.value.length === 1) {
-      trackedConditionsError.value = 'Keep at least one condition on your home screen.'
-      return
-    }
-
     draftSelectedKeys.value = draftSelectedKeys.value.filter((existingKey) => existingKey !== key)
     return
   }
@@ -3658,12 +3726,7 @@ async function finishConditionBrowser() {
   trackedConditionsError.value = ''
 
   try {
-    let keysToSave = draftSelectedKeys.value
-
-    if (!isPro.value && savedEntries.value.length > 0 && freeConditionKeys.value.length > 0) {
-      const freeKey = resolveCatalogConditionByStoredKey(freeConditionKeys.value[0])?.key ?? freeConditionKeys.value[0]
-      keysToSave = [freeKey]
-    }
+    const keysToSave = draftSelectedKeys.value
 
     await updateTrackedConditions(keysToSave)
     await syncFreeConditionWithTrackedKeys(keysToSave)
@@ -4094,6 +4157,10 @@ async function handleUpgradeCheckout() {
 }
 
 function toggleAuthPanel() {
+  if (isAuthLoading.value) {
+    return
+  }
+
   isAuthPanelOpen.value = !isAuthPanelOpen.value
 }
 
@@ -4252,16 +4319,294 @@ function logHomeCondition(condition: HomeCondition) {
   })
 }
 
+function resolveCarouselTransitionDirection(nextIndex: number, currentIndex: number): HomeTransitionDirection {
+  if (nextIndex === 0) {
+    return 'collapse'
+  }
+
+  if (currentIndex === 0) {
+    return 'expand'
+  }
+
+  return nextIndex > currentIndex ? 'next' : 'previous'
+}
+
+function getSlideConditionKey(index: number) {
+  return homeConditions.value[index - 1]?.key || ''
+}
+
+function resolveSharedHomeTransitionKey(nextIndex: number, currentIndex: number) {
+  if (currentIndex === 0 && nextIndex > 0) {
+    return getSlideConditionKey(nextIndex)
+  }
+
+  if (currentIndex > 0 && nextIndex === 0) {
+    return getSlideConditionKey(currentIndex)
+  }
+
+  return ''
+}
+
+function cleanupHomeSharedTransition(token: number) {
+  if (token !== homeSharedTransitionToken) {
+    return
+  }
+
+  clearHomeChromeRevealTimer()
+  homeChromeRetreat.value = false
+  homeSharedTransitionActive.value = false
+  homeImageTransitionKey.value = ''
+  homeImageTransitionImage.value = ''
+  homeImageTransitionAlt.value = ''
+  homeImageTransitionStyle.value = {}
+
+  if (homeSharedTransitionTimer) {
+    clearTimeout(homeSharedTransitionTimer)
+    homeSharedTransitionTimer = undefined
+  }
+}
+
+function clearHomeChromeRevealTimer() {
+  if (homeChromeRevealTimer) {
+    clearTimeout(homeChromeRevealTimer)
+    homeChromeRevealTimer = undefined
+  }
+}
+
+function scheduleHomeChromeSequence(direction: 'expand' | 'collapse', token: number) {
+  clearHomeChromeRevealTimer()
+  homeChromeRetreat.value = true
+
+  const heroMs = HOME_TRANSITION[direction].heroMs
+
+  homeChromeRevealTimer = setTimeout(() => {
+    if (token !== homeSharedTransitionToken) {
+      return
+    }
+
+    homeChromeRetreat.value = false
+    homeChromeRevealTimer = undefined
+  }, heroMs)
+}
+
+function prefersReducedHomeMotion() {
+  return import.meta.client
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
+function setHomeConditionImageRef(key: string, element: Element | null) {
+  if (element instanceof HTMLImageElement) {
+    homeConditionImageEls.set(key, element)
+    return
+  }
+
+  homeConditionImageEls.delete(key)
+}
+
+function getHomeHeroTargetRect() {
+  const heroRect = homeCarouselHeroEl.value?.getBoundingClientRect()
+  if (heroRect) {
+    return heroRect
+  }
+
+  const stageRect = homeCarouselStageEl.value?.getBoundingClientRect()
+  const chromeEl = homeCarouselStageEl.value?.querySelector('[data-home-carousel-chrome]')
+
+  if (!stageRect) {
+    return homeCarouselHeroEl.value?.getBoundingClientRect() ?? null
+  }
+
+  const chromeHeight = chromeEl instanceof HTMLElement
+    ? chromeEl.getBoundingClientRect().height
+    : 0
+
+  return new DOMRect(
+    stageRect.left,
+    stageRect.top,
+    stageRect.width,
+    Math.max(0, stageRect.height - chromeHeight)
+  )
+}
+
+function getHomeHeroExpandedTargetRect() {
+  const stageRect = homeCarouselStageEl.value?.getBoundingClientRect()
+  const chromeEl = homeCarouselStageEl.value?.querySelector('[data-home-carousel-chrome]')
+
+  if (!stageRect) {
+    return getHomeHeroTargetRect()
+  }
+
+  const chromeHeight = chromeEl instanceof HTMLElement
+    ? chromeEl.getBoundingClientRect().height
+    : 0
+
+  return new DOMRect(
+    stageRect.left,
+    stageRect.top,
+    stageRect.width,
+    Math.max(0, stageRect.height - chromeHeight)
+  )
+}
+
+function getHomeOverviewThumbnailTargetRect(key: string) {
+  const stageRect = homeCarouselStageEl.value?.getBoundingClientRect()
+  const overviewEl = homeCarouselOverviewEl.value
+  const headerEl = overviewEl?.querySelector('[data-home-overview-header]')
+
+  if (!stageRect || !(headerEl instanceof HTMLElement)) {
+    return homeConditionImageEls.get(key)?.getBoundingClientRect() ?? null
+  }
+
+  const conditionIndex = Math.max(0, homeConditions.value.findIndex((condition) => condition.key === key))
+  const rootFontSize = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
+  const thumbnailSize = 4 * rootFontSize
+  const rowGap = 0.25 * rootFontSize
+  const rowPaddingY = 0.75 * rootFontSize
+  const rowHeight = thumbnailSize + (rowPaddingY * 2)
+  const x = stageRect.left + rootFontSize
+  const y = stageRect.top + headerEl.offsetHeight + (conditionIndex * (rowHeight + rowGap)) + rowPaddingY
+
+  return new DOMRect(x, y, thumbnailSize, thumbnailSize)
+}
+
+function getHomeImageTransitionStyle(
+  fromRect: DOMRect,
+  toRect: DOMRect,
+  animated = false,
+  direction: 'expand' | 'collapse' = 'expand'
+) {
+  const translateX = toRect.left - fromRect.left
+  const translateY = toRect.top - fromRect.top
+  const scaleX = toRect.width / Math.max(fromRect.width, 1)
+  const scaleY = toRect.height / Math.max(fromRect.height, 1)
+  const durationMs = getHomeHeroTransitionMs(direction)
+
+  return {
+    left: `${fromRect.left}px`,
+    top: `${fromRect.top}px`,
+    width: `${fromRect.width}px`,
+    height: `${fromRect.height}px`,
+    transform: animated
+      ? `translate3d(${translateX}px, ${translateY}px, 0) scale(${scaleX}, ${scaleY})`
+      : 'translate3d(0, 0, 0) scale(1, 1)',
+    transformOrigin: 'top left',
+    borderRadius: animated ? '1.75rem' : '1rem',
+    transition: animated
+      ? `transform ${durationMs}ms ${HOME_TRANSITION.ease}, border-radius ${durationMs}ms ${HOME_TRANSITION.ease}`
+      : 'none'
+  }
+}
+
+function waitForAnimationFrame() {
+  return new Promise<void>((resolve) => {
+    window.requestAnimationFrame(() => resolve())
+  })
+}
+
+async function animateHomeSlideChange(nextIndex: number, sharedConditionKey: string) {
+  const token = homeSharedTransitionToken + 1
+  homeSharedTransitionToken = token
+
+  if (homeSharedTransitionTimer) {
+    clearTimeout(homeSharedTransitionTimer)
+    homeSharedTransitionTimer = undefined
+  }
+
+  clearHomeChromeRevealTimer()
+
+  const currentIndex = activeIndex.value
+  homeSharedTransitionActive.value = Boolean(sharedConditionKey)
+
+  if (!sharedConditionKey || !import.meta.client || prefersReducedHomeMotion()) {
+    homeChromeRetreat.value = false
+    activeIndex.value = nextIndex
+    cleanupHomeSharedTransition(token)
+    return
+  }
+
+  const condition = homeConditions.value.find((item) => item.key === sharedConditionKey)
+  const isExpandingFromOverview = currentIndex === 0 && nextIndex > 0
+  const isCollapsingToOverview = currentIndex > 0 && nextIndex === 0
+  const sharedDirection: 'expand' | 'collapse' = isCollapsingToOverview ? 'collapse' : 'expand'
+  const transitionTiming = HOME_TRANSITION[sharedDirection]
+  scheduleHomeChromeSequence(sharedDirection, token)
+  const sourceRect = currentIndex === 0
+    ? homeConditionImageEls.get(sharedConditionKey)?.getBoundingClientRect()
+    : homeCarouselHeroEl.value?.getBoundingClientRect()
+
+  if (!sourceRect || !condition) {
+    homeChromeRetreat.value = false
+    activeIndex.value = nextIndex
+    cleanupHomeSharedTransition(token)
+    return
+  }
+
+  homeImageTransitionKey.value = sharedConditionKey
+  homeImageTransitionImage.value = condition.image
+  homeImageTransitionAlt.value = condition.title
+  homeImageTransitionStyle.value = getHomeImageTransitionStyle(sourceRect, sourceRect)
+
+  activeIndex.value = nextIndex
+  await nextTick()
+  await waitForAnimationFrame()
+
+  if (token !== homeSharedTransitionToken) {
+    return
+  }
+
+  const targetRect = currentIndex === 0
+    ? (isExpandingFromOverview ? getHomeHeroExpandedTargetRect() : getHomeHeroTargetRect())
+    : (isCollapsingToOverview
+        ? getHomeOverviewThumbnailTargetRect(sharedConditionKey)
+        : homeConditionImageEls.get(sharedConditionKey)?.getBoundingClientRect())
+
+  if (!targetRect) {
+    homeChromeRetreat.value = false
+    cleanupHomeSharedTransition(token)
+    return
+  }
+
+  homeImageTransitionStyle.value = getHomeImageTransitionStyle(sourceRect, targetRect, true, sharedDirection)
+  homeSharedTransitionTimer = setTimeout(
+    () => cleanupHomeSharedTransition(token),
+    transitionTiming.heroMs + transitionTiming.chromeInMs + 48
+  )
+}
+
+function showConditionSlide(index: number, options: { clearSelectedSearchCondition?: boolean } = {}) {
+  const lastIndex = homeConditions.value.length
+
+  if (index === activeIndex.value || index < 0 || index > lastIndex) {
+    return
+  }
+
+  const currentIndex = activeIndex.value
+  const sharedKey = resolveSharedHomeTransitionKey(index, currentIndex)
+
+  if (!sharedKey) {
+    clearHomeChromeRevealTimer()
+    homeChromeRetreat.value = false
+  }
+
+  if (options.clearSelectedSearchCondition) {
+    selectedSearchCondition.value = null
+  }
+
+  closeEntryPanel()
+  transitionDirection.value = resolveCarouselTransitionDirection(index, currentIndex)
+  void animateHomeSlideChange(index, resolveSharedHomeTransitionKey(index, currentIndex))
+}
+
 function showPreviousCondition() {
   if (!homeConditions.value.length) {
     return
   }
 
   const lastIndex = homeConditions.value.length
+  const currentIndex = activeIndex.value
+  const nextIndex = currentIndex === 0 ? 1 : currentIndex - 1
 
-  transitionDirection.value = 'previous'
-  closeEntryPanel()
-  activeIndex.value = activeIndex.value === 0 ? lastIndex : activeIndex.value - 1
+  showConditionSlide(nextIndex)
 }
 
 function showNextCondition() {
@@ -4270,23 +4615,14 @@ function showNextCondition() {
   }
 
   const lastIndex = homeConditions.value.length
+  const currentIndex = activeIndex.value
+  const nextIndex = currentIndex === lastIndex ? 0 : currentIndex + 1
 
-  transitionDirection.value = 'next'
-  closeEntryPanel()
-  activeIndex.value = activeIndex.value === lastIndex ? 0 : activeIndex.value + 1
+  showConditionSlide(nextIndex)
 }
 
 function showSlide(index: number) {
-  const lastIndex = homeConditions.value.length
-
-  if (index === activeIndex.value || index < 0 || index > lastIndex) {
-    return
-  }
-
-  selectedSearchCondition.value = null
-  transitionDirection.value = index > activeIndex.value ? 'next' : 'previous'
-  closeEntryPanel()
-  activeIndex.value = index
+  showConditionSlide(index, { clearSelectedSearchCondition: true })
 }
 
 function handleCancelEntry() {
@@ -4433,7 +4769,7 @@ function selectHistoryTab(tab: string) {
 
 const HISTORY_DRAG_ACTIVATE_PX = 8
 const HISTORY_DRAG_SNAP_PX = 32
-const HISTORY_TRANSITION_LOCK_MS = 560
+const HISTORY_TRANSITION_LOCK_MS = 650
 
 let historyTransitionLockUntil = 0
 
@@ -4579,7 +4915,7 @@ function suppressConditionTapBriefly() {
 }
 
 function handleConditionSwipeStart(event: TouchEvent) {
-  if (isDesktopLayout.value || showConditionBrowser.value) {
+  if (isDesktopLayout.value || showConditionBrowser.value || isEntryOpen.value) {
     return
   }
 
@@ -4592,7 +4928,7 @@ function handleConditionSwipeStart(event: TouchEvent) {
 }
 
 function handleConditionSwipeEnd(event: TouchEvent) {
-  if (isDesktopLayout.value || showConditionBrowser.value) {
+  if (isDesktopLayout.value || showConditionBrowser.value || isEntryOpen.value) {
     return
   }
 
@@ -4622,6 +4958,7 @@ function handleConditionSwipeEnd(event: TouchEvent) {
         showPreviousCondition()
       }
     }
+    conditionSwipeStartedInScrollList = false
     return
   }
 
@@ -4792,21 +5129,24 @@ function handleConditionWheel() {
   }
 }
 
-let conditionTouchStartY = 0
-
-function handleConditionTouchStart(event: TouchEvent) {
-  conditionTouchStartY = event.touches[0]?.clientY ?? 0
-}
-
 function handleConditionTouchMove(event: TouchEvent) {
-  if (!historyExpanded.value || isDesktopLayout.value) {
+  if (isDesktopLayout.value || showConditionBrowser.value || isEntryOpen.value) {
     return
   }
 
-  const currentY = event.touches[0]?.clientY ?? 0
-  const deltaY = Math.abs(conditionTouchStartY - currentY)
+  const touch = event.touches[0]
+  if (!touch) {
+    return
+  }
 
-  if (deltaY > 8) {
+  const deltaX = touch.clientX - conditionSwipeStartX
+  const deltaY = touch.clientY - conditionSwipeStartY
+
+  if (!conditionSwipeAxis && (Math.abs(deltaX) > 12 || Math.abs(deltaY) > 12)) {
+    conditionSwipeAxis = Math.abs(deltaX) > Math.abs(deltaY) ? 'horizontal' : 'vertical'
+  }
+
+  if (historyExpanded.value && Math.abs(deltaY) > 8) {
     collapseHistorySheet()
   }
 }
@@ -5303,29 +5643,208 @@ function handleEntryPrimaryAction() {
   transform: translateY(-0.35rem);
 }
 
-.home-tip-enter-active,
-.home-tip-leave-active {
-  transition: opacity 0.6s ease-in-out, transform 0.6s ease-in-out;
+.home-log-btn-enter-active {
+  transition:
+    opacity var(--home-log-ms, 650ms) var(--home-ease, cubic-bezier(0.22, 1, 0.36, 1))
+    var(--home-log-delay-ms, 0ms);
 }
 
-.home-tip-enter-from {
-  opacity: 0;
-  transform: translateY(0.35rem);
+.home-log-btn-leave-active {
+  transition: opacity var(--home-log-ms, 650ms) var(--home-ease, cubic-bezier(0.22, 1, 0.36, 1));
 }
 
-.home-tip-leave-to {
+.home-log-btn-enter-from,
+.home-log-btn-leave-to {
   opacity: 0;
-  transform: translateY(-0.35rem);
+}
+
+.home-state-fade-enter-active,
+.home-state-fade-leave-active {
+  transition: opacity 240ms ease-out;
+}
+
+.home-state-fade-leave-active {
+  pointer-events: none;
+}
+
+.home-state-fade-enter-from,
+.home-state-fade-leave-to {
+  opacity: 0;
+}
+
+.home-carousel-dot {
+  transition:
+    width var(--home-ui-ms, 650ms) var(--home-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+    background-color var(--home-ui-ms, 650ms) var(--home-ease, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+.hero-next-enter-active,
+.hero-next-leave-active,
+.hero-previous-enter-active,
+.hero-previous-leave-active {
+  transition: opacity 250ms ease-out;
+}
+
+.hero-shared-enter-active,
+.hero-shared-leave-active {
+  transition: none;
+}
+
+.hero-shared-enter-from,
+.hero-shared-enter-to,
+.hero-shared-leave-from,
+.hero-shared-leave-to {
+  opacity: 1;
+}
+
+.hero-next-enter-from,
+.hero-next-leave-to,
+.hero-previous-enter-from,
+.hero-previous-leave-to {
+  opacity: 0;
+}
+
+.home-carousel-stage {
+  display: grid;
+  grid-template-rows: 0fr auto auto;
+  align-content: start;
+  transition: grid-template-rows var(--home-hero-ms, 680ms) var(--home-ease, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+.home-carousel-stage.is-condition {
+  grid-template-rows: 1fr 0fr auto;
+  align-content: stretch;
+}
+
+.home-carousel-hero {
+  min-height: 0;
+  overflow: hidden;
+  height: 100%;
+  border-radius: 1.75rem;
+}
+
+.home-image-transition {
+  pointer-events: none;
+  overflow: hidden;
+  box-shadow: 0 1.5rem 3rem rgb(15 23 42 / 0.18);
+  will-change: transform, border-radius;
+  z-index: 70;
+}
+
+.home-carousel-hero-title {
+  opacity: 0;
+  transition:
+    opacity var(--home-ui-ms, 650ms) var(--home-ease, cubic-bezier(0.22, 1, 0.36, 1))
+    120ms;
+}
+
+.home-carousel-stage.is-condition .home-carousel-hero-title {
+  opacity: 1;
+}
+
+.home-carousel-overview {
+  min-height: 0;
+  align-self: start;
+  overflow: hidden;
+  opacity: 1;
+  transition: opacity var(--home-ui-ms, 650ms) var(--home-ease, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+.home-carousel-stage.is-overview .home-carousel-overview {
+  opacity: 1;
+}
+
+.home-carousel-stage.is-overview [data-home-conditions-scroll] {
+  max-height: none;
+  overflow: visible;
+}
+
+.home-carousel-stage.is-condition .home-carousel-overview {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.home-carousel-stage.is-shared-transition .home-carousel-overview {
+  transition: none;
+}
+
+.home-carousel-stage.is-shared-collapse .home-carousel-overview {
+  opacity: 1;
+}
+
+.home-carousel-chrome {
+  min-height: 0;
+  align-self: start;
+  position: relative;
+  z-index: 0;
+  overflow: hidden;
+  padding-top: 1.5rem;
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity var(--home-chrome-dur, 420ms) var(--home-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+    transform var(--home-chrome-dur, 420ms) var(--home-ease, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+.home-carousel-chrome.is-chrome-retreat {
+  opacity: 0;
+  transform: translateY(1.75rem);
+  pointer-events: none;
+}
+
+.home-carousel-stage.is-shared-transition .home-carousel-chrome.is-chrome-retreat {
+  --home-chrome-dur: var(--home-chrome-out-ms, 420ms);
+}
+
+.home-carousel-stage.is-shared-transition .home-carousel-chrome:not(.is-chrome-retreat) {
+  --home-chrome-dur: var(--home-chrome-in-ms, 520ms);
+}
+
+.home-tip-fade-enter-active,
+.home-tip-fade-leave-active {
+  transition: opacity 650ms var(--home-ease, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+.home-tip-fade-enter-from,
+.home-tip-fade-leave-to {
+  opacity: 0;
+}
+
+.home-carousel-footer {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-state-fade-enter-active,
+  .home-state-fade-leave-active,
+  .hero-next-enter-active,
+  .hero-next-leave-active,
+  .hero-previous-enter-active,
+  .hero-previous-leave-active,
+  .home-carousel-dot,
+  .home-carousel-stage,
+  .home-carousel-hero,
+  .home-carousel-hero-title,
+  .home-carousel-overview,
+  .home-carousel-chrome,
+  .home-tip-fade-enter-active,
+  .home-tip-fade-leave-active,
+  .home-log-btn-enter-active,
+  .home-log-btn-leave-active {
+    transition-duration: 1ms;
+    transition-delay: 0ms;
+    animation-duration: 1ms;
+  }
 }
 
 .crisis-line-enter-active,
 .crisis-line-leave-active {
   overflow: hidden;
   transition:
-    opacity 0.55s ease-in-out,
-    transform 0.55s ease-in-out,
-    max-height 0.55s ease-in-out,
-    margin-top 0.55s ease-in-out;
+    opacity 0.7s ease-in-out,
+    transform 0.7s ease-in-out,
+    max-height 0.7s ease-in-out,
+    margin-top 0.7s ease-in-out;
 }
 
 .crisis-line-enter-from,

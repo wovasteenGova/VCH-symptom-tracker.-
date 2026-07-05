@@ -69,6 +69,13 @@
 
       </p>
 
+      <p
+        v-if="mode === 'manage' && selectedCount === 0"
+        class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300"
+      >
+        Tap conditions below to add them to your home screen.
+      </p>
+
 
 
       <p v-if="error" class="mt-2 text-sm font-medium text-red-600 dark:text-red-300">

@@ -65,7 +65,9 @@ export default defineNuxtConfig({
       vapidPublicKey: env('VAPID_PUBLIC_KEY') || env('NUXT_PUBLIC_VAPID_PUBLIC_KEY'),
       siteUrl: env('APP_URL')
         || env('NUXT_PUBLIC_SITE_URL')
-        || (isProduction ? 'https://tracker.veteranscentralhub.us' : '')
+        || (isProduction ? 'https://tracker.veteranscentralhub.us' : ''),
+      // Web3Forms contact form — create a form at https://web3forms.com (can share VCH inbox key).
+      web3formsAccessKey: env('NUXT_PUBLIC_WEB3FORMS_ACCESS_KEY')
     }
   },
   app: {

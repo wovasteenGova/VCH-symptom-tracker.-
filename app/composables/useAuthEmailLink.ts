@@ -74,6 +74,34 @@ async function exchangeAuthCode(supabase: ReturnType<typeof useSupabaseClient>, 
   return data.session
 }
 
+function isPkceVerifierMissingError(error: unknown) {
+  const authError = error as { message?: string, code?: string } | null
+  const message = String(authError?.message || '').toLowerCase()
+  const code = String(authError?.code || '').toLowerCase()
+
+  return message.includes('code verifier') || code.includes('pkce')
+}
+
+async function waitForAnySession(
+  supabase: ReturnType<typeof useSupabaseClient>,
+  attempts = 15,
+  delayMs = 200
+) {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const { data } = await supabase.auth.getSession()
+
+    if (data.session?.user) {
+      return data.session
+    }
+
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, delayMs)
+    })
+  }
+
+  return null
+}
+
 async function completeOAuthCallback(
   supabase: ReturnType<typeof useSupabaseClient>,
   code: string,
@@ -95,42 +123,89 @@ async function completeOAuthCallback(
     ? await readAccessToken(supabase)
     : null
 
-  const autoExchangedSession = import.meta.client
-    ? await waitForNewOAuthSession(supabase, previousAccessToken)
+  // The Supabase client can auto-exchange the code in the background
+  // (detectSessionInUrl). Watch for SIGNED_IN so we know a fresh sign-in
+  // happened during callback processing and skip the redundant exchange.
+  let freshSignInDetected = false
+  const authSubscription = import.meta.client
+    ? supabase.auth.onAuthStateChange((event) => {
+        if (event === 'SIGNED_IN') {
+          freshSignInDetected = true
+        }
+      }).data?.subscription
     : null
 
-  if (autoExchangedSession) {
+  try {
+    const autoExchangedSession = import.meta.client
+      ? await waitForNewOAuthSession(supabase, previousAccessToken)
+      : null
+
+    if (autoExchangedSession) {
+      clearOAuthOriginMarker()
+      return {
+        session: autoExchangedSession,
+        linkType
+      }
+    }
+
+    if (freshSignInDetected) {
+      const { data } = await supabase.auth.getSession()
+
+      if (data.session?.user) {
+        clearOAuthOriginMarker()
+        return {
+          session: data.session,
+          linkType
+        }
+      }
+    }
+
+    let recoveredFromConsumedVerifier = false
+
+    const session = await exchangeAuthCode(supabase, code).catch(async (error) => {
+      const recoveredSession = await waitForNewOAuthSession(supabase, previousAccessToken, 8, 150)
+
+      if (recoveredSession) {
+        return recoveredSession
+      }
+
+      // "PKCE code verifier not found" after the background exchange already
+      // consumed the verifier is cosmetic: if a real session exists for a
+      // user, the sign-in succeeded, so use it instead of surfacing the error.
+      if (isPkceVerifierMissingError(error)) {
+        const existingSession = await waitForAnySession(supabase)
+
+        if (existingSession) {
+          recoveredFromConsumedVerifier = true
+          return existingSession
+        }
+      }
+
+      throw error
+    })
+
+    // When the auto-exchange finished before we captured previousAccessToken,
+    // the recovered session legitimately carries that same token, so the
+    // same-token rejection only applies to genuinely stale flows.
+    if (
+      import.meta.client
+      && previousAccessToken
+      && session?.access_token === previousAccessToken
+      && !freshSignInDetected
+      && !recoveredFromConsumedVerifier
+    ) {
+      clearOAuthOriginMarker()
+      throw new Error('Google sign-in did not start a new session. Go back and tap Continue with Google again.')
+    }
+
     clearOAuthOriginMarker()
+
     return {
-      session: autoExchangedSession,
+      session,
       linkType
     }
-  }
-
-  const session = await exchangeAuthCode(supabase, code).catch(async (error) => {
-    const recoveredSession = await waitForNewOAuthSession(supabase, previousAccessToken, 8, 150)
-
-    if (recoveredSession) {
-      return recoveredSession
-    }
-
-    throw error
-  })
-
-  if (
-    import.meta.client
-    && previousAccessToken
-    && session?.access_token === previousAccessToken
-  ) {
-    clearOAuthOriginMarker()
-    throw new Error('Google sign-in did not start a new session. Go back and tap Continue with Google again.')
-  }
-
-  clearOAuthOriginMarker()
-
-  return {
-    session,
-    linkType
+  } finally {
+    authSubscription?.unsubscribe()
   }
 }
 

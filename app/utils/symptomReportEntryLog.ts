@@ -332,7 +332,7 @@ function drawEntryCard(
 
   ctx.y += 16
 
-  const sourceLabel = entry.source === 'family' ? 'Family observation' : 'Veteran log'
+  const sourceLabel = entry.source === 'family' ? 'Family/friends/other report' : 'Veteran log'
   const severityLabel = typeof entry.severity === 'number' ? `Severity ${entry.severity}/10` : 'Severity not recorded'
   ctx.doc.setFont('helvetica', 'normal')
   ctx.doc.setFontSize(9.5)

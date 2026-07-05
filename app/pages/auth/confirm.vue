@@ -3,9 +3,7 @@
     <section class="mx-auto flex w-full max-w-md flex-1 flex-col justify-center">
       <div class="rounded-4xl border border-slate-800 bg-slate-900 p-6">
         <div v-if="status === 'loading'" class="space-y-4 text-center">
-          <div class="mx-auto grid size-12 place-items-center rounded-full bg-slate-800">
-            <UIcon name="i-lucide-loader-2" class="size-6 animate-spin text-slate-300" />
-          </div>
+          <VchLoader :width="240" />
           <h1 class="text-xl font-bold text-white">Confirming your email</h1>
           <p class="text-sm leading-6 text-slate-400">
             Hang tight while we verify your account.

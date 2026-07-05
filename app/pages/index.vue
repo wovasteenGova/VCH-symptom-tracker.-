@@ -68,8 +68,8 @@
             <ClientOnly>
               <TrackerLivePreview />
               <template #fallback>
-                <div class="grid h-full place-items-center text-slate-400">
-                  <UIcon name="i-lucide-loader-circle" class="size-8 animate-spin" />
+                <div class="grid h-full place-items-center">
+                  <VchLoader :width="200" />
                 </div>
               </template>
             </ClientOnly>

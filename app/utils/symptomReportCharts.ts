@@ -58,7 +58,7 @@ export function buildReportMetrics(entries: ChartEntry[]) {
       (severitySumByCondition.get(conditionLabel) || 0) + (entry.severity ?? 0)
     )
 
-    const sourceLabel = entry.source === 'family' ? 'Family' : 'Veteran'
+    const sourceLabel = entry.source === 'family' ? 'Family/friends/other' : 'Veteran'
     bySource.set(sourceLabel, (bySource.get(sourceLabel) || 0) + 1)
 
     const severity = entry.severity ?? 0

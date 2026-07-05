@@ -29,8 +29,14 @@ export function useSubmissionToast() {
       clearTimeout(dismissTimer)
     }
 
-    toastKey.value += 1
-    activeToast.value = normalizePayload(payload)
+    const normalized = normalizePayload(payload)
+    const isReplacement = activeToast.value !== null
+
+    if (!isReplacement) {
+      toastKey.value += 1
+    }
+
+    activeToast.value = normalized
 
     const durationMs = activeToast.value.tone === 'error'
       ? activeToast.value.durationMs ?? 4200

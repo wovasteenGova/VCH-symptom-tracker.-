@@ -181,9 +181,18 @@
         </StickyActionBar>
       </form>
 
-      <div v-else class="mt-6 min-h-0 flex-1 overflow-y-auto overscroll-y-contain no-scrollbar">
-        <div class="space-y-5 pb-[max(1rem,env(safe-area-inset-bottom))]">
-        <section class="rounded-4xl border border-slate-800 bg-slate-900 p-4">
+      <div v-else class="mt-3 flex min-h-0 flex-1 flex-col">
+        <SettingsSectionNav
+          :sections="settingsSections"
+          :scroll-root="settingsScrollEl"
+        />
+
+        <div
+          ref="settingsScrollEl"
+          class="min-h-0 flex-1 overflow-y-auto overscroll-y-contain no-scrollbar"
+        >
+        <div class="space-y-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4">
+        <section id="settings-account" class="scroll-mt-3 rounded-4xl border border-slate-800 bg-slate-900 p-4">
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
               <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Your Info</p>
@@ -273,7 +282,343 @@
           </div>
         </section>
 
-        <section class="rounded-4xl border border-slate-800 bg-slate-900 p-5">
+        <div class="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 rounded-3xl border border-slate-800 bg-slate-900/60 px-4 py-3 text-center text-sm text-slate-400">
+          <span>Issues?</span>
+          <button
+            type="button"
+            class="font-semibold text-sky-300 underline decoration-sky-500/40 underline-offset-2 transition hover:text-sky-200"
+            @click="isContactSupportOpen = true"
+          >
+            Contact us
+          </button>
+          <span aria-hidden="true" class="text-slate-600">·</span>
+          <button
+            type="button"
+            class="font-semibold text-sky-300 underline decoration-sky-500/40 underline-offset-2 transition hover:text-sky-200"
+            @click="isFaqOverlayOpen = true"
+          >
+            Visit FAQ
+          </button>
+        </div>
+
+        <section id="settings-logging" class="scroll-mt-3 rounded-4xl border border-slate-800 bg-slate-900 p-5">
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Logging rhythm</p>
+          <h2 class="mt-1 text-xl font-bold text-white">When you log symptoms</h2>
+          <p class="mt-2 text-sm leading-6 text-slate-400">
+            Weekly logging is recommended for PTSD and mental health so you are not revisiting painful events every day.
+          </p>
+
+          <div class="mt-4 grid gap-3">
+            <button
+              type="button"
+              class="rounded-3xl border px-4 py-4 text-left transition"
+              :class="loggingCadence === 'weekly'
+                ? 'border-white bg-slate-800'
+                : 'border-slate-700 bg-slate-800/50'"
+              @click="saveLoggingCadence('weekly')"
+            >
+              <span class="block font-bold text-white">End of the week</span>
+              <span class="mt-1 block text-sm leading-6 text-slate-400">Log once and capture the week together.</span>
+            </button>
+
+            <button
+              type="button"
+              class="rounded-3xl border px-4 py-4 text-left transition"
+              :class="loggingCadence === 'daily'
+                ? 'border-white bg-slate-800'
+                : 'border-slate-700 bg-slate-800/50'"
+              @click="saveLoggingCadence('daily')"
+            >
+              <span class="block font-bold text-white">Every day</span>
+              <span class="mt-1 block text-sm leading-6 text-slate-400">Best when you want details while they are fresh.</span>
+            </button>
+          </div>
+
+          <div v-if="loggingCadence === 'weekly'" class="mt-4">
+            <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Preferred log day</p>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <button
+                v-for="option in weeklyLogDayOptions"
+                :key="option.value"
+                type="button"
+                class="rounded-full px-3 py-2 text-sm font-bold transition"
+                :class="weeklyLogDay === option.value
+                  ? 'bg-white text-slate-950'
+                  : 'bg-slate-800 text-slate-300 ring-1 ring-slate-700'"
+                @click="saveWeeklyLogDay(option.value)"
+              >
+                {{ option.label }}
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section id="settings-reminders" class="scroll-mt-3 rounded-4xl border border-slate-800 bg-slate-900 p-5">
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Reminders</p>
+          <h2 class="mt-1 text-xl font-bold text-white">Logging notifications</h2>
+          <p class="mt-2 text-sm leading-6 text-slate-400">
+            {{ logReminderScheduleDescription }}
+          </p>
+          <p class="mt-2 text-xs leading-5 text-slate-500">
+            Device permission: {{ logReminderDevicePermissionLabel }}. Turning VCH reminders off stops app reminders but does not change your device notification permission.
+          </p>
+
+          <p v-if="logReminderPermissionState === 'unsupported'" class="mt-3 text-sm leading-6 text-amber-200">
+            Notifications are not supported in this browser.
+          </p>
+          <p v-else-if="logReminderPermissionState === 'denied'" class="mt-3 text-sm leading-6 text-amber-200">
+            Notifications are blocked for this app. Enable them in your phone or browser settings, then come back and tap Enable.
+          </p>
+          <p v-else-if="pushBackendConfigured === false" class="mt-3 text-sm leading-6 text-amber-200">
+            Background push is not configured on the server yet (missing VAPID keys in Netlify). Reminders cannot reach this device until that is fixed.
+          </p>
+          <p v-else-if="hasRegisteredPushSubscription === false" class="mt-3 text-sm leading-6 text-amber-200">
+            This device is not registered for push reminders yet. Tap Enable after notifications are allowed.
+          </p>
+
+          <div class="mt-4 flex items-center justify-between gap-3 rounded-3xl border border-slate-700 bg-slate-800/50 px-4 py-4">
+            <div>
+              <p class="font-bold text-white">Log reminders</p>
+              <p class="mt-1 text-sm text-slate-400">
+                {{ logReminderStatusLabel }}
+              </p>
+            </div>
+            <button
+              type="button"
+              class="rounded-full px-4 py-2 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-60"
+              :class="remindersEnabled
+                ? 'bg-white text-slate-950'
+                : 'bg-slate-700 text-slate-200 ring-1 ring-slate-600'"
+              :disabled="isReminderTogglePending"
+              @click="toggleLogReminders"
+            >
+              {{ isReminderTogglePending ? 'Working...' : logReminderButtonLabel }}
+            </button>
+          </div>
+
+          <div class="mt-4 rounded-3xl border border-slate-700 bg-slate-800/50 px-4 py-4">
+            <label class="block text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+              Morning reminder
+            </label>
+            <select
+              :value="reminderHour"
+              class="mt-2 w-full rounded-2xl border border-slate-600 bg-slate-900 px-4 py-3 text-sm font-semibold text-white"
+              @change="handleReminderHourChange"
+            >
+              <option
+                v-for="option in logReminderHourOptions"
+                :key="option.value"
+                :value="option.value"
+              >
+                {{ option.label }}
+              </option>
+            </select>
+            <p class="mt-2 text-xs leading-5 text-slate-500">
+              Uses your local timezone: {{ logReminderTimezoneLabel }} ({{ reminderTimezone }}).
+            </p>
+          </div>
+
+          <p class="mt-3 text-xs leading-5 text-slate-500">
+            Install the app for background alerts when the app is closed. Up to two nudges per day — your morning time and 8 PM — if you have not logged yet.
+          </p>
+        </section>
+
+        <section id="settings-display" class="scroll-mt-3 rounded-4xl border border-slate-800 bg-slate-900 p-5">
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Display</p>
+          <h2 class="mt-1 text-xl font-bold text-white">Tracker layout</h2>
+          <p class="mt-2 text-sm leading-6 text-slate-400">
+            Auto hides arrow controls on small screens. Choose desktop to keep arrows and the wide layout on a tablet or narrow window.
+          </p>
+
+          <div class="mt-4 grid gap-3">
+            <button
+              v-for="option in layoutOptions"
+              :key="option.value"
+              type="button"
+              class="rounded-3xl border px-4 py-4 text-left transition"
+              :class="layoutMode === option.value
+                ? 'border-white bg-slate-800'
+                : 'border-slate-700 bg-slate-800/50'"
+              @click="chooseLayoutMode(option.value)"
+            >
+              <span class="block font-bold text-white">{{ option.label }}</span>
+              <span class="mt-1 block text-sm leading-6 text-slate-400">{{ option.copy }}</span>
+            </button>
+          </div>
+        </section>
+
+        <div id="settings-supporters" class="scroll-mt-3 space-y-5">
+        <section class="rounded-4xl border border-slate-800 bg-slate-900 p-4">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Family, friends, other</p>
+            <h2 class="mt-1 text-xl font-bold text-white">Family reporting access</h2>
+            <p class="mt-2 text-sm leading-6 text-slate-400">
+              Create a private link for someone you trust. They enter their own contact info on each report. You can also create a link from a saved entry in your history.
+            </p>
+          </div>
+
+          <div
+            v-if="!canUseFamilyReporting"
+            class="mt-4 rounded-3xl border border-amber-900/50 bg-amber-950/20 p-4"
+          >
+            <div class="flex items-start gap-3">
+              <UIcon name="i-lucide-lock" class="mt-0.5 size-5 shrink-0 text-amber-300" />
+              <div>
+                <p class="font-semibold text-amber-100">Pro feature</p>
+                <p class="mt-1 text-sm leading-6 text-amber-50/90">
+                  Family reporting links are included with Pro so family, friends, or others can submit signed observations for your claim.
+                </p>
+                <NuxtLink
+                  to="/upgrade"
+                  class="mt-3 inline-flex items-center gap-2 rounded-2xl bg-amber-400 px-4 py-3 text-sm font-bold text-slate-950"
+                >
+                  Unlock family reporting
+                </NuxtLink>
+                <a
+                  :href="supportEmailHref"
+                  class="mt-3 block text-xs font-semibold text-amber-100/80 underline-offset-2 hover:underline"
+                >
+                  Can't pay? Email us for free access
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <template v-else>
+
+          <div v-if="linkedEntryContext" class="mt-4 rounded-3xl border border-sky-900/60 bg-sky-950/30 p-4">
+            <p class="text-xs font-bold uppercase tracking-[0.14em] text-sky-300">Linked entry</p>
+            <p class="mt-2 font-semibold text-white">{{ linkedEntryContext.summary }}</p>
+            <p class="mt-1 text-xs text-sky-200/80">{{ linkedEntryContext.condition }}</p>
+          </div>
+
+          <div class="mt-5 space-y-4">
+            <label class="block">
+              <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Link label (optional)</span>
+              <input
+                v-model="supporterForm.link_label"
+                type="text"
+                class="w-full rounded-3xl border border-slate-600/70 bg-slate-800/70 px-4 py-4 text-base font-medium text-white outline-none placeholder:text-slate-400 focus:border-slate-400"
+                placeholder="Example: Mom, spouse, caregiver"
+              >
+              <p class="mt-2 px-1 text-xs leading-5 text-slate-400">
+                This label is only for you to recognize the link. They enter their real info when submitting a report.
+              </p>
+            </label>
+
+            <div>
+              <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Visible conditions</span>
+              <USelectMenu
+                v-model="supporterForm.visible_conditions"
+                :items="conditionOptions"
+                multiple
+                placeholder="Choose visible conditions"
+                class="w-full"
+                color="neutral"
+                size="xl"
+              />
+            </div>
+
+            <button
+              type="button"
+              class="w-full rounded-2xl bg-white px-5 py-4 text-base font-bold text-slate-950 shadow-lg transition hover:bg-slate-200"
+              :disabled="isCreatingSupporter"
+              @click="createSupporter"
+            >
+              {{ isCreatingSupporter ? 'Creating...' : 'Create Private Link' }}
+            </button>
+          </div>
+
+          <div v-if="createdLink" class="mt-4 rounded-3xl border border-emerald-900 bg-emerald-950/40 p-4">
+            <p class="text-sm font-bold text-emerald-200">Private link created</p>
+            <p class="mt-2 break-all text-sm leading-6 text-emerald-100">{{ createdLink }}</p>
+            <p class="mt-2 text-xs leading-5 text-emerald-200/80">
+              Save this now. For privacy, the raw token is only shown when the link is created.
+            </p>
+            <button
+              type="button"
+              class="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-emerald-400"
+              @click="copyCreatedLink"
+            >
+              <UIcon :name="createdLinkCopied ? 'i-lucide-check' : 'i-lucide-copy'" class="size-4" />
+              {{ createdLinkCopied ? 'Copied to clipboard' : 'Copy link' }}
+            </button>
+          </div>
+          </template>
+        </section>
+
+        <section class="space-y-3">
+          <h2 class="px-1 text-xl font-bold text-white">Existing reporting links</h2>
+
+          <div v-if="!supporterProfiles.length" class="rounded-4xl border border-slate-800 bg-slate-900 p-5 text-center text-sm text-slate-400">
+            No reporting links yet.
+          </div>
+
+          <article
+            v-for="profile in supporterProfiles"
+            :key="profile.id"
+            class="rounded-4xl border border-slate-800 bg-slate-900 p-4"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <h3 class="font-bold text-white">{{ profile.display_name || 'Private reporting link' }}</h3>
+                <p class="mt-1 text-sm text-slate-400">Reporter details are collected on each submission.</p>
+              </div>
+              <UBadge :color="profile.active ? 'success' : 'neutral'" variant="soft">
+                {{ profile.active ? 'Active' : 'Disabled' }}
+              </UBadge>
+            </div>
+
+            <div class="mt-3 flex flex-wrap gap-2">
+              <UBadge
+                v-for="condition in profile.visible_conditions"
+                :key="condition"
+                color="neutral"
+                variant="soft"
+              >
+                {{ condition }}
+              </UBadge>
+            </div>
+
+            <div v-if="profile.entry_context_summary" class="mt-3 rounded-2xl border border-sky-900/50 bg-sky-950/20 px-3 py-2">
+              <p class="text-xs font-bold uppercase tracking-[0.12em] text-sky-300">Linked entry</p>
+              <p class="mt-1 text-sm text-sky-100">{{ profile.entry_context_summary }}</p>
+            </div>
+
+            <div class="mt-4 flex items-center gap-3">
+              <button
+                type="button"
+                class="grid size-11 shrink-0 place-items-center rounded-full bg-slate-800 text-white ring-1 ring-slate-700 transition hover:bg-slate-700"
+                :disabled="isCopyingSupporterId === profile.id"
+                :aria-label="`Copy link for ${profile.display_name || 'private reporting link'}`"
+                @click="copyExistingSupporterLink(profile)"
+              >
+                <UIcon
+                  :name="copiedSupporterId === profile.id ? 'i-lucide-check' : 'i-lucide-copy'"
+                  class="size-4"
+                />
+                <span class="sr-only">{{ copiedSupporterId === profile.id ? 'Copied' : 'Copy link' }}</span>
+              </button>
+              <button
+                type="button"
+                class="flex-1 rounded-2xl bg-slate-800 px-4 py-3 text-sm font-bold text-white ring-1 ring-slate-700"
+                @click="toggleSupporter(profile)"
+              >
+                {{ profile.active ? 'Disable link' : 'Reactivate link' }}
+              </button>
+              <button
+                type="button"
+                class="flex-1 rounded-2xl bg-red-950/50 px-4 py-3 text-sm font-bold text-red-300 ring-1 ring-red-900/60"
+                @click="requestDeleteSupporter(profile)"
+              >
+                Delete link
+              </button>
+            </div>
+          </article>
+        </section>
+        </div>
+
+        <section id="settings-passkeys" class="scroll-mt-3 rounded-4xl border border-slate-800 bg-slate-900 p-5">
           <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Sign-in &amp; security</p>
           <h2 class="mt-1 text-xl font-bold text-white">Passkeys</h2>
           <p class="mt-2 text-sm leading-6 text-slate-400">
@@ -380,321 +725,7 @@
           </template>
         </section>
 
-        <section class="rounded-4xl border border-slate-800 bg-slate-900 p-5">
-          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Logging rhythm</p>
-          <h2 class="mt-1 text-xl font-bold text-white">When you log symptoms</h2>
-          <p class="mt-2 text-sm leading-6 text-slate-400">
-            Weekly logging is recommended for PTSD and mental health so you are not revisiting painful events every day.
-          </p>
-
-          <div class="mt-4 grid gap-3">
-            <button
-              type="button"
-              class="rounded-3xl border px-4 py-4 text-left transition"
-              :class="loggingCadence === 'weekly'
-                ? 'border-white bg-slate-800'
-                : 'border-slate-700 bg-slate-800/50'"
-              @click="saveLoggingCadence('weekly')"
-            >
-              <span class="block font-bold text-white">End of the week</span>
-              <span class="mt-1 block text-sm leading-6 text-slate-400">Log once and capture the week together.</span>
-            </button>
-
-            <button
-              type="button"
-              class="rounded-3xl border px-4 py-4 text-left transition"
-              :class="loggingCadence === 'daily'
-                ? 'border-white bg-slate-800'
-                : 'border-slate-700 bg-slate-800/50'"
-              @click="saveLoggingCadence('daily')"
-            >
-              <span class="block font-bold text-white">Every day</span>
-              <span class="mt-1 block text-sm leading-6 text-slate-400">Best when you want details while they are fresh.</span>
-            </button>
-          </div>
-
-          <div v-if="loggingCadence === 'weekly'" class="mt-4">
-            <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Preferred log day</p>
-            <div class="mt-3 flex flex-wrap gap-2">
-              <button
-                v-for="option in weeklyLogDayOptions"
-                :key="option.value"
-                type="button"
-                class="rounded-full px-3 py-2 text-sm font-bold transition"
-                :class="weeklyLogDay === option.value
-                  ? 'bg-white text-slate-950'
-                  : 'bg-slate-800 text-slate-300 ring-1 ring-slate-700'"
-                @click="saveWeeklyLogDay(option.value)"
-              >
-                {{ option.label }}
-              </button>
-            </div>
-          </div>
-        </section>
-
-        <section class="rounded-4xl border border-slate-800 bg-slate-900 p-5">
-          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Reminders</p>
-          <h2 class="mt-1 text-xl font-bold text-white">Logging notifications</h2>
-          <p class="mt-2 text-sm leading-6 text-slate-400">
-            {{ logReminderScheduleDescription }}
-          </p>
-          <p class="mt-2 text-xs leading-5 text-slate-500">
-            Device permission: {{ logReminderDevicePermissionLabel }}. Turning VCH reminders off stops app reminders but does not change your device notification permission.
-          </p>
-
-          <p v-if="logReminderPermissionState === 'unsupported'" class="mt-3 text-sm leading-6 text-amber-200">
-            Notifications are not supported in this browser.
-          </p>
-          <p v-else-if="logReminderPermissionState === 'denied'" class="mt-3 text-sm leading-6 text-amber-200">
-            Notifications are blocked for this app. Enable them in your phone or browser settings, then come back and tap Enable.
-          </p>
-          <p v-else-if="pushBackendConfigured === false" class="mt-3 text-sm leading-6 text-amber-200">
-            Background push is not configured on the server yet (missing VAPID keys in Netlify). Reminders cannot reach this device until that is fixed.
-          </p>
-          <p v-else-if="hasRegisteredPushSubscription === false" class="mt-3 text-sm leading-6 text-amber-200">
-            This device is not registered for push reminders yet. Tap Enable after notifications are allowed.
-          </p>
-
-          <div class="mt-4 flex items-center justify-between gap-3 rounded-3xl border border-slate-700 bg-slate-800/50 px-4 py-4">
-            <div>
-              <p class="font-bold text-white">Log reminders</p>
-              <p class="mt-1 text-sm text-slate-400">
-                {{ logReminderStatusLabel }}
-              </p>
-            </div>
-            <button
-              type="button"
-              class="rounded-full px-4 py-2 text-sm font-bold transition"
-              :class="remindersEnabled
-                ? 'bg-white text-slate-950'
-                : 'bg-slate-700 text-slate-200 ring-1 ring-slate-600'"
-              @click="toggleLogReminders"
-            >
-              {{ logReminderButtonLabel }}
-            </button>
-          </div>
-
-          <div class="mt-4 rounded-3xl border border-slate-700 bg-slate-800/50 px-4 py-4">
-            <label class="block text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
-              Morning reminder
-            </label>
-            <select
-              :value="reminderHour"
-              class="mt-2 w-full rounded-2xl border border-slate-600 bg-slate-900 px-4 py-3 text-sm font-semibold text-white"
-              @change="handleReminderHourChange"
-            >
-              <option
-                v-for="option in logReminderHourOptions"
-                :key="option.value"
-                :value="option.value"
-              >
-                {{ option.label }}
-              </option>
-            </select>
-            <p class="mt-2 text-xs leading-5 text-slate-500">
-              Uses your local timezone: {{ logReminderTimezoneLabel }} ({{ reminderTimezone }}).
-            </p>
-          </div>
-
-          <p class="mt-3 text-xs leading-5 text-slate-500">
-            Install the app for background alerts when the app is closed. Up to two nudges per day — your morning time and 8 PM — if you have not logged yet.
-          </p>
-        </section>
-
-        <section class="rounded-4xl border border-slate-800 bg-slate-900 p-4">
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Supporter Links</p>
-            <h2 class="mt-1 text-xl font-bold text-white">Family reporting access</h2>
-            <p class="mt-2 text-sm leading-6 text-slate-400">
-              Create a private link for someone you trust. They enter their own contact info on each report. You can also create a link from a saved entry in your history.
-            </p>
-          </div>
-
-          <div
-            v-if="!canUseFamilyReporting"
-            class="mt-4 rounded-3xl border border-amber-900/50 bg-amber-950/20 p-4"
-          >
-            <div class="flex items-start gap-3">
-              <UIcon name="i-lucide-lock" class="mt-0.5 size-5 shrink-0 text-amber-300" />
-              <div>
-                <p class="font-semibold text-amber-100">Pro feature</p>
-                <p class="mt-1 text-sm leading-6 text-amber-50/90">
-                  Family reporting links are included with Pro so supporters can submit signed observations for your claim.
-                </p>
-                <NuxtLink
-                  to="/upgrade"
-                  class="mt-3 inline-flex items-center gap-2 rounded-2xl bg-amber-400 px-4 py-3 text-sm font-bold text-slate-950"
-                >
-                  Unlock family reporting
-                </NuxtLink>
-                <a
-                  :href="supportEmailHref"
-                  class="mt-3 block text-xs font-semibold text-amber-100/80 underline-offset-2 hover:underline"
-                >
-                  Can't pay? Email us for free access
-                </a>
-              </div>
-            </div>
-          </div>
-
-          <template v-else>
-
-          <div v-if="linkedEntryContext" class="mt-4 rounded-3xl border border-sky-900/60 bg-sky-950/30 p-4">
-            <p class="text-xs font-bold uppercase tracking-[0.14em] text-sky-300">Linked entry</p>
-            <p class="mt-2 font-semibold text-white">{{ linkedEntryContext.summary }}</p>
-            <p class="mt-1 text-xs text-sky-200/80">{{ linkedEntryContext.condition }}</p>
-          </div>
-
-          <div class="mt-5 space-y-4">
-            <label class="block">
-              <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Link label (optional)</span>
-              <input
-                v-model="supporterForm.link_label"
-                type="text"
-                class="w-full rounded-3xl border border-slate-600/70 bg-slate-800/70 px-4 py-4 text-base font-medium text-white outline-none placeholder:text-slate-400 focus:border-slate-400"
-                placeholder="Example: Mom, spouse, caregiver"
-              >
-              <p class="mt-2 px-1 text-xs leading-5 text-slate-400">
-                This label is only for you to recognize the link. The supporter enters their real info when submitting a report.
-              </p>
-            </label>
-
-            <div>
-              <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Visible conditions</span>
-              <USelectMenu
-                v-model="supporterForm.visible_conditions"
-                :items="conditionOptions"
-                multiple
-                placeholder="Choose visible conditions"
-                class="w-full"
-                color="neutral"
-                size="xl"
-              />
-            </div>
-
-            <button
-              type="button"
-              class="w-full rounded-2xl bg-white px-5 py-4 text-base font-bold text-slate-950 shadow-lg transition hover:bg-slate-200"
-              :disabled="isCreatingSupporter"
-              @click="createSupporter"
-            >
-              {{ isCreatingSupporter ? 'Creating...' : 'Create Private Link' }}
-            </button>
-          </div>
-
-          <div v-if="createdLink" class="mt-4 rounded-3xl border border-emerald-900 bg-emerald-950/40 p-4">
-            <p class="text-sm font-bold text-emerald-200">Private link created</p>
-            <p class="mt-2 break-all text-sm leading-6 text-emerald-100">{{ createdLink }}</p>
-            <p class="mt-2 text-xs leading-5 text-emerald-200/80">
-              Save this now. For privacy, the raw token is only shown when the link is created.
-            </p>
-            <button
-              type="button"
-              class="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-emerald-400"
-              @click="copyCreatedLink"
-            >
-              <UIcon :name="createdLinkCopied ? 'i-lucide-check' : 'i-lucide-copy'" class="size-4" />
-              {{ createdLinkCopied ? 'Copied to clipboard' : 'Copy link' }}
-            </button>
-          </div>
-          </template>
-        </section>
-
-        <section class="space-y-3">
-          <h2 class="px-1 text-xl font-bold text-white">Existing supporter profiles</h2>
-
-          <div v-if="!supporterProfiles.length" class="rounded-4xl border border-slate-800 bg-slate-900 p-5 text-center text-sm text-slate-400">
-            No supporter links yet.
-          </div>
-
-          <article
-            v-for="profile in supporterProfiles"
-            :key="profile.id"
-            class="rounded-4xl border border-slate-800 bg-slate-900 p-4"
-          >
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <h3 class="font-bold text-white">{{ profile.display_name || 'Private supporter link' }}</h3>
-                <p class="mt-1 text-sm text-slate-400">Reporter details are collected on each submission.</p>
-              </div>
-              <UBadge :color="profile.active ? 'success' : 'neutral'" variant="soft">
-                {{ profile.active ? 'Active' : 'Disabled' }}
-              </UBadge>
-            </div>
-
-            <div class="mt-3 flex flex-wrap gap-2">
-              <UBadge
-                v-for="condition in profile.visible_conditions"
-                :key="condition"
-                color="neutral"
-                variant="soft"
-              >
-                {{ condition }}
-              </UBadge>
-            </div>
-
-            <div v-if="profile.entry_context_summary" class="mt-3 rounded-2xl border border-sky-900/50 bg-sky-950/20 px-3 py-2">
-              <p class="text-xs font-bold uppercase tracking-[0.12em] text-sky-300">Linked entry</p>
-              <p class="mt-1 text-sm text-sky-100">{{ profile.entry_context_summary }}</p>
-            </div>
-
-            <div class="mt-4 flex items-center gap-3">
-              <button
-                type="button"
-                class="grid size-11 shrink-0 place-items-center rounded-full bg-slate-800 text-white ring-1 ring-slate-700 transition hover:bg-slate-700"
-                :disabled="isCopyingSupporterId === profile.id"
-                :aria-label="`Copy link for ${profile.display_name || 'private supporter link'}`"
-                @click="copyExistingSupporterLink(profile)"
-              >
-                <UIcon
-                  :name="copiedSupporterId === profile.id ? 'i-lucide-check' : 'i-lucide-copy'"
-                  class="size-4"
-                />
-                <span class="sr-only">{{ copiedSupporterId === profile.id ? 'Copied' : 'Copy link' }}</span>
-              </button>
-              <button
-                type="button"
-                class="flex-1 rounded-2xl bg-slate-800 px-4 py-3 text-sm font-bold text-white ring-1 ring-slate-700"
-                @click="toggleSupporter(profile)"
-              >
-                {{ profile.active ? 'Disable link' : 'Reactivate link' }}
-              </button>
-              <button
-                type="button"
-                class="flex-1 rounded-2xl bg-red-950/50 px-4 py-3 text-sm font-bold text-red-300 ring-1 ring-red-900/60"
-                @click="requestDeleteSupporter(profile)"
-              >
-                Delete link
-              </button>
-            </div>
-          </article>
-        </section>
-
-        <section class="rounded-4xl border border-slate-800 bg-slate-900 p-5">
-          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Display</p>
-          <h2 class="mt-1 text-xl font-bold text-white">Tracker layout</h2>
-          <p class="mt-2 text-sm leading-6 text-slate-400">
-            Auto hides arrow controls on small screens. Choose desktop to keep arrows and the wide layout on a tablet or narrow window.
-          </p>
-
-          <div class="mt-4 grid gap-3">
-            <button
-              v-for="option in layoutOptions"
-              :key="option.value"
-              type="button"
-              class="rounded-3xl border px-4 py-4 text-left transition"
-              :class="layoutMode === option.value
-                ? 'border-white bg-slate-800'
-                : 'border-slate-700 bg-slate-800/50'"
-              @click="chooseLayoutMode(option.value)"
-            >
-              <span class="block font-bold text-white">{{ option.label }}</span>
-              <span class="mt-1 block text-sm leading-6 text-slate-400">{{ option.copy }}</span>
-            </button>
-          </div>
-        </section>
-
-        <section class="rounded-4xl border border-slate-800 bg-slate-900 p-4">
+        <section id="settings-recovery" class="scroll-mt-3 rounded-4xl border border-slate-800 bg-slate-900 p-4">
           <div>
             <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Deleted Entries</p>
             <h2 class="mt-1 text-xl font-bold text-white">Recovery bin</h2>
@@ -745,7 +776,7 @@
           </div>
         </section>
 
-        <section class="rounded-4xl border border-red-900/40 bg-slate-900 p-4">
+        <section id="settings-danger" class="scroll-mt-3 rounded-4xl border border-red-900/40 bg-slate-900 p-4">
           <div>
             <p class="text-xs font-semibold uppercase tracking-[0.2em] text-red-300/80">Data control</p>
             <h2 class="mt-1 text-xl font-bold text-white">Delete all logs</h2>
@@ -768,7 +799,7 @@
             Delete all logs
           </button>
         </section>
-        <section class="rounded-4xl border border-slate-800 bg-slate-900 p-4">
+        <section id="settings-session" class="scroll-mt-3 rounded-4xl border border-slate-800 bg-slate-900 p-4">
           <div>
             <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Session</p>
             <h2 class="mt-1 text-xl font-bold text-white">Sign out</h2>
@@ -790,6 +821,7 @@
         <p v-if="pageError" class="rounded-3xl border border-red-900/60 bg-red-950/30 px-4 py-3 text-sm font-medium text-red-200">
           {{ pageError }}
         </p>
+        </div>
         </div>
       </div>
     </section>
@@ -849,7 +881,7 @@
         @click.self="cancelDeleteSupporter"
       >
         <div class="w-full max-w-md rounded-[1.75rem] border border-slate-800 bg-slate-900 p-5 shadow-2xl">
-          <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Delete supporter link</p>
+          <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Delete reporting link</p>
           <h3 class="mt-2 text-xl font-bold text-white">Remove this link forever?</h3>
           <p class="mt-3 text-sm leading-6 text-slate-300">
             <span class="font-semibold text-white">{{ pendingDeleteSupporter.display_name }}</span>
@@ -993,6 +1025,19 @@
         </div>
       </div>
     </Transition>
+
+    <ContactSupportOverlay
+      :open="isContactSupportOpen"
+      :default-name="profileForm.full_name"
+      :default-email="user?.email || ''"
+      @close="isContactSupportOpen = false"
+    />
+
+    <FaqOverlay
+      :open="isFaqOverlayOpen"
+      @close="isFaqOverlayOpen = false"
+      @open-contact="openContactFromFaq"
+    />
   </main>
 </template>
 
@@ -1018,6 +1063,7 @@ import {
   LOG_REMINDER_HOUR_OPTIONS
 } from '../utils/logReminders'
 import { useTrackerLayout, TRACKER_CLOSE_EMBED_PROFILE_KEY, type TrackerLayoutMode } from '../composables/useTrackerLayout'
+import type { SettingsSection } from '../composables/useSettingsSectionNav'
 import { mapEntryHistoryItem } from '../utils/entryDisplay'
 import { copyToClipboard } from '../utils/copyToClipboard'
 import { computed, inject, onMounted, onUnmounted, ref, watch } from 'vue'
@@ -1025,6 +1071,19 @@ import { useRoute } from 'vue-router'
 
 const route = useRoute()
 const closeEmbedProfile = inject<(() => void) | null>(TRACKER_CLOSE_EMBED_PROFILE_KEY, null)
+const settingsScrollEl = ref<HTMLElement | null>(null)
+
+const settingsSections: SettingsSection[] = [
+  { id: 'settings-account', label: 'Account' },
+  { id: 'settings-logging', label: 'Logging' },
+  { id: 'settings-reminders', label: 'Reminders' },
+  { id: 'settings-display', label: 'Display' },
+  { id: 'settings-supporters', label: 'Family, friends, other' },
+  { id: 'settings-passkeys', label: 'Passkeys' },
+  { id: 'settings-recovery', label: 'Recovery' },
+  { id: 'settings-danger', label: 'Delete logs' },
+  { id: 'settings-session', label: 'Sign out' }
+]
 
 const {
   user,
@@ -1093,6 +1152,7 @@ const {
   permissionState: logReminderPermissionState,
   pushBackendConfigured,
   hasRegisteredPushSubscription,
+  isReminderTogglePending,
   refreshPushReminderStatus,
   enableRemindersWithPermission,
   disableReminders,
@@ -1261,6 +1321,8 @@ const copiedSupporterId = ref<string | null>(null)
 const pendingPurgeEntry = ref<null | { id: string, title: string }>(null)
 const pendingDeleteSupporter = ref<null | { id: string, display_name: string }>(null)
 const activeLogCount = useState('profile-page-log-count', () => 0)
+const isContactSupportOpen = ref(false)
+const isFaqOverlayOpen = ref(false)
 const isDeleteAllLogsModalOpen = ref(false)
 const deleteAllLogsPassword = ref('')
 const deleteAllLogsConfirmPhrase = ref('')
@@ -1488,10 +1550,14 @@ async function saveWeeklyLogDay(day: number) {
 }
 
 async function toggleLogReminders() {
+  if (isReminderTogglePending.value) {
+    return
+  }
+
   if (remindersEnabled.value) {
     await disableReminders()
     await refreshPushReminderStatus()
-    showSubmissionToast({ message: 'VCH reminders turned off. Device notification permission stays allowed.' })
+    showSubmissionToast({ message: 'VCH reminders turned off.' })
     return
   }
 
@@ -1590,7 +1656,7 @@ async function createSupporter() {
     linkedEntryId.value = null
     linkedEntryContext.value = null
     await loadProfilePage()
-    showSubmissionToast('Supporter link created.')
+    showSubmissionToast('Reporting link created.')
   } catch (error) {
     pageError.value = getErrorMessage(error)
   } finally {
@@ -1650,7 +1716,7 @@ async function copyExistingSupporterLink(profile: any) {
 function requestDeleteSupporter(profile: any) {
   pendingDeleteSupporter.value = {
     id: profile.id,
-    display_name: profile.display_name || 'Private supporter link'
+    display_name: profile.display_name || 'Private reporting link'
   }
 }
 
@@ -1669,7 +1735,7 @@ async function confirmDeleteSupporter() {
   try {
     await deleteSupporterProfile(pendingDeleteSupporter.value.id)
     pendingDeleteSupporter.value = null
-    showSubmissionToast('Supporter link deleted.')
+    showSubmissionToast('Reporting link deleted.')
     await loadProfilePage()
   } catch (error) {
     pageError.value = getErrorMessage(error)
@@ -1747,6 +1813,11 @@ function confirmPurgeDeletedEntry() {
   pendingPurgeEntry.value = null
   loadDeletedEntries()
   showSubmissionToast('Deleted entry removed permanently.')
+}
+
+function openContactFromFaq() {
+  isFaqOverlayOpen.value = false
+  isContactSupportOpen.value = true
 }
 
 function openDeleteAllLogsModal() {

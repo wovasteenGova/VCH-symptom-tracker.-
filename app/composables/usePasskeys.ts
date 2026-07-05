@@ -30,8 +30,16 @@ function getPasskeyErrorMessage(error: unknown, fallback: string) {
       return 'Passkey prompt was closed or timed out. Try again when you are ready.'
     }
 
-    if (failure.name === 'InvalidStateError' || /credential.*already registered|excluded/i.test(message)) {
-      return 'This device already has a passkey for your account.'
+    if (failure.name === 'InvalidStateError' || /credential.*already registered|excluded|already exists/i.test(message)) {
+      return 'This device already has a passkey for your account. Sign in with it, or remove the old passkey in Profile first.'
+    }
+
+    if (/could not register passkey|register passkey.*device|authenticator.*already/i.test(message)) {
+      return 'This device already has a passkey for the signed-in account, or you switched accounts. Sign in as the right user, then try again.'
+    }
+
+    if (/session.*missing|not authenticated|sign in/i.test(message)) {
+      return 'Sign in to the account you want, then add a passkey for that account.'
     }
 
     if (failure.name === 'SecurityError' || /relying party|rp id/i.test(message)) {
@@ -110,6 +118,12 @@ export function usePasskeys() {
     isPasskeyBusy.value = true
 
     try {
+      const { data: authData, error: authError } = await supabase.auth.getUser()
+
+      if (authError || !authData.user) {
+        throw new Error('Sign in to the account you want, then add a passkey for that account.')
+      }
+
       // Two-step ceremony instead of auth.registerPasskey() so we can steer
       // the browser to the device's built-in authenticator (Windows Hello,
       // fingerprint, Face ID) instead of security keys / new PIN prompts.
@@ -129,9 +143,15 @@ export function usePasskeys() {
       }
       publicKey.hints = ['client-device']
 
-      const credential = await navigator.credentials.create({
-        publicKey: publicKey as PublicKeyCredentialCreationOptions
-      }) as PublicKeyCredential | null
+      let credential: PublicKeyCredential | null
+
+      try {
+        credential = await navigator.credentials.create({
+          publicKey: publicKey as PublicKeyCredentialCreationOptions
+        }) as PublicKeyCredential | null
+      } catch (createError) {
+        throw new Error(getPasskeyErrorMessage(createError, 'Could not add a passkey.'))
+      }
 
       if (!credential) {
         throw new Error('Passkey prompt was closed or timed out. Try again when you are ready.')

@@ -114,24 +114,32 @@ export function useSupabaseAuth() {
   }
 
   onMounted(async () => {
+    const listener = supabase.auth.onAuthStateChange((_event, session) => {
+      user.value = session?.user ?? null
+    })
+
+    unsubscribe = listener.data.subscription.unsubscribe
+
     try {
+      // Hydrate from the local session first so signed-in users never flash the login UI.
+      const { data: sessionData } = await supabase.auth.getSession()
+
+      if (sessionData.session?.user) {
+        user.value = sessionData.session.user
+      }
+
       const { data, error } = await supabase.auth.getUser()
 
       if (error) {
         authError.value = getAuthErrorMessage(error)
-      } else {
+      } else if (data.user) {
         user.value = data.user
       }
     } catch (error) {
       authError.value = getAuthErrorMessage(error)
+    } finally {
+      isAuthLoading.value = false
     }
-
-    const listener = supabase.auth.onAuthStateChange((_event, session) => {
-      user.value = session?.user || null
-    })
-
-    unsubscribe = listener.data.subscription.unsubscribe
-    isAuthLoading.value = false
   })
 
   onUnmounted(() => {

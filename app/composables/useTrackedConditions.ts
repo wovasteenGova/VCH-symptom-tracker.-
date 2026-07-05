@@ -134,7 +134,7 @@ export function useTrackedConditions() {
         return
       }
 
-      if (!keys.length && profile?.free_condition_keys?.length) {
+      if (!keys.length && profile?.free_condition_keys?.length && !completed) {
         keys = normalizeTrackedConditionKeys([...profile.free_condition_keys])
         completed = keys.length > 0
         if (completed) {
@@ -185,10 +185,6 @@ export function useTrackedConditions() {
   }
 
   async function updateTrackedConditions(keys: string[]) {
-    if (!keys.length) {
-      throw new Error('Keep at least one condition on your home screen.')
-    }
-
     return persistTrackedConditions(keys, true)
   }
 

@@ -43,6 +43,7 @@ export function useLogReminders() {
   const permissionState = useState<NotificationPermission | 'unsupported'>('log-reminder-permission-state', () => 'default')
   const pushBackendConfigured = useState<boolean | null>('log-reminder-push-configured', () => null)
   const hasRegisteredPushSubscription = useState<boolean | null>('log-reminder-push-registered', () => null)
+  const isReminderTogglePending = useState('log-reminder-toggle-pending', () => false)
 
   function syncPermissionState() {
     if (!import.meta.client || typeof Notification === 'undefined') {
@@ -215,6 +216,10 @@ export function useLogReminders() {
   }
 
   async function refreshPushReminderStatus() {
+    if (isReminderTogglePending.value) {
+      return
+    }
+
     const publicKey = await resolveVapidPublicKey(String(config.public.vapidPublicKey || ''))
     pushBackendConfigured.value = Boolean(publicKey)
     syncPermissionState()
@@ -243,46 +248,56 @@ export function useLogReminders() {
   }
 
   async function enableRemindersWithPermission() {
-    const publicKey = await resolveVapidPublicKey(String(config.public.vapidPublicKey || ''))
-    const timezone = getBrowserTimezone()
-
-    pushBackendConfigured.value = Boolean(publicKey)
-    syncPermissionState()
-    setReminderTimezone(timezone)
-
-    if (!reminderHour.value) {
-      setReminderHour(defaultLogReminderSettings().hour)
-    }
-
-    if (permissionState.value === 'denied') {
-      setRemindersEnabled(false)
-      hasRegisteredPushSubscription.value = false
-
+    if (isReminderTogglePending.value) {
       return {
         ok: false as const,
-        reason: 'permission-denied' as const
+        reason: 'subscribe-failed' as const,
+        message: 'Still finishing the last reminder change. Try again in a moment.'
       }
     }
 
-    if (permissionState.value === 'unsupported') {
-      setRemindersEnabled(false)
-      hasRegisteredPushSubscription.value = false
-
-      return {
-        ok: false as const,
-        reason: 'unsupported' as const
-      }
-    }
-
-    if (!publicKey) {
-      setRemindersEnabled(false)
-      return {
-        ok: false as const,
-        reason: 'missing-vapid' as const
-      }
-    }
+    isReminderTogglePending.value = true
 
     try {
+      const publicKey = await resolveVapidPublicKey(String(config.public.vapidPublicKey || ''))
+      const timezone = getBrowserTimezone()
+
+      pushBackendConfigured.value = Boolean(publicKey)
+      syncPermissionState()
+      setReminderTimezone(timezone)
+
+      if (!reminderHour.value) {
+        setReminderHour(defaultLogReminderSettings().hour)
+      }
+
+      if (permissionState.value === 'denied') {
+        setRemindersEnabled(false)
+        hasRegisteredPushSubscription.value = false
+
+        return {
+          ok: false as const,
+          reason: 'permission-denied' as const
+        }
+      }
+
+      if (permissionState.value === 'unsupported') {
+        setRemindersEnabled(false)
+        hasRegisteredPushSubscription.value = false
+
+        return {
+          ok: false as const,
+          reason: 'unsupported' as const
+        }
+      }
+
+      if (!publicKey) {
+        setRemindersEnabled(false)
+        return {
+          ok: false as const,
+          reason: 'missing-vapid' as const
+        }
+      }
+
       await subscribeToLogReminders(publicKey, {
         reminderHour: reminderHour.value,
         reminderEveningHour: reminderEveningHour.value,
@@ -314,10 +329,17 @@ export function useLogReminders() {
         reason: 'subscribe-failed' as const,
         message: error instanceof Error ? error.message : 'Could not register this device for push reminders.'
       }
+    } finally {
+      isReminderTogglePending.value = false
     }
   }
 
   async function disableReminders() {
+    if (isReminderTogglePending.value) {
+      return
+    }
+
+    isReminderTogglePending.value = true
     setRemindersEnabled(false)
     hasRegisteredPushSubscription.value = false
 
@@ -331,6 +353,8 @@ export function useLogReminders() {
       })
     } catch {
       // Local disable still applies even if Supabase sync fails.
+    } finally {
+      isReminderTogglePending.value = false
     }
   }
 
@@ -392,6 +416,7 @@ export function useLogReminders() {
     permissionState,
     pushBackendConfigured,
     hasRegisteredPushSubscription,
+    isReminderTogglePending,
     refreshPushReminderStatus,
     requestReminderPermission,
     enableRemindersWithPermission,

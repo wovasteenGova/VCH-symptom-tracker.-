@@ -36,7 +36,7 @@
             v-if="isLoading"
             class="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center"
           >
-            <UIcon name="i-lucide-loader-circle" class="size-8 animate-spin text-amber-300" />
+            <VchLoader :width="240" />
             <p class="text-sm text-slate-300">Loading secure payment form...</p>
           </div>
 
