@@ -23,6 +23,15 @@ type SupporterProfilePayload = {
   entry_context_summary?: string | null
 }
 
+function isMissingProfileColumnError(error: unknown, columnName: string) {
+  return Boolean(
+    error
+    && typeof error === 'object'
+    && 'message' in error
+    && String((error as { message?: unknown }).message).includes(columnName)
+  )
+}
+
 async function sha256Hex(value: string) {
   const encodedValue = new TextEncoder().encode(value)
   const hashBuffer = await crypto.subtle.digest('SHA-256', encodedValue)
@@ -77,16 +86,32 @@ export function useUserProfiles() {
 
   async function upsertProfile(payload: UserProfilePayload) {
     const userId = await getUserId()
+    const upsertPayload = {
+      user_id: userId,
+      ...payload,
+      updated_at: new Date().toISOString()
+    }
 
     const { data, error } = await trackerDb
       .from('user_profiles')
-      .upsert({
-        user_id: userId,
-        ...payload,
-        updated_at: new Date().toISOString()
-      })
+      .upsert(upsertPayload)
       .select()
       .single()
+
+    if (isMissingProfileColumnError(error, 'reminder_evening_hour')) {
+      const { reminder_evening_hour: _reminderEveningHour, ...fallbackPayload } = upsertPayload
+      const { data: fallbackData, error: fallbackError } = await trackerDb
+        .from('user_profiles')
+        .upsert(fallbackPayload)
+        .select()
+        .single()
+
+      if (fallbackError) {
+        throw fallbackError
+      }
+
+      return fallbackData
+    }
 
     if (error) {
       throw error

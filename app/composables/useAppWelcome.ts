@@ -56,6 +56,15 @@ function writeLocalPreferences(preferences: AppWelcomePreferences) {
   window.localStorage.setItem(TERMS_ACCEPTED_AT_STORAGE_KEY, preferences.termsAcceptedAt)
 }
 
+function isMissingReminderEveningHourError(error: unknown) {
+  return Boolean(
+    error
+    && typeof error === 'object'
+    && 'message' in error
+    && String((error as { message?: unknown }).message).includes("reminder_evening_hour")
+  )
+}
+
 export function useAppWelcome() {
   const supabase = useSupabaseClient()
   const trackerDb = useTrackerDb()
@@ -109,11 +118,17 @@ export function useAppWelcome() {
       }
 
       if (readLocalWelcomeCompleted()) {
-        await completeAppWelcome({
-          loggingCadence: readLocalCadence(),
-          weeklyLogDay: readLocalWeeklyLogDay(),
-          termsAcceptedAt: window.localStorage.getItem(TERMS_ACCEPTED_AT_STORAGE_KEY) || new Date().toISOString()
-        })
+        try {
+          await completeAppWelcome({
+            loggingCadence: readLocalCadence(),
+            weeklyLogDay: readLocalWeeklyLogDay(),
+            termsAcceptedAt: window.localStorage.getItem(TERMS_ACCEPTED_AT_STORAGE_KEY) || new Date().toISOString()
+          })
+        } catch (error) {
+          if (!isMissingReminderEveningHourError(error)) {
+            throw error
+          }
+        }
       }
     } finally {
       isLoading.value = false
@@ -133,20 +148,35 @@ export function useAppWelcome() {
       return
     }
 
+    const payload = {
+      user_id: userData.user.id,
+      app_welcome_completed: true,
+      logging_cadence: preferences.loggingCadence,
+      weekly_log_day: preferences.weeklyLogDay,
+      terms_accepted_at: preferences.termsAcceptedAt,
+      log_reminders_enabled: preferences.enableLogReminders ?? false,
+      reminder_hour: preferences.reminderHour ?? 10,
+      reminder_evening_hour: 20,
+      reminder_timezone: preferences.reminderTimezone ?? getBrowserTimezone(),
+      updated_at: new Date().toISOString()
+    }
+
     const { error } = await trackerDb
       .from('user_profiles')
-      .upsert({
-        user_id: userData.user.id,
-        app_welcome_completed: true,
-        logging_cadence: preferences.loggingCadence,
-        weekly_log_day: preferences.weeklyLogDay,
-        terms_accepted_at: preferences.termsAcceptedAt,
-        log_reminders_enabled: preferences.enableLogReminders ?? false,
-        reminder_hour: preferences.reminderHour ?? 10,
-        reminder_evening_hour: 20,
-        reminder_timezone: preferences.reminderTimezone ?? getBrowserTimezone(),
-        updated_at: new Date().toISOString()
-      })
+      .upsert(payload)
+
+    if (isMissingReminderEveningHourError(error)) {
+      const { reminder_evening_hour: _reminderEveningHour, ...fallbackPayload } = payload
+      const { error: fallbackError } = await trackerDb
+        .from('user_profiles')
+        .upsert(fallbackPayload)
+
+      if (fallbackError) {
+        throw fallbackError
+      }
+
+      return
+    }
 
     if (error) {
       throw error
