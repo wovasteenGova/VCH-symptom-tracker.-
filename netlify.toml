@@ -9,6 +9,10 @@
     X-Content-Type-Options = "nosniff"
     X-Frame-Options = "SAMEORIGIN"
     Referrer-Policy = "strict-origin-when-cross-origin"
+    Strict-Transport-Security = "max-age=31536000"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), usb=(), serial=(), bluetooth=(), interest-cohort=()"
+    Cross-Origin-Opener-Policy = "same-origin-allow-popups"
+    X-Permitted-Cross-Domain-Policies = "none"
     X-Site-Category = "veteran-health-tools"
     X-Site-Type = "functional-symptom-tracker"
 

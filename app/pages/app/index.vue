@@ -228,6 +228,9 @@
           <div class="app-overlay-inner">
             <section
               class="app-overlay-panel rounded-4xl border border-slate-200 bg-white p-4 shadow-2xl shadow-slate-950/10 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/40"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="auth-panel-title"
               @click.stop
             >
             <div class="flex items-start justify-between gap-3">
@@ -235,7 +238,7 @@
                 <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
                   {{ user ? 'Account' : authMode === 'login' ? 'Welcome back' : 'Create account' }}
                 </p>
-                <h2 class="mt-1 text-xl font-bold text-slate-950 dark:text-white">
+                <h2 id="auth-panel-title" class="mt-1 text-xl font-bold text-slate-950 dark:text-white">
                   {{ user ? user.email : authMode === 'login' ? 'Sign in to save entries' : 'Sign up to back up your logs' }}
                 </h2>
               </div>
@@ -275,7 +278,7 @@
               >
                 {{ isAuthSubmitting ? 'Signing out...' : 'Sign out' }}
               </button>
-              <p v-if="authError" class="text-center text-sm font-medium text-red-600 dark:text-red-300">{{ authError }}</p>
+              <p v-if="authError" class="text-center text-sm font-medium text-red-600 dark:text-red-300" aria-live="assertive">{{ authError }}</p>
             </div>
 
             <form v-else class="mt-4 space-y-3" @submit.prevent="handleAuthSubmit">
@@ -385,8 +388,8 @@
               {{ authMode === 'login' ? 'Need an account? Sign up' : 'Already have an account? Sign in' }}
             </button>
 
-            <p v-if="authMessage" class="text-center text-sm font-medium text-slate-600 dark:text-slate-300">{{ authMessage }}</p>
-            <p v-if="authError" class="text-center text-sm font-medium text-red-600 dark:text-red-300">{{ authError }}</p>
+            <p v-if="authMessage" class="text-center text-sm font-medium text-slate-600 dark:text-slate-300" aria-live="polite">{{ authMessage }}</p>
+            <p v-if="authError" class="text-center text-sm font-medium text-red-600 dark:text-red-300" aria-live="assertive">{{ authError }}</p>
             </form>
           </section>
           </div>
@@ -847,7 +850,7 @@
                   {{ isSavingEntry ? 'Saving...' : isLastEntryStep ? (isEditingEntry ? 'Save changes' : 'Finish') : 'Continue' }}
                   <UIcon :name="isLastEntryStep ? 'i-lucide-check' : 'i-lucide-arrow-right'" class="size-5" />
                 </button>
-                <p v-if="entryError" class="mt-3 text-center text-sm font-medium text-red-300">
+                <p v-if="entryError" class="mt-3 text-center text-sm font-medium text-red-300" aria-live="assertive">
                   {{ entryError }}
                 </p>
               </StickyActionBar>
@@ -1220,6 +1223,7 @@
                   type="button"
                   data-history-interactive
                   class="inline-flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-3 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.12em] text-slate-700 ring-1 ring-slate-300/60 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-600/70 dark:hover:bg-slate-700"
+                  aria-label="Sign in to save and view symptom history"
                   @click="openAuthPanel"
                 >
                   <UIcon name="i-lucide-log-in" class="size-3.5" />
@@ -1227,10 +1231,10 @@
                 </button>
               </div>
             </div>
-            <p v-if="exportError" class="mt-2 text-sm font-medium text-red-600 dark:text-red-300">
+            <p v-if="exportError" class="mt-2 text-sm font-medium text-red-600 dark:text-red-300" aria-live="assertive">
               {{ exportError }}
             </p>
-            <p v-if="exportNotice" class="mt-2 flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100">
+            <p v-if="exportNotice" class="mt-2 flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100" aria-live="polite">
               <UIcon name="i-lucide-crown" class="mt-0.5 size-3.5 shrink-0 text-amber-600 dark:text-amber-300" />
               <span>
                 {{ exportNotice }}
@@ -1262,6 +1266,8 @@
 
             <div
               class="mt-4 rounded-full bg-slate-100 p-1 dark:bg-slate-800/80"
+              role="tablist"
+              aria-label="History sections"
               @touchstart.passive="handleHistoryTabSwipeStart"
               @touchend="handleHistoryTabSwipeEnd"
             >
@@ -1271,8 +1277,10 @@
                   :key="tab"
                   type="button"
                   data-history-interactive
+                  role="tab"
                   class="relative rounded-full px-4 py-3 text-sm font-semibold transition"
                   :class="activeHistoryTab === tab ? 'bg-white text-slate-950 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 dark:text-slate-400'"
+                  :aria-selected="activeHistoryTab === tab"
                   @click.stop="selectHistoryTab(tab)"
                 >
                   {{ tab }}
@@ -1582,8 +1590,15 @@
               </template>
             </div>
 
-            <div v-if="activeHistoryTab !== 'Export'" class="mt-2 flex items-center justify-center gap-3 pb-1 text-xs font-semibold text-slate-500">
+            <div v-if="activeHistoryTab !== 'Export'" class="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 pb-1 text-xs font-semibold text-slate-500">
               <NuxtLink to="/install" data-history-interactive class="hover:text-slate-700 dark:hover:text-slate-300">Install</NuxtLink>
+              <a
+                href="mailto:support@veteranscentralhub.com?subject=Accessibility%20help%20with%20VCH"
+                data-history-interactive
+                class="hover:text-slate-700 dark:hover:text-slate-300"
+              >
+                Accessibility/help
+              </a>
               <NuxtLink to="/privacy" data-history-interactive class="hover:text-slate-700 dark:hover:text-slate-300">Privacy</NuxtLink>
               <NuxtLink to="/disclaimer" data-history-interactive class="hover:text-slate-700 dark:hover:text-slate-300">Disclaimer</NuxtLink>
             </div>
@@ -1625,11 +1640,11 @@
       @click.self="cancelDeleteEntryDraft"
     >
       <div class="app-overlay-inner">
-        <div class="app-overlay-panel app-overlay-panel--compact rounded-[1.75rem] bg-white p-5 shadow-2xl dark:bg-slate-900">
+        <div class="app-overlay-panel app-overlay-panel--compact rounded-[1.75rem] bg-white p-5 shadow-2xl dark:bg-slate-900" role="dialog" aria-modal="true" aria-labelledby="delete-draft-title">
         <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
           Draft
         </p>
-        <h3 class="mt-2 text-xl font-bold text-slate-950 dark:text-white">
+        <h3 id="delete-draft-title" class="mt-2 text-xl font-bold text-slate-950 dark:text-white">
           Delete this draft?
         </h3>
         <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
@@ -1672,14 +1687,14 @@
       @click.self="closeEntryDetailsOverlay"
     >
       <div class="app-overlay-inner">
-        <div class="app-overlay-panel app-overlay-panel--stack app-overlay-panel--lg overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+        <div class="app-overlay-panel app-overlay-panel--stack app-overlay-panel--lg overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900" role="dialog" aria-modal="true" aria-labelledby="log-details-title">
         <div class="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 dark:border-slate-800">
           <div class="min-w-0">
             <p class="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-sky-600 dark:text-sky-300">
               <UIcon name="i-lucide-eye" class="size-4" />
               Log details
             </p>
-            <h3 class="mt-2 truncate text-xl font-bold text-slate-950 dark:text-white">
+            <h3 id="log-details-title" class="mt-2 truncate text-xl font-bold text-slate-950 dark:text-white">
               {{ viewedHistoryEntry.title }}
             </h3>
             <p v-if="viewedHistoryEntryTimestamp" class="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">
@@ -1796,11 +1811,11 @@
       @click.self="cancelDeleteEntry"
     >
       <div class="app-overlay-inner">
-        <div class="app-overlay-panel app-overlay-panel--compact rounded-[1.75rem] bg-white p-5 shadow-2xl dark:bg-slate-900">
+        <div class="app-overlay-panel app-overlay-panel--compact rounded-[1.75rem] bg-white p-5 shadow-2xl dark:bg-slate-900" role="dialog" aria-modal="true" aria-labelledby="delete-entry-title">
         <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
           Move to deleted
         </p>
-        <h3 class="mt-2 text-xl font-bold text-slate-950 dark:text-white">
+        <h3 id="delete-entry-title" class="mt-2 text-xl font-bold text-slate-950 dark:text-white">
           Delete this entry?
         </h3>
         <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
@@ -1843,11 +1858,11 @@
       @click.self="closeShareLinkModal"
     >
       <div class="app-overlay-inner">
-        <div class="app-overlay-panel app-overlay-panel--compact rounded-[1.75rem] bg-white p-5 shadow-2xl dark:bg-slate-900">
+        <div class="app-overlay-panel app-overlay-panel--compact rounded-[1.75rem] bg-white p-5 shadow-2xl dark:bg-slate-900" role="dialog" aria-modal="true" aria-labelledby="share-entry-title">
         <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
           Private supporter link
         </p>
-        <h3 class="mt-2 text-xl font-bold text-slate-950 dark:text-white">
+        <h3 id="share-entry-title" class="mt-2 text-xl font-bold text-slate-950 dark:text-white">
           Share this entry
         </h3>
         <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
@@ -1895,7 +1910,7 @@
           </button>
         </div>
 
-        <p v-if="shareLinkError" class="mt-4 text-center text-sm font-medium text-red-600 dark:text-red-300">{{ shareLinkError }}</p>
+        <p v-if="shareLinkError" class="mt-4 text-center text-sm font-medium text-red-600 dark:text-red-300" aria-live="assertive">{{ shareLinkError }}</p>
 
         <button
           type="button"
@@ -1955,9 +1970,9 @@
       @click.self="closeConditionSlotModal"
     >
       <div class="app-overlay-inner">
-        <div class="app-overlay-panel app-overlay-panel--compact rounded-[1.75rem] border border-slate-800 bg-slate-900 p-5 shadow-2xl">
+        <div class="app-overlay-panel app-overlay-panel--compact rounded-[1.75rem] border border-slate-800 bg-slate-900 p-5 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="condition-slot-title">
         <p class="text-xs font-bold uppercase tracking-[0.16em] text-sky-300">Free plan</p>
-        <h3 class="mt-2 text-xl font-bold text-white">
+        <h3 id="condition-slot-title" class="mt-2 text-xl font-bold text-white">
           {{ pendingConditionSlotMode === 'replace' ? 'Switch to' : 'Use' }} {{ pendingConditionSlotLabel }}?
         </h3>
         <p class="mt-3 text-sm leading-6 text-slate-300">
@@ -1979,7 +1994,7 @@
         <p v-if="freeConditionKeys.length" class="mt-3 text-xs leading-5 text-slate-400">
           Current: {{ freeConditionLabels.join(', ') || 'None yet' }}
         </p>
-        <p v-if="conditionSlotError" class="mt-3 text-sm font-medium text-red-300">{{ conditionSlotError }}</p>
+        <p v-if="conditionSlotError" class="mt-3 text-sm font-medium text-red-300" aria-live="assertive">{{ conditionSlotError }}</p>
         <div class="mt-5 grid gap-3">
           <button
             type="button"
