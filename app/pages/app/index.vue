@@ -182,18 +182,17 @@
 
             <button
               type="button"
-              class="relative grid size-10 place-items-center rounded-full bg-white text-slate-950 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-100 dark:bg-slate-900 dark:text-white dark:ring-slate-800 dark:hover:bg-slate-800"
+              class="relative grid size-10 place-items-center rounded-full bg-white text-slate-950 shadow-sm transition hover:bg-slate-100 dark:bg-slate-900 dark:text-white dark:hover:bg-slate-800"
+              :class="profileButtonRingClass"
               :aria-label="user ? 'Open account' : 'Sign in'"
               @click="handleProfileClick"
             >
               <UIcon name="i-lucide-user-round" class="size-5" />
               <span
-                v-if="user"
-                class="absolute -right-0.5 -top-0.5 grid size-[0.825rem] place-items-center rounded-full bg-slate-950 ring-[1.5px] ring-white dark:bg-black dark:ring-slate-900"
+                class="absolute -right-0.5 -top-0.5 size-2.5 rounded-full ring-2 ring-slate-50 dark:ring-slate-950"
+                :class="user ? 'bg-emerald-500' : 'bg-white'"
                 aria-hidden="true"
-              >
-                <UIcon name="i-lucide-check" class="size-[0.55rem] text-emerald-400" />
-              </span>
+              />
             </button>
           </div>
         </div>
@@ -1846,6 +1845,7 @@
 <script setup lang="ts">
 import { useSupabaseAuth } from '../../composables/useSupabaseAuth'
 import { usePasskeys } from '../../composables/usePasskeys'
+import { clearOAuthFlowMarker } from '../../composables/useAuthEmailLink'
 import { useSymptomEntries } from '../../composables/useSymptomEntries'
 import { useSymptomPdfExport } from '../../composables/useSymptomPdfExport'
 import { useDeletedEntryArchive } from '../../composables/useDeletedEntryArchive'
@@ -1922,6 +1922,7 @@ const {
 } = useSupabaseAuth()
 const { isPasskeySupported, signInWithPasskey } = usePasskeys()
 const router = useRouter()
+const route = useRoute()
 const { getProfile } = useUserProfiles()
 const {
   isPro,
@@ -2139,6 +2140,18 @@ const notificationAttentionLabel = computed(() => {
   }
 
   return 'Notifications are off. Open profile to enable reminders.'
+})
+
+const profileButtonRingClass = computed(() => {
+  if (!user.value) {
+    return 'ring-1 ring-slate-200 dark:ring-slate-800'
+  }
+
+  if (entitlementsLoaded.value && isPro.value) {
+    return 'ring-2 ring-amber-400/80 dark:ring-amber-400/70'
+  }
+
+  return 'ring-2 ring-sky-300/60 dark:ring-sky-600/70'
 })
 
 function closeEmbedProfile() {
@@ -3206,6 +3219,8 @@ onBeforeMount(() => {
 })
 
 onMounted(async () => {
+  openLoginFromQuery()
+
   if (!homeGreetingWord.value) {
     homeGreetingWord.value = Math.random() < 0.5 ? 'Hello' : 'Hey'
   }
@@ -3303,6 +3318,12 @@ watch(historyExpanded, (expanded) => {
   }
 
   blockConditionSlideEntry(HISTORY_TRANSITION_LOCK_MS)
+})
+
+watch(() => route.query.login, (value) => {
+  if (value === '1') {
+    openLoginFromQuery()
+  }
 })
 
 watch(
@@ -4244,6 +4265,20 @@ function toggleAuthPanel() {
   }
 
   isAuthPanelOpen.value = !isAuthPanelOpen.value
+}
+
+function openLoginFromQuery() {
+  if (route.query.login !== '1') {
+    return
+  }
+
+  clearOAuthFlowMarker()
+  authMode.value = 'login'
+  authError.value = ''
+  authMessage.value = ''
+  isAuthPanelOpen.value = true
+
+  void router.replace({ path: '/app', query: {} })
 }
 
 async function handleAuthSubmit() {

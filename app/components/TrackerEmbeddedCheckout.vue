@@ -54,6 +54,13 @@
             >
               Try again
             </button>
+            <button
+              type="button"
+              class="rounded-2xl bg-amber-400/15 px-5 py-3 text-sm font-bold text-amber-100 ring-1 ring-amber-400/40"
+              @click="emitFallback"
+            >
+              Continue in Stripe checkout
+            </button>
           </div>
 
           <div
@@ -84,6 +91,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   close: []
   error: [message: string]
+  fallback: []
 }>()
 
 const config = useRuntimeConfig()
@@ -92,6 +100,7 @@ const { createEmbeddedCheckoutSession } = useEntitlements()
 const checkoutMountElement = ref<HTMLElement | null>(null)
 const isLoading = ref(false)
 const errorMessage = ref('')
+const activeSessionId = ref('')
 let embeddedCheckout: StripeEmbeddedCheckout | null = null
 
 function destroyCheckout() {
@@ -106,6 +115,25 @@ function handleClose() {
   emit('close')
 }
 
+function emitFallback() {
+  destroyCheckout()
+  emit('fallback')
+}
+
+async function handleCheckoutComplete() {
+  const sessionId = activeSessionId.value
+
+  destroyCheckout()
+  emit('close')
+
+  if (sessionId) {
+    await navigateTo(`/upgrade/success?session_id=${encodeURIComponent(sessionId)}`)
+    return
+  }
+
+  await navigateTo('/upgrade/success')
+}
+
 async function initializeCheckout() {
   if (!import.meta.client || !props.open) {
     return
@@ -114,26 +142,32 @@ async function initializeCheckout() {
   destroyCheckout()
   isLoading.value = true
   errorMessage.value = ''
+  activeSessionId.value = ''
 
   try {
-    if (!config.public.stripePublishableKey) {
+    const publishableKey = config.public.stripePublishableKey
+
+    if (!publishableKey) {
       throw new Error('Stripe publishable key is not configured.')
     }
 
-    const stripe = await loadStripe(config.public.stripePublishableKey)
+    console.info('[checkout] loading stripe.js', {
+      keyPreview: `${publishableKey.slice(0, 12)}...`,
+      isTestMode: publishableKey.startsWith('pk_test_')
+    })
+
+    const stripe = await loadStripe(publishableKey)
 
     if (!stripe) {
       throw new Error('Could not load Stripe.')
     }
 
     const session = await createEmbeddedCheckoutSession()
+    activeSessionId.value = session.sessionId
 
-    if (!session.clientSecret) {
-      throw new Error('Checkout session secret was missing.')
-    }
-
-    const checkout = await stripe.createEmbeddedCheckoutPage({
-      clientSecret: session.clientSecret
+    const checkout = await stripe.initEmbeddedCheckout({
+      clientSecret: session.clientSecret,
+      onComplete: handleCheckoutComplete
     })
 
     isLoading.value = false
@@ -161,6 +195,7 @@ watch(() => props.open, async (isOpen) => {
   destroyCheckout()
   errorMessage.value = ''
   isLoading.value = false
+  activeSessionId.value = ''
 })
 
 onUnmounted(() => {

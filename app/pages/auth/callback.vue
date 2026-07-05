@@ -25,14 +25,15 @@
             <UIcon name="i-lucide-alert-circle" class="size-6 text-red-400" />
           </div>
           <h1 class="text-xl font-bold text-white">Sign-in failed</h1>
-          <p class="text-sm leading-6 text-slate-400">
+          <p v-if="!isPkceError" class="text-sm leading-6 text-slate-400">
             {{ errorMessage }}
           </p>
           <NuxtLink
-            to="/app"
+            :to="isPkceError ? '/app?login=1' : '/app'"
             class="inline-flex w-full items-center justify-center rounded-3xl bg-white px-4 py-4 text-base font-semibold text-slate-950 transition hover:bg-slate-100"
+            @click="handleTryAgainClick"
           >
-            Try again
+            {{ isPkceError ? 'It happens — try again' : 'Try again' }}
           </NuxtLink>
         </div>
       </div>
@@ -41,7 +42,7 @@
 </template>
 
 <script setup lang="ts">
-import { establishSessionFromEmailLink } from '~/composables/useAuthEmailLink'
+import { clearOAuthFlowMarker, establishSessionFromEmailLink, isPkceVerifierMissingError } from '~/composables/useAuthEmailLink'
 
 definePageMeta({
   layout: false
@@ -51,6 +52,17 @@ const router = useRouter()
 const route = useRoute()
 const status = ref<'loading' | 'success' | 'error'>('loading')
 const errorMessage = ref('We could not complete sign-in. Please try again.')
+const isPkceError = ref(false)
+
+function handleTryAgainClick() {
+  clearOAuthFlowMarker()
+}
+
+function markPkceError(message: string) {
+  isPkceError.value = isPkceVerifierMissingError({ message })
+  errorMessage.value = message
+  status.value = 'error'
+}
 
 function stripAuthQueryFromUrl() {
   if (!import.meta.client) {
@@ -73,8 +85,7 @@ onMounted(async () => {
       : ''
 
   if (oauthError) {
-    status.value = 'error'
-    errorMessage.value = oauthError
+    markPkceError(oauthError)
     stripAuthQueryFromUrl()
     return
   }
@@ -114,7 +125,7 @@ onMounted(async () => {
     status.value = 'error'
 
     if (error instanceof Error && error.message) {
-      errorMessage.value = error.message
+      markPkceError(error.message)
     }
 
     stripAuthQueryFromUrl()

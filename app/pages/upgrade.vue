@@ -206,6 +206,7 @@
         :open="isCheckoutOpen"
         @close="closeCheckout"
         @error="handleCheckoutError"
+        @fallback="handleCheckoutFallback"
       />
 
       <StickyActionBar tone="dark">
@@ -248,7 +249,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useSupabaseAuth } from '../composables/useSupabaseAuth'
-import { useEntitlements } from '../composables/useEntitlements'
+import { readPendingCheckoutSession, useEntitlements } from '../composables/useEntitlements'
 import {
   FREE_CONDITION_LIMIT,
   FREE_TIER_FEATURES,
@@ -272,7 +273,8 @@ const {
   isComped,
   renewalLabel,
   loadEntitlements,
-  openBillingPortal
+  openBillingPortal,
+  startCheckout
 } = useEntitlements()
 
 const isCheckoutLoading = ref(false)
@@ -286,7 +288,7 @@ const showCanceledNotice = computed(() => route.query.canceled === '1')
 const paymentSteps = [
   {
     title: 'Choose Pro',
-    body: 'Tap upgrade and pay right here in the app with Stripe — no redirect to another site until you finish.'
+    body: 'Tap upgrade — secure Stripe checkout opens in the app, same pattern as VCH donations.'
   },
   {
     title: 'Pay yearly',
@@ -302,7 +304,23 @@ const paymentSteps = [
   }
 ]
 
+function redirectPaidCheckoutToSuccess() {
+  const querySessionId = typeof route.query.session_id === 'string' ? route.query.session_id : ''
+  const sessionId = querySessionId || readPendingCheckoutSession()
+
+  if (!sessionId) {
+    return
+  }
+
+  void router.replace({
+    path: '/upgrade/success',
+    query: { session_id: sessionId }
+  })
+}
+
 onMounted(async () => {
+  redirectPaidCheckoutToSuccess()
+
   if (user.value) {
     await loadEntitlements()
   }
@@ -312,11 +330,7 @@ onMounted(async () => {
   }
 })
 
-watch(() => route.query.checkout, (value) => {
-  if (value === '1' && user.value && !isPro.value) {
-    openCheckout()
-  }
-})
+watch(() => route.query.session_id, redirectPaidCheckoutToSuccess)
 
 watch(user, async (currentUser) => {
   if (currentUser) {
@@ -349,6 +363,12 @@ async function openCheckout() {
   isCheckoutOpen.value = true
 }
 
+watch(() => route.query.checkout, (value) => {
+  if (value === '1' && user.value && !isPro.value) {
+    openCheckout()
+  }
+})
+
 function closeCheckout() {
   isCheckoutOpen.value = false
   isCheckoutLoading.value = false
@@ -360,6 +380,20 @@ function closeCheckout() {
 
 function handleCheckoutError(message: string) {
   pageError.value = message
+}
+
+async function handleCheckoutFallback() {
+  isCheckoutOpen.value = false
+  pageError.value = ''
+  isCheckoutLoading.value = true
+
+  try {
+    await startCheckout()
+  } catch (error) {
+    pageError.value = error instanceof Error ? error.message : 'Could not start checkout.'
+  } finally {
+    isCheckoutLoading.value = false
+  }
 }
 
 async function handleUpgrade() {

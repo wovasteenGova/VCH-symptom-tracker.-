@@ -1,11 +1,9 @@
 import Stripe from 'stripe'
 import { getHeader, readRawBody } from 'h3'
-import { PRO_PRODUCT_KEY } from '../../../app/utils/subscription'
 import { getStripeClient } from '../../utils/stripeClient'
 import {
   handleCheckoutCompleted,
-  syncSubscriptionEntitlement,
-  upsertEntitlement
+  syncSubscriptionEntitlement
 } from '../../utils/stripeEntitlements'
 
 export default defineEventHandler(async (event) => {
@@ -40,7 +38,8 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  switch (stripeEvent.type) {
+  try {
+    switch (stripeEvent.type) {
     case 'checkout.session.completed':
       await handleCheckoutCompleted(stripeEvent.data.object as Stripe.Checkout.Session)
       break
@@ -50,20 +49,7 @@ export default defineEventHandler(async (event) => {
       break
     case 'customer.subscription.deleted': {
       const subscription = stripeEvent.data.object as Stripe.Subscription
-      const userId = subscription.metadata?.user_id
-
-      if (userId) {
-        await upsertEntitlement({
-          user_id: userId,
-          product_key: subscription.metadata?.product_key || PRO_PRODUCT_KEY,
-          status: 'canceled',
-          stripe_customer_id: typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.id || null,
-          stripe_subscription_id: subscription.id,
-          current_period_end: subscription.current_period_end
-            ? new Date(subscription.current_period_end * 1000).toISOString()
-            : null
-        })
-      }
+      await syncSubscriptionEntitlement(subscription)
       break
     }
     case 'invoice.payment_failed': {
@@ -80,7 +66,15 @@ export default defineEventHandler(async (event) => {
     }
     default:
       break
-  }
+    }
 
-  return { received: true }
+    return { received: true }
+  } catch (error) {
+    console.error('[stripe webhook]', stripeEvent.type, error)
+
+    throw createError({
+      statusCode: 500,
+      message: error instanceof Error ? error.message : 'Stripe webhook handler failed.'
+    })
+  }
 })

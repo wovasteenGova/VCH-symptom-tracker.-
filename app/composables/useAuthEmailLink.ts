@@ -82,6 +82,8 @@ function isPkceVerifierMissingError(error: unknown) {
   return message.includes('code verifier') || code.includes('pkce')
 }
 
+export { isPkceVerifierMissingError }
+
 async function waitForAnySession(
   supabase: ReturnType<typeof useSupabaseClient>,
   attempts = 15,

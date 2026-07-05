@@ -1,5 +1,12 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import { config as loadDotenv } from 'dotenv'
+
 const isProduction = process.env.NODE_ENV === 'production'
+
+// Local .env should win over stale shell env (common cause of sk_live on localhost).
+if (!isProduction) {
+  loadDotenv({ override: true })
+}
 
 function env(name: string) {
   return String(process.env[name] || '').trim()
@@ -132,6 +139,11 @@ export default defineNuxtConfig({
           form_factor: 'narrow'
         }
       ]
+    }
+  },
+  vite: {
+    optimizeDeps: {
+      include: ['@stripe/stripe-js']
     }
   },
   nitro: {

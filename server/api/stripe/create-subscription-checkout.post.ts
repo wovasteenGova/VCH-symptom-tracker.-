@@ -4,7 +4,8 @@ import { requireAuthUser } from '../../utils/authUser'
 import { getRequestBaseUrl, getStripeClient } from '../../utils/stripeClient'
 import {
   buildSubscriptionCheckoutParams,
-  buildSubscriptionLineItems
+  isStripePriceId,
+  resolveSubscriptionLineItems
 } from '../../utils/subscriptionCheckoutSession'
 
 function logCheckout(step: string, details: Record<string, unknown> = {}) {
@@ -25,6 +26,7 @@ export default defineEventHandler(async (event) => {
     requestId,
     embedded,
     hasStripeSecretKey: Boolean(config.stripeSecretKey),
+    stripeMode: config.stripeSecretKey?.startsWith('sk_test_') ? 'test' : config.stripeSecretKey?.startsWith('sk_live_') ? 'live' : 'unknown',
     hasProPriceId: Boolean(config.stripeProPriceId),
     origin: getRequestHeader(event, 'origin') || null
   })
@@ -57,8 +59,16 @@ export default defineEventHandler(async (event) => {
 
   const stripe = getStripeClient()
   const baseUrl = getRequestBaseUrl(event)
-  const configuredPriceId = String(config.stripeProPriceId || '').trim()
-  const lineItems = buildSubscriptionLineItems(configuredPriceId)
+  const rawConfiguredPriceId = String(config.stripeProPriceId || '').trim()
+  const configuredPriceId = isStripePriceId(rawConfiguredPriceId) ? rawConfiguredPriceId : ''
+
+  if (rawConfiguredPriceId && !configuredPriceId) {
+    logCheckoutError('invalid STRIPE_PRO_PRICE_ID ignored', {
+      requestId,
+      valuePreview: `${rawConfiguredPriceId.slice(0, 12)}...`,
+      expected: 'price_...'
+    })
+  }
 
   logCheckout('creating session', {
     requestId,
@@ -68,14 +78,22 @@ export default defineEventHandler(async (event) => {
   })
 
   try {
-    const session = await stripe.checkout.sessions.create(
-      buildSubscriptionCheckoutParams({
-        user,
-        baseUrl,
-        lineItems,
-        embedded
+    const lineItems = await resolveSubscriptionLineItems(stripe, configuredPriceId)
+
+    if (!lineItems.length) {
+      throw createError({
+        statusCode: 500,
+        message: 'Could not resolve subscription line items.'
       })
-    )
+    }
+
+    const checkoutParams = buildSubscriptionCheckoutParams({
+      user,
+      baseUrl,
+      lineItems,
+      embedded
+    })
+    const session = await stripe.checkout.sessions.create(checkoutParams)
 
     if (embedded) {
       if (!session.client_secret) {
@@ -91,12 +109,14 @@ export default defineEventHandler(async (event) => {
 
       logCheckout('embedded session created', {
         requestId,
-        sessionId: session.id
+        sessionId: session.id,
+        returnUrl: typeof checkoutParams.return_url === 'string' ? checkoutParams.return_url : null
       })
 
       return {
         clientSecret: session.client_secret,
-        sessionId: session.id
+        sessionId: session.id,
+        returnUrl: typeof checkoutParams.return_url === 'string' ? checkoutParams.return_url : null
       }
     }
 
@@ -117,7 +137,7 @@ export default defineEventHandler(async (event) => {
       checkoutUrlPreview: `${session.url.slice(0, 48)}...`
     })
 
-    return { url: session.url }
+    return { url: session.url, sessionId: session.id }
   } catch (error) {
     if (error && typeof error === 'object' && 'statusCode' in error) {
       throw error

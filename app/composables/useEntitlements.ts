@@ -26,6 +26,32 @@ type EntitlementRow = {
 }
 
 let entitlementsLoadPromise: Promise<void> | null = null
+const PENDING_CHECKOUT_SESSION_KEY = 'symptom-tracker-pending-checkout-session'
+
+export function rememberPendingCheckoutSession(sessionId: string) {
+  if (import.meta.client && sessionId) {
+    window.sessionStorage.setItem(PENDING_CHECKOUT_SESSION_KEY, sessionId)
+  }
+}
+
+export function readPendingCheckoutSession() {
+  if (!import.meta.client) {
+    return ''
+  }
+
+  return window.sessionStorage.getItem(PENDING_CHECKOUT_SESSION_KEY) || ''
+}
+
+export function clearPendingCheckoutSession() {
+  if (import.meta.client) {
+    window.sessionStorage.removeItem(PENDING_CHECKOUT_SESSION_KEY)
+  }
+}
+
+export function resolvePendingCheckoutSessionId(sessionIdFromQuery?: string | null) {
+  const querySessionId = String(sessionIdFromQuery || '').trim()
+  return querySessionId || readPendingCheckoutSession()
+}
 
 export function useEntitlements() {
   const supabase = useSupabaseClient()
@@ -126,8 +152,10 @@ export function useEntitlements() {
     loadedUserId.value = null
   }
 
-  async function loadEntitlements() {
-    if (entitlementsLoadPromise) {
+  async function loadEntitlements(options: { force?: boolean } = {}) {
+    if (options.force) {
+      entitlementsLoadPromise = null
+    } else if (entitlementsLoadPromise) {
       return entitlementsLoadPromise
     }
 
@@ -339,6 +367,8 @@ export function useEntitlements() {
         sessionId: response.sessionId
       })
 
+      rememberPendingCheckoutSession(response.sessionId)
+
       return response
     } catch (error) {
       const fetchError = error as {
@@ -371,7 +401,7 @@ export function useEntitlements() {
     try {
       console.info('[checkout] posting to create-subscription-checkout')
 
-      const response = await $fetch<{ url: string }>('/api/stripe/create-subscription-checkout', {
+      const response = await $fetch<{ url: string, sessionId?: string }>('/api/stripe/create-subscription-checkout', {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -380,15 +410,20 @@ export function useEntitlements() {
       })
 
       console.info('[checkout] success', {
-        hasUrl: Boolean(response.url)
+        hasUrl: Boolean(response.url),
+        sessionId: response.sessionId
       })
+
+      if (response.sessionId) {
+        rememberPendingCheckoutSession(response.sessionId)
+      }
 
       if (!response.url) {
         throw new Error('Stripe checkout URL was missing.')
       }
 
       if (import.meta.client) {
-        window.location.href = response.url
+        window.location.replace(response.url)
       }
 
       return response.url
@@ -433,7 +468,7 @@ export function useEntitlements() {
   async function confirmCheckoutSession(sessionId: string) {
     const accessToken = await getAccessToken()
 
-    await $fetch('/api/stripe/confirm-subscription', {
+    const response = await $fetch<{ activated?: boolean }>('/api/stripe/confirm-subscription', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${accessToken}`
@@ -443,7 +478,22 @@ export function useEntitlements() {
       }
     })
 
-    await loadEntitlements()
+    if (!response.activated) {
+      throw new Error('Payment succeeded but Pro could not be activated yet.')
+    }
+
+    clearPendingCheckoutSession()
+    await loadEntitlements({ force: true })
+  }
+
+  async function activateCheckoutSession(sessionId: string) {
+    const normalizedSessionId = String(sessionId || '').trim()
+
+    if (!normalizedSessionId) {
+      throw new Error('Missing checkout session.')
+    }
+
+    await confirmCheckoutSession(normalizedSessionId)
   }
 
   return {
@@ -471,6 +521,10 @@ export function useEntitlements() {
     startCheckout,
     createEmbeddedCheckoutSession,
     openBillingPortal,
-    confirmCheckoutSession
+    confirmCheckoutSession,
+    activateCheckoutSession,
+    readPendingCheckoutSession,
+    clearPendingCheckoutSession,
+    resolvePendingCheckoutSessionId
   }
 }

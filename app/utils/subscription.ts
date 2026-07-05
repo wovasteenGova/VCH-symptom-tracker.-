@@ -5,11 +5,11 @@ export const FREE_ENTRY_LIMIT = FREE_CONDITION_LIMIT
 export const PRO_ANNUAL_PRICE = 14.99
 export const PRO_ANNUAL_PRICE_LABEL = '$14.99/year'
 export const PRO_ANNUAL_PRICE_DETAIL = 'About $1.25/month, billed once per year'
-export const PRO_REFUND_POLICY_SHORT = '3-day refund only'
+export const PRO_REFUND_POLICY_SHORT = '14-day refund'
 export const PRO_REFUND_POLICY =
-  '3-day refund only — email support@veteranscentralhub.com within 3 days of purchase if Pro is not right for you.'
+  '14-day refund — email support@veteranscentralhub.com within 14 days of purchase if Pro is not right for you.'
 export const PRO_CHECKOUT_SUBMIT_MESSAGE =
-  '$14.99/year · 3-day refund only — contact support within 3 days of purchase for a refund.'
+  '$14.99/year · 14-day refund — contact support within 14 days of purchase for a refund.'
 
 /** @deprecated Use PRO_ANNUAL_PRICE */
 export const PRO_MONTHLY_PRICE = PRO_ANNUAL_PRICE

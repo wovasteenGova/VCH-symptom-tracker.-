@@ -14,6 +14,11 @@ type EntitlementUpsert = {
   unlocked_at?: string
 }
 
+type SubscriptionSyncFallback = {
+  userId?: string | null
+  productKey?: string | null
+}
+
 export function mapSubscriptionStatus(status: Stripe.Subscription.Status) {
   if (status === 'active' || status === 'trialing') {
     return 'active' as const
@@ -43,11 +48,33 @@ export async function upsertEntitlement(payload: EntitlementUpsert) {
   }
 }
 
-export async function syncSubscriptionEntitlement(subscription: Stripe.Subscription) {
-  const userId = subscription.metadata?.user_id
+async function findExistingEntitlementBySubscription(subscriptionId: string) {
+  const supabase = getSupabaseAdmin()
+
+  const { data, error } = await supabase
+    .from('user_entitlements')
+    .select('user_id, product_key')
+    .eq('stripe_subscription_id', subscriptionId)
+    .maybeSingle()
+
+  if (error) {
+    throw error
+  }
+
+  return data
+}
+
+export async function syncSubscriptionEntitlement(
+  subscription: Stripe.Subscription,
+  fallback: SubscriptionSyncFallback = {}
+) {
+  const existingEntitlement = subscription.metadata?.user_id || fallback.userId
+    ? null
+    : await findExistingEntitlementBySubscription(subscription.id)
+  const userId = subscription.metadata?.user_id || fallback.userId || existingEntitlement?.user_id
 
   if (!userId) {
-    return false
+    throw new Error('Subscription is missing user_id metadata.')
   }
 
   const status = mapSubscriptionStatus(subscription.status)
@@ -58,7 +85,7 @@ export async function syncSubscriptionEntitlement(subscription: Stripe.Subscript
 
   await upsertEntitlement({
     user_id: userId,
-    product_key: subscription.metadata?.product_key || PRO_PRODUCT_KEY,
+    product_key: subscription.metadata?.product_key || fallback.productKey || existingEntitlement?.product_key || PRO_PRODUCT_KEY,
     status,
     stripe_customer_id: typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.id || null,
     stripe_subscription_id: subscription.id,
@@ -74,7 +101,7 @@ export async function handleCheckoutCompleted(session: Stripe.Checkout.Session) 
   const userId = session.metadata?.user_id || session.client_reference_id
 
   if (!userId) {
-    return false
+    throw new Error('Checkout session is missing user_id metadata.')
   }
 
   if (session.mode === 'subscription' && session.subscription) {
@@ -83,7 +110,10 @@ export async function handleCheckoutCompleted(session: Stripe.Checkout.Session) 
       ? session.subscription
       : session.subscription.id
     const subscription = await stripe.subscriptions.retrieve(subscriptionId)
-    return syncSubscriptionEntitlement(subscription)
+    return syncSubscriptionEntitlement(subscription, {
+      userId,
+      productKey: session.metadata?.product_key || PRO_PRODUCT_KEY
+    })
   }
 
   await upsertEntitlement({
