@@ -68,10 +68,6 @@ export function coerceCalendarDate(value: unknown): CalendarDate | undefined {
     return undefined
   }
 
-  if (value instanceof CalendarDate) {
-    return value
-  }
-
   const candidate = value as { year?: number, month?: number, day?: number }
 
   if (
@@ -79,7 +75,9 @@ export function coerceCalendarDate(value: unknown): CalendarDate | undefined {
     && typeof candidate.month === 'number'
     && typeof candidate.day === 'number'
   ) {
-    return new CalendarDate(candidate.year, candidate.month, candidate.day)
+    return value instanceof CalendarDate
+      ? value
+      : new CalendarDate(candidate.year, candidate.month, candidate.day)
   }
 
   return undefined
@@ -165,7 +163,9 @@ export function getMaxEntryDateLocal() {
 }
 
 export function getMaxEntryTimeLocal(dateValue: string) {
-  if (dateValue === getMaxEntryDateLocal()) {
+  const todayStr = calendarDateToDateString(getTodayCalendarDate())
+
+  if (dateValue === todayStr) {
     return getMaxEntryDateTimeLocal().slice(11, 16)
   }
 

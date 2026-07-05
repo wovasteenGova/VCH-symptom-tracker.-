@@ -705,15 +705,17 @@
                             </button>
                           </div>
 
-                          <div class="space-y-4" data-step-swipe-block @click.stop @touchstart.stop @touchend.stop>
+                          <div
+                            class="space-y-4"
+                            data-step-swipe-block
+                            @touchstart.stop
+                            @touchend.stop
+                          >
                             <UCalendar
                               v-model="entryCalendarDate"
                               v-model:placeholder="entryCalendarPlaceholder"
-                              :min-value="minEntryCalendarDate"
-                              :max-value="maxEntryCalendarDate"
-                              prevent-deselect
                               class="mx-auto w-full"
-                              @update:model-value="onEntryCalendarUpdate"
+                              @update:model-value="onEntryCalendarDateUpdate"
                               @update:placeholder="onEntryCalendarPlaceholderUpdate"
                             >
                               <template #day="{ day }">
@@ -727,6 +729,7 @@
                               </template>
                             </UCalendar>
 
+                            <div data-step-swipe-block @click.stop @touchstart.stop @touchend.stop>
                             <TimeOfDayPicker
                               :hour="entryTimeHour"
                               :minute="entryTimeMinute"
@@ -737,6 +740,7 @@
                               @update:period="entryTimePeriod = $event"
                               @change="onEntryTimePartsChange"
                             />
+                            </div>
                           </div>
                         </div>
                         <div
@@ -1816,7 +1820,7 @@
           </button>
           <button
             type="button"
-            class="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+            class="rounded-2xl bg-red-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-red-700"
             @click="confirmDeleteEntry"
           >
             Move to Deleted
@@ -2015,7 +2019,6 @@ import {
   formatPartsToTime24,
   getMaxEntryDateTimeLocal,
   getMaxEntryTimeLocal,
-  getMinEntryCalendarDate,
   getTodayCalendarDate,
   isFutureEntryDateTime,
   parseTime24ToParts,
@@ -2347,12 +2350,8 @@ const {
 
 const initialEntryDateTime = splitEntryDateTimeLocal(getMaxEntryDateTimeLocal())
 const initialEntryTimeParts = parseTime24ToParts(initialEntryDateTime.time)
-const entryCalendarDate = shallowRef<CalendarDate | undefined>(
-  import.meta.client ? dateStringToCalendarDate(initialEntryDateTime.date) : undefined
-)
-const entryCalendarPlaceholder = shallowRef<CalendarDate | undefined>(
-  import.meta.client ? dateStringToCalendarDate(initialEntryDateTime.date) : undefined
-)
+const entryCalendarDate = shallowRef(getTodayCalendarDate())
+const entryCalendarPlaceholder = shallowRef(getTodayCalendarDate())
 const entryTimeInput = ref(initialEntryDateTime.time)
 const entryTimeHour = ref(initialEntryTimeParts.hour12)
 const entryTimeMinute = ref(initialEntryTimeParts.minute)
@@ -2378,8 +2377,6 @@ const {
 } = useKeyboardAwareScroll(entryStepScrollEl, {
   footerHeight: entryActionBarHeight
 })
-const minEntryCalendarDate = getMinEntryCalendarDate()
-const maxEntryCalendarDate = getTodayCalendarDate()
 const historyCalendarDate = shallowRef(getTodayCalendarDate())
 const historyCalendarPlaceholder = shallowRef(getTodayCalendarDate())
 
@@ -2855,6 +2852,32 @@ function onEntryCalendarPlaceholderUpdate(date: unknown) {
   if (parsed) {
     entryCalendarPlaceholder.value = parsed
   }
+}
+
+function onEntryCalendarDateUpdate(date: unknown) {
+  const parsed = coerceCalendarDate(date)
+  if (!parsed) {
+    return
+  }
+
+  const today = getTodayCalendarDate()
+  const calendarDate = parsed.compare(today) > 0 ? today : parsed
+
+  entryCalendarDate.value = calendarDate
+  entryCalendarPlaceholder.value = calendarDate
+  syncEntryFormDateTimeFromCalendar(calendarDate)
+}
+
+function syncEntryFormDateTimeFromCalendar(calendarDate: CalendarDate) {
+  const dateStr = calendarDateToDateString(calendarDate)
+  const maxTime = getMaxEntryTimeLocal(dateStr)
+
+  if (entryTimeInput.value > maxTime) {
+    entryTimeInput.value = maxTime
+    syncEntryTimePartsFromInput()
+  }
+
+  entryForm.value.date_and_time = `${dateStr}T${entryTimeInput.value}`
 }
 
 const loggingActivityMetrics = computed(() => {
@@ -3463,10 +3486,6 @@ onMounted(async () => {
   setupInstallCard()
   await loadAppWelcomeState()
 
-  if (!entryCalendarDate.value) {
-    syncEntryInputsFromForm()
-  }
-
   await refreshTrackedConditions()
 
   nextTick(() => {
@@ -3686,7 +3705,7 @@ function prefillEntryMedications() {
 }
 
 function refreshEntryDateLimits() {
-  // Future-date validation runs when syncing or validating the step.
+  // Future dates are blocked on selection and when validating the step.
 }
 
 function resetEntryForm() {
@@ -3699,67 +3718,23 @@ function resetEntryForm() {
 }
 
 function syncEntryInputsFromForm() {
-  const { date, time } = splitEntryDateTimeLocal(
-    entryForm.value.date_and_time || getMaxEntryDateTimeLocal()
-  )
+  const raw = entryForm.value.date_and_time || getMaxEntryDateTimeLocal()
+  const date = raw.slice(0, 10)
+  const time = raw.slice(11, 16) || initialEntryDateTime.time
   entryTimeInput.value = time
   syncEntryTimePartsFromInput()
 
-  if (import.meta.client) {
-    const parsedDate = coerceCalendarDate(dateStringToCalendarDate(date))
-    entryCalendarDate.value = parsedDate
-    entryCalendarPlaceholder.value = parsedDate
-  }
+  entryCalendarDate.value = dateStringToCalendarDate(date)
+  entryCalendarPlaceholder.value = dateStringToCalendarDate(date)
 }
 
 function syncEntryFormFromInputs() {
-  let calendarDate = coerceCalendarDate(entryCalendarDate.value)
+  const calendarDate = coerceCalendarDate(entryCalendarDate.value)
 
   if (!calendarDate || !entryTimeInput.value) {
     return
   }
 
-  const today = getTodayCalendarDate()
-  if (calendarDate.compare(today) > 0) {
-    calendarDate = today
-  }
-
-  entryCalendarDate.value = calendarDate
-  entryCalendarPlaceholder.value = calendarDate
-  const dateStr = calendarDateToDateString(calendarDate)
-  const maxTime = getMaxEntryTimeLocal(dateStr)
-
-  if (entryTimeInput.value > maxTime) {
-    entryTimeInput.value = maxTime
-    syncEntryTimePartsFromInput()
-  }
-
-  const dateTimeValue = `${dateStr}T${entryTimeInput.value}`
-
-  if (isFutureEntryDateTime(dateTimeValue)) {
-    entryTimeInput.value = maxTime
-    syncEntryTimePartsFromInput()
-    entryForm.value.date_and_time = `${dateStr}T${entryTimeInput.value}`
-    return
-  }
-
-  entryForm.value.date_and_time = dateTimeValue
-}
-
-function onEntryCalendarUpdate(date: unknown) {
-  let calendarDate = coerceCalendarDate(date)
-
-  if (!calendarDate) {
-    return
-  }
-
-  const today = getTodayCalendarDate()
-  if (calendarDate.compare(today) > 0) {
-    calendarDate = today
-  }
-
-  entryCalendarDate.value = calendarDate
-  entryCalendarPlaceholder.value = calendarDate
   const dateStr = calendarDateToDateString(calendarDate)
   const maxTime = getMaxEntryTimeLocal(dateStr)
 
