@@ -37,6 +37,8 @@ function dismissAppSplash(mountedAt: number) {
 }
 
 onBeforeMount(() => {
+  updateAppHeight()
+
   try {
     const shownAt = Number(window.sessionStorage.getItem(APP_SPLASH_SHOWN_AT_KEY) || 0)
 

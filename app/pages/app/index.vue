@@ -862,7 +862,7 @@
           <div
             v-else
             key="home-workspace"
-            class="relative mt-2 flex min-h-0 flex-1 flex-col gap-2 overflow-hidden pb-[5.5rem]"
+            class="home-workspace relative mt-2 flex min-h-0 flex-1 flex-col gap-2 overflow-hidden"
           >
         <div
           class="flex min-h-0 flex-col px-4"
@@ -6991,18 +6991,31 @@ function handleEntryPrimaryAction() {
   margin-bottom: 0.8rem;
 }
 
+.home-workspace {
+  padding-bottom: var(--history-sheet-collapsed-height);
+}
+
 .home-history-panel {
   position: absolute;
   inset-inline: 0;
   bottom: 0;
   z-index: 90;
-  height: 5rem;
   max-height: 80%;
   min-height: 0;
   overflow: hidden;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   transition:
     height 650ms cubic-bezier(0.22, 1, 0.36, 1),
     box-shadow 650ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.home-history-panel.is-history-collapsed {
+  height: var(--history-sheet-collapsed-height);
+}
+
+.home-history-panel.is-history-collapsed .history-panel-tabs,
+.home-history-panel.is-history-collapsed .history-panel-scroll {
+  display: none;
 }
 
 .home-history-panel.is-history-expanded {

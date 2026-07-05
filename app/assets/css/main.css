@@ -2,13 +2,15 @@
 @import "@nuxt/ui";
 
 :root {
-  --app-height: 100vh;
+  --app-height: 100dvh;
+  --history-sheet-collapsed-height: calc(5.75rem + env(safe-area-inset-bottom, 0px));
 }
 
 html {
   background: #f8fafc;
   scrollbar-width: none;
   overscroll-behavior: none;
+  height: var(--app-height);
   min-height: var(--app-height);
 }
 
@@ -18,7 +20,9 @@ html.dark {
 
 body {
   min-width: 320px;
+  height: var(--app-height);
   min-height: var(--app-height);
+  max-height: var(--app-height);
   color: #020617;
   background: #f8fafc;
   scrollbar-width: none;
