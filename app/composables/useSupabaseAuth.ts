@@ -345,7 +345,25 @@ export function useSupabaseAuth() {
     let error: unknown
 
     try {
-      const result = await supabase.auth.signOut()
+      const result = await supabase.auth.signOut({ scope: 'local' })
+      error = result.error
+    } catch (caughtError) {
+      error = caughtError
+    }
+
+    if (error) {
+      authError.value = getAuthErrorMessage(error)
+      throw error
+    }
+  }
+
+  async function signOutEverywhere() {
+    authError.value = ''
+
+    let error: unknown
+
+    try {
+      const result = await supabase.auth.signOut({ scope: 'global' })
       error = result.error
     } catch (caughtError) {
       error = caughtError
@@ -391,6 +409,7 @@ export function useSupabaseAuth() {
     signInWithGoogle,
     sendPasswordReset,
     signOut,
+    signOutEverywhere,
     verifyPassword
   }
 }

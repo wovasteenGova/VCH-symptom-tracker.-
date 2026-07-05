@@ -1,5 +1,5 @@
 <template>
-  <div class="vch-loader" role="status" :aria-label="label || 'Loading'">
+  <div class="vch-loader" role="status" :aria-label="label || 'Getting you into the main frame'">
     <img
       src="/vch-tank-loader.svg"
       class="vch-loader-img"
@@ -12,14 +12,12 @@
 </template>
 
 <script setup lang="ts">
-// The SVG already includes its own LOADING... text; pass a label only when
-// you want extra context (e.g. "Saving entry...").
 withDefaults(defineProps<{
   label?: string
   width?: number
 }>(), {
   label: '',
-  width: 240
+  width: 720
 })
 </script>
 

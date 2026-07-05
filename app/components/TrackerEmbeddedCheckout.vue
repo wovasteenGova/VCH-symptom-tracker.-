@@ -24,7 +24,7 @@
             type="button"
             class="grid size-10 place-items-center rounded-full bg-slate-900 text-slate-300 ring-1 ring-slate-800 transition hover:bg-slate-800 hover:text-white"
             aria-label="Close checkout"
-            :disabled="isLoading"
+            :disabled="isLoading || isCompletingCheckout"
             @click="handleClose"
           >
             <UIcon name="i-lucide-x" class="size-5" />
@@ -33,11 +33,11 @@
 
         <div class="flex flex-1 flex-col overflow-hidden">
           <div
-            v-if="isLoading"
+            v-if="isLoading || isCompletingCheckout"
             class="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center"
           >
             <VchLoader :width="240" />
-            <p class="text-sm text-slate-300">Loading secure payment form...</p>
+            <p class="text-sm text-slate-300">{{ loadingMessage }}</p>
           </div>
 
           <div
@@ -66,7 +66,7 @@
           <div
             ref="checkoutMountElement"
             class="min-h-0 flex-1 overflow-y-auto bg-white"
-            :class="{ hidden: isLoading || errorMessage }"
+            :class="{ hidden: isLoading || isCompletingCheckout || errorMessage }"
           />
         </div>
 
@@ -80,7 +80,7 @@
 
 <script setup lang="ts">
 import { loadStripe, type StripeEmbeddedCheckout } from '@stripe/stripe-js'
-import { nextTick, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import { useEntitlements } from '../composables/useEntitlements'
 import { PRO_ANNUAL_PRICE_LABEL, PRO_CHECKOUT_SUBMIT_MESSAGE, PRO_REFUND_POLICY } from '../utils/subscription'
 
@@ -101,9 +101,16 @@ const { activateCheckoutSession, createEmbeddedCheckoutSession, loadEntitlements
 
 const checkoutMountElement = ref<HTMLElement | null>(null)
 const isLoading = ref(false)
+const isCompletingCheckout = ref(false)
 const errorMessage = ref('')
 const activeSessionId = ref('')
 let embeddedCheckout: StripeEmbeddedCheckout | null = null
+
+const loadingMessage = computed(() => (
+  isCompletingCheckout.value
+    ? 'Payment received — activating Pro...'
+    : 'Loading secure payment form...'
+))
 
 function destroyCheckout() {
   if (embeddedCheckout) {
@@ -125,7 +132,7 @@ function emitFallback() {
 async function handleCheckoutComplete() {
   const sessionId = activeSessionId.value
 
-  isLoading.value = true
+  isCompletingCheckout.value = true
 
   if (sessionId) {
     try {
@@ -213,6 +220,7 @@ watch(() => props.open, async (isOpen) => {
   destroyCheckout()
   errorMessage.value = ''
   isLoading.value = false
+  isCompletingCheckout.value = false
   activeSessionId.value = ''
 })
 

@@ -969,7 +969,7 @@
                   <div
                     ref="homeConditionsScrollEl"
                     data-home-conditions-scroll
-                    class="no-scrollbar overflow-y-auto px-2 pb-0"
+                    class="no-scrollbar overflow-y-auto px-2 pb-2"
                     @scroll="handleConditionScroll"
                   >
                     <div class="space-y-1">
@@ -1312,7 +1312,7 @@
                 </button>
               </div>
               <div v-else-if="isLoadingEntries" class="py-8 text-center text-sm text-slate-500 dark:text-slate-400">
-                Loading entries...
+                {{ loadingEntriesMessage }}
               </div>
               <div v-else-if="entriesError" class="py-8 text-center text-sm text-red-600 dark:text-red-300">
                 {{ entriesError }}
@@ -2202,8 +2202,8 @@ const homeCarouselStageStyle = computed(() => {
     style['--home-chrome-block-h'] = `${homeChromeBlockHeightPx.value}px`
   }
 
-  if (homeConditionsMaxScrollPx.value > 0) {
-    style['--home-conditions-max-h'] = `${homeConditionsMaxScrollPx.value}px`
+  if (homeConditionsScrollHeightPx.value > 0) {
+    style['--home-conditions-scroll-h'] = `${homeConditionsScrollHeightPx.value}px`
   }
 
   return style
@@ -2226,7 +2226,7 @@ const homeCarouselOverviewEl = ref<HTMLElement | null>(null)
 const homeConditionsScrollEl = ref<HTMLElement | null>(null)
 const homeOverviewHeaderHeightPx = ref(0)
 const homeChromeBlockHeightPx = ref(0)
-const homeConditionsMaxScrollPx = ref(0)
+const homeConditionsScrollHeightPx = ref(0)
 let homeConditionsMaxScrollResizeListener: (() => void) | undefined
 const homeImageTransitionKey = ref('')
 const homeImageTransitionImage = ref('')
@@ -2264,6 +2264,7 @@ const entryForm = ref<Record<string, string>>({})
 const isSavingEntry = ref(false)
 const entryError = ref('')
 const isLoadingEntries = ref(false)
+const loadingEntriesMessage = ref(Math.random() < 0.5 ? 'Loading entries...' : 'Getting You in the Main Frame')
 const entriesError = ref('')
 const savedEntries = ref<any[]>([])
 const hasLoadedEntriesOnce = ref(false)
@@ -2493,6 +2494,11 @@ const conditionResults = conditionCatalog
 type HomeCondition = typeof conditionCatalog[number]
 
 const conditionPickerOptions = computed(() => conditionCatalog)
+const HOME_CONDITION_ORDER_STORAGE_PREFIX = 'symptom-tracker-home-condition-order'
+
+function getHomeConditionOrderStorageKey() {
+  return user.value?.id ? `${HOME_CONDITION_ORDER_STORAGE_PREFIX}:${user.value.id}` : ''
+}
 
 function buildLastRecordedAtByConditionKey(entries: any[]) {
   const lastRecordedAt = new Map<string, number>()
@@ -2546,11 +2552,75 @@ function buildHomeConditionOrderKeys(trackedKeys: string[], entries: any[]) {
   })
 }
 
+function normalizeHomeConditionOrderKeys(keys: string[]) {
+  const trackedKeySet = new Set(
+    trackedConditionKeys.value
+      .map((storedKey) => resolveCatalogConditionByStoredKey(storedKey)?.key ?? storedKey)
+      .filter(Boolean)
+  )
+  const normalized: string[] = []
+
+  for (const key of keys) {
+    const resolvedKey = resolveCatalogConditionByStoredKey(key)?.key ?? key
+
+    if (!resolvedKey || !trackedKeySet.has(resolvedKey) || normalized.includes(resolvedKey)) {
+      continue
+    }
+
+    normalized.push(resolvedKey)
+  }
+
+  return normalized
+}
+
+function readCachedHomeConditionOrderKeys() {
+  if (!import.meta.client) {
+    return []
+  }
+
+  const storageKey = getHomeConditionOrderStorageKey()
+
+  if (!storageKey) {
+    return []
+  }
+
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(storageKey) || '[]')
+    return Array.isArray(parsed) ? normalizeHomeConditionOrderKeys(parsed.filter((key) => typeof key === 'string')) : []
+  } catch {
+    return []
+  }
+}
+
+function writeCachedHomeConditionOrderKeys(keys: string[]) {
+  if (!import.meta.client) {
+    return
+  }
+
+  const storageKey = getHomeConditionOrderStorageKey()
+
+  if (!storageKey) {
+    return
+  }
+
+  const normalized = normalizeHomeConditionOrderKeys(keys)
+  window.localStorage.setItem(storageKey, JSON.stringify(normalized))
+}
+
+function restoreCachedHomeConditionOrderKeys() {
+  const cachedKeys = readCachedHomeConditionOrderKeys()
+
+  if (cachedKeys.length) {
+    homeConditionOrderKeys.value = cachedKeys
+  }
+}
+
 function syncHomeConditionOrderKeys() {
   homeConditionOrderKeys.value = buildHomeConditionOrderKeys(
     trackedConditionKeys.value,
     savedEntries.value
   )
+  writeCachedHomeConditionOrderKeys(homeConditionOrderKeys.value)
 }
 
 function promoteHomeConditionOrderKey(conditionKey: string) {
@@ -2568,6 +2638,7 @@ function promoteHomeConditionOrderKey(conditionKey: string) {
     resolvedKey,
     ...current.filter((key) => key !== resolvedKey)
   ]
+  writeCachedHomeConditionOrderKeys(homeConditionOrderKeys.value)
 }
 
 const homeConditions = computed(() => {
@@ -2576,13 +2647,21 @@ const homeConditions = computed(() => {
     .filter((key, index, keys) => Boolean(key) && keys.indexOf(key) === index)
   const orderKeys = homeConditionOrderKeys.value.length ? homeConditionOrderKeys.value : fallbackOrder
   const order = new Map(orderKeys.map((key, index) => [key, index]))
+  const fallbackOrderIndex = new Map(fallbackOrder.map((key, index) => [key, index]))
 
   const conditions = trackedConditionKeys.value
     .map((storedKey) => resolveCatalogConditionByStoredKey(storedKey))
     .filter((condition): condition is HomeCondition => Boolean(condition))
 
   return conditions.sort((a, b) => {
-    return (order.get(a.key) ?? 0) - (order.get(b.key) ?? 0)
+    const aIndex = order.has(a.key)
+      ? order.get(a.key)!
+      : order.size + (fallbackOrderIndex.get(a.key) ?? 0)
+    const bIndex = order.has(b.key)
+      ? order.get(b.key)!
+      : order.size + (fallbackOrderIndex.get(b.key) ?? 0)
+
+    return aIndex - bIndex
   })
 })
 
@@ -2963,11 +3042,13 @@ const isHomeOverviewSlide = computed(() => activeIndex.value === 0)
 
 watch([isHomeOverviewSlide, homeSharedTransitionActive, homeConditions], () => {
   if (!homeSharedTransitionActive.value) {
-    nextTick(() => {
-      rememberHomeOverviewHeaderHeight()
-      rememberHomeChromeBlockHeight()
-      updateHomeConditionsMaxScroll()
-    })
+    scheduleHomeOverviewLayoutRefresh()
+  }
+})
+
+watch(homeVisitTip, () => {
+  if (isHomeOverviewSlide.value && !homeSharedTransitionActive.value) {
+    scheduleHomeOverviewLayoutRefresh()
   }
 })
 
@@ -3562,6 +3643,7 @@ onMounted(async () => {
   await loadAppWelcomeState()
 
   await refreshTrackedConditions()
+  restoreCachedHomeConditionOrderKeys()
 
   nextTick(() => {
     rememberHomeOverviewHeaderHeight()
@@ -3604,8 +3686,9 @@ watch(user, async (currentUser) => {
     loadProfileDisplayName()
     loadEntitlements()
     await loadAppWelcomeState()
-    await loadEntries()
     await refreshTrackedConditions()
+    restoreCachedHomeConditionOrderKeys()
+    await loadEntries()
     refreshEntryDraftPreview()
     return
   }
@@ -5052,11 +5135,9 @@ function cleanupHomeSharedTransition(token: number) {
     homeSharedTransitionTimer = undefined
   }
 
-  nextTick(() => {
-    rememberHomeOverviewHeaderHeight()
-    rememberHomeChromeBlockHeight()
-    updateHomeConditionsMaxScroll()
-  })
+  if (isHomeOverviewSlide.value) {
+    scheduleHomeOverviewLayoutRefresh({ settle: true })
+  }
 }
 
 function rememberHomeOverviewHeaderHeight() {
@@ -5080,8 +5161,9 @@ function rememberHomeChromeBlockHeight() {
 
 function updateHomeConditionsMaxScroll() {
   const stage = homeCarouselStageEl.value
+  const scrollEl = homeConditionsScrollEl.value
 
-  if (!stage) {
+  if (!stage || !scrollEl) {
     return
   }
 
@@ -5091,9 +5173,70 @@ function updateHomeConditionsMaxScroll() {
   const stageHeight = stage.getBoundingClientRect().height
   const chromeBlockPx = homeChromeBlockHeightPx.value || 0
   const headerPx = homeOverviewHeaderHeightPx.value || 0
-  const maxScrollPx = Math.max(0, stageHeight - chromeBlockPx - headerPx)
+  const listBottomGapPx = 16
+  const availableScrollPx = Math.max(0, stageHeight - chromeBlockPx - headerPx - listBottomGapPx)
+  const contentHeightPx = scrollEl.scrollHeight
 
-  homeConditionsMaxScrollPx.value = maxScrollPx
+  homeConditionsScrollHeightPx.value = contentHeightPx > availableScrollPx
+    ? availableScrollPx
+    : 0
+}
+
+function scheduleHomeOverviewLayoutRefresh(options: { settle?: boolean } = {}) {
+  nextTick(() => {
+    if (!isHomeOverviewSlide.value || homeSharedTransitionActive.value) {
+      return
+    }
+
+    rememberHomeOverviewHeaderHeight()
+    rememberHomeChromeBlockHeight()
+    updateHomeConditionsMaxScroll()
+
+    if (!import.meta.client) {
+      return
+    }
+
+    window.requestAnimationFrame(() => {
+      if (!isHomeOverviewSlide.value || homeSharedTransitionActive.value) {
+        return
+      }
+
+      rememberHomeOverviewHeaderHeight()
+      rememberHomeChromeBlockHeight()
+      updateHomeConditionsMaxScroll()
+
+      window.requestAnimationFrame(() => {
+        if (!isHomeOverviewSlide.value || homeSharedTransitionActive.value) {
+          return
+        }
+
+        rememberHomeOverviewHeaderHeight()
+        rememberHomeChromeBlockHeight()
+        updateHomeConditionsMaxScroll()
+      })
+    })
+
+    if (options.settle) {
+      window.setTimeout(() => {
+        if (!isHomeOverviewSlide.value || homeSharedTransitionActive.value) {
+          return
+        }
+
+        rememberHomeOverviewHeaderHeight()
+        rememberHomeChromeBlockHeight()
+        updateHomeConditionsMaxScroll()
+      }, 120)
+      window.setTimeout(() => {
+        if (!isHomeOverviewSlide.value || homeSharedTransitionActive.value) {
+          return
+        }
+
+        rememberHomeOverviewHeaderHeight()
+        rememberHomeChromeBlockHeight()
+        updateHomeConditionsMaxScroll()
+      }, 320)
+    }
+  })
 }
 
 function clearHomeChromeRevealTimer() {
@@ -6802,8 +6945,8 @@ function handleEntryPrimaryAction() {
 }
 
 .is-home-morph-active {
-  border-radius: 0;
-  overflow: visible;
+  border-radius: 1.75rem;
+  overflow: hidden;
 }
 
 .home-carousel-stage.is-shared-transition.is-shared-collapse {
@@ -6818,14 +6961,18 @@ function handleEntryPrimaryAction() {
 }
 
 .home-carousel-stage.is-shared-transition .home-carousel-hero {
-  border-radius: 0;
+  border-radius: 1.75rem;
   background: transparent;
 }
 
 .home-image-transition {
+  display: block;
   pointer-events: none;
   overflow: hidden;
   box-shadow: 0 1.5rem 3rem rgb(15 23 42 / 0.18);
+  backface-visibility: hidden;
+  contain: layout paint;
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
   will-change: left, top, width, height, border-radius;
   z-index: 80;
 }
@@ -6869,7 +7016,7 @@ function handleEntryPrimaryAction() {
 .home-carousel-stage.is-overview [data-home-conditions-scroll] {
   flex: none;
   height: auto;
-  max-height: var(--home-conditions-max-h, none);
+  height: var(--home-conditions-scroll-h, auto);
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -6883,7 +7030,7 @@ function handleEntryPrimaryAction() {
 .home-carousel-stage.is-shared-collapse [data-home-conditions-scroll] {
   flex: none;
   height: auto;
-  max-height: var(--home-conditions-max-h, none);
+  height: var(--home-conditions-scroll-h, auto);
   overflow-y: auto;
 }
 

@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 168" role="img" aria-label="Loading">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 190" role="img" aria-label="Getting you into the main frame">
   <style>
     .ground { stroke: #475569; stroke-width: 3; stroke-linecap: round; fill: none; }
     .dot { fill: #3b82f6; }
@@ -42,9 +42,9 @@
     .load-label {
       fill: #94a3b8;
       font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
-      font-size: 13px;
+      font-size: 15px;
       font-weight: 600;
-      letter-spacing: 5px;
+      letter-spacing: 2.6px;
     }
     .ldot { fill: #94a3b8; }
     .ld1 { animation: ldot1 1.2s linear infinite; }
@@ -226,8 +226,6 @@
     </g>
   </g>
 
-  <text class="load-label" x="234" y="150" text-anchor="middle">LOADING</text>
-  <circle class="ldot ld1" cx="290" cy="147" r="2.2" />
-  <circle class="ldot ld2" cx="300" cy="147" r="2.2" />
-  <circle class="ldot ld3" cx="310" cy="147" r="2.2" />
+  <text class="load-label" x="240" y="150" text-anchor="middle">GETTING YOU INTO</text>
+  <text class="load-label" x="240" y="171" text-anchor="middle">THE MAIN FRAME</text>
 </svg>

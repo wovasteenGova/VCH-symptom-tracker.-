@@ -725,6 +725,51 @@
           </template>
         </section>
 
+        <section id="settings-sessions" class="scroll-mt-3 rounded-4xl border border-red-900/40 bg-slate-900 p-5">
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-red-300/80">Sign-in &amp; security</p>
+          <h2 class="mt-1 text-xl font-bold text-white">Sessions</h2>
+          <p class="mt-2 text-sm leading-6 text-slate-400">
+            Signed in on a shared or borrowed computer? Use <span class="font-semibold text-slate-300">Sign out everywhere</span> so no one else can open your logs. You can sign back in anytime with your passkey, Google, or email.
+          </p>
+
+          <div class="mt-4 rounded-3xl border border-slate-700 bg-slate-800/50 px-4 py-4">
+            <div class="flex items-start gap-3">
+              <UIcon name="i-lucide-monitor-smartphone" class="mt-0.5 size-5 shrink-0 text-sky-300" />
+              <div class="min-w-0">
+                <p class="font-bold text-white">Signed in in this browser</p>
+                <p class="mt-1 text-xs text-slate-500">
+                  Other browsers or computers you used are not listed here yet.
+                </p>
+                <p v-if="sessionSignInMethodLabel" class="mt-1 text-sm text-slate-400">
+                  {{ sessionSignInMethodLabel }}
+                </p>
+                <p v-if="sessionLastSignInLabel" class="mt-1 text-xs text-slate-500">
+                  {{ sessionLastSignInLabel }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4 grid gap-3 sm:grid-cols-2">
+            <button
+              type="button"
+              class="rounded-2xl bg-slate-800 px-4 py-3 text-sm font-bold text-white ring-1 ring-slate-700 transition hover:bg-slate-700 disabled:opacity-60"
+              :disabled="Boolean(pendingSessionAction)"
+              @click="handleSignOut"
+            >
+              {{ pendingSessionAction === 'local' ? 'Signing out...' : 'Sign out in this browser' }}
+            </button>
+            <button
+              type="button"
+              class="rounded-2xl bg-red-950/40 px-4 py-3 text-sm font-bold text-red-200 ring-1 ring-red-900/60 transition hover:bg-red-950/60 disabled:opacity-60"
+              :disabled="Boolean(pendingSessionAction)"
+              @click="handleSignOutEverywhere"
+            >
+              {{ pendingSessionAction === 'everywhere' ? 'Signing out...' : 'Sign out everywhere' }}
+            </button>
+          </div>
+        </section>
+
         <section id="settings-recovery" class="scroll-mt-3 rounded-4xl border border-slate-800 bg-slate-900 p-4">
           <div>
             <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Deleted Entries</p>
@@ -797,24 +842,6 @@
             @click="openDeleteAllLogsModal"
           >
             Delete all logs
-          </button>
-        </section>
-        <section id="settings-session" class="scroll-mt-3 rounded-4xl border border-slate-800 bg-slate-900 p-4">
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Session</p>
-            <h2 class="mt-1 text-xl font-bold text-white">Sign out</h2>
-            <p class="mt-2 text-sm leading-6 text-slate-400">
-              End your session on this device. Your saved logs and settings stay on your account.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            class="mt-5 w-full rounded-2xl bg-slate-800 px-4 py-3 text-sm font-bold text-white ring-1 ring-slate-700 transition hover:bg-slate-700 disabled:opacity-60"
-            :disabled="isAuthSubmitting"
-            @click="handleSignOut"
-          >
-            {{ isAuthSubmitting ? 'Signing out...' : 'Sign out' }}
           </button>
         </section>
 
@@ -1080,9 +1107,9 @@ const settingsSections: SettingsSection[] = [
   { id: 'settings-display', label: 'Display' },
   { id: 'settings-supporters', label: 'Family, friends, other' },
   { id: 'settings-passkeys', label: 'Passkeys' },
+  { id: 'settings-sessions', label: 'Sessions' },
   { id: 'settings-recovery', label: 'Recovery' },
-  { id: 'settings-danger', label: 'Delete logs' },
-  { id: 'settings-session', label: 'Sign out' }
+  { id: 'settings-danger', label: 'Delete logs' }
 ]
 
 const {
@@ -1095,6 +1122,7 @@ const {
   signInWithGoogle,
   sendPasswordReset,
   signOut,
+  signOutEverywhere,
   verifyPassword
 } = useSupabaseAuth()
 const {
@@ -1345,6 +1373,10 @@ const signInMethodLabel = computed(() => {
     methods.push('Google')
   }
 
+  if (providers.has('webauthn')) {
+    methods.push('passkey')
+  }
+
   if (providers.has('email')) {
     methods.push('email & password')
   }
@@ -1355,6 +1387,42 @@ const signInMethodLabel = computed(() => {
 
   return `Signed in with ${methods.join(' and ')}`
 })
+
+const sessionSignInMethodLabel = computed(() => {
+  if (signInMethodLabel.value) {
+    return signInMethodLabel.value
+  }
+
+  if (passkeys.value.length) {
+    return 'Passkey available on this account'
+  }
+
+  return 'Sign-in method unavailable'
+})
+
+const sessionLastSignInLabel = computed(() => {
+  const lastSignInAt = user.value?.last_sign_in_at
+
+  if (!lastSignInAt) {
+    return ''
+  }
+
+  const parsed = new Date(lastSignInAt)
+
+  if (Number.isNaN(parsed.getTime())) {
+    return ''
+  }
+
+  return `Last signed in ${parsed.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  })}`
+})
+
+const pendingSessionAction = ref<'local' | 'everywhere' | null>(null)
 
 const deletedHistoryEntries = computed(() => {
   return deletedEntries.value.map((entry) => mapEntryHistoryItem(entry, { deleted: true }))
@@ -2096,7 +2164,8 @@ async function handleGoogleSignIn() {
 }
 
 async function handleSignOut() {
-  isAuthSubmitting.value = true
+  pendingSessionAction.value = 'local'
+  pageError.value = ''
 
   try {
     await signOut()
@@ -2107,7 +2176,28 @@ async function handleSignOut() {
   } catch {
     pageError.value = authError.value
   } finally {
-    isAuthSubmitting.value = false
+    pendingSessionAction.value = null
+  }
+}
+
+async function handleSignOutEverywhere() {
+  if (!window.confirm('Sign out on every browser and device? You can sign back in with your passkey, Google, or email.')) {
+    return
+  }
+
+  pendingSessionAction.value = 'everywhere'
+  pageError.value = ''
+
+  try {
+    await signOutEverywhere()
+
+    if (closeEmbedProfile) {
+      closeEmbedProfile()
+    }
+  } catch {
+    pageError.value = authError.value
+  } finally {
+    pendingSessionAction.value = null
   }
 }
 
