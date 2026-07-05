@@ -76,7 +76,7 @@ button:disabled,
   padding-inline: 1rem;
   padding-top: max(1rem, env(safe-area-inset-top, 0px));
   padding-bottom: max(
-    var(--app-overlay-history-inset, 5rem),
+    var(--app-overlay-history-inset, var(--history-sheet-collapsed-height)),
     env(safe-area-inset-bottom, 0px),
     1rem
   );
