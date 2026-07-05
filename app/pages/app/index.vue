@@ -594,10 +594,13 @@
                         :style="entryStepScrollStyle"
                         @focusin="handleEntryFieldFocus"
                       >
-                        <label
+                        <component
+                          :is="field.type === 'datetime' ? 'div' : 'label'"
                           v-for="(field, fieldIndex) in currentEntryStepFields"
                           :key="field.label"
                           class="block w-full"
+                          :role="field.type === 'datetime' ? 'group' : undefined"
+                          :aria-label="field.type === 'datetime' ? 'When did this happen' : undefined"
                           :class="fieldIndex > 0 && isEpisodeFollowUpField(field)
                             ? 'border-t border-slate-200/80 pt-10 dark:border-slate-700/80'
                             : ''"
@@ -684,43 +687,46 @@
                             v-else-if="field.type === 'datetime'"
                             class="space-y-4"
                           >
-                          <div class="flex items-start justify-between gap-3">
-                            <div class="min-w-0 flex-1">
-                              <span class="mb-2 block text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                          <div>
+                            <div class="mb-2 flex items-center justify-between gap-3">
+                              <span class="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
                                 When did this happen?
                               </span>
-                              <p class="text-sm leading-6 font-medium text-slate-950 dark:text-white">
-                                {{ entryDateTimePreview }}
-                              </p>
+                              <button
+                                type="button"
+                                class="inline-flex shrink-0 items-center gap-1 rounded-full border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-950 shadow-sm transition hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
+                                aria-label="Set date and time to now"
+                                @pointerdown.stop
+                                @mousedown.stop
+                                @touchstart.stop
+                                @click.stop="setEntryDateTimeNow"
+                              >
+                                <UIcon name="i-lucide-clock-3" class="size-3.5" />
+                                Now
+                              </button>
                             </div>
-                            <button
-                              type="button"
-                              class="relative z-10 inline-flex shrink-0 items-center gap-1 rounded-full border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-950 shadow-sm transition hover:bg-slate-100 active:scale-[0.98] dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
-                              @click="setEntryDateTimeNow"
-                            >
-                              <UIcon name="i-lucide-clock-3" class="size-3.5" />
-                              Now
-                            </button>
+                            <p class="text-sm leading-6 font-medium text-slate-950 dark:text-white">
+                              {{ entryDateTimePreview }}
+                            </p>
                           </div>
 
-                          <div class="space-y-4" data-step-swipe-block>
-                            <UCalendar
+                          <div
+                            class="mt-3 space-y-4"
+                            data-step-swipe-block
+                            @click.stop
+                            @pointerdown.stop
+                            @touchstart.stop
+                          >
+                            <!-- Keep the calendar and Now button event-isolated. Removing these stops can make mobile date taps trigger Now. -->
+                            <SymptomCalendar
                               :model-value="entryCalendarDate"
                               v-model:placeholder="entryCalendarPlaceholder"
-                              class="mx-auto w-full"
+                              :has-logged-entry-on-day="hasLoggedEntryOnDay"
+                              :get-calendar-day-display="getCalendarDayDisplay"
+                              :get-logged-day-severity-title="getLoggedDaySeverityTitle"
                               @update:model-value="onEntryCalendarDateUpdate"
                               @update:placeholder="onEntryCalendarPlaceholderUpdate"
-                            >
-                              <template #day="{ day }">
-                                <span
-                                  class="inline-flex min-h-[1.75rem] min-w-[1.75rem] items-center justify-center leading-none"
-                                  :class="hasLoggedEntryOnDay(day) ? 'text-base' : 'text-sm font-semibold'"
-                                  :title="getLoggedDaySeverityTitle(day)"
-                                >
-                                  {{ getCalendarDayDisplay(day) }}
-                                </span>
-                              </template>
-                            </UCalendar>
+                            />
 
                             <div data-step-swipe-block @click.stop @touchstart.stop @touchend.stop>
                             <TimeOfDayPicker
@@ -808,7 +814,7 @@
                           :placeholder="field.placeholder"
                           class="w-full border-0 border-b border-slate-300/80 bg-transparent px-0 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-700 dark:text-white dark:focus:border-slate-400"
                         >
-                      </label>
+                      </component>
                       </div>
                     </Transition>
                   </div>
@@ -1160,6 +1166,7 @@
         </div>
 
         <section
+          v-if="!isAuthPanelOpen"
           class="home-history-panel flex min-h-0 flex-col overflow-hidden rounded-t-[1.75rem] border-t border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-900"
           :class="historyPanelClass"
           @pointerdown="handleHistoryPointerDown"
@@ -1756,14 +1763,14 @@
         <div class="grid grid-cols-2 gap-3 border-t border-slate-200 px-5 py-4 dark:border-slate-800">
           <button
             type="button"
-            class="flex items-center justify-center gap-2 rounded-2xl bg-slate-100 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
+            class="flex items-center justify-center gap-2 rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-700 transition hover:bg-red-100 dark:bg-red-950/40 dark:text-red-200 dark:hover:bg-red-950/70"
             @click="closeEntryDetailsOverlay"
           >
             Close
           </button>
           <button
             type="button"
-            class="flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+            class="flex items-center justify-center gap-2 rounded-2xl bg-sky-500 px-4 py-3 text-sm font-bold text-white transition hover:bg-sky-600 dark:bg-sky-400 dark:text-slate-950 dark:hover:bg-sky-300"
             @click="editViewedHistoryEntry"
           >
             <UIcon name="i-lucide-pencil" class="size-4" />
@@ -2360,6 +2367,9 @@ const entryTimeInput = ref(initialEntryDateTime.time)
 const entryTimeHour = ref(initialEntryTimeParts.hour12)
 const entryTimeMinute = ref(initialEntryTimeParts.minute)
 const entryTimePeriod = ref<'AM' | 'PM'>(initialEntryTimeParts.period)
+let isApplyingEntryCalendarSelection = false
+let entryTimeWasManuallySelected = false
+const defaultBackdatedEntryTime = '12:00'
 
 const entryStepScrollEl = ref<HTMLElement | null>(null)
 
@@ -2918,27 +2928,15 @@ function onEntryCalendarDateUpdate(date: unknown) {
 
   const today = getTodayCalendarDate()
   const calendarDate = parsed.compare(today) > 0 ? today : parsed
-  const current = coerceCalendarDate(entryCalendarDate.value)
 
-  if (current && current.compare(calendarDate) === 0) {
-    return
-  }
-
+  isApplyingEntryCalendarSelection = true
   entryCalendarDate.value = calendarDate
   entryCalendarPlaceholder.value = calendarDate
-  syncEntryFormDateTimeFromCalendar(calendarDate)
-}
+  entryForm.value.date_and_time = `${calendarDateToDateString(calendarDate)}T${entryTimeInput.value}`
 
-function syncEntryFormDateTimeFromCalendar(calendarDate: CalendarDate) {
-  const dateStr = calendarDateToDateString(calendarDate)
-  const maxTime = getMaxEntryTimeLocal(dateStr)
-
-  if (entryTimeInput.value > maxTime) {
-    entryTimeInput.value = maxTime
-    syncEntryTimePartsFromInput()
-  }
-
-  entryForm.value.date_and_time = `${dateStr}T${entryTimeInput.value}`
+  window.setTimeout(() => {
+    isApplyingEntryCalendarSelection = false
+  }, 0)
 }
 
 const loggingActivityMetrics = computed(() => {
@@ -3786,6 +3784,7 @@ function resetEntryForm() {
   refreshEntryDateLimits()
   entryForm.value = {}
   severityValue.value = 5
+  entryTimeWasManuallySelected = false
   entryForm.value.date_and_time = getMaxEntryDateTimeLocal()
   prefillEntryMedications()
   syncEntryInputsFromForm()
@@ -3810,13 +3809,6 @@ function syncEntryFormFromInputs() {
   }
 
   const dateStr = calendarDateToDateString(calendarDate)
-  const maxTime = getMaxEntryTimeLocal(dateStr)
-
-  if (entryTimeInput.value > maxTime) {
-    entryTimeInput.value = maxTime
-    syncEntryTimePartsFromInput()
-  }
-
   entryForm.value.date_and_time = `${dateStr}T${entryTimeInput.value}`
 }
 
@@ -3828,11 +3820,16 @@ function syncEntryTimePartsFromInput() {
 }
 
 function onEntryTimePartsChange() {
+  if (isApplyingEntryCalendarSelection) {
+    return
+  }
+
   const nextTime = formatPartsToTime24(
     entryTimeHour.value,
     entryTimeMinute.value,
     entryTimePeriod.value
   )
+  entryTimeWasManuallySelected = true
   entryTimeInput.value = clampTime24ToMax(nextTime, maxEntryTimeInput.value)
   syncEntryTimePartsFromInput()
   syncEntryFormFromInputs()
@@ -3840,12 +3837,9 @@ function onEntryTimePartsChange() {
 
 function setEntryDateTimeNow() {
   refreshEntryDateLimits()
+  entryTimeWasManuallySelected = true
   entryForm.value.date_and_time = getMaxEntryDateTimeLocal()
   syncEntryInputsFromForm()
-}
-
-function clampEntryDateTimeField() {
-  syncEntryFormFromInputs()
 }
 
 function currentStepHasDateTimeField() {
@@ -3863,8 +3857,6 @@ function currentStepIsEpisodeDetailStep() {
 }
 
 function validateEntryDateTimeStep() {
-  clampEntryDateTimeField()
-
   if (!entryForm.value.date_and_time) {
     entryError.value = 'Choose when this happened.'
     return false
@@ -4788,6 +4780,8 @@ function toggleAuthPanel() {
 
 function openAuthPanel() {
   closeAppOverlaysExcept('auth')
+  historyExpanded.value = false
+  isSubmissionDropdownOpen.value = false
   isAuthPanelOpen.value = true
 }
 
@@ -6222,6 +6216,7 @@ function populateEntryFormFromRecord(entry: Record<string, any>) {
   entryForm.value = details
   severityValue.value = entry.severity ?? 5
   syncEntryInputsFromForm()
+  entryTimeWasManuallySelected = true
 }
 
 function handleProfileClick() {

@@ -2,6 +2,7 @@
   <UCalendar
     v-model="modelValue"
     v-model:placeholder="placeholder"
+    :view-control="false"
     class="mx-auto w-full"
   >
     <template #day="{ day }">
