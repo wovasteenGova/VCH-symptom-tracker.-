@@ -30,8 +30,10 @@ export type CpExamConditionSummary = {
 
 const RECENT_WINDOW_DAYS = 90
 const IMPACT_DETAIL_KEYS = [
+  'functional_impact',
   'had_to_stop_activity',
   'kept_you_from_sleeping',
+  'night_symptoms',
   'movement_limit',
   'sleep_interruption'
 ] as const

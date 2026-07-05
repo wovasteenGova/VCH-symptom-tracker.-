@@ -122,28 +122,40 @@
                   </div>
 
                   <div class="max-h-80 overflow-y-auto no-scrollbar p-2">
-                    <button
+                    <div
                       v-if="hasEntryDraft"
-                      type="button"
-                      class="relative mb-2 flex w-full items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-3 py-3 text-left transition hover:bg-red-100/80 dark:border-red-900/50 dark:bg-red-950/30 dark:hover:bg-red-950/50"
-                      @click="resumeEntryDraft"
+                      class="relative mb-2"
                     >
-                      <span class="relative mt-0.5 grid size-9 shrink-0 place-items-center rounded-full bg-white text-red-600 ring-1 ring-red-200 dark:bg-slate-900 dark:text-red-300 dark:ring-red-900/60">
-                        <UIcon name="i-lucide-files" class="size-4" />
-                        <span class="absolute -right-1 -top-1 grid min-w-4 place-items-center rounded-full bg-red-500 px-0.5 text-[0.58rem] font-black leading-4 text-white ring-2 ring-red-50 dark:ring-red-950">
-                          !!
+                      <button
+                        type="button"
+                        class="flex w-full items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-3 py-3 pr-12 text-left transition hover:bg-red-100/80 dark:border-red-900/50 dark:bg-red-950/30 dark:hover:bg-red-950/50"
+                        @click="resumeEntryDraft"
+                      >
+                        <span class="relative mt-0.5 grid size-9 shrink-0 place-items-center rounded-full bg-white text-red-600 ring-1 ring-red-200 dark:bg-slate-900 dark:text-red-300 dark:ring-red-900/60">
+                          <UIcon name="i-lucide-files" class="size-4" />
+                          <span class="absolute -right-1 -top-1 grid min-w-4 place-items-center rounded-full bg-red-500 px-0.5 text-[0.58rem] font-black leading-4 text-white ring-2 ring-red-50 dark:ring-red-950">
+                            !!
+                          </span>
                         </span>
-                      </span>
-                      <span class="min-w-0 flex-1">
-                        <span class="block text-[0.875rem] font-bold text-slate-950 dark:text-white">Draft</span>
-                        <span class="mt-1 block truncate text-xs font-semibold text-slate-700 dark:text-slate-200">
-                          {{ entryDraftPreview?.title || 'Symptom log' }}
+                        <span class="min-w-0 flex-1">
+                          <span class="block text-[0.875rem] font-bold text-slate-950 dark:text-white">Draft</span>
+                          <span class="mt-1 block truncate text-xs font-semibold text-slate-700 dark:text-slate-200">
+                            {{ entryDraftPreview?.title || 'Symptom log' }}
+                          </span>
+                          <span class="mt-1 block text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-red-600 dark:text-red-300">
+                            Saved {{ entryDraftPreview?.timeLabel || 'recently' }}
+                          </span>
                         </span>
-                        <span class="mt-1 block text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-red-600 dark:text-red-300">
-                          Saved {{ entryDraftPreview?.timeLabel || 'recently' }}
-                        </span>
-                      </span>
-                    </button>
+                      </button>
+                      <button
+                        type="button"
+                        class="absolute right-2 top-2 grid size-8 place-items-center rounded-full text-slate-500 transition hover:bg-red-100 hover:text-red-700 dark:text-slate-400 dark:hover:bg-red-950/60 dark:hover:text-red-300"
+                        aria-label="Delete draft"
+                        @click.stop="requestDeleteEntryDraft"
+                      >
+                        <UIcon name="i-lucide-x" class="size-4" />
+                      </button>
+                    </div>
 
                     <div
                       v-if="!submissionNotifications.length && !hasEntryDraft"
@@ -693,58 +705,14 @@
                             </button>
                           </div>
 
-                          <div class="space-y-4">
-                            <div class="flex items-center justify-center gap-2">
-                              <button
-                                type="button"
-                                class="grid size-8 place-items-center rounded-full text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
-                                aria-label="Previous month"
-                                @click="showPreviousEntryPickerMonth"
-                              >
-                                <UIcon name="i-lucide-chevron-left" class="size-4" />
-                              </button>
-                              <p class="min-w-[8rem] text-center text-sm font-bold text-slate-950 dark:text-white">
-                                {{ entryPickerMonthLabel }}
-                              </p>
-                              <button
-                                type="button"
-                                class="grid size-8 place-items-center rounded-full text-slate-500 hover:bg-slate-100 disabled:opacity-30 dark:text-slate-400 dark:hover:bg-slate-800"
-                                aria-label="Next month"
-                                :disabled="!canShowNextEntryPickerMonth"
-                                @click="showNextEntryPickerMonth"
-                              >
-                                <UIcon name="i-lucide-chevron-right" class="size-4" />
-                              </button>
-                            </div>
-
-                            <div class="grid grid-cols-7 text-center text-xs font-semibold text-slate-500 dark:text-slate-400">
-                              <span v-for="day in weekDays" :key="`entry-${day}`">{{ day }}</span>
-                            </div>
-
-                            <div class="grid grid-cols-7 gap-y-2 text-center">
-                              <div
-                                v-for="day in entryPickerDays"
-                                :key="day.key"
-                                class="flex justify-center"
-                              >
-                                <button
-                                  v-if="day.dayNumber"
-                                  type="button"
-                                  class="grid size-8 place-items-center rounded-full text-xs font-bold transition"
-                                  :class="day.selected
-                                    ? 'bg-slate-950 text-white dark:bg-white dark:text-slate-950'
-                                    : day.selectable
-                                      ? 'text-slate-950 hover:bg-slate-100 dark:text-white dark:hover:bg-slate-800'
-                                      : 'cursor-not-allowed text-slate-300 dark:text-slate-600'"
-                                  :disabled="!day.selectable"
-                                  :aria-label="day.label"
-                                  :aria-pressed="day.selected"
-                                  @click="selectEntryPickerDay(day)"
-                                >
-                                  {{ day.dayNumber }}
-                                </button>
-                              </div>
-                            </div>
+                          <div class="space-y-4" data-step-swipe-block @click.stop @touchstart.stop @touchend.stop>
+                            <UCalendar
+                              v-model="entryCalendarDate"
+                              :min-value="minEntryCalendarDate"
+                              :max-value="maxEntryCalendarDate"
+                              class="mx-auto w-full"
+                              @update:model-value="onEntryCalendarUpdate"
+                            />
 
                             <TimeOfDayPicker
                               :hour="entryTimeHour"
@@ -759,9 +727,23 @@
                           </div>
                         </div>
                         <div
-                          v-else-if="isEpisodeDurationField(field) || isEpisodeFollowUpField(field) || getEntryFieldPresets(field.label).length"
+                          v-else-if="isEpisodeDurationField(field) || isEpisodeFollowUpField(field) || isMedicationsStepField(field) || getEntryFieldPresets(field.label).length"
                           class="space-y-5"
                         >
+                          <div
+                            v-if="field.label === 'Medications for this entry' && savedMedicationList.length"
+                            class="flex flex-wrap gap-2"
+                          >
+                            <button
+                              v-for="medication in savedMedicationList"
+                              :key="medication"
+                              type="button"
+                              class="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                              @click="appendSavedMedicationToEntry(medication)"
+                            >
+                              + {{ medication }}
+                            </button>
+                          </div>
                           <div class="flex flex-wrap gap-2.5">
                             <button
                               v-for="preset in getEntryFieldPresets(field.label)"
@@ -810,7 +792,7 @@
                           class="w-full resize-none border-0 border-b border-slate-300/80 bg-transparent px-0 py-4 text-base font-medium leading-7 text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-700 dark:text-white dark:focus:border-slate-400"
                         />
                         <input
-                          v-else-if="field.type !== 'slider' && field.type !== 'datetime' && !isEpisodeDurationField(field) && !isEpisodeFollowUpField(field) && !getEntryFieldPresets(field.label).length"
+                          v-else-if="field.type !== 'slider' && field.type !== 'datetime' && !isEpisodeDurationField(field) && !isEpisodeFollowUpField(field) && !isMedicationsStepField(field) && !getEntryFieldPresets(field.label).length"
                           v-model="entryForm[fieldKey(field.label)]"
                           :type="field.type"
                           :placeholder="field.placeholder"
@@ -1136,8 +1118,8 @@
                   v-if="isHomeOverviewSlide"
                   type="button"
                   class="grid size-[4.5rem] place-items-center rounded-full bg-white text-slate-950 shadow-xl ring-1 ring-slate-200 transition hover:bg-slate-100 dark:bg-slate-800 dark:text-white dark:ring-slate-700 dark:hover:bg-slate-700"
-                  aria-label="Browse all conditions"
-                  @click="openConditionBrowser"
+                  aria-label="Log a symptom entry"
+                  @click="startEntryFromOverview"
                 >
                   <UIcon name="i-lucide-plus" class="size-9" />
                 </button>
@@ -1167,7 +1149,7 @@
         </div>
 
         <section
-          class="flex min-h-0 flex-col overflow-hidden rounded-t-[1.75rem] border-t border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-900"
+          class="home-history-panel flex min-h-0 flex-col overflow-hidden rounded-t-[1.75rem] border-t border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-900"
           :class="historyPanelClass"
           @pointerdown="handleHistoryPointerDown"
           @pointermove="handleHistoryPointerMove"
@@ -1408,67 +1390,22 @@
             <div
               v-else-if="activeHistoryTab === 'Calendar'"
               class="py-1"
-              @touchstart.passive="handleCalendarSwipeStart"
-              @touchend="handleCalendarSwipeEnd"
             >
-              <div class="flex items-center justify-between">
-                <button
-                  v-if="isDesktopLayout"
-                  type="button"
-                  data-history-interactive
-                  class="grid size-8 place-items-center rounded-full text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
-                  aria-label="Previous month"
-                  @click="showPreviousHistoryMonth"
-                >
-                  <UIcon name="i-lucide-chevron-left" class="size-4" />
-                </button>
-                <div v-else class="size-8" />
-
-                <p class="font-bold text-slate-950 dark:text-white">{{ historyMonthLabel }}</p>
-
-                <button
-                  v-if="isDesktopLayout"
-                  type="button"
-                  data-history-interactive
-                  class="grid size-8 place-items-center rounded-full text-slate-500 hover:bg-slate-100 disabled:opacity-30 dark:text-slate-400 dark:hover:bg-slate-800"
-                  aria-label="Next month"
-                  :disabled="!canShowNextHistoryMonth"
-                  @click="showNextHistoryMonth"
-                >
-                  <UIcon name="i-lucide-chevron-right" class="size-4" />
-                </button>
-                <div v-else class="size-8" />
-              </div>
-
-              <div class="mt-4 grid grid-cols-7 text-center text-xs font-semibold text-slate-500 dark:text-slate-400">
-                <span v-for="day in weekDays" :key="day">{{ day }}</span>
-              </div>
-
-              <div class="mt-3 grid grid-cols-7 gap-y-3 text-center">
-                <div
-                  v-for="day in calendarDays"
-                  :key="day.key"
-                  class="flex justify-center"
-                >
-                  <button
-                    type="button"
-                    class="relative grid size-8 place-items-center rounded-full text-xs font-bold"
-                    :class="day.entry ? day.color : day.currentMonth ? 'text-slate-400' : 'text-slate-700'"
-                    :aria-label="day.entry ? `${day.label} has ${day.entryCount} ${day.entryCount === 1 ? 'entry' : 'entries'}` : day.label"
+              <UCalendar
+                v-model="historyCalendarDate"
+                class="mx-auto w-full"
+                @update:placeholder="onHistoryCalendarPlaceholderUpdate"
+              >
+                <template #day="{ day }">
+                  <UChip
+                    :show="hasLoggedEntryOnDay(day)"
+                    color="success"
+                    size="2xs"
                   >
-                    <span v-if="day.entry" class="relative inline-flex">
-                      <UIcon :name="day.icon" class="size-5" />
-                      <span
-                        v-if="day.entryCount > 1"
-                        class="absolute -right-1.5 -top-1.5 grid min-w-[0.85rem] place-items-center rounded-full bg-slate-950 px-0.5 text-[0.55rem] font-bold leading-none text-white dark:bg-white dark:text-slate-950"
-                      >
-                        {{ day.entryCount }}
-                      </span>
-                    </span>
-                    <span v-else>{{ day.date }}</span>
-                  </button>
-                </div>
-              </div>
+                    {{ day.day }}
+                  </UChip>
+                </template>
+              </UCalendar>
 
               <LoggingActivityReport :metrics="loggingActivityMetrics" />
             </div>
@@ -1632,6 +1569,51 @@
       </div>
     </Transition>
   </main>
+
+  <Transition
+    enter-active-class="transition duration-200 ease-out"
+    enter-from-class="opacity-0"
+    enter-to-class="opacity-100"
+    leave-active-class="transition duration-150 ease-in"
+    leave-from-class="opacity-100"
+    leave-to-class="opacity-0"
+  >
+    <div
+      v-if="pendingDeleteDraft"
+      class="fixed inset-0 z-[80] flex items-end justify-center bg-slate-950/55 p-4 sm:items-center"
+      @click.self="cancelDeleteEntryDraft"
+    >
+      <div class="w-full max-w-md rounded-[1.75rem] bg-white p-5 shadow-2xl dark:bg-slate-900">
+        <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+          Draft
+        </p>
+        <h3 class="mt-2 text-xl font-bold text-slate-950 dark:text-white">
+          Delete this draft?
+        </h3>
+        <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+          <span class="font-semibold text-slate-950 dark:text-white">{{ entryDraftPreview?.title || 'Symptom log' }}</span>
+          will be permanently removed. This cannot be undone.
+        </p>
+
+        <div class="mt-5 grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            class="rounded-2xl bg-slate-100 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
+            @click="cancelDeleteEntryDraft"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="rounded-2xl bg-red-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-red-700"
+            @click="confirmDeleteEntryDraft"
+          >
+            Delete draft
+          </button>
+        </div>
+      </div>
+    </div>
+  </Transition>
 
   <Transition
     enter-active-class="transition duration-200 ease-out"
@@ -1881,11 +1863,17 @@ import {
   toggleEntryFieldPresetValue
 } from '../../utils/entryFieldPresets'
 import {
-  defaultEntryFields,
+  formatMedicationListForEntry,
+  readSavedMedicationList,
+  rememberMedicationsFromEntry
+} from '../../utils/entryMedications'
+import {
+  buildDefaultEntryFields,
   entryFieldsByCondition,
   getEntryFieldsForSearchCondition,
   isEpisodeDurationField,
-  isEpisodeFollowUpField
+  isEpisodeFollowUpField,
+  isMedicationsStepField
 } from '../../utils/vaConditionFields'
 import { reportBranding } from '../../utils/reportBranding'
 import { androidAddToHomeScreenVideoUrl, iosAddToHomeScreenVideoUrl } from '../../utils/installGuide'
@@ -2212,10 +2200,10 @@ const {
 } = useKeyboardAwareScroll(entryStepScrollEl, {
   footerHeight: entryActionBarHeight
 })
-const entryPickerViewMonth = ref({
-  year: new Date().getFullYear(),
-  month: new Date().getMonth()
-})
+const minEntryCalendarDate = getMinEntryCalendarDate()
+const maxEntryCalendarDate = getTodayCalendarDate()
+const historyCalendarDate = shallowRef(getTodayCalendarDate())
+const historyCalendarPlaceholder = shallowRef(getTodayCalendarDate())
 
 const maxEntryTimeInput = computed(() => {
   if (!entryCalendarDate.value) {
@@ -2227,69 +2215,6 @@ const maxEntryTimeInput = computed(() => {
 
 const entryDateTimePreview = computed(() => {
   return formatEntryDateTimePreview(entryForm.value.date_and_time || '')
-})
-
-const entryPickerMonthLabel = computed(() => {
-  return new Date(entryPickerViewMonth.value.year, entryPickerViewMonth.value.month, 1).toLocaleString('en-US', {
-    month: 'long',
-    year: 'numeric'
-  })
-})
-
-const canShowNextEntryPickerMonth = computed(() => {
-  const now = new Date()
-  const view = entryPickerViewMonth.value
-
-  return view.year < now.getFullYear()
-    || (view.year === now.getFullYear() && view.month < now.getMonth())
-})
-
-const entryPickerDays = computed(() => {
-  const year = entryPickerViewMonth.value.year
-  const month = entryPickerViewMonth.value.month
-  const daysInMonth = new Date(year, month + 1, 0).getDate()
-  const firstDay = new Date(year, month, 1).getDay()
-  const mondayOffset = firstDay === 0 ? 6 : firstDay - 1
-  const selectedDate = coerceCalendarDate(entryCalendarDate.value)
-  const days = []
-
-  for (let index = 0; index < mondayOffset; index += 1) {
-    days.push({
-      key: `entry-empty-${year}-${month}-${index}`,
-      dayNumber: 0,
-      selectable: false,
-      selected: false,
-      label: 'Empty calendar day'
-    })
-  }
-
-  for (let dayNumber = 1; dayNumber <= daysInMonth; dayNumber += 1) {
-    const calendarDate = new CalendarDate(year, month + 1, dayNumber)
-    const minDate = getMinEntryCalendarDate()
-    const maxDate = getTodayCalendarDate()
-    const selectable = calendarDate.compare(minDate) >= 0 && calendarDate.compare(maxDate) <= 0
-    const selected = selectedDate
-      ? selectedDate.year === calendarDate.year
-        && selectedDate.month === calendarDate.month
-        && selectedDate.day === calendarDate.day
-      : false
-
-    days.push({
-      key: `entry-${year}-${month}-${dayNumber}`,
-      year,
-      month,
-      dayNumber,
-      selectable,
-      selected,
-      label: new Date(year, month, dayNumber).toLocaleDateString('en-US', {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric'
-      })
-    })
-  }
-
-  return days
 })
 
 const historyTabs = ['Entries', 'Calendar', 'Export']
@@ -2309,6 +2234,7 @@ function readInstallPlatform(): 'ios' | 'android' | 'desktop' {
 
 const submissionHighlightDurationMs = 5_000
 
+const pendingDeleteDraft = ref(false)
 const pendingDelete = ref<null | {
   id: string
   mode: 'archive'
@@ -2547,107 +2473,43 @@ const hasEntryDraft = computed(() => {
   })
 })
 
-const weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+const loggedEntryDateKeys = computed(() => {
+  const keys = new Set<string>()
 
-const historyViewMonth = ref({
-  year: new Date().getFullYear(),
-  month: new Date().getMonth()
-})
+  savedEntries.value.forEach((entry) => {
+    const entryDate = entry.occurred_at ? new Date(entry.occurred_at) : new Date(entry.created_at)
+    if (Number.isNaN(entryDate.getTime())) {
+      return
+    }
 
-const historyMonthLabel = computed(() => {
-  return new Date(historyViewMonth.value.year, historyViewMonth.value.month, 1).toLocaleString('en-US', {
-    month: 'long',
-    year: 'numeric'
+    keys.add(calendarDateToDateString(new CalendarDate(
+      entryDate.getFullYear(),
+      entryDate.getMonth() + 1,
+      entryDate.getDate()
+    )))
   })
+
+  return keys
 })
 
-const canShowNextHistoryMonth = computed(() => {
-  const now = new Date()
-  const view = historyViewMonth.value
+function hasLoggedEntryOnDay(day: CalendarDate | { year: number, month: number, day: number }) {
+  const calendarDay = day instanceof CalendarDate
+    ? day
+    : new CalendarDate(day.year, day.month, day.day)
 
-  return view.year < now.getFullYear()
-    || (view.year === now.getFullYear() && view.month < now.getMonth())
-})
-
-function showPreviousHistoryMonth() {
-  const view = historyViewMonth.value
-
-  if (view.month === 0) {
-    historyViewMonth.value = { year: view.year - 1, month: 11 }
-    return
-  }
-
-  historyViewMonth.value = { year: view.year, month: view.month - 1 }
+  return loggedEntryDateKeys.value.has(calendarDateToDateString(calendarDay))
 }
 
-function showNextHistoryMonth() {
-  if (!canShowNextHistoryMonth.value) {
-    return
+function onHistoryCalendarPlaceholderUpdate(date: unknown) {
+  const parsed = coerceCalendarDate(date)
+  if (parsed) {
+    historyCalendarPlaceholder.value = parsed
   }
-
-  const view = historyViewMonth.value
-
-  if (view.month === 11) {
-    historyViewMonth.value = { year: view.year + 1, month: 0 }
-    return
-  }
-
-  historyViewMonth.value = { year: view.year, month: view.month + 1 }
 }
 
 const loggingActivityMetrics = computed(() => {
-  const view = historyViewMonth.value
-  return buildLoggingActivityMetrics(savedEntries.value, view.year, view.month)
-})
-
-const calendarDays = computed(() => {
-  const year = historyViewMonth.value.year
-  const month = historyViewMonth.value.month
-  const daysInMonth = new Date(year, month + 1, 0).getDate()
-  const firstDay = new Date(year, month, 1).getDay()
-  const mondayOffset = firstDay === 0 ? 6 : firstDay - 1
-  const days = []
-
-  for (let index = 0; index < mondayOffset; index += 1) {
-    days.push({
-      key: `empty-${index}`,
-      date: '',
-      label: 'Empty calendar day',
-      currentMonth: false,
-      entry: false
-    })
-  }
-
-  for (let day = 1; day <= daysInMonth; day += 1) {
-    const matchingEntries = savedEntries.value.filter((entry) => {
-      const entryDate = entry.occurred_at ? new Date(entry.occurred_at) : new Date(entry.created_at)
-      return entryDate.getFullYear() === year && entryDate.getMonth() === month && entryDate.getDate() === day
-    })
-    const entryCount = matchingEntries.length
-    const severity = entryCount
-      ? matchingEntries.reduce((highest, entry) => Math.max(highest, entry.severity ?? 0), 0)
-      : null
-
-    days.push({
-      key: `${year}-${month}-${day}`,
-      date: day,
-      label: new Date(year, month, day).toLocaleDateString('en-US', {
-        month: 'long',
-        day: 'numeric'
-      }),
-      currentMonth: true,
-      entry: entryCount > 0,
-      entryCount,
-      icon: severity !== null && severity >= 7 ? 'i-lucide-frown' : severity !== null && severity >= 4 ? 'i-lucide-meh' : 'i-lucide-smile',
-      color: severity !== null && severity >= 7
-        ? 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300'
-        : severity !== null && severity >= 4
-          ? 'bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-300'
-          : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
-    })
-  }
-
-  return days
+  const date = historyCalendarPlaceholder.value
+  return buildLoggingActivityMetrics(savedEntries.value, date.year, date.month - 1)
 })
 
 const isHomeOverviewSlide = computed(() => activeIndex.value === 0)
@@ -2677,13 +2539,9 @@ const carouselWorkspaceClass = computed(() => {
   return 'flex-1 pb-3'
 })
 
-const historyPanelClass = computed(() => {
-  if (!historyExpanded.value) {
-    return 'absolute inset-x-0 bottom-0 z-[90] h-[5rem]'
-  }
-
-  return 'absolute inset-0 z-[100] shadow-[0_-12px_40px_rgb(15_23_42/0.12)] dark:shadow-[0_-12px_40px_rgb(0_0_0/0.35)]'
-})
+const historyPanelClass = computed(() => (
+  historyExpanded.value ? 'is-history-expanded' : 'is-history-collapsed'
+))
 
 const isConditionSlideEntryEnabled = computed(() => {
   return !historyExpanded.value && !conditionSlideEntryBlocked.value
@@ -2926,21 +2784,21 @@ const activeEntryFields = computed(() => {
         type: 'text',
         placeholder: 'Example: tinnitus, sinusitis, skin flare-up...'
       },
-      ...defaultEntryFields
+      ...buildDefaultEntryFields()
     ]
   }
 
   if (editingEntryConditionLabel.value) {
     return entryFieldsByCondition[editingEntryConditionLabel.value as keyof typeof entryFieldsByCondition]
-      || defaultEntryFields
+      || buildDefaultEntryFields()
   }
 
   const activeTitle = activeCondition.value?.title
   if (activeTitle) {
-    return entryFieldsByCondition[activeTitle as keyof typeof entryFieldsByCondition] || defaultEntryFields
+    return entryFieldsByCondition[activeTitle as keyof typeof entryFieldsByCondition] || buildDefaultEntryFields()
   }
 
-  return defaultEntryFields
+  return buildDefaultEntryFields()
 })
 const entrySteps = computed(() => {
   const fields = activeEntryFields.value
@@ -2974,6 +2832,17 @@ const entrySteps = computed(() => {
       continue
     }
 
+    if (isMedicationsStepField(field)) {
+      const medicationFields = [field]
+      while (index + 1 < fields.length && isMedicationsStepField(fields[index + 1])) {
+        medicationFields.push(fields[index + 1]!)
+        index += 1
+      }
+      steps.push(medicationFields)
+      index += 1
+      continue
+    }
+
     steps.push(fields.slice(index, index + 2))
     index += 2
   }
@@ -2997,6 +2866,8 @@ const activeEntryIsMentalHealth = computed(() => {
 
   return category.toLowerCase().includes('mental')
 })
+
+const savedMedicationList = computed(() => readSavedMedicationList(user.value?.id))
 function filterConditionResults(query: string) {
   return filterAndRankConditions(conditionResults, query)
 }
@@ -3176,6 +3047,25 @@ function resumeEntryDraft() {
 
   restoreEntryDraftSnapshot(snapshot)
   isEntryOpen.value = true
+}
+
+function requestDeleteEntryDraft() {
+  pendingDeleteDraft.value = true
+}
+
+function cancelDeleteEntryDraft() {
+  pendingDeleteDraft.value = false
+}
+
+function confirmDeleteEntryDraft() {
+  clearPersistedEntryDraft()
+  hasActiveDraft.value = false
+  pendingDeleteDraft.value = false
+  closeSubmissionDropdown()
+
+  if (isEntryOpen.value && !editingEntryId.value) {
+    closeEntryPanel(true)
+  }
 }
 
 watch(searchQuery, (value) => {
@@ -3400,58 +3290,6 @@ function fieldKey(label: string) {
     .replace(/^_|_$/g, '')
 }
 
-function syncEntryPickerViewMonth() {
-  const calendarDate = coerceCalendarDate(entryCalendarDate.value)
-
-  if (!calendarDate) {
-    return
-  }
-
-  entryPickerViewMonth.value = {
-    year: calendarDate.year,
-    month: calendarDate.month - 1
-  }
-}
-
-function showPreviousEntryPickerMonth() {
-  const view = entryPickerViewMonth.value
-
-  if (view.month === 0) {
-    entryPickerViewMonth.value = { year: view.year - 1, month: 11 }
-    return
-  }
-
-  entryPickerViewMonth.value = { year: view.year, month: view.month - 1 }
-}
-
-function showNextEntryPickerMonth() {
-  if (!canShowNextEntryPickerMonth.value) {
-    return
-  }
-
-  const view = entryPickerViewMonth.value
-
-  if (view.month === 11) {
-    entryPickerViewMonth.value = { year: view.year + 1, month: 0 }
-    return
-  }
-
-  entryPickerViewMonth.value = { year: view.year, month: view.month + 1 }
-}
-
-function selectEntryPickerDay(day: {
-  dayNumber: number
-  month: number
-  selectable: boolean
-  year: number
-}) {
-  if (!day.selectable || !day.dayNumber) {
-    return
-  }
-
-  onEntryCalendarUpdate(new CalendarDate(day.year, day.month + 1, day.dayNumber))
-}
-
 function applySeverityPreset(value: number) {
   severityValue.value = value
 }
@@ -3467,6 +3305,33 @@ function applyEntryFieldPreset(label: string, value: string) {
   entryForm.value[key] = value
 }
 
+function appendSavedMedicationToEntry(medication: string) {
+  const key = fieldKey('Medications for this entry')
+  const current = entryForm.value[key] || ''
+  const parts = current
+    .split(/[\n,;]+/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+
+  if (!parts.some((part) => part.toLowerCase() === medication.toLowerCase())) {
+    parts.push(medication)
+  }
+
+  entryForm.value[key] = parts.join('\n')
+}
+
+function prefillEntryMedications() {
+  const key = fieldKey('Medications for this entry')
+  if (entryForm.value[key]?.trim()) {
+    return
+  }
+
+  const saved = formatMedicationListForEntry(readSavedMedicationList(user.value?.id))
+  if (saved) {
+    entryForm.value[key] = saved
+  }
+}
+
 function refreshEntryDateLimits() {
   // Future-date validation runs when syncing or validating the step.
 }
@@ -3476,6 +3341,7 @@ function resetEntryForm() {
   entryForm.value = {}
   severityValue.value = 5
   entryForm.value.date_and_time = getMaxEntryDateTimeLocal()
+  prefillEntryMedications()
   syncEntryInputsFromForm()
 }
 
@@ -3488,7 +3354,6 @@ function syncEntryInputsFromForm() {
 
   if (import.meta.client) {
     entryCalendarDate.value = coerceCalendarDate(dateStringToCalendarDate(date))
-    syncEntryPickerViewMonth()
   }
 }
 
@@ -4084,6 +3949,8 @@ async function saveEntry() {
     if (!wasEditing && savedEntryId && isMobileLayout.value) {
       await focusSubmission(savedEntryId)
     }
+
+    rememberMedicationsFromEntry(entryForm.value.medications_for_this_entry, user.value?.id)
 
     showSubmissionToast({
       message: wasEditing ? 'Entry updated.' : 'Entry saved.',
@@ -5129,6 +4996,22 @@ function startEntryFromCurrentSlide() {
   logHomeCondition(condition)
 }
 
+function startEntryFromOverview() {
+  if (isHistoryEntryActivationLocked()) {
+    return
+  }
+
+  const condition = homeConditions.value.find((item) => !isConditionLogLocked(item.key))
+    ?? homeConditions.value[0]
+
+  if (!condition) {
+    openConditionBrowser()
+    return
+  }
+
+  logHomeCondition(condition)
+}
+
 function changeEntryCondition(condition: { title: string, category: string, description: string, image: string }) {
   if (condition.title === entryTitle.value) {
     isConditionPickerOpen.value = false
@@ -5538,42 +5421,6 @@ function handleHistoryTabSwipeEnd(event: TouchEvent) {
 
   if (deltaX > 0 && currentIndex > 0) {
     selectHistoryTab(historyTabs[currentIndex - 1])
-  }
-}
-
-let calendarSwipeStartX = 0
-
-function handleCalendarSwipeStart(event: TouchEvent) {
-  if (isDesktopLayout.value) {
-    return
-  }
-
-  calendarSwipeStartX = event.touches[0]?.clientX ?? 0
-}
-
-function handleCalendarSwipeEnd(event: TouchEvent) {
-  if (isDesktopLayout.value) {
-    return
-  }
-
-  const touch = event.changedTouches[0]
-  if (!touch) {
-    return
-  }
-
-  const deltaX = touch.clientX - calendarSwipeStartX
-
-  if (Math.abs(deltaX) < 40) {
-    return
-  }
-
-  if (deltaX < 0 && canShowNextHistoryMonth.value) {
-    showNextHistoryMonth()
-    return
-  }
-
-  if (deltaX > 0) {
-    showPreviousHistoryMonth()
   }
 }
 
@@ -6184,6 +6031,35 @@ function handleEntryPrimaryAction() {
   align-content: start;
 }
 
+.home-carousel-stage.absolute {
+  margin-bottom: 0.8rem;
+}
+
+.home-history-panel {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 90;
+  height: 5rem;
+  max-height: 80%;
+  min-height: 0;
+  overflow: hidden;
+  transition:
+    height 650ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 650ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.home-history-panel.is-history-expanded {
+  z-index: 100;
+  height: 80%;
+  max-height: 80%;
+  box-shadow: 0 -12px 40px rgb(15 23 42 / 0.12);
+}
+
+.dark .home-history-panel.is-history-expanded {
+  box-shadow: 0 -12px 40px rgb(0 0 0 / 0.35);
+}
+
 .home-carousel-stage.is-shared-transition {
   transition: grid-template-rows var(--home-hero-ms, 680ms) var(--home-ease, cubic-bezier(0.22, 1, 0.36, 1));
 }
@@ -6385,6 +6261,7 @@ function handleEntryPrimaryAction() {
   .hero-carousel-leave-active,
   .home-carousel-dot,
   .home-carousel-stage,
+  .home-history-panel,
   .home-carousel-hero,
   .home-carousel-hero-title,
   .home-carousel-overview,

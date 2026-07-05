@@ -23,6 +23,7 @@ import {
 } from '../utils/loggingActivityReport'
 import { buildCpExamReportTitle, buildCpExamSummaries } from '../utils/cpExamReport'
 import { buildCpExamPdfFilename, drawCpExamReportPdf } from '../utils/cpExamReportPdf'
+import { collectMedicationsFromEntries } from '../utils/entryMedications'
 
 type SymptomEntryRecord = {
   id: string
@@ -237,6 +238,49 @@ function buildPdfDownloadFilename(conditionLabel: string | null | undefined) {
 
 const PDF_SECTION_GAP = 28
 
+function drawMedicationListSection(
+  doc: jsPDF,
+  y: number,
+  margin: number,
+  contentWidth: number,
+  pageHeight: number,
+  medications: string[]
+) {
+  if (!medications.length) {
+    return y
+  }
+
+  const lineHeight = 12
+  const bulletLines = medications.flatMap((medication) =>
+    doc.splitTextToSize(`• ${medication}`, contentWidth - 8) as string[]
+  )
+  const boxHeight = 18 + bulletLines.length * lineHeight + 10
+
+  y = ensurePageSpace(doc, y, boxHeight + 24, margin, pageHeight)
+  drawSectionTitle(doc, 'Medications (veteran-reported)', margin, y)
+  y += 12
+
+  doc.setDrawColor(226, 232, 240)
+  doc.setFillColor(248, 250, 252)
+  doc.roundedRect(margin, y, contentWidth, boxHeight, 10, 10, 'FD')
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9)
+  doc.setTextColor(51, 65, 85)
+
+  let textY = y + 16
+  bulletLines.forEach((line) => {
+    doc.text(line, margin + 10, textY)
+    textY += lineHeight
+  })
+
+  doc.setFontSize(8)
+  doc.setTextColor(100, 116, 139)
+  doc.text('Pulled from medication fields across this export for rater review.', margin + 10, y + boxHeight - 8)
+
+  return y + boxHeight + PDF_SECTION_GAP
+}
+
 function appendConditionWeeklyFrequencySection(
   doc: jsPDF,
   y: number,
@@ -392,6 +436,9 @@ export function useSymptomPdfExport() {
     }
 
     y = headerBandHeight + 27
+
+    const medicationList = collectMedicationsFromEntries(entries)
+    y = drawMedicationListSection(doc, y, margin, contentWidth, pageHeight, medicationList)
 
     y = drawStatCards(doc, margin, y, contentWidth, [
       { label: 'Total entries', value: String(metrics.totalEntries), accent: [14, 165, 233] },

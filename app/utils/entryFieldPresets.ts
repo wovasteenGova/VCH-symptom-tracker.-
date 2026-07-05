@@ -13,11 +13,26 @@ export const durationPresets: EntryFieldPreset[] = [
 ]
 
 export const stopActivityPresets: EntryFieldPreset[] = [
-  { label: 'No', value: 'No - kept going' },
+  { label: 'No impact', value: 'No major impact on activity or sleep' },
   { label: 'Slowed down', value: 'Slowed down but continued' },
   { label: 'Had to rest', value: 'Yes - had to rest or lie down' },
   { label: 'Stopped work', value: 'Yes - left work or stopped activity' },
+  { label: 'Lost sleep', value: 'Yes - lost sleep or hard to rest' },
   { label: 'Cancelled plans', value: 'Yes - cancelled plans or errands' }
+]
+
+export const symptomsManagedPresets: EntryFieldPreset[] = [
+  { label: 'Yes', value: 'Yes - symptoms improved' },
+  { label: 'Partial', value: 'Partial relief' },
+  { label: 'No', value: 'No relief' },
+  { label: 'Not applicable', value: 'Not applicable / no meds taken' }
+]
+
+export const medicationExamplesPresets: EntryFieldPreset[] = [
+  { label: 'PPI/antacid', value: 'Omeprazole 40mg' },
+  { label: 'Rescue inhaler', value: 'Albuterol inhaler PRN' },
+  { label: 'Pain med', value: 'Ibuprofen 800mg' },
+  { label: 'Sleep aid', value: 'Trazodone 50mg at bedtime' }
 ]
 
 export const sleepLimitPresets: EntryFieldPreset[] = [
@@ -240,9 +255,14 @@ export function getEntryFieldPresets(fieldLabel: string): EntryFieldPreset[] {
     case 'Duration':
     case 'Episode duration':
       return durationPresets
+    case 'Functional impact':
     case 'Had to stop activity?':
     case 'Had to stop and rest?':
       return stopActivityPresets
+    case 'Symptoms managed by medication?':
+      return symptomsManagedPresets
+    case 'Medications for this entry':
+      return medicationExamplesPresets
     case 'Kept you from sleeping?':
       return sleepLimitPresets
     case 'Episode type':

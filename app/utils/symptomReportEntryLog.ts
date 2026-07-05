@@ -33,14 +33,17 @@ const skippedDetailKeys = new Set([
   'how_bad_was_it',
   'what_happened',
   'daily_impact',
-  'condition_name'
+  'condition_name',
+  'medications_for_this_entry',
+  'symptoms_managed_by_medication'
 ])
 
 const detailLabelMap: Record<string, string> = {
   duration: 'Duration',
   episode_duration: 'Episode duration',
+  functional_impact: 'Functional impact',
   had_to_stop_activity: 'Functional impact',
-  kept_you_from_sleeping: 'Sleep impact',
+  kept_you_from_sleeping: 'Functional impact',
   episode_type: 'Episode type',
   safety_note: 'Safety note',
   movement_limit: 'Movement limit',
@@ -48,7 +51,11 @@ const detailLabelMap: Record<string, string> = {
   side_affected: 'Side affected',
   nerve_symptoms: 'Nerve symptoms',
   digestive_symptom: 'Digestive symptom',
+  digestive_symptoms: 'Digestive symptoms',
   medication_or_food_trigger: 'Medication or food trigger',
+  medications_for_this_entry: 'Medications for this entry',
+  symptoms_managed_by_medication: 'Symptoms managed by medication',
+  night_symptoms: 'Night symptoms',
   hours_slept: 'Hours slept',
   sleep_interruption: 'Sleep interruption'
 }

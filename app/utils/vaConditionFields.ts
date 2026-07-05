@@ -2,7 +2,7 @@ export type EntryFieldDef = {
   label: string
   type: string
   placeholder: string
-  stepRole?: 'duration' | 'followUp'
+  stepRole?: 'duration' | 'followUp' | 'medications'
   helper?: string
 }
 
@@ -40,22 +40,17 @@ const durationField: EntryFieldDef = {
   placeholder: 'Example: 30 minutes, 4 hours, all day'
 }
 
+const functionalImpactField: EntryFieldDef = {
+  label: 'Functional impact',
+  type: 'text',
+  placeholder: 'Had to rest, stop work, cancel plans, or lose sleep?',
+  helper: 'VA raters look for work, social, and sleep disruption from this episode.'
+}
+
 const episodeDurationField: EntryFieldDef = {
   label: 'Episode duration',
   type: 'text',
   placeholder: 'Example: 20 minutes, 2 hours, most of the day'
-}
-
-const stopActivityField: EntryFieldDef = {
-  label: 'Had to stop activity?',
-  type: 'text',
-  placeholder: 'Lie down, leave work, cancel plans, or avoid movement?'
-}
-
-const sleepLimitField: EntryFieldDef = {
-  label: 'Kept you from sleeping?',
-  type: 'text',
-  placeholder: 'Hard to fall asleep, stay asleep, or get useful rest?'
 }
 
 const episodeTypeField: EntryFieldDef = {
@@ -64,9 +59,25 @@ const episodeTypeField: EntryFieldDef = {
   placeholder: 'Panic, nightmare, flashback, suicidal thoughts, isolation...'
 }
 
+const medicationsForEntryField: EntryFieldDef = {
+  label: 'Medications for this entry',
+  type: 'textarea',
+  stepRole: 'medications',
+  placeholder: 'Example: Omeprazole 40mg AM, Sumatriptan 100mg PRN, Ibuprofen 800mg.',
+  helper: 'List meds you took for this condition. We remember them for your next log.'
+}
+
+const symptomsManagedField: EntryFieldDef = {
+  label: 'Symptoms managed by medication?',
+  type: 'text',
+  stepRole: 'medications',
+  placeholder: 'Yes, partial relief, no relief, or not applicable.'
+}
+
 const conditionEpisodeConfig: Record<string, ConditionEpisodeConfig> = {
   'Migraine / Headache': {
-    duration: durationField
+    duration: durationField,
+    followUp: functionalImpactField
   },
   'PTSD / Mental Health': {
     duration: episodeDurationField,
@@ -74,33 +85,35 @@ const conditionEpisodeConfig: Record<string, ConditionEpisodeConfig> = {
   },
   'Back or Joint Pain': {
     duration: durationField,
-    followUp: stopActivityField
+    followUp: functionalImpactField
   },
   'Nerve / Radiculopathy': {
     duration: durationField,
-    followUp: stopActivityField
+    followUp: functionalImpactField
   },
   'IBS / Bowel Symptoms': {
     duration: durationField,
-    followUp: stopActivityField
+    followUp: functionalImpactField
   },
   'Sleep Issues': {
     duration: durationField,
-    followUp: sleepLimitField
+    followUp: functionalImpactField
   },
   Respiratory: {
     duration: durationField,
-    followUp: stopActivityField
+    followUp: functionalImpactField
   },
   'Skin Conditions': {
-    duration: durationField
+    duration: durationField,
+    followUp: functionalImpactField
   },
   Hearing: {
-    duration: durationField
+    duration: durationField,
+    followUp: functionalImpactField
   },
   'Chronic Pain / Fatigue': {
     duration: durationField,
-    followUp: stopActivityField
+    followUp: functionalImpactField
   }
 }
 
@@ -119,6 +132,8 @@ function buildEntryFields(conditionTitle: string, extraFields: EntryFieldDef[] =
   }
 
   fields.push(
+    medicationsForEntryField,
+    symptomsManagedField,
     defaultEntryFields[2]!,
     defaultEntryFields[3]!,
     ...extraFields
@@ -133,6 +148,10 @@ export function isEpisodeDurationField(field: { stepRole?: string }) {
 
 export function isEpisodeFollowUpField(field: { stepRole?: string }) {
   return field.stepRole === 'followUp'
+}
+
+export function isMedicationsStepField(field: { stepRole?: string }) {
+  return field.stepRole === 'medications'
 }
 
 /** VA-informed extra prompts grouped by condition template */
@@ -184,11 +203,6 @@ export const entryFieldsByCondition: Record<string, EntryFieldDef[]> = {
       label: 'Headache symptoms',
       type: 'text',
       placeholder: 'Prostrating attack, aura, light sensitivity, nausea, vertigo...'
-    },
-    {
-      label: 'Had to stop and rest?',
-      type: 'text',
-      placeholder: 'Lie down, dark room, miss work, cancel plans...'
     }
   ]),
   'IBS / Bowel Symptoms': buildEntryFields('IBS / Bowel Symptoms', [
@@ -206,7 +220,8 @@ export const entryFieldsByCondition: Record<string, EntryFieldDef[]> = {
     {
       label: 'Night symptoms',
       type: 'text',
-      placeholder: 'Woke up with stomach pain, reflux after lying down, bathroom trips, or no night issues.'
+      placeholder: 'Woke with reflux, slept propped up, bathroom trips, or no night issues.',
+      helper: 'Separate from step 3 functional impact — GERD/nocturnal symptoms matter for raters.'
     }
   ]),
   'Sleep Issues': buildEntryFields('Sleep Issues', [
@@ -344,7 +359,11 @@ export function getEntryFieldsForSearchCondition(condition: { title: string, cat
     return entryFieldsByCondition['Sleep Issues']!
   }
 
-  return defaultEntryFields
+  return buildDefaultEntryFields()
+}
+
+export function buildDefaultEntryFields() {
+  return buildEntryFields('__generic__', [])
 }
 
 export function resolveEntryTemplateKey(label: string) {
