@@ -97,7 +97,7 @@ button:disabled,
     80dvh,
     calc(
       100dvh
-      - var(--app-overlay-history-inset, 5rem)
+      - var(--app-overlay-history-inset, var(--history-sheet-collapsed-height))
       - env(safe-area-inset-top, 0px)
       - env(safe-area-inset-bottom, 0px)
       - 2rem
