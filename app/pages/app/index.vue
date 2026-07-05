@@ -222,14 +222,12 @@
       >
         <div
           v-if="isAuthPanelOpen && !isAuthLoading"
-          class="fixed inset-0 z-50 overflow-y-auto overscroll-y-contain bg-slate-200/70 backdrop-blur-sm dark:bg-slate-950/70"
+          class="app-overlay-shell fixed inset-0 z-[110] bg-slate-200/70 backdrop-blur-sm dark:bg-slate-950/70"
           @click.self="isAuthPanelOpen = false"
         >
-          <div
-            class="flex min-h-[100dvh] items-end justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] sm:items-start sm:py-16"
-          >
+          <div class="app-overlay-inner">
             <section
-              class="w-full max-w-md max-h-[min(92dvh,calc(100dvh-2rem))] overflow-y-auto overscroll-y-contain rounded-4xl border border-slate-200 bg-white p-4 shadow-2xl shadow-slate-950/10 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/40 sm:max-h-none sm:overflow-visible"
+              class="app-overlay-panel rounded-4xl border border-slate-200 bg-white p-4 shadow-2xl shadow-slate-950/10 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/40"
               @click.stop
             >
             <div class="flex items-start justify-between gap-3">
@@ -705,14 +703,9 @@
                             </button>
                           </div>
 
-                          <div
-                            class="space-y-4"
-                            data-step-swipe-block
-                            @touchstart.stop
-                            @touchend.stop
-                          >
+                          <div class="space-y-4" data-step-swipe-block>
                             <UCalendar
-                              v-model="entryCalendarDate"
+                              :model-value="entryCalendarDate"
                               v-model:placeholder="entryCalendarPlaceholder"
                               class="mx-auto w-full"
                               @update:model-value="onEntryCalendarDateUpdate"
@@ -886,6 +879,7 @@
                   :mode="needsOnboarding ? 'onboarding' : 'manage'"
                   :conditions="conditionPickerOptions"
                   :selected-keys="draftSelectedKeys"
+                  :list-order-keys="conditionBrowserListOrder"
                   :locked-keys="[]"
                   :show-pro-limit="false"
                   :saving="isSavingTrackedConditions"
@@ -1050,7 +1044,7 @@
                       <HomeVisitTipCard
                         :key="`${homeVisitTip.title}-${homeVisitTip.text}`"
                         :tip="homeVisitTip"
-                        @show-all="isHomeTipsOverlayOpen = true"
+                        @show-all="openHomeTipsOverlay"
                       />
                     </Transition>
                   </div>
@@ -1219,7 +1213,7 @@
                   type="button"
                   data-history-interactive
                   class="inline-flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-3 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.12em] text-slate-700 ring-1 ring-slate-300/60 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-600/70 dark:hover:bg-slate-700"
-                  @click="isAuthPanelOpen = true"
+                  @click="openAuthPanel"
                 >
                   <UIcon name="i-lucide-log-in" class="size-3.5" />
                   Not logged in
@@ -1393,23 +1387,15 @@
               v-else-if="activeHistoryTab === 'Calendar'"
               class="py-1"
             >
-              <UCalendar
+              <SymptomCalendar
                 v-model="historyCalendarDate"
                 v-model:placeholder="historyCalendarPlaceholder"
-                class="mx-auto w-full"
+                :has-logged-entry-on-day="hasLoggedEntryOnDay"
+                :get-calendar-day-display="getCalendarDayDisplay"
+                :get-logged-day-severity-title="getLoggedDaySeverityTitle"
                 @update:model-value="onHistoryCalendarDateUpdate"
                 @update:placeholder="onHistoryCalendarPlaceholderUpdate"
-              >
-                <template #day="{ day }">
-                  <span
-                    class="inline-flex min-h-[1.75rem] min-w-[1.75rem] items-center justify-center leading-none"
-                    :class="hasLoggedEntryOnDay(day) ? 'text-base' : 'text-sm font-semibold'"
-                    :title="getLoggedDaySeverityTitle(day)"
-                  >
-                    {{ getCalendarDayDisplay(day) }}
-                  </span>
-                </template>
-              </UCalendar>
+              />
 
               <div class="mt-4 rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-950/50">
                 <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
@@ -1628,10 +1614,11 @@
   >
     <div
       v-if="pendingDeleteDraft"
-      class="fixed inset-0 z-[80] flex items-end justify-center bg-slate-950/55 p-4 sm:items-center"
+      class="app-overlay-shell fixed inset-0 z-[110] bg-slate-950/55"
       @click.self="cancelDeleteEntryDraft"
     >
-      <div class="w-full max-w-md rounded-[1.75rem] bg-white p-5 shadow-2xl dark:bg-slate-900">
+      <div class="app-overlay-inner">
+        <div class="app-overlay-panel app-overlay-panel--compact rounded-[1.75rem] bg-white p-5 shadow-2xl dark:bg-slate-900">
         <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
           Draft
         </p>
@@ -1659,6 +1646,7 @@
             Delete draft
           </button>
         </div>
+        </div>
       </div>
     </div>
   </Transition>
@@ -1673,10 +1661,11 @@
   >
     <div
       v-if="viewedHistoryEntry && viewedHistoryRawEntry"
-      class="fixed inset-0 z-[120] flex items-end justify-center bg-slate-950/70 px-4 pb-[8.75rem] pt-4 sm:items-center sm:pb-[8.75rem] sm:pt-6"
+      class="app-overlay-shell fixed inset-0 z-[120] bg-slate-950/70"
       @click.self="closeEntryDetailsOverlay"
     >
-      <div class="flex max-h-[calc(100dvh-10rem)] w-full max-w-lg flex-col overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+      <div class="app-overlay-inner">
+        <div class="app-overlay-panel app-overlay-panel--stack app-overlay-panel--lg overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
         <div class="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 dark:border-slate-800">
           <div class="min-w-0">
             <p class="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-sky-600 dark:text-sky-300">
@@ -1781,6 +1770,7 @@
             Edit log
           </button>
         </div>
+        </div>
       </div>
     </div>
   </Transition>
@@ -1795,10 +1785,11 @@
   >
     <div
       v-if="pendingDelete"
-      class="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/55 p-4 sm:items-center"
+      class="app-overlay-shell fixed inset-0 z-[110] bg-slate-950/55"
       @click.self="cancelDeleteEntry"
     >
-      <div class="w-full max-w-md rounded-[1.75rem] bg-white p-5 shadow-2xl dark:bg-slate-900">
+      <div class="app-overlay-inner">
+        <div class="app-overlay-panel app-overlay-panel--compact rounded-[1.75rem] bg-white p-5 shadow-2xl dark:bg-slate-900">
         <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
           Move to deleted
         </p>
@@ -1826,6 +1817,7 @@
             Move to Deleted
           </button>
         </div>
+        </div>
       </div>
     </div>
   </Transition>
@@ -1840,10 +1832,11 @@
   >
     <div
       v-if="isShareLinkOpen && shareLinkEntry"
-      class="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/55 p-4 sm:items-center"
+      class="app-overlay-shell fixed inset-0 z-[110] bg-slate-950/55"
       @click.self="closeShareLinkModal"
     >
-      <div class="w-full max-w-md rounded-[1.75rem] bg-white p-5 shadow-2xl dark:bg-slate-900">
+      <div class="app-overlay-inner">
+        <div class="app-overlay-panel app-overlay-panel--compact rounded-[1.75rem] bg-white p-5 shadow-2xl dark:bg-slate-900">
         <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
           Private supporter link
         </p>
@@ -1904,6 +1897,7 @@
         >
           Close
         </button>
+        </div>
       </div>
     </div>
   </Transition>
@@ -1950,17 +1944,23 @@
   >
     <div
       v-if="isConditionSlotOpen"
-      class="fixed inset-0 z-[70] flex items-end justify-center bg-slate-950/70 p-4 sm:items-center"
+      class="app-overlay-shell fixed inset-0 z-[110] bg-slate-950/70"
       @click.self="closeConditionSlotModal"
     >
-      <div class="w-full max-w-md rounded-[1.75rem] border border-slate-800 bg-slate-900 p-5 shadow-2xl">
+      <div class="app-overlay-inner">
+        <div class="app-overlay-panel app-overlay-panel--compact rounded-[1.75rem] border border-slate-800 bg-slate-900 p-5 shadow-2xl">
         <p class="text-xs font-bold uppercase tracking-[0.16em] text-sky-300">Free plan</p>
         <h3 class="mt-2 text-xl font-bold text-white">
           {{ pendingConditionSlotMode === 'replace' ? 'Switch to' : 'Use' }} {{ pendingConditionSlotLabel }}?
         </h3>
         <p class="mt-3 text-sm leading-6 text-slate-300">
           <template v-if="pendingConditionSlotMode === 'replace'">
-            You have not logged anything yet, so you can change your free condition to this one.
+            <span v-if="pendingConditionSlotLoggedEntryCount === 0">
+              You have not logged anything yet, so you can change your free condition to this one.
+            </span>
+            <span v-else>
+              You have already logged entries on your free plan, so you cannot switch conditions without upgrading.
+            </span>
           </template>
           <template v-else>
             Free includes {{ FREE_CONDITION_LIMIT }} conditions with unlimited entries in each.
@@ -1977,7 +1977,7 @@
           <button
             type="button"
             class="w-full rounded-2xl bg-white px-4 py-4 text-base font-bold text-slate-950"
-            :disabled="isConfirmingConditionSlot"
+            :disabled="isConfirmingConditionSlot || (pendingConditionSlotMode === 'replace' && pendingConditionSlotLoggedEntryCount > 0)"
             @click="confirmConditionSlot"
           >
             {{ isConfirmingConditionSlot ? 'Saving...' : pendingConditionSlotMode === 'replace' ? `Switch to ${pendingConditionSlotLabel}` : `Use ${pendingConditionSlotLabel}` }}
@@ -1989,6 +1989,7 @@
           >
             Cancel
           </button>
+        </div>
         </div>
       </div>
     </div>
@@ -2243,6 +2244,10 @@ const entryError = ref('')
 const isLoadingEntries = ref(false)
 const entriesError = ref('')
 const savedEntries = ref<any[]>([])
+const hasLoadedEntriesOnce = ref(false)
+let entriesLoadPromise: Promise<void> | null = null
+const homeConditionOrderKeys = ref<string[]>([])
+const conditionBrowserListOrder = ref<string[]>([])
 const isExportingPdf = ref(false)
 const exportError = ref('')
 const exportNotice = ref('')
@@ -2270,7 +2275,6 @@ const {
   persistReminderSettings,
   enableRemindersWithPermission
 } = useLogReminders()
-const homeSortUsesEntryDates = ref(false)
 const { isDesktopLayout, isMobileLayout, isEmbeddedPreview } = useTrackerLayout()
 const isEmbedProfileOpen = ref(false)
 
@@ -2350,8 +2354,8 @@ const {
 
 const initialEntryDateTime = splitEntryDateTimeLocal(getMaxEntryDateTimeLocal())
 const initialEntryTimeParts = parseTime24ToParts(initialEntryDateTime.time)
-const entryCalendarDate = shallowRef(getTodayCalendarDate())
-const entryCalendarPlaceholder = shallowRef(getTodayCalendarDate())
+const entryCalendarDate = shallowRef(dateStringToCalendarDate(initialEntryDateTime.date))
+const entryCalendarPlaceholder = shallowRef(dateStringToCalendarDate(initialEntryDateTime.date))
 const entryTimeInput = ref(initialEntryDateTime.time)
 const entryTimeHour = ref(initialEntryTimeParts.hour12)
 const entryTimeMinute = ref(initialEntryTimeParts.minute)
@@ -2431,6 +2435,7 @@ const isConditionSlotOpen = ref(false)
 const pendingConditionSlotKey = ref('')
 const pendingConditionSlotLabel = ref('')
 const pendingConditionSlotMode = ref<'add' | 'replace'>('add')
+const pendingConditionSlotLoggedEntryCount = ref(0)
 const pendingEntryPanelOptions = ref<{
   prefillCustomCondition?: string
   condition?: {
@@ -2464,24 +2469,21 @@ type HomeCondition = typeof conditionCatalog[number]
 
 const conditionPickerOptions = computed(() => conditionCatalog)
 
-const homeConditions = computed(() => {
+function buildLastRecordedAtByConditionKey(entries: any[]) {
   const lastRecordedAt = new Map<string, number>()
-  const trackedOrder = new Map<string, number>()
 
-  trackedConditionKeys.value.forEach((storedKey, index) => {
-    const resolvedKey = resolveCatalogConditionByStoredKey(storedKey)?.key ?? storedKey
-    if (!trackedOrder.has(resolvedKey)) {
-      trackedOrder.set(resolvedKey, index)
-    }
-  })
-
-  for (const entry of savedEntries.value) {
+  for (const entry of entries) {
     if (!entry.condition_key) {
       continue
     }
 
     const resolvedKey = resolveCatalogConditionByStoredKey(entry.condition_key)?.key ?? entry.condition_key
     const timestamp = new Date(entry.occurred_at || entry.created_at).getTime()
+
+    if (Number.isNaN(timestamp)) {
+      continue
+    }
+
     const previous = lastRecordedAt.get(resolvedKey) ?? 0
 
     if (timestamp > previous) {
@@ -2489,19 +2491,73 @@ const homeConditions = computed(() => {
     }
   }
 
+  return lastRecordedAt
+}
+
+function buildHomeConditionOrderKeys(trackedKeys: string[], entries: any[]) {
+  const lastRecordedAt = buildLastRecordedAtByConditionKey(entries)
+  const trackedOrder = new Map<string, number>()
+
+  trackedKeys.forEach((storedKey, index) => {
+    const resolvedKey = resolveCatalogConditionByStoredKey(storedKey)?.key ?? storedKey
+
+    if (resolvedKey && !trackedOrder.has(resolvedKey)) {
+      trackedOrder.set(resolvedKey, index)
+    }
+  })
+
+  const conditionKeys = trackedKeys
+    .map((storedKey) => resolveCatalogConditionByStoredKey(storedKey)?.key ?? storedKey)
+    .filter((key, index, keys) => Boolean(key) && keys.indexOf(key) === index)
+
+  return [...conditionKeys].sort((a, b) => {
+    const lastRecordedDiff = (lastRecordedAt.get(b) ?? 0) - (lastRecordedAt.get(a) ?? 0)
+
+    if (lastRecordedDiff !== 0) {
+      return lastRecordedDiff
+    }
+
+    return (trackedOrder.get(a) ?? 0) - (trackedOrder.get(b) ?? 0)
+  })
+}
+
+function syncHomeConditionOrderKeys() {
+  homeConditionOrderKeys.value = buildHomeConditionOrderKeys(
+    trackedConditionKeys.value,
+    savedEntries.value
+  )
+}
+
+function promoteHomeConditionOrderKey(conditionKey: string) {
+  const resolvedKey = resolveCatalogConditionByStoredKey(conditionKey)?.key ?? conditionKey
+
+  if (!resolvedKey) {
+    return
+  }
+
+  const current = homeConditionOrderKeys.value.length
+    ? [...homeConditionOrderKeys.value]
+    : buildHomeConditionOrderKeys(trackedConditionKeys.value, savedEntries.value)
+
+  homeConditionOrderKeys.value = [
+    resolvedKey,
+    ...current.filter((key) => key !== resolvedKey)
+  ]
+}
+
+const homeConditions = computed(() => {
+  const fallbackOrder = trackedConditionKeys.value
+    .map((storedKey) => resolveCatalogConditionByStoredKey(storedKey)?.key ?? storedKey)
+    .filter((key, index, keys) => Boolean(key) && keys.indexOf(key) === index)
+  const orderKeys = homeConditionOrderKeys.value.length ? homeConditionOrderKeys.value : fallbackOrder
+  const order = new Map(orderKeys.map((key, index) => [key, index]))
+
   const conditions = trackedConditionKeys.value
     .map((storedKey) => resolveCatalogConditionByStoredKey(storedKey))
     .filter((condition): condition is HomeCondition => Boolean(condition))
 
   return conditions.sort((a, b) => {
-    if (homeSortUsesEntryDates.value) {
-      const lastRecordedDiff = (lastRecordedAt.get(b.key) ?? 0) - (lastRecordedAt.get(a.key) ?? 0)
-      if (lastRecordedDiff !== 0) {
-        return lastRecordedDiff
-      }
-    }
-
-    return (trackedOrder.get(a.key) ?? 0) - (trackedOrder.get(b.key) ?? 0)
+    return (order.get(a.key) ?? 0) - (order.get(b.key) ?? 0)
   })
 })
 
@@ -2552,7 +2608,7 @@ function goAppHome() {
 
   isConditionBrowserOpen.value = false
   isSubmissionDropdownOpen.value = false
-  isHomeTipsOverlayOpen.value = false
+  closeAppOverlaysExcept()
   activeIndex.value = 0
 }
 
@@ -2862,6 +2918,11 @@ function onEntryCalendarDateUpdate(date: unknown) {
 
   const today = getTodayCalendarDate()
   const calendarDate = parsed.compare(today) > 0 ? today : parsed
+  const current = coerceCalendarDate(entryCalendarDate.value)
+
+  if (current && current.compare(calendarDate) === 0) {
+    return
+  }
 
   entryCalendarDate.value = calendarDate
   entryCalendarPlaceholder.value = calendarDate
@@ -3426,6 +3487,7 @@ function resumeEntryDraft() {
 }
 
 function requestDeleteEntryDraft() {
+  closeAppOverlaysExcept('delete-draft')
   pendingDeleteDraft.value = true
 }
 
@@ -3502,7 +3564,7 @@ onMounted(async () => {
   if (user.value) {
     loadProfileDisplayName()
     loadEntitlements()
-    loadEntries()
+    await loadEntries()
     refreshEntryDraftPreview()
   }
 
@@ -3512,6 +3574,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   document.removeEventListener('visibilitychange', handleLogReminderVisibilityChange)
+  document.documentElement.style.removeProperty('--app-overlay-history-inset')
 
   if (homeConditionsMaxScrollResizeListener) {
     window.removeEventListener('resize', homeConditionsMaxScrollResizeListener)
@@ -3536,6 +3599,8 @@ watch(user, async (currentUser) => {
 
   profileDisplayName.value = ''
   savedEntries.value = []
+  homeConditionOrderKeys.value = []
+  hasLoadedEntriesOnce.value = false
   closeEntryPanel(true, true)
   refreshEntryDraftPreview()
   await refreshTrackedConditions()
@@ -3566,14 +3631,23 @@ watch(isEntryOpen, (open) => {
   scheduleEntryDraftSave()
 })
 
+function syncAppOverlayHistoryInset(expanded: boolean) {
+  document.documentElement.style.setProperty(
+    '--app-overlay-history-inset',
+    expanded ? '80dvh' : '5rem'
+  )
+}
+
 watch(historyExpanded, (expanded) => {
+  syncAppOverlayHistoryInset(expanded)
+
   if (expanded) {
     conditionSlideEntryBlocked.value = true
     return
   }
 
   blockConditionSlideEntry(HISTORY_TRANSITION_LOCK_MS)
-})
+}, { immediate: true })
 
 watch(() => route.query.login, (value) => {
   if (value === '1') {
@@ -3974,8 +4048,31 @@ async function refreshTrackedConditions() {
   }
 }
 
+function buildConditionBrowserListOrder(trackedKeys: string[]) {
+  const trackedFirst: string[] = []
+  const trackedSet = new Set<string>()
+
+  for (const storedKey of trackedKeys) {
+    const resolvedKey = resolveCatalogConditionByStoredKey(storedKey)?.key ?? storedKey
+
+    if (!resolvedKey || trackedSet.has(resolvedKey)) {
+      continue
+    }
+
+    trackedSet.add(resolvedKey)
+    trackedFirst.push(resolvedKey)
+  }
+
+  const rest = conditionCatalog
+    .map((condition) => condition.key)
+    .filter((key) => !trackedSet.has(key))
+
+  return [...trackedFirst, ...rest]
+}
+
 function openConditionBrowser() {
   draftSelectedKeys.value = [...trackedConditionKeys.value]
+  conditionBrowserListOrder.value = buildConditionBrowserListOrder(trackedConditionKeys.value)
   trackedConditionsError.value = ''
   isConditionBrowserOpen.value = true
   collapseHistorySheet()
@@ -3989,7 +4086,7 @@ function toggleDraftCondition(key: string) {
     return
   }
 
-  draftSelectedKeys.value = [...draftSelectedKeys.value, key]
+  draftSelectedKeys.value = [key, ...draftSelectedKeys.value]
 }
 
 async function syncFreeConditionWithTrackedKeys(keys: string[]) {
@@ -4093,28 +4190,42 @@ async function finishConditionBrowser() {
 async function loadEntries() {
   if (!user.value) {
     savedEntries.value = []
-    homeSortUsesEntryDates.value = false
+    homeConditionOrderKeys.value = []
+    hasLoadedEntriesOnce.value = false
     isSubmissionDropdownOpen.value = false
     lastSeenSubmissionAt.value = ''
     highlightedSubmissionId.value = null
     return
   }
 
-  isLoadingEntries.value = true
-  entriesError.value = ''
+  if (entriesLoadPromise) {
+    return entriesLoadPromise
+  }
+
+  entriesLoadPromise = (async () => {
+    isLoadingEntries.value = true
+    entriesError.value = ''
+
+    try {
+      const { listEntries } = useSymptomEntries()
+      savedEntries.value = await listEntries()
+      syncSubmissionSeenState(savedEntries.value)
+      refreshMonthlyBackupReminder()
+      await refreshTrackedConditions()
+      syncHomeConditionOrderKeys()
+    } catch (error) {
+      entriesError.value = getErrorMessage(error)
+    } finally {
+      isLoadingEntries.value = false
+      hasLoadedEntriesOnce.value = true
+      scheduleLogReminderCheck()
+    }
+  })()
 
   try {
-    const { listEntries } = useSymptomEntries()
-    savedEntries.value = await listEntries()
-    syncSubmissionSeenState(savedEntries.value)
-    refreshMonthlyBackupReminder()
-    await refreshTrackedConditions()
-  } catch (error) {
-    entriesError.value = getErrorMessage(error)
+    await entriesLoadPromise
   } finally {
-    isLoadingEntries.value = false
-    homeSortUsesEntryDates.value = true
-    scheduleLogReminderCheck()
+    entriesLoadPromise = null
   }
 }
 
@@ -4280,7 +4391,7 @@ function openSubmissionLogDetails(entryId: string) {
 async function saveEntry() {
   if (!user.value) {
     entryError.value = 'Please sign in before saving symptom entries.'
-    isAuthPanelOpen.value = true
+    openAuthPanel()
     return
   }
 
@@ -4370,7 +4481,7 @@ async function saveEntry() {
 async function archiveEntry(id: string) {
   if (!user.value) {
     entriesError.value = 'Please sign in to manage entries.'
-    isAuthPanelOpen.value = true
+    openAuthPanel()
     return
   }
 
@@ -4398,6 +4509,7 @@ function requestDeleteEntry(id: string) {
     return
   }
 
+  closeAppOverlaysExcept('delete-entry')
   viewedHistoryEntryId.value = null
   isSubmissionDropdownOpen.value = false
   collapseHistorySheet()
@@ -4459,7 +4571,7 @@ function openEntryDetailsOverlay(entryId: string) {
   }
 
   if (!user.value) {
-    isAuthPanelOpen.value = true
+    openAuthPanel()
     return
   }
 
@@ -4468,6 +4580,7 @@ function openEntryDetailsOverlay(entryId: string) {
     return
   }
 
+  closeAppOverlaysExcept('entry-details')
   isSubmissionDropdownOpen.value = false
   collapseHistorySheet()
   viewedHistoryEntryId.value = entryId
@@ -4499,7 +4612,7 @@ function deleteViewedHistoryEntry() {
 
 function openShareLinkForEntry(entryId: string) {
   if (!user.value) {
-    isAuthPanelOpen.value = true
+    openAuthPanel()
     return
   }
 
@@ -4516,6 +4629,7 @@ function openShareLinkForEntry(entryId: string) {
     return
   }
 
+  closeAppOverlaysExcept('share-link')
   shareLinkEntry.value = entry
   shareLinkLabel.value = ''
   shareLinkCreatedUrl.value = ''
@@ -4531,6 +4645,63 @@ function closeShareLinkModal() {
   shareLinkCreatedUrl.value = ''
   shareLinkCopied.value = false
   shareLinkError.value = ''
+}
+
+type AppOverlayKey =
+  | 'auth'
+  | 'delete-draft'
+  | 'delete-entry'
+  | 'entry-details'
+  | 'share-link'
+  | 'upgrade'
+  | 'home-tips'
+  | 'condition-slot'
+  | 'logging-cadence'
+
+function closeAppOverlaysExcept(keep?: AppOverlayKey) {
+  if (keep !== 'auth') {
+    isAuthPanelOpen.value = false
+  }
+
+  if (keep !== 'delete-draft') {
+    pendingDeleteDraft.value = false
+  }
+
+  if (keep !== 'delete-entry') {
+    pendingDelete.value = null
+  }
+
+  if (keep !== 'entry-details' && keep !== 'delete-entry') {
+    viewedHistoryEntryId.value = null
+  }
+
+  if (keep !== 'share-link') {
+    closeShareLinkModal()
+  }
+
+  if (keep !== 'upgrade') {
+    isUpgradePromptOpen.value = false
+  }
+
+  if (keep !== 'home-tips') {
+    isHomeTipsOverlayOpen.value = false
+  }
+
+  if (keep !== 'condition-slot') {
+    isConditionSlotOpen.value = false
+    pendingEntryPanelOptions.value = null
+    pendingConditionSlotKey.value = ''
+    pendingConditionSlotLabel.value = ''
+    pendingConditionSlotMode.value = 'add'
+    pendingConditionSlotLoggedEntryCount.value = 0
+    conditionSlotError.value = ''
+  }
+
+  if (keep !== 'logging-cadence') {
+    isLoggingCadencePromptOpen.value = false
+    weeklyLogCaution.value = null
+    pendingCadenceEntryOptions.value = null
+  }
 }
 
 async function createShareLinkForEntry() {
@@ -4579,6 +4750,7 @@ function getErrorMessage(error: unknown) {
 }
 
 function openUpgradePrompt(title: string, description: string) {
+  closeAppOverlaysExcept('upgrade')
   upgradePromptTitle.value = title
   upgradePromptDescription.value = description
   isUpgradePromptOpen.value = true
@@ -4606,7 +4778,22 @@ function toggleAuthPanel() {
     return
   }
 
-  isAuthPanelOpen.value = !isAuthPanelOpen.value
+  if (isAuthPanelOpen.value) {
+    isAuthPanelOpen.value = false
+    return
+  }
+
+  openAuthPanel()
+}
+
+function openAuthPanel() {
+  closeAppOverlaysExcept('auth')
+  isAuthPanelOpen.value = true
+}
+
+function openHomeTipsOverlay() {
+  closeAppOverlaysExcept('home-tips')
+  isHomeTipsOverlayOpen.value = true
 }
 
 function openLoginFromQuery() {
@@ -4618,7 +4805,7 @@ function openLoginFromQuery() {
   authMode.value = 'login'
   authError.value = ''
   authMessage.value = ''
-  isAuthPanelOpen.value = true
+  openAuthPanel()
 
   void router.replace({ path: '/app', query: {} })
 }
@@ -5513,7 +5700,7 @@ function changeEntryCondition(condition: { title: string, category: string, desc
   prefillConditionStatementForEntry(condition.title)
 
   if (!isPro.value && !editingEntryId.value) {
-    ensureFreeConditionAccess(
+    void ensureFreeConditionAccess(
       conditionKeyFromLabel(condition.title),
       condition.title,
       null
@@ -5540,7 +5727,7 @@ function applyCustomEntryCondition() {
   prefillConditionStatementForEntry(customName)
 
   if (!isPro.value && !editingEntryId.value) {
-    ensureFreeConditionAccess(
+    void ensureFreeConditionAccess(
       conditionKeyFromLabel(customName),
       customName,
       null
@@ -6071,7 +6258,7 @@ function openEntryForEdit(entryId: string) {
   }
 
   if (!user.value) {
-    isAuthPanelOpen.value = true
+    openAuthPanel()
     return
   }
   const entry = savedEntries.value.find((item) => item.id === entryId)
@@ -6105,6 +6292,7 @@ function openConditionSlotModal(options: {
   conditionKey: string
   conditionLabel: string
   mode: 'add' | 'replace'
+  loggedEntryCount: number
   entryPanelOptions?: {
     prefillCustomCondition?: string
     condition?: {
@@ -6115,15 +6303,17 @@ function openConditionSlotModal(options: {
     }
   } | null
 }) {
+  closeAppOverlaysExcept('condition-slot')
   pendingEntryPanelOptions.value = options.entryPanelOptions ?? null
   pendingConditionSlotKey.value = options.conditionKey
   pendingConditionSlotLabel.value = options.conditionLabel
   pendingConditionSlotMode.value = options.mode
+  pendingConditionSlotLoggedEntryCount.value = options.loggedEntryCount
   conditionSlotError.value = ''
   isConditionSlotOpen.value = true
 }
 
-function ensureFreeConditionAccess(
+async function ensureFreeConditionAccess(
   conditionKey: string,
   conditionLabel: string,
   entryPanelOptions: {
@@ -6140,6 +6330,10 @@ function ensureFreeConditionAccess(
     return true
   }
 
+  if (!hasLoadedEntriesOnce.value) {
+    await loadEntries()
+  }
+
   const loggedEntryCount = savedEntries.value.length
 
   if (canAddFreeCondition(conditionKey, loggedEntryCount)) {
@@ -6147,6 +6341,7 @@ function ensureFreeConditionAccess(
       conditionKey,
       conditionLabel,
       mode: 'add',
+      loggedEntryCount,
       entryPanelOptions
     })
     return false
@@ -6157,6 +6352,7 @@ function ensureFreeConditionAccess(
       conditionKey,
       conditionLabel,
       mode: 'replace',
+      loggedEntryCount,
       entryPanelOptions
     })
     return false
@@ -6178,8 +6374,20 @@ function openEntryPanel(options: {
     image: string
   }
 } = {}) {
+  void openEntryPanelAsync(options)
+}
+
+async function openEntryPanelAsync(options: {
+  prefillCustomCondition?: string
+  condition?: {
+    title: string
+    category: string
+    description: string
+    image: string
+  }
+} = {}) {
   if (!user.value) {
-    isAuthPanelOpen.value = true
+    openAuthPanel()
     return
   }
 
@@ -6196,7 +6404,7 @@ function openEntryPanel(options: {
     return
   }
 
-  if (ensureFreeConditionAccess(pendingConditionKey, pendingConditionLabel || formatConditionKeyLabel(pendingConditionKey), options)) {
+  if (await ensureFreeConditionAccess(pendingConditionKey, pendingConditionLabel || formatConditionKeyLabel(pendingConditionKey), options)) {
     requestEntryPanelOpen(options)
   }
 }
@@ -6213,6 +6421,7 @@ function requestEntryPanelOpen(options: {
   const caution = getWeeklyLogCaution(weeklyLogDay.value, loggingCadence.value)
 
   if (caution) {
+    closeAppOverlaysExcept('logging-cadence')
     pendingCadenceEntryOptions.value = options
     weeklyLogCaution.value = caution
     isLoggingCadencePromptOpen.value = true
@@ -6305,6 +6514,7 @@ function closeConditionSlotModal() {
   pendingConditionSlotKey.value = ''
   pendingConditionSlotLabel.value = ''
   pendingConditionSlotMode.value = 'add'
+  pendingConditionSlotLoggedEntryCount.value = 0
   conditionSlotError.value = ''
 }
 
@@ -6313,12 +6523,24 @@ async function confirmConditionSlot() {
     return
   }
 
+  if (!hasLoadedEntriesOnce.value) {
+    await loadEntries()
+  }
+
+  const loggedEntryCount = savedEntries.value.length
+
+  if (pendingConditionSlotMode.value === 'replace' && !canReplaceFreeCondition(pendingConditionSlotKey.value, loggedEntryCount)) {
+    conditionSlotError.value = 'You can only change your free condition before logging your first entry.'
+    pendingConditionSlotLoggedEntryCount.value = loggedEntryCount
+    return
+  }
+
   isConfirmingConditionSlot.value = true
   conditionSlotError.value = ''
 
   try {
     if (pendingConditionSlotMode.value === 'replace') {
-      await replaceFreeCondition(pendingConditionSlotKey.value, savedEntries.value.length)
+      await replaceFreeCondition(pendingConditionSlotKey.value, loggedEntryCount)
     } else {
       await addFreeCondition(pendingConditionSlotKey.value)
     }

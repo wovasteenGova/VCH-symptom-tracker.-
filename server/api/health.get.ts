@@ -3,6 +3,7 @@ import { getSupabasePublicConfig } from '../utils/supabasePublicConfig'
 import { isStripePriceId } from '../utils/subscriptionCheckoutSession'
 
 export default defineEventHandler(() => {
+  const isProduction = process.env.NODE_ENV === 'production'
   const resolved = getSupabasePublicConfig()
   const env = resolveSupabaseEnv()
   const config = useRuntimeConfig()
@@ -23,6 +24,12 @@ export default defineEventHandler(() => {
     && hasValidProPriceId
     && env.serviceKey
   )
+
+  if (isProduction) {
+    return {
+      ok: !configError && stripeConfigured && checkoutReady
+    }
+  }
 
   return {
     ok: !configError && stripeConfigured,

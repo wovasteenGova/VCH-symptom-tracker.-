@@ -23,10 +23,11 @@ const emit = defineEmits<{
   >
     <div
       v-if="open && caution"
-      class="fixed inset-0 z-[75] flex items-center justify-center bg-slate-950/70 p-4"
+      class="app-overlay-shell fixed inset-0 z-[110] bg-slate-950/70"
       @click.self="emit('close')"
     >
-      <div class="w-full max-w-md rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+      <div class="app-overlay-inner">
+        <div class="app-overlay-panel app-overlay-panel--compact rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
         <div class="flex items-start gap-3">
           <span
             class="grid size-11 shrink-0 place-items-center rounded-full"
@@ -62,6 +63,7 @@ const emit = defineEmits<{
           >
             Not now
           </button>
+        </div>
         </div>
       </div>
     </div>

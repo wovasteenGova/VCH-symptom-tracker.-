@@ -322,6 +322,9 @@ const props = defineProps<{
 
   selectedKeys: string[]
 
+  /** Frozen display order for manage mode; avoids jumping rows while toggling. */
+  listOrderKeys?: string[]
+
   lockedKeys?: string[]
 
   showProLimit?: boolean
@@ -408,30 +411,14 @@ const filteredConditions = computed(() => {
 
   const results = filterAndRankConditions(props.conditions, query)
 
-  if (props.mode !== 'manage') {
+  if (props.mode !== 'manage' || query || !props.listOrderKeys?.length) {
     return results
   }
 
-  const selectedOrder = new Map(props.selectedKeys.map((key, index) => [key, index]))
-  const relevanceOrder = new Map(results.map((condition, index) => [condition.key, index]))
+  const listOrder = new Map(props.listOrderKeys.map((key, index) => [key, index]))
 
   return [...results].sort((a, b) => {
-    const aSelected = selectedOrder.has(a.key)
-    const bSelected = selectedOrder.has(b.key)
-
-    if (aSelected && bSelected) {
-      return (selectedOrder.get(a.key) ?? 0) - (selectedOrder.get(b.key) ?? 0)
-    }
-
-    if (aSelected) {
-      return -1
-    }
-
-    if (bSelected) {
-      return 1
-    }
-
-    return (relevanceOrder.get(a.key) ?? 0) - (relevanceOrder.get(b.key) ?? 0)
+    return (listOrder.get(a.key) ?? Number.MAX_SAFE_INTEGER) - (listOrder.get(b.key) ?? Number.MAX_SAFE_INTEGER)
   })
 })
 

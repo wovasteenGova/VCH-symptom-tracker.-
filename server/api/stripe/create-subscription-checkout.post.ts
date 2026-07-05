@@ -43,6 +43,28 @@ export default defineEventHandler(async (event) => {
     })
   }
 
+  const publishableKey = String(config.public.stripePublishableKey || '').trim()
+  const secretIsTest = config.stripeSecretKey.startsWith('sk_test_')
+  const secretIsLive = config.stripeSecretKey.startsWith('sk_live_')
+  const publishableIsTest = publishableKey.startsWith('pk_test_')
+  const publishableIsLive = publishableKey.startsWith('pk_live_')
+
+  if (publishableKey && secretIsTest !== publishableIsTest) {
+    logCheckoutError('stripe key mode mismatch', { requestId, secretIsTest, publishableIsTest })
+    throw createError({
+      statusCode: 500,
+      message: 'Stripe secret and publishable keys must both be test or both be live.'
+    })
+  }
+
+  if (process.env.NODE_ENV === 'production' && (!secretIsLive || (publishableKey && !publishableIsLive))) {
+    logCheckoutError('production requires live stripe keys', { requestId })
+    throw createError({
+      statusCode: 500,
+      message: 'Production checkout requires live Stripe keys.'
+    })
+  }
+
   let user
 
   try {

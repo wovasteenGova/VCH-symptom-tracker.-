@@ -88,20 +88,21 @@ function handleOpenContact() {
     >
       <div
         v-if="open"
-        class="fixed inset-0 z-[80] flex items-end justify-center bg-slate-950/70 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:items-center"
+        class="app-overlay-shell fixed inset-0 z-[110] bg-slate-950/70"
         @click.self="$emit('close')"
       >
-        <Transition
-          enter-active-class="transition duration-250 ease-out"
-          enter-from-class="translate-y-6 opacity-0 sm:translate-y-0 sm:scale-95"
-          enter-to-class="translate-y-0 opacity-100 sm:scale-100"
-          leave-active-class="transition duration-200 ease-in"
-          leave-from-class="translate-y-0 opacity-100 sm:scale-100"
-          leave-to-class="translate-y-4 opacity-0 sm:translate-y-0 sm:scale-95"
-        >
-          <section
-            v-if="open"
-            class="flex max-h-[min(82dvh,720px)] w-full max-w-md flex-col overflow-hidden rounded-[1.75rem] border border-slate-800 bg-slate-900 shadow-2xl"
+        <div class="app-overlay-inner">
+          <Transition
+            enter-active-class="transition duration-250 ease-out"
+            enter-from-class="translate-y-6 opacity-0 sm:translate-y-0 sm:scale-95"
+            enter-to-class="translate-y-0 opacity-100 sm:scale-100"
+            leave-active-class="transition duration-200 ease-in"
+            leave-from-class="translate-y-0 opacity-100 sm:scale-100"
+            leave-to-class="translate-y-4 opacity-0 sm:translate-y-0 sm:scale-95"
+          >
+            <section
+              v-if="open"
+              class="app-overlay-panel app-overlay-panel--stack overflow-hidden rounded-[1.75rem] border border-slate-800 bg-slate-900 shadow-2xl"
             role="dialog"
             aria-modal="true"
             aria-labelledby="faq-title"
@@ -173,6 +174,7 @@ function handleOpenContact() {
             </div>
           </section>
         </Transition>
+        </div>
       </div>
     </Transition>
   </Teleport>

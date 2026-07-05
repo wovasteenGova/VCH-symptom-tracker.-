@@ -12,6 +12,17 @@ function env(name: string) {
   return String(process.env[name] || '').trim()
 }
 
+function envFirst(...names: string[]) {
+  for (const name of names) {
+    const value = env(name)
+    if (value) {
+      return value
+    }
+  }
+
+  return ''
+}
+
 const supabaseUrl = env('SUPABASE_URL')
   || env('NUXT_PUBLIC_SUPABASE_URL')
 
@@ -56,9 +67,9 @@ export default defineNuxtConfig({
       : undefined
   },
   runtimeConfig: {
-    stripeSecretKey: process.env.STRIPE_SECRET_KEY || '',
-    stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
-    stripeProPriceId: process.env.STRIPE_PRO_PRICE_ID || '',
+    stripeSecretKey: envFirst('STRIPE_SECRET_KEY', 'NUXT_STRIPE_SECRET_KEY'),
+    stripeWebhookSecret: envFirst('STRIPE_WEBHOOK_SECRET', 'NUXT_STRIPE_WEBHOOK_SECRET'),
+    stripeProPriceId: envFirst('STRIPE_PRO_PRICE_ID', 'NUXT_STRIPE_PRO_PRICE_ID'),
     supabaseServiceRoleKey: supabaseServiceKey,
     supabaseServiceKey,
     vapidPrivateKey: env('VAPID_PRIVATE_KEY'),
@@ -68,7 +79,11 @@ export default defineNuxtConfig({
       supabaseAnonKey: supabaseAnonKey,
       supabaseKey: supabaseAnonKey,
       supabasePublishableKey: supabaseAnonKey,
-      stripePublishableKey: env('STRIPE_PUBLIC_KEY') || env('STRIPE_PUBLISHABLE_KEY') || env('NUXT_PUBLIC_STRIPE_PUBLISHABLE_KEY'),
+      stripePublishableKey: envFirst(
+        'STRIPE_PUBLIC_KEY',
+        'STRIPE_PUBLISHABLE_KEY',
+        'NUXT_PUBLIC_STRIPE_PUBLISHABLE_KEY'
+      ),
       vapidPublicKey: env('VAPID_PUBLIC_KEY') || env('NUXT_PUBLIC_VAPID_PUBLIC_KEY'),
       siteUrl: env('APP_URL')
         || env('NUXT_PUBLIC_SITE_URL')
@@ -159,6 +174,7 @@ export default defineNuxtConfig({
     '/auth/**': { ssr: false },
     '/upgrade': { ssr: false },
     '/upgrade/**': { ssr: false },
-    '/api/stripe/webhook': { cors: false }
+    '/api/stripe/webhook': { cors: false },
+    '/api/stripe/**': { cors: false }
   }
 })

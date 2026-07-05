@@ -62,6 +62,62 @@ button:disabled,
   display: none;
 }
 
+/* App overlays: centered above history chrome (--app-overlay-history-inset on :root) */
+.app-overlay-shell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  padding-inline: 1rem;
+  padding-top: max(1rem, env(safe-area-inset-top, 0px));
+  padding-bottom: max(
+    var(--app-overlay-history-inset, 5rem),
+    env(safe-area-inset-bottom, 0px),
+    1rem
+  );
+}
+
+.app-overlay-inner {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+}
+
+.app-overlay-panel {
+  width: 100%;
+  max-width: 28rem;
+  height: fit-content;
+  max-height: min(
+    80dvh,
+    calc(
+      100dvh
+      - var(--app-overlay-history-inset, 5rem)
+      - env(safe-area-inset-top, 0px)
+      - env(safe-area-inset-bottom, 0px)
+      - 2rem
+    )
+  );
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+}
+
+.app-overlay-panel--compact {
+  flex: none;
+}
+
+.app-overlay-panel--stack {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.app-overlay-panel--lg {
+  max-width: 32rem;
+}
+
 .app-shell-embed {
   height: 100%;
   max-height: 100%;
