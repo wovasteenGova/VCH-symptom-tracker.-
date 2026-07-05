@@ -33,6 +33,7 @@ const skippedDetailKeys = new Set([
   'how_bad_was_it',
   'what_happened',
   'daily_impact',
+  'pdf_condition_statement',
   'condition_name',
   'medications_for_this_entry',
   'symptoms_managed_by_medication'
@@ -270,6 +271,103 @@ function drawDivider(ctx: LayoutContext, x: number, width: number) {
   ctx.y += 10
 }
 
+function getConditionStatement(entry: ReportEntryRecord) {
+  const statement = entry.details?.pdf_condition_statement
+  return typeof statement === 'string' ? statement.trim() : ''
+}
+
+function groupEntriesByCondition(entries: ReportEntryRecord[]) {
+  const groups: Array<{
+    label: string
+    statement: string
+    statementTime: number
+    entries: ReportEntryRecord[]
+  }> = []
+  const groupByLabel = new Map<string, {
+    label: string
+    statement: string
+    statementTime: number
+    entries: ReportEntryRecord[]
+  }>()
+
+  entries.forEach((entry) => {
+    const label = entry.condition_label || 'Condition'
+    let group = groupByLabel.get(label)
+
+    if (!group) {
+      group = {
+        label,
+        statement: '',
+        statementTime: 0,
+        entries: []
+      }
+      groupByLabel.set(label, group)
+      groups.push(group)
+    }
+
+    const statement = getConditionStatement(entry)
+    const statementTime = new Date(entry.updated_at || entry.created_at || entry.occurred_at || 0).getTime()
+
+    if (statement && statementTime >= group.statementTime) {
+      group.statement = statement
+      group.statementTime = statementTime
+    }
+
+    group.entries.push(entry)
+  })
+
+  return groups
+}
+
+function drawConditionIntro(
+  ctx: LayoutContext,
+  label: string,
+  statement: string,
+  entryCount: number
+) {
+  const padding = 14
+  const innerWidth = ctx.width - padding * 2
+
+  ctx.doc.setFont('helvetica', 'normal')
+  ctx.doc.setFontSize(10)
+  const statementLines = statement
+    ? wrapLines(ctx.doc, statement, innerWidth, 10)
+    : []
+
+  const boxHeight = 36 + (statementLines.length ? statementLines.length * 13 + 14 : 0)
+  ensureSpace(ctx, boxHeight + 12)
+
+  const boxY = ctx.y
+  setStroke(ctx.doc, slate200)
+  setFill(ctx.doc, slate50)
+  ctx.doc.roundedRect(ctx.x, boxY, ctx.width, boxHeight, 12, 12, 'FD')
+
+  ctx.y = boxY + padding
+  ctx.doc.setFont('helvetica', 'bold')
+  ctx.doc.setFontSize(11)
+  setText(ctx.doc, slate900)
+  ctx.doc.text(label, ctx.x + padding, ctx.y)
+
+  ctx.doc.setFont('helvetica', 'normal')
+  ctx.doc.setFontSize(8.5)
+  setText(ctx.doc, slate500)
+  ctx.doc.text(
+    `${entryCount} ${entryCount === 1 ? 'entry' : 'entries'}`,
+    ctx.x + ctx.width - padding,
+    ctx.y,
+    { align: 'right' }
+  )
+
+  if (statementLines.length) {
+    ctx.y += 17
+    drawBlockLabel(ctx, 'Veteran condition statement', ctx.x + padding, 8)
+    ctx.y += 12
+    drawBlockLines(ctx, statementLines, ctx.x + padding, 10, 13)
+  }
+
+  ctx.y = boxY + boxHeight + 12
+}
+
 function drawBlockLabel(ctx: LayoutContext, label: string, x: number, fontSize: number) {
   ctx.doc.setFont('helvetica', 'bold')
   ctx.doc.setFontSize(fontSize)
@@ -463,8 +561,14 @@ export function drawEntryLogSection(
   doc.text('Readable record of logged symptoms, severity, functional impact, and edit history.', x, ctx.y)
   ctx.y += 22
 
-  sortedEntries.forEach((entry, index) => {
-    drawEntryCard(ctx, entry, index, backdateContext)
+  const conditionGroups = groupEntriesByCondition(sortedEntries)
+
+  conditionGroups.forEach((group) => {
+    drawConditionIntro(ctx, group.label, group.statement, group.entries.length)
+
+    group.entries.forEach((entry, index) => {
+      drawEntryCard(ctx, entry, index, backdateContext)
+    })
   })
 
   return ctx.y

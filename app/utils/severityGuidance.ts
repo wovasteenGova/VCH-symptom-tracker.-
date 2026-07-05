@@ -55,6 +55,28 @@ export function getSeverityGuidance(value: number): SeverityGuidance {
   return severityGuidanceByLevel[level] ?? severityGuidanceByLevel[5]
 }
 
+export function getSeverityEmoji(value: number) {
+  const level = Math.min(10, Math.max(0, Math.round(value)))
+
+  if (level >= 9) {
+    return '😫'
+  }
+
+  if (level >= 7) {
+    return '😣'
+  }
+
+  if (level >= 5) {
+    return '😐'
+  }
+
+  if (level >= 3) {
+    return '🙂'
+  }
+
+  return '😊'
+}
+
 export type SeverityQuickPreset = {
   label: string
   value: number

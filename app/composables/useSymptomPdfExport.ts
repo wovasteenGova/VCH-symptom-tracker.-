@@ -237,6 +237,7 @@ function buildPdfDownloadFilename(conditionLabel: string | null | undefined) {
 }
 
 const PDF_SECTION_GAP = 28
+const PDF_LOGGING_TO_WEEKLY_GAP = 36
 
 function drawMedicationListSection(
   doc: jsPDF,
@@ -437,9 +438,6 @@ export function useSymptomPdfExport() {
 
     y = headerBandHeight + 27
 
-    const medicationList = collectMedicationsFromEntries(entries)
-    y = drawMedicationListSection(doc, y, margin, contentWidth, pageHeight, medicationList)
-
     y = drawStatCards(doc, margin, y, contentWidth, [
       { label: 'Total entries', value: String(metrics.totalEntries), accent: [14, 165, 233] },
       { label: 'Tracking period', value: metrics.trackingSpanLabel, accent: [139, 92, 246] },
@@ -448,6 +446,9 @@ export function useSymptomPdfExport() {
       { label: 'Peak severity', value: `${metrics.peakSeverity}/10`, accent: [249, 115, 22] },
       { label: 'Severe days (7+)', value: String(metrics.flareDayCount), accent: [236, 72, 153] }
     ], 3) + PDF_SECTION_GAP
+
+    const medicationList = collectMedicationsFromEntries(entries)
+    y = drawMedicationListSection(doc, y, margin, contentWidth, pageHeight, medicationList)
 
     if (showAdvancedCharts) {
       y = ensurePageSpace(doc, y, 176, margin, pageHeight)
@@ -469,6 +470,8 @@ export function useSymptomPdfExport() {
           formatAggregateLoggingSummary(aggregateMetrics),
           { week: false, condition: false, heatmap: false }
         )
+
+        y += PDF_LOGGING_TO_WEEKLY_GAP
 
         y = appendConditionWeeklyFrequencySection(
           doc,
@@ -502,6 +505,8 @@ export function useSymptomPdfExport() {
           formatAggregateLoggingSummary(aggregateMetrics),
           { showConditionChart: showAdvancedCharts }
         )
+
+        y += PDF_LOGGING_TO_WEEKLY_GAP
 
         y = appendConditionWeeklyFrequencySection(
           doc,

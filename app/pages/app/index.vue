@@ -169,7 +169,7 @@
                       :key="submission.id"
                       type="button"
                       class="flex w-full items-start gap-3 rounded-2xl px-3 py-3 text-left transition hover:bg-slate-100 dark:hover:bg-slate-800/80"
-                      @click="focusSubmission(submission.id)"
+                      @click="openSubmissionLogDetails(submission.id)"
                     >
                       <span
                         class="mt-0.5 grid size-9 shrink-0 place-items-center rounded-full"
@@ -708,11 +708,24 @@
                           <div class="space-y-4" data-step-swipe-block @click.stop @touchstart.stop @touchend.stop>
                             <UCalendar
                               v-model="entryCalendarDate"
+                              v-model:placeholder="entryCalendarPlaceholder"
                               :min-value="minEntryCalendarDate"
                               :max-value="maxEntryCalendarDate"
+                              prevent-deselect
                               class="mx-auto w-full"
                               @update:model-value="onEntryCalendarUpdate"
-                            />
+                              @update:placeholder="onEntryCalendarPlaceholderUpdate"
+                            >
+                              <template #day="{ day }">
+                                <span
+                                  class="inline-flex min-h-[1.75rem] min-w-[1.75rem] items-center justify-center leading-none"
+                                  :class="hasLoggedEntryOnDay(day) ? 'text-base' : 'text-sm font-semibold'"
+                                  :title="getLoggedDaySeverityTitle(day)"
+                                >
+                                  {{ getCalendarDayDisplay(day) }}
+                                </span>
+                              </template>
+                            </UCalendar>
 
                             <TimeOfDayPicker
                               :hour="entryTimeHour"
@@ -1300,31 +1313,29 @@
                 :key="entry.id"
                 :data-entry-id="entry.id"
                 data-history-interactive
-                class="rounded-2xl px-2 py-3 transition duration-500 hover:bg-slate-50 active:bg-slate-100 dark:hover:bg-slate-900/70 dark:active:bg-slate-900"
+                class="cursor-pointer rounded-2xl px-2 py-3 transition duration-500 hover:bg-slate-50 active:bg-slate-100 dark:hover:bg-slate-900/70 dark:active:bg-slate-900"
                 :class="highlightedSubmissionId === entry.id
                   ? 'submission-flash bg-sky-50 ring-2 ring-sky-300 shadow-lg shadow-sky-950/10 dark:bg-sky-950/30 dark:ring-sky-500/70 dark:shadow-black/20'
                   : ''"
+                role="button"
+                tabindex="0"
+                :aria-label="`View ${entry.title}`"
+                @click="openEntryDetailsOverlay(entry.id)"
+                @keydown.enter.prevent="openEntryDetailsOverlay(entry.id)"
+                @keydown.space.prevent="openEntryDetailsOverlay(entry.id)"
               >
                 <div class="flex items-center gap-3">
-                  <button
-                    type="button"
-                    class="grid size-14 shrink-0 place-items-center rounded-2xl bg-slate-100 text-center transition dark:bg-slate-800"
-                    :class="entry.statusColor"
-                    :aria-label="`Edit ${entry.title}`"
-                    @click="openEntryForEdit(entry.id)"
+                  <div
+                    class="grid size-14 shrink-0 place-items-center rounded-2xl text-center text-slate-500 transition hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800/70"
+                    aria-hidden="true"
                   >
                     <div>
                       <p class="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{{ entry.month }}</p>
                       <p class="text-lg font-bold leading-none text-slate-950 dark:text-white">{{ entry.day }}</p>
                     </div>
-                  </button>
+                  </div>
 
-                  <button
-                    type="button"
-                    class="min-w-0 flex-1 text-left"
-                    :aria-label="`View and edit ${entry.title}`"
-                    @click="openEntryForEdit(entry.id)"
-                  >
+                  <div class="min-w-0 flex-1 text-left">
                     <div class="flex flex-wrap items-center gap-2">
                       <UBadge color="neutral" variant="soft" size="sm">{{ entry.condition }}</UBadge>
                       <UBadge :color="entry.source === 'Family' ? 'info' : 'primary'" variant="soft" size="sm">
@@ -1349,29 +1360,16 @@
                     <p v-if="entry.editedLabel" class="mt-1 text-xs text-slate-400 dark:text-slate-500">
                       {{ entry.editedLabel }}
                     </p>
-                  </button>
+                  </div>
 
                   <button
-                    v-if="entry.source === 'Veteran'"
                     type="button"
                     data-history-interactive
-                    class="grid size-10 shrink-0 place-items-center rounded-full transition"
-                    :class="canUseFamilyReporting
-                      ? 'text-slate-400 hover:bg-sky-50 hover:text-sky-600 dark:hover:bg-sky-950/40 dark:hover:text-sky-300'
-                      : 'text-amber-500/80 hover:bg-amber-50 hover:text-amber-600 dark:hover:bg-amber-950/30 dark:hover:text-amber-300'"
-                    :aria-label="canUseFamilyReporting ? `Create private link for ${entry.title}` : 'Family reporting requires Pro'"
-                    @click.stop="openShareLinkForEntry(entry.id)"
+                    class="grid size-10 shrink-0 place-items-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-white"
+                    :aria-label="`Edit ${entry.title}`"
+                    @click.stop="openEntryForEdit(entry.id)"
                   >
-                    <UIcon
-                      v-if="!entitlementsLoaded"
-                      name="i-lucide-minus"
-                      class="size-4 opacity-40"
-                    />
-                    <UIcon
-                      v-else
-                      :name="canUseFamilyReporting ? 'i-lucide-link' : 'i-lucide-lock'"
-                      class="size-4"
-                    />
+                    <UIcon name="i-lucide-pencil" class="size-4" />
                   </button>
 
                   <button
@@ -1393,19 +1391,65 @@
             >
               <UCalendar
                 v-model="historyCalendarDate"
+                v-model:placeholder="historyCalendarPlaceholder"
                 class="mx-auto w-full"
+                @update:model-value="onHistoryCalendarDateUpdate"
                 @update:placeholder="onHistoryCalendarPlaceholderUpdate"
               >
                 <template #day="{ day }">
-                  <UChip
-                    :show="hasLoggedEntryOnDay(day)"
-                    color="success"
-                    size="2xs"
+                  <span
+                    class="inline-flex min-h-[1.75rem] min-w-[1.75rem] items-center justify-center leading-none"
+                    :class="hasLoggedEntryOnDay(day) ? 'text-base' : 'text-sm font-semibold'"
+                    :title="getLoggedDaySeverityTitle(day)"
                   >
-                    {{ day.day }}
-                  </UChip>
+                    {{ getCalendarDayDisplay(day) }}
+                  </span>
                 </template>
               </UCalendar>
+
+              <div class="mt-4 rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-950/50">
+                <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                  {{ selectedHistoryDayLabel }}
+                </p>
+                <div v-if="selectedHistoryDayEntries.length" class="mt-2 space-y-2">
+                  <div class="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    <span>{{ selectedHistoryDayEntries.length }} {{ selectedHistoryDayEntries.length === 1 ? 'log' : 'logs' }}</span>
+                    <span>Peak severity {{ selectedHistoryDayPeakSeverity }}/10</span>
+                    <span v-if="selectedHistoryDaySeverityRange">{{ selectedHistoryDaySeverityRange }}</span>
+                  </div>
+                  <div class="space-y-2">
+                    <button
+                      v-for="entry in selectedHistoryDayPreviewEntries"
+                      :key="`history-day-${entry.id}`"
+                      type="button"
+                      data-history-interactive
+                      class="w-full rounded-2xl bg-white px-3 py-2 text-left text-sm ring-1 ring-slate-200 transition hover:bg-slate-50 dark:bg-slate-900 dark:ring-slate-800 dark:hover:bg-slate-800/80"
+                      @click="openEntryDetailsOverlay(entry.id)"
+                    >
+                      <div class="flex items-center justify-between gap-3">
+                        <p class="min-w-0 truncate font-bold text-slate-950 dark:text-white">
+                          {{ entry.title }}
+                        </p>
+                        <span class="shrink-0 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                          {{ entry.time }} · {{ entry.severity }}/10
+                        </span>
+                      </div>
+                      <p class="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">
+                        {{ entry.condition }} · {{ entry.summary }}
+                      </p>
+                    </button>
+                  </div>
+                  <p
+                    v-if="selectedHistoryDayExtraCount > 0"
+                    class="text-xs font-semibold text-slate-500 dark:text-slate-400"
+                  >
+                    +{{ selectedHistoryDayExtraCount }} more {{ selectedHistoryDayExtraCount === 1 ? 'log' : 'logs' }} that day
+                  </p>
+                </div>
+                <p v-else class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                  No logs recorded for this day.
+                </p>
+              </div>
 
               <LoggingActivityReport :metrics="loggingActivityMetrics" />
             </div>
@@ -1609,6 +1653,128 @@
             @click="confirmDeleteEntryDraft"
           >
             Delete draft
+          </button>
+        </div>
+      </div>
+    </div>
+  </Transition>
+
+  <Transition
+    enter-active-class="transition duration-200 ease-out"
+    enter-from-class="opacity-0"
+    enter-to-class="opacity-100"
+    leave-active-class="transition duration-150 ease-in"
+    leave-from-class="opacity-100"
+    leave-to-class="opacity-0"
+  >
+    <div
+      v-if="viewedHistoryEntry && viewedHistoryRawEntry"
+      class="fixed inset-0 z-[120] flex items-end justify-center bg-slate-950/70 px-4 pb-[8.75rem] pt-4 sm:items-center sm:pb-[8.75rem] sm:pt-6"
+      @click.self="closeEntryDetailsOverlay"
+    >
+      <div class="flex max-h-[calc(100dvh-10rem)] w-full max-w-lg flex-col overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+        <div class="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 dark:border-slate-800">
+          <div class="min-w-0">
+            <p class="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-sky-600 dark:text-sky-300">
+              <UIcon name="i-lucide-eye" class="size-4" />
+              Log details
+            </p>
+            <h3 class="mt-2 truncate text-xl font-bold text-slate-950 dark:text-white">
+              {{ viewedHistoryEntry.title }}
+            </h3>
+            <p v-if="viewedHistoryEntryTimestamp" class="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">
+              {{ viewedHistoryEntryTimestamp }}
+            </p>
+          </div>
+          <div class="flex shrink-0 items-center gap-1">
+            <button
+              type="button"
+              class="grid size-10 place-items-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-white"
+              :aria-label="`Edit ${viewedHistoryEntry.title}`"
+              @click="editViewedHistoryEntry"
+            >
+              <UIcon name="i-lucide-pencil" class="size-4" />
+            </button>
+            <button
+              type="button"
+              class="grid size-10 place-items-center rounded-full text-red-500 transition hover:bg-red-50 hover:text-red-600 dark:text-red-300 dark:hover:bg-red-950/40 dark:hover:text-red-200"
+              :aria-label="`Delete ${viewedHistoryEntry.title}`"
+              @click="deleteViewedHistoryEntry"
+            >
+              <UIcon name="i-lucide-trash-2" class="size-4" />
+            </button>
+            <button
+              type="button"
+              class="grid size-10 place-items-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-white"
+              aria-label="Close log details"
+              @click="closeEntryDetailsOverlay"
+            >
+              <UIcon name="i-lucide-x" class="size-5" />
+            </button>
+          </div>
+        </div>
+
+        <div class="no-scrollbar min-h-0 flex-1 overflow-y-auto px-5 py-4">
+          <div class="flex flex-wrap items-center gap-2">
+            <UBadge color="neutral" variant="soft" size="sm">{{ viewedHistoryEntry.condition }}</UBadge>
+            <UBadge :color="viewedHistoryEntry.source === 'Family' ? 'info' : 'primary'" variant="soft" size="sm">
+              {{ viewedHistoryEntry.source }}
+            </UBadge>
+            <UBadge color="warning" variant="soft" size="sm">
+              Severity {{ viewedHistoryEntry.severity }}/10
+            </UBadge>
+            <UBadge v-if="viewedHistoryEntry.wasEdited" color="warning" variant="soft" size="sm">
+              Edited
+            </UBadge>
+          </div>
+
+          <div class="mt-5 space-y-4">
+            <section class="rounded-2xl bg-slate-50 px-4 py-3 dark:bg-slate-950/70">
+              <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">What happened</p>
+              <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-950 dark:text-white">
+                {{ viewedHistoryRawEntry.summary || viewedHistoryEntry.title }}
+              </p>
+            </section>
+
+            <section class="rounded-2xl bg-slate-50 px-4 py-3 dark:bg-slate-950/70">
+              <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Daily impact</p>
+              <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-950 dark:text-white">
+                {{ viewedHistoryRawEntry.impact || 'No impact note added' }}
+              </p>
+            </section>
+
+            <section v-if="viewedHistoryEntryDetails.length" class="space-y-2">
+              <div
+                v-for="detail in viewedHistoryEntryDetails"
+                :key="detail.label"
+                class="rounded-2xl bg-slate-50 px-4 py-3 dark:bg-slate-950/70"
+              >
+                <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{{ detail.label }}</p>
+                <p class="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-950 dark:text-white">{{ detail.value }}</p>
+              </div>
+            </section>
+
+            <p v-if="viewedHistoryEntry.editedLabel" class="text-xs font-medium text-slate-500 dark:text-slate-400">
+              {{ viewedHistoryEntry.editedLabel }}
+            </p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 border-t border-slate-200 px-5 py-4 dark:border-slate-800">
+          <button
+            type="button"
+            class="flex items-center justify-center gap-2 rounded-2xl bg-slate-100 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
+            @click="closeEntryDetailsOverlay"
+          >
+            Close
+          </button>
+          <button
+            type="button"
+            class="flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+            @click="editViewedHistoryEntry"
+          >
+            <UIcon name="i-lucide-pencil" class="size-4" />
+            Edit log
           </button>
         </div>
       </div>
@@ -1873,7 +2039,8 @@ import {
   getEntryFieldsForSearchCondition,
   isEpisodeDurationField,
   isEpisodeFollowUpField,
-  isMedicationsStepField
+  isMedicationsStepField,
+  type EntryFieldDef
 } from '../../utils/vaConditionFields'
 import { reportBranding } from '../../utils/reportBranding'
 import { androidAddToHomeScreenVideoUrl, iosAddToHomeScreenVideoUrl } from '../../utils/installGuide'
@@ -1882,7 +2049,7 @@ import { getWeeklyLogCaution, type WeeklyLogCaution } from '../../utils/loggingC
 import { buildLoggingActivityMetrics } from '../../utils/loggingActivityReport'
 import { conditionCatalog, buildHomeVisitTips, normalizeConditionLabel, pickRandomHomeVisitTip, resolveCatalogConditionByStoredKey, VA_CRISIS_LINE_SHORT, type HomeVisitTip } from '../../utils/conditionCatalog'
 import { conditionImageAssets } from '../../utils/conditionImages'
-import { getSeverityGuidance, severityQuickPresets } from '../../utils/severityGuidance'
+import { getSeverityEmoji, getSeverityGuidance, severityQuickPresets } from '../../utils/severityGuidance'
 import { CalendarDate } from '@internationalized/date'
 import { computed, nextTick, onBeforeMount, onBeforeUnmount, onMounted, provide, ref, shallowRef, watch } from 'vue'
 import { useKeyboardAwareScroll } from '../../composables/useKeyboardAwareScroll'
@@ -2183,12 +2350,23 @@ const initialEntryTimeParts = parseTime24ToParts(initialEntryDateTime.time)
 const entryCalendarDate = shallowRef<CalendarDate | undefined>(
   import.meta.client ? dateStringToCalendarDate(initialEntryDateTime.date) : undefined
 )
+const entryCalendarPlaceholder = shallowRef<CalendarDate | undefined>(
+  import.meta.client ? dateStringToCalendarDate(initialEntryDateTime.date) : undefined
+)
 const entryTimeInput = ref(initialEntryDateTime.time)
 const entryTimeHour = ref(initialEntryTimeParts.hour12)
 const entryTimeMinute = ref(initialEntryTimeParts.minute)
 const entryTimePeriod = ref<'AM' | 'PM'>(initialEntryTimeParts.period)
 
 const entryStepScrollEl = ref<HTMLElement | null>(null)
+
+const PDF_CONDITION_STATEMENT_KEY = 'pdf_condition_statement'
+const pdfConditionStatementField: EntryFieldDef = {
+  label: 'PDF condition statement',
+  type: 'textarea',
+  placeholder: 'Example: I am backtracking my symptoms. Most GERD symptoms I logged happened when I did not take my medication.',
+  helper: 'Optional. This prints once before this condition in your PDF, not before every entry.'
+}
 const entryActionBarHeight = computed(() => (
   isEditingEntry.value && user.value ? 176 : 112
 ))
@@ -2240,6 +2418,7 @@ const pendingDelete = ref<null | {
   mode: 'archive'
   title: string
 }>(null)
+const viewedHistoryEntryId = ref<string | null>(null)
 const isShareLinkOpen = ref(false)
 const shareLinkEntry = ref<any | null>(null)
 const shareLinkLabel = ref('')
@@ -2411,6 +2590,65 @@ const historyEntries = computed(() => {
     .map((entry) => mapEntryHistoryItem(entry))
 })
 
+const viewedHistoryEntry = computed(() => {
+  if (!viewedHistoryEntryId.value) {
+    return null
+  }
+
+  return historyEntries.value.find((entry) => entry.id === viewedHistoryEntryId.value) || null
+})
+
+const viewedHistoryRawEntry = computed(() => {
+  if (!viewedHistoryEntryId.value) {
+    return null
+  }
+
+  return savedEntries.value.find((entry) => entry.id === viewedHistoryEntryId.value) || null
+})
+
+const viewedHistoryEntryTimestamp = computed(() => {
+  const rawEntry = viewedHistoryRawEntry.value
+  if (!rawEntry) {
+    return ''
+  }
+
+  const entryDate = new Date(rawEntry.occurred_at || rawEntry.created_at)
+  if (Number.isNaN(entryDate.getTime())) {
+    return ''
+  }
+
+  return entryDate.toLocaleString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  })
+})
+
+const viewedHistoryEntryDetails = computed(() => {
+  const details = viewedHistoryRawEntry.value?.details
+  if (!details || typeof details !== 'object') {
+    return []
+  }
+
+  const skippedDetailKeys = new Set([
+    'date_and_time',
+    'condition_name',
+    'what_happened',
+    'daily_impact',
+    PDF_CONDITION_STATEMENT_KEY
+  ])
+
+  return Object.entries(details)
+    .filter(([key, value]) => !skippedDetailKeys.has(key) && formatHistoryEntryDetailValue(value))
+    .map(([key, value]) => ({
+      label: formatHistoryEntryDetailLabel(key),
+      value: formatHistoryEntryDetailValue(value)
+    }))
+})
+
 const submissionNotifications = computed(() => {
   return savedEntries.value
     .map((entry) => {
@@ -2473,8 +2711,8 @@ const hasEntryDraft = computed(() => {
   })
 })
 
-const loggedEntryDateKeys = computed(() => {
-  const keys = new Set<string>()
+const loggedEntryPeakSeverityByDate = computed(() => {
+  const severityByDate = new Map<string, number>()
 
   savedEntries.value.forEach((entry) => {
     const entryDate = entry.occurred_at ? new Date(entry.occurred_at) : new Date(entry.created_at)
@@ -2482,28 +2720,140 @@ const loggedEntryDateKeys = computed(() => {
       return
     }
 
-    keys.add(calendarDateToDateString(new CalendarDate(
+    const dateKey = calendarDateToDateString(new CalendarDate(
       entryDate.getFullYear(),
       entryDate.getMonth() + 1,
       entryDate.getDate()
-    )))
+    ))
+    const severity = entry.severity ?? 0
+    const existing = severityByDate.get(dateKey)
+
+    if (existing === undefined || severity > existing) {
+      severityByDate.set(dateKey, severity)
+    }
   })
 
-  return keys
+  return severityByDate
 })
 
-function hasLoggedEntryOnDay(day: CalendarDate | { year: number, month: number, day: number }) {
-  const calendarDay = day instanceof CalendarDate
+function normalizeCalendarDay(day: CalendarDate | { year: number, month: number, day: number }) {
+  return day instanceof CalendarDate
     ? day
     : new CalendarDate(day.year, day.month, day.day)
-
-  return loggedEntryDateKeys.value.has(calendarDateToDateString(calendarDay))
 }
+
+function getLoggedDayPeakSeverity(day: CalendarDate | { year: number, month: number, day: number }) {
+  return loggedEntryPeakSeverityByDate.value.get(
+    calendarDateToDateString(normalizeCalendarDay(day))
+  )
+}
+
+function hasLoggedEntryOnDay(day: CalendarDate | { year: number, month: number, day: number }) {
+  return getLoggedDayPeakSeverity(day) !== undefined
+}
+
+function getCalendarDayDisplay(day: CalendarDate | { year: number, month: number, day: number }) {
+  const calendarDay = normalizeCalendarDay(day)
+  const peakSeverity = getLoggedDayPeakSeverity(calendarDay)
+
+  if (peakSeverity === undefined) {
+    return String(calendarDay.day)
+  }
+
+  return getSeverityEmoji(peakSeverity)
+}
+
+function getLoggedDaySeverityTitle(day: CalendarDate | { year: number, month: number, day: number }) {
+  const peakSeverity = getLoggedDayPeakSeverity(day)
+
+  if (peakSeverity === undefined) {
+    return undefined
+  }
+
+  return `Logged · peak severity ${peakSeverity}/10`
+}
+
+function entryLocalDateKey(entry: Record<string, any>) {
+  const entryDate = entry.occurred_at ? new Date(entry.occurred_at) : new Date(entry.created_at)
+
+  if (Number.isNaN(entryDate.getTime())) {
+    return ''
+  }
+
+  return calendarDateToDateString(new CalendarDate(
+    entryDate.getFullYear(),
+    entryDate.getMonth() + 1,
+    entryDate.getDate()
+  ))
+}
+
+const selectedHistoryDayKey = computed(() => calendarDateToDateString(historyCalendarDate.value))
+
+const selectedHistoryDayLabel = computed(() => {
+  const selected = historyCalendarDate.value
+  const date = new Date(selected.year, selected.month - 1, selected.day)
+
+  return date.toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric'
+  })
+})
+
+const selectedHistoryDayEntries = computed(() => {
+  return savedEntries.value
+    .filter((entry) => entryLocalDateKey(entry) === selectedHistoryDayKey.value)
+    .sort((a, b) => {
+      const aTime = new Date(a.occurred_at || a.created_at).getTime()
+      const bTime = new Date(b.occurred_at || b.created_at).getTime()
+      return bTime - aTime
+    })
+    .map((entry) => mapEntryHistoryItem(entry))
+})
+
+const selectedHistoryDayPreviewEntries = computed(() => selectedHistoryDayEntries.value.slice(0, 3))
+const selectedHistoryDayExtraCount = computed(() => Math.max(0, selectedHistoryDayEntries.value.length - selectedHistoryDayPreviewEntries.value.length))
+
+const selectedHistoryDayPeakSeverity = computed(() => {
+  return selectedHistoryDayEntries.value.reduce((peak, entry) => Math.max(peak, entry.severity), 0)
+})
+
+const selectedHistoryDaySeverityRange = computed(() => {
+  if (selectedHistoryDayEntries.value.length < 2) {
+    return ''
+  }
+
+  const severities = selectedHistoryDayEntries.value.map((entry) => entry.severity)
+  const min = Math.min(...severities)
+  const max = Math.max(...severities)
+
+  if (min === max) {
+    return ''
+  }
+
+  return `Range ${min}-${max}/10`
+})
 
 function onHistoryCalendarPlaceholderUpdate(date: unknown) {
   const parsed = coerceCalendarDate(date)
   if (parsed) {
     historyCalendarPlaceholder.value = parsed
+  }
+}
+
+function onHistoryCalendarDateUpdate(date: unknown) {
+  const parsed = coerceCalendarDate(date)
+  if (parsed) {
+    historyCalendarDate.value = parsed
+    historyCalendarPlaceholder.value = parsed
+  }
+}
+
+function onEntryCalendarPlaceholderUpdate(date: unknown) {
+  const parsed = coerceCalendarDate(date)
+  if (parsed) {
+    entryCalendarPlaceholder.value = parsed
   }
 }
 
@@ -2772,33 +3122,36 @@ const activeEntryImage = computed(() => {
   return activeCondition.value?.image || conditionImageAssets.mentalHealth
 })
 const activeEntryFields = computed(() => {
+  let fields: EntryFieldDef[]
+
   if (selectedSearchCondition.value) {
-    return getEntryFieldsForSearchCondition(selectedSearchCondition.value)
+    fields = getEntryFieldsForSearchCondition(selectedSearchCondition.value)
+  } else {
+    const customName = entryForm.value.condition_name?.trim()
+    if (customName) {
+      fields = [
+        {
+          label: 'Condition name',
+          type: 'text',
+          placeholder: 'Example: tinnitus, sinusitis, skin flare-up...'
+        },
+        ...buildDefaultEntryFields()
+      ]
+    } else if (editingEntryConditionLabel.value) {
+      fields = entryFieldsByCondition[editingEntryConditionLabel.value as keyof typeof entryFieldsByCondition]
+        || buildDefaultEntryFields()
+    } else {
+      const activeTitle = activeCondition.value?.title
+      fields = activeTitle
+        ? entryFieldsByCondition[activeTitle as keyof typeof entryFieldsByCondition] || buildDefaultEntryFields()
+        : buildDefaultEntryFields()
+    }
   }
 
-  const customName = entryForm.value.condition_name?.trim()
-  if (customName) {
-    return [
-      {
-        label: 'Condition name',
-        type: 'text',
-        placeholder: 'Example: tinnitus, sinusitis, skin flare-up...'
-      },
-      ...buildDefaultEntryFields()
-    ]
-  }
-
-  if (editingEntryConditionLabel.value) {
-    return entryFieldsByCondition[editingEntryConditionLabel.value as keyof typeof entryFieldsByCondition]
-      || buildDefaultEntryFields()
-  }
-
-  const activeTitle = activeCondition.value?.title
-  if (activeTitle) {
-    return entryFieldsByCondition[activeTitle as keyof typeof entryFieldsByCondition] || buildDefaultEntryFields()
-  }
-
-  return buildDefaultEntryFields()
+  return [
+    ...fields,
+    pdfConditionStatementField
+  ]
 })
 const entrySteps = computed(() => {
   const fields = activeEntryFields.value
@@ -3353,37 +3706,26 @@ function syncEntryInputsFromForm() {
   syncEntryTimePartsFromInput()
 
   if (import.meta.client) {
-    entryCalendarDate.value = coerceCalendarDate(dateStringToCalendarDate(date))
+    const parsedDate = coerceCalendarDate(dateStringToCalendarDate(date))
+    entryCalendarDate.value = parsedDate
+    entryCalendarPlaceholder.value = parsedDate
   }
 }
 
 function syncEntryFormFromInputs() {
-  const calendarDate = coerceCalendarDate(entryCalendarDate.value)
+  let calendarDate = coerceCalendarDate(entryCalendarDate.value)
 
   if (!calendarDate || !entryTimeInput.value) {
     return
   }
 
-  entryCalendarDate.value = calendarDate
-
-  const dateTimeValue = `${calendarDateToDateString(calendarDate)}T${entryTimeInput.value}`
-
-  if (isFutureEntryDateTime(dateTimeValue)) {
-    setEntryDateTimeNow()
-    return
-  }
-
-  entryForm.value.date_and_time = dateTimeValue
-}
-
-function onEntryCalendarUpdate(date: unknown) {
-  const calendarDate = coerceCalendarDate(date)
-
-  if (!calendarDate) {
-    return
+  const today = getTodayCalendarDate()
+  if (calendarDate.compare(today) > 0) {
+    calendarDate = today
   }
 
   entryCalendarDate.value = calendarDate
+  entryCalendarPlaceholder.value = calendarDate
   const dateStr = calendarDateToDateString(calendarDate)
   const maxTime = getMaxEntryTimeLocal(dateStr)
 
@@ -3392,7 +3734,41 @@ function onEntryCalendarUpdate(date: unknown) {
     syncEntryTimePartsFromInput()
   }
 
-  syncEntryFormFromInputs()
+  const dateTimeValue = `${dateStr}T${entryTimeInput.value}`
+
+  if (isFutureEntryDateTime(dateTimeValue)) {
+    entryTimeInput.value = maxTime
+    syncEntryTimePartsFromInput()
+    entryForm.value.date_and_time = `${dateStr}T${entryTimeInput.value}`
+    return
+  }
+
+  entryForm.value.date_and_time = dateTimeValue
+}
+
+function onEntryCalendarUpdate(date: unknown) {
+  let calendarDate = coerceCalendarDate(date)
+
+  if (!calendarDate) {
+    return
+  }
+
+  const today = getTodayCalendarDate()
+  if (calendarDate.compare(today) > 0) {
+    calendarDate = today
+  }
+
+  entryCalendarDate.value = calendarDate
+  entryCalendarPlaceholder.value = calendarDate
+  const dateStr = calendarDateToDateString(calendarDate)
+  const maxTime = getMaxEntryTimeLocal(dateStr)
+
+  if (entryTimeInput.value > maxTime) {
+    entryTimeInput.value = maxTime
+    syncEntryTimePartsFromInput()
+  }
+
+  entryForm.value.date_and_time = `${dateStr}T${entryTimeInput.value}`
 }
 
 function syncEntryTimePartsFromInput() {
@@ -3545,6 +3921,46 @@ function conditionKey(label: string) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_|_$/g, '')
+}
+
+function resolveEntryStatementConditionKey(label: string) {
+  const resolved = resolveCatalogConditionByStoredKey(conditionKey(label))
+  return resolved?.key || conditionKey(label)
+}
+
+function findSavedConditionStatement(label: string) {
+  const targetKey = resolveEntryStatementConditionKey(label)
+  const matchingEntries = savedEntries.value
+    .filter((entry) => {
+      const entryKey = resolveCatalogConditionByStoredKey(entry.condition_key || entry.condition_label)?.key
+        || conditionKey(entry.condition_label || '')
+      return entryKey === targetKey
+    })
+    .sort((left, right) => {
+      const leftTime = new Date(left.updated_at || left.created_at || left.occurred_at).getTime()
+      const rightTime = new Date(right.updated_at || right.created_at || right.occurred_at).getTime()
+      return rightTime - leftTime
+    })
+
+  for (const entry of matchingEntries) {
+    const statement = String(entry.details?.[PDF_CONDITION_STATEMENT_KEY] || '').trim()
+    if (statement) {
+      return statement
+    }
+  }
+
+  return ''
+}
+
+function prefillConditionStatementForEntry(label = entryTitle.value) {
+  if (entryForm.value[PDF_CONDITION_STATEMENT_KEY]?.trim()) {
+    return
+  }
+
+  const statement = findSavedConditionStatement(label)
+  if (statement) {
+    entryForm.value[PDF_CONDITION_STATEMENT_KEY] = statement
+  }
 }
 
 function setupInstallCard() {
@@ -3841,9 +4257,12 @@ function markSubmissionsSeen() {
 }
 
 function toggleSubmissionDropdown() {
-  isSubmissionDropdownOpen.value = !isSubmissionDropdownOpen.value
+  const shouldOpen = !isSubmissionDropdownOpen.value
+  isSubmissionDropdownOpen.value = shouldOpen
 
-  if (isSubmissionDropdownOpen.value) {
+  if (shouldOpen) {
+    closeEntryDetailsOverlay()
+    collapseHistorySheet()
     markSubmissionsSeen()
   }
 }
@@ -3871,6 +4290,16 @@ async function focusSubmission(entryId: string) {
     })
   }
   await scrollHistoryEntryIntoView(entryId)
+}
+
+function openSubmissionLogDetails(entryId: string) {
+  isSubmissionDropdownOpen.value = false
+  const submission = submissionNotifications.value.find((item) => item.id === entryId)
+  if (submission?.createdAt) {
+    markSubmissionSeenUpTo(submission.createdAt)
+  }
+
+  openEntryDetailsOverlay(entryId)
 }
 
 async function saveEntry() {
@@ -3994,6 +4423,9 @@ function requestDeleteEntry(id: string) {
     return
   }
 
+  viewedHistoryEntryId.value = null
+  isSubmissionDropdownOpen.value = false
+  collapseHistorySheet()
   pendingDelete.value = {
     id,
     mode: 'archive',
@@ -4013,6 +4445,81 @@ async function confirmDeleteEntry() {
   const { id } = pendingDelete.value
   pendingDelete.value = null
   await archiveEntry(id)
+}
+
+function formatHistoryEntryDetailLabel(key: string) {
+  return key
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
+}
+
+function formatHistoryEntryDetailValue(value: unknown): string {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => formatHistoryEntryDetailValue(item))
+      .filter(Boolean)
+      .join(', ')
+  }
+
+  if (typeof value === 'boolean') {
+    return value ? 'Yes' : 'No'
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.entries(value)
+      .map(([key, nestedValue]) => {
+        const formatted = formatHistoryEntryDetailValue(nestedValue)
+        return formatted ? `${formatHistoryEntryDetailLabel(key)}: ${formatted}` : ''
+      })
+      .filter(Boolean)
+      .join(', ')
+  }
+
+  return String(value ?? '').trim()
+}
+
+function openEntryDetailsOverlay(entryId: string) {
+  if (isHistoryEntryActivationLocked()) {
+    return
+  }
+
+  if (!user.value) {
+    isAuthPanelOpen.value = true
+    return
+  }
+
+  const entry = savedEntries.value.find((item) => item.id === entryId)
+  if (!entry) {
+    return
+  }
+
+  isSubmissionDropdownOpen.value = false
+  collapseHistorySheet()
+  viewedHistoryEntryId.value = entryId
+}
+
+function closeEntryDetailsOverlay() {
+  viewedHistoryEntryId.value = null
+}
+
+function editViewedHistoryEntry() {
+  const entryId = viewedHistoryEntryId.value
+  if (!entryId) {
+    return
+  }
+
+  closeEntryDetailsOverlay()
+  openEntryForEdit(entryId)
+}
+
+function deleteViewedHistoryEntry() {
+  const entryId = viewedHistoryEntryId.value
+  if (!entryId) {
+    return
+  }
+
+  closeEntryDetailsOverlay()
+  requestDeleteEntry(entryId)
 }
 
 function openShareLinkForEntry(entryId: string) {
@@ -5028,6 +5535,7 @@ function changeEntryCondition(condition: { title: string, category: string, desc
   customConditionInput.value = ''
   entryStep.value = 0
   isConditionPickerOpen.value = false
+  prefillConditionStatementForEntry(condition.title)
 
   if (!isPro.value && !editingEntryId.value) {
     ensureFreeConditionAccess(
@@ -5054,6 +5562,7 @@ function applyCustomEntryCondition() {
   entryForm.value.condition_name = customName
   entryStep.value = 0
   isConditionPickerOpen.value = false
+  prefillConditionStatementForEntry(customName)
 
   if (!isPro.value && !editingEntryId.value) {
     ensureFreeConditionAccess(
@@ -5084,6 +5593,9 @@ function selectSearchCondition(condition: { title: string, category: string, des
 }
 
 function expandHistorySheet() {
+  viewedHistoryEntryId.value = null
+  isSubmissionDropdownOpen.value = false
+
   if (!historyExpanded.value) {
     blockConditionSlideEntry(HISTORY_TRANSITION_LOCK_MS)
     historyExpanded.value = true
@@ -5808,6 +6320,7 @@ function openEntryPanelInner(options: {
     debouncedCustomConditionPreview.value = options.prefillCustomCondition
   }
 
+  prefillConditionStatementForEntry()
   isEntryOpen.value = true
 }
 
