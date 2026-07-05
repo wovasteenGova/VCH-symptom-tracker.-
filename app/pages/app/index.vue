@@ -1043,7 +1043,11 @@
                     />
                   </div>
 
-                  <div v-if="homeVisitTip" class="mt-3">
+                  <div
+                    v-if="homeVisitTip"
+                    class="home-carousel-tip mt-3"
+                    :class="{ 'is-tip-retreat': homeChromeRetreat }"
+                  >
                     <Transition name="home-tip-fade" mode="out-in">
                       <HomeVisitTipCard
                         :key="`${homeVisitTip.title}-${homeVisitTip.text}`"
@@ -6290,14 +6294,42 @@ function handleEntryPrimaryAction() {
   transition: none;
 }
 
-.home-tip-fade-enter-active,
+.home-carousel-tip {
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity var(--home-chrome-in-ms, 720ms) var(--home-chrome-in-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+    transform var(--home-chrome-in-ms, 720ms) var(--home-chrome-in-ease, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+.home-carousel-tip.is-tip-retreat {
+  opacity: 0;
+  transform: translateY(0.75rem);
+  pointer-events: none;
+}
+
+.home-carousel-chrome.is-chrome-retreat-instant .home-carousel-tip,
+.home-carousel-stage.is-shared-transition .home-carousel-chrome.is-chrome-retreat .home-carousel-tip {
+  transition: none;
+}
+
+.home-tip-fade-enter-active {
+  transition:
+    opacity var(--home-chrome-in-ms, 720ms) var(--home-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+    transform var(--home-chrome-in-ms, 720ms) var(--home-ease, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
 .home-tip-fade-leave-active {
-  transition: opacity 650ms var(--home-ease, cubic-bezier(0.22, 1, 0.36, 1));
+  transition: opacity 420ms var(--home-ease, cubic-bezier(0.22, 1, 0.36, 1));
 }
 
 .home-tip-fade-enter-from,
 .home-tip-fade-leave-to {
   opacity: 0;
+}
+
+.home-tip-fade-enter-from {
+  transform: translateY(0.75rem);
 }
 
 .home-carousel-footer {
@@ -6315,6 +6347,7 @@ function handleEntryPrimaryAction() {
   .home-carousel-hero-title,
   .home-carousel-overview,
   .home-carousel-chrome,
+  .home-carousel-tip,
   .home-tip-fade-enter-active,
   .home-tip-fade-leave-active,
   .home-log-btn-enter-active,
