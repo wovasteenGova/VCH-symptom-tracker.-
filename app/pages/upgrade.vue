@@ -4,7 +4,7 @@
       <header class="sticky top-0 z-40 -mx-4 flex shrink-0 items-center justify-between gap-3 border-b border-slate-800 bg-slate-950/95 px-4 pb-4 pt-4 backdrop-blur-md">
         <div>
           <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Payment center</p>
-          <h1 class="mt-1 text-2xl font-bold tracking-tight text-white">Choose your plan</h1>
+          <h1 class="mt-1 text-2xl font-bold tracking-tight text-white">{{ pageTitle }}</h1>
         </div>
 
         <NuxtLink
@@ -24,7 +24,7 @@
           Checkout was canceled. You can try again whenever you're ready.
         </section>
 
-        <section class="rounded-4xl border border-sky-900/50 bg-sky-950/20 p-5">
+        <section v-if="!isPro" class="rounded-4xl border border-sky-900/50 bg-sky-950/20 p-5">
           <div class="flex items-start gap-3">
             <div class="grid size-11 shrink-0 place-items-center rounded-2xl bg-sky-500/20 text-sky-200 ring-1 ring-sky-500/30">
               <UIcon name="i-lucide-heart-handshake" class="size-5" />
@@ -77,7 +77,7 @@
           </p>
         </section>
 
-        <div class="grid gap-4">
+        <div v-if="!isPro" class="grid gap-4">
           <article class="rounded-4xl border border-slate-800 bg-slate-900 p-5">
             <div class="flex items-start justify-between gap-3">
               <div>
@@ -147,7 +147,7 @@
           </article>
         </div>
 
-        <section class="rounded-4xl border border-slate-800 bg-slate-900 p-5">
+        <section v-if="!isPro" class="rounded-4xl border border-slate-800 bg-slate-900 p-5">
           <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">How payment works</p>
           <ol class="mt-4 space-y-4">
             <li
@@ -167,6 +167,7 @@
         </section>
 
         <section
+          v-if="!isPro"
           id="cant-pay-section"
           class="scroll-mt-24 rounded-4xl border border-emerald-900/50 bg-emerald-950/20 p-5"
         >
@@ -210,6 +211,16 @@
       />
 
       <StickyActionBar tone="dark">
+        <p v-if="!isPro" class="mb-2 text-center text-[0.68rem] font-medium text-slate-500">
+          Secure payments by
+          <a
+            href="https://stripe.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="font-bold text-slate-400 no-underline transition hover:text-slate-300"
+          >Stripe</a>
+        </p>
+
         <button
           v-if="!user"
           type="button"
@@ -237,8 +248,8 @@
           Back to tracker
         </NuxtLink>
 
-        <p class="mt-3 text-center text-[0.68rem] leading-5 text-slate-500">
-          Secure checkout powered by Stripe. {{ PRO_REFUND_POLICY_SHORT }} — cancel renewal anytime from billing settings.
+        <p v-if="!isPro" class="mt-3 text-center text-[0.68rem] leading-5 text-slate-500">
+          {{ PRO_REFUND_POLICY_SHORT }} — cancel renewal anytime from billing settings.
         </p>
       </StickyActionBar>
     </section>
@@ -284,11 +295,12 @@ const pageError = ref('')
 
 const supportEmailHref = buildSupportEmailHref()
 const showCanceledNotice = computed(() => route.query.canceled === '1')
+const pageTitle = computed(() => isPro.value ? 'Your Pro plan' : 'Choose your plan')
 
 const paymentSteps = [
   {
     title: 'Choose Pro',
-    body: 'Tap upgrade — secure Stripe checkout opens in the app, same pattern as VCH donations.'
+    body: 'Tap upgrade — secure Stripe checkout opens in the app (card, Cash App, Google Pay when available).'
   },
   {
     title: 'Pay yearly',

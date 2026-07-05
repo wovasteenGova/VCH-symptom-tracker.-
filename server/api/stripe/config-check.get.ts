@@ -1,3 +1,5 @@
+import { isStripePriceId } from '../../utils/subscriptionCheckoutSession'
+
 export default defineEventHandler(() => {
   if (process.env.NODE_ENV === 'production') {
     throw createError({
@@ -7,12 +9,17 @@ export default defineEventHandler(() => {
   }
 
   const config = useRuntimeConfig()
+  const rawProPriceId = String(config.stripeProPriceId || '').trim()
+  const hasValidProPriceId = isStripePriceId(rawProPriceId)
 
   return {
     hasSecretKey: Boolean(config.stripeSecretKey),
     hasPublishableKey: Boolean(config.public.stripePublishableKey),
     hasWebhookSecret: Boolean(config.stripeWebhookSecret),
-    hasProPriceId: Boolean(config.stripeProPriceId),
+    hasProPriceId: hasValidProPriceId,
+    hasConfiguredProPriceValue: Boolean(rawProPriceId),
+    proPriceIdValid: hasValidProPriceId,
+    proPriceIdPreview: rawProPriceId ? `${rawProPriceId.slice(0, 12)}...` : null,
     hasSupabaseServiceRoleKey: Boolean(config.supabaseServiceRoleKey || config.supabaseServiceKey),
     secretKeyPreview: config.stripeSecretKey ? `${config.stripeSecretKey.slice(0, 12)}...` : null,
     publishableKeyPreview: config.public.stripePublishableKey

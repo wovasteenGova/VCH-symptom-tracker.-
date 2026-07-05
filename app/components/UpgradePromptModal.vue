@@ -52,6 +52,15 @@
         </p>
 
         <div class="mt-5 grid gap-3">
+          <p class="text-center text-[0.68rem] font-medium text-slate-500">
+            Secure payments by
+            <a
+              href="https://stripe.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="font-bold text-slate-400 no-underline transition hover:text-slate-300"
+            >Stripe</a>
+          </p>
           <button
             type="button"
             class="w-full rounded-2xl bg-amber-400 px-4 py-4 text-base font-bold text-slate-950 transition hover:bg-amber-300"

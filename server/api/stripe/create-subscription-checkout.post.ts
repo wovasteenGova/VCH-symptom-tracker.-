@@ -16,6 +16,10 @@ function logCheckoutError(step: string, details: Record<string, unknown> = {}) {
   console.error(`[stripe checkout] ${step}`, details)
 }
 
+function logCheckoutWarning(step: string, details: Record<string, unknown> = {}) {
+  console.warn(`[stripe checkout] ${step}`, details)
+}
+
 export default defineEventHandler(async (event) => {
   const requestId = crypto.randomUUID()
   const config = useRuntimeConfig()
@@ -27,7 +31,7 @@ export default defineEventHandler(async (event) => {
     embedded,
     hasStripeSecretKey: Boolean(config.stripeSecretKey),
     stripeMode: config.stripeSecretKey?.startsWith('sk_test_') ? 'test' : config.stripeSecretKey?.startsWith('sk_live_') ? 'live' : 'unknown',
-    hasProPriceId: Boolean(config.stripeProPriceId),
+    hasProPriceId: isStripePriceId(String(config.stripeProPriceId || '').trim()),
     origin: getRequestHeader(event, 'origin') || null
   })
 
@@ -63,7 +67,7 @@ export default defineEventHandler(async (event) => {
   const configuredPriceId = isStripePriceId(rawConfiguredPriceId) ? rawConfiguredPriceId : ''
 
   if (rawConfiguredPriceId && !configuredPriceId) {
-    logCheckoutError('invalid STRIPE_PRO_PRICE_ID ignored', {
+    logCheckoutWarning('invalid STRIPE_PRO_PRICE_ID ignored; using generated 14.99 yearly price', {
       requestId,
       valuePreview: `${rawConfiguredPriceId.slice(0, 12)}...`,
       expected: 'price_...'
@@ -74,7 +78,8 @@ export default defineEventHandler(async (event) => {
     requestId,
     baseUrl,
     embedded,
-    usingConfiguredPriceId: Boolean(configuredPriceId)
+    usingConfiguredPriceId: Boolean(configuredPriceId),
+    paymentMethods: 'dashboard'
   })
 
   try {

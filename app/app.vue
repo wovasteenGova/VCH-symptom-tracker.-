@@ -27,6 +27,7 @@ const APP_SPLASH_MIN_MS = 1200
 // PWA service worker auto-update reload), so users don't see it twice.
 const APP_SPLASH_REPLAY_WINDOW_MS = 60_000
 const APP_SPLASH_SHOWN_AT_KEY = 'symptom-tracker-splash-shown-at'
+const CHECKOUT_SUCCESS_TOAST_KEY = 'symptom-tracker-checkout-success-toast'
 
 function dismissAppSplash(mountedAt: number) {
   const elapsed = Date.now() - mountedAt
@@ -62,7 +63,14 @@ function updateAppHeight() {
 onMounted(async () => {
   dismissAppSplash(Date.now())
   updateAppHeight()
-  if (import.meta.client && window.sessionStorage.getItem('symptom-tracker-auth-success')) {
+  if (import.meta.client && window.sessionStorage.getItem(CHECKOUT_SUCCESS_TOAST_KEY)) {
+    window.sessionStorage.removeItem(CHECKOUT_SUCCESS_TOAST_KEY)
+    window.sessionStorage.removeItem('symptom-tracker-auth-success')
+    showSubmissionToast({
+      message: "Payment successful. You're now on Pro.",
+      durationMs: 3200
+    })
+  } else if (import.meta.client && window.sessionStorage.getItem('symptom-tracker-auth-success')) {
     window.sessionStorage.removeItem('symptom-tracker-auth-success')
 
     const { data } = await supabase.auth.getSession()

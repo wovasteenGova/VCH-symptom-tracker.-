@@ -60,6 +60,8 @@ import { PRO_ANNUAL_PRICE_LABEL } from '../../utils/subscription'
 const route = useRoute()
 const { user, isAuthLoading } = useSupabaseAuth()
 const { isPro } = useEntitlements()
+const { showSubmissionToast } = useSubmissionToast()
+const hasShownProToast = ref(false)
 
 const {
   checkoutSessionId,
@@ -181,6 +183,14 @@ watch([user, isAuthLoading, () => route.query.session_id], async ([currentUser, 
 watch(isPro, (active) => {
   if (active) {
     paymentReceived.value = true
+
+    if (!hasShownProToast.value) {
+      hasShownProToast.value = true
+      showSubmissionToast({
+        message: "Payment successful. You're now on Pro.",
+        durationMs: 3200
+      })
+    }
   }
 })
 </script>

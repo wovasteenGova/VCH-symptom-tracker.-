@@ -861,10 +861,10 @@
           <div
             v-else
             key="home-workspace"
-            class="mt-2 flex min-h-0 flex-1 flex-col gap-2 overflow-hidden"
+            class="relative mt-2 flex min-h-0 flex-1 flex-col gap-2 overflow-hidden pb-[5.5rem]"
           >
         <div
-          class="flex min-h-0 flex-col px-4 transition-[flex] duration-[550ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
+          class="flex min-h-0 flex-col px-4"
           :class="carouselWorkspaceClass"
           @wheel.passive="handleConditionWheel"
           @touchstart.passive="handleConditionSwipeStart"
@@ -1097,7 +1097,8 @@
 
             <div
               v-if="homeConditions.length && !showConditionBrowser"
-              class="home-carousel-footer shrink-0 pt-3"
+              class="home-carousel-footer mb-2 shrink-0 pt-3"
+              :class="{ 'has-mobile-log-space': !isDesktopLayout && (homeSharedTransitionActive || !isHomeOverviewSlide) }"
             >
               <Transition name="home-log-btn">
                 <div
@@ -1166,7 +1167,7 @@
         </div>
 
         <section
-          class="flex min-h-0 flex-col overflow-hidden rounded-t-[1.75rem] border-t border-slate-200/80 bg-white transition-[flex,height] duration-[550ms] ease-[cubic-bezier(0.22,1,0.36,1)] dark:border-slate-800 dark:bg-slate-900"
+          class="flex min-h-0 flex-col overflow-hidden rounded-t-[1.75rem] border-t border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-900"
           :class="historyPanelClass"
           @pointerdown="handleHistoryPointerDown"
           @pointermove="handleHistoryPointerMove"
@@ -2673,23 +2674,15 @@ const heroSlideTransitionName = computed(() => {
 })
 
 const carouselWorkspaceClass = computed(() => {
-  if (!historyExpanded.value) {
-    return 'flex-1 pb-3'
-  }
-
-  return isDesktopLayout.value ? 'flex-[7] pb-1' : 'flex-[1] pb-1'
+  return 'flex-1 pb-3'
 })
 
 const historyPanelClass = computed(() => {
   if (!historyExpanded.value) {
-    return 'h-[5rem] shrink-0'
+    return 'absolute inset-x-0 bottom-0 z-[90] h-[5rem]'
   }
 
-  if (isDesktopLayout.value) {
-    return 'relative z-30 flex-[13]'
-  }
-
-  return 'relative z-30 flex-[4]'
+  return 'absolute inset-0 z-[100] shadow-[0_-12px_40px_rgb(15_23_42/0.12)] dark:shadow-[0_-12px_40px_rgb(0_0_0/0.35)]'
 })
 
 const isConditionSlideEntryEnabled = computed(() => {
@@ -4654,9 +4647,17 @@ function getHomeHeroExpandedTargetRect() {
 
 function getHomeOverviewThumbnailTargetRect(key: string) {
   const thumbRect = homeConditionImageEls.get(key)?.getBoundingClientRect()
+  const scrollEl = homeConditionsScrollEl.value
 
-  if (thumbRect && thumbRect.width > 0) {
-    return thumbRect
+  if (thumbRect && thumbRect.width > 0 && scrollEl) {
+    const scrollRect = scrollEl.getBoundingClientRect()
+    const padding = 4
+    const isVisible = thumbRect.top >= scrollRect.top - padding
+      && thumbRect.bottom <= scrollRect.bottom + padding
+
+    if (isVisible) {
+      return thumbRect
+    }
   }
 
   const stageRect = homeCarouselStageEl.value?.getBoundingClientRect()
@@ -4722,7 +4723,7 @@ async function ensureHomeConditionThumbnailInView(
     scrollEl.scrollTop = scrollEl.scrollHeight
   } else {
     thumbEl.scrollIntoView({
-      block: 'nearest',
+      block: options.force ? 'center' : 'nearest',
       inline: 'nearest',
       behavior: 'auto'
     })
@@ -4819,7 +4820,7 @@ function getLiveMorphTargetRect(
     return thumbRect
   }
 
-  return fallback
+  return getHomeOverviewThumbnailTargetRect(conditionKey) ?? fallback
 }
 
 function getHomeImageMorphStartStyle(fromRect: DOMRect, direction: 'expand' | 'collapse') {
@@ -4849,7 +4850,6 @@ function runHomeImageMorphRaf(
   const fromRadiusPx = parseHomeRadiusPx(direction === 'expand' ? HOME_THUMB_RADIUS : HOME_HERO_RADIUS)
   const toRadiusPx = parseHomeRadiusPx(direction === 'expand' ? HOME_HERO_RADIUS : HOME_THUMB_RADIUS)
   const startedAt = performance.now()
-  const lockedCollapseTarget = direction === 'collapse' ? toRect : null
 
   homeHeroTitleRevealTimer = setTimeout(() => {
     if (token !== homeSharedTransitionToken) {
@@ -4861,10 +4861,6 @@ function runHomeImageMorphRaf(
   }, Math.max(0, durationMs - 160))
 
   function resolveMorphTarget() {
-    if (lockedCollapseTarget) {
-      return lockedCollapseTarget
-    }
-
     return getLiveMorphTargetRect(direction, conditionKey, toRect)
   }
 
@@ -6215,7 +6211,7 @@ function handleEntryPrimaryAction() {
 }
 
 .home-carousel-stage.is-shared-transition.is-shared-collapse {
-  transition: none;
+  transition: grid-template-rows var(--home-hero-ms, 680ms) var(--home-ease, cubic-bezier(0.22, 1, 0.36, 1));
   grid-template-rows: 0fr auto auto;
   align-content: start;
 }
@@ -6368,7 +6364,18 @@ function handleEntryPrimaryAction() {
 }
 
 .home-carousel-footer {
-  transition: none;
+  min-height: 0;
+  transition:
+    min-height var(--home-ui-ms, 650ms) var(--home-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+    padding-top var(--home-ui-ms, 650ms) var(--home-ease, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+.home-carousel-footer.has-mobile-log-space {
+  min-height: 5rem;
+}
+
+.home-carousel-footer:not(.has-mobile-log-space) {
+  padding-top: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {

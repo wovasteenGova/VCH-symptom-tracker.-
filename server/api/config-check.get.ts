@@ -1,6 +1,7 @@
 import { getSupabasePublicConfig, inspectSupabaseKey, previewSupabaseKey } from '../utils/supabasePublicConfig'
 import { getSupabaseConfigError, resolveSupabaseEnv } from '../utils/supabaseEnv'
 import { getReminderCronSecret, getVapidPrivateKey, getVapidPublicKey } from '../utils/pushReminderAuth'
+import { isStripePriceId } from '../utils/subscriptionCheckoutSession'
 
 function extractSupabaseProjectRef(url: string) {
   const match = String(url || '').match(/https:\/\/([^.]+)\.supabase\.co/)
@@ -32,6 +33,8 @@ export default defineEventHandler(() => {
   const anonKeySameAsServiceKey = Boolean(
     resolved.supabaseKey && serviceKey && resolved.supabaseKey === serviceKey
   )
+  const rawProPriceId = String(config.stripeProPriceId || '').trim()
+  const hasValidProPriceId = isStripePriceId(rawProPriceId)
 
   return {
     configured: Boolean(resolved.supabaseUrl && resolved.supabaseKey),
@@ -63,7 +66,10 @@ export default defineEventHandler(() => {
       hasSecretKey: Boolean(config.stripeSecretKey),
       hasPublishableKey: Boolean(config.public.stripePublishableKey),
       hasWebhookSecret: Boolean(config.stripeWebhookSecret),
-      hasProPriceId: Boolean(config.stripeProPriceId),
+      hasProPriceId: hasValidProPriceId,
+      hasConfiguredProPriceValue: Boolean(rawProPriceId),
+      proPriceIdValid: hasValidProPriceId,
+      proPriceIdPreview: rawProPriceId ? `${rawProPriceId.slice(0, 12)}...` : null,
       isTestMode: config.stripeSecretKey?.startsWith('sk_test_') ?? false
     },
     reminders: {

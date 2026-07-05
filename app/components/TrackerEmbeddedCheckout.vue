@@ -84,6 +84,8 @@ import { nextTick, onUnmounted, ref, watch } from 'vue'
 import { useEntitlements } from '../composables/useEntitlements'
 import { PRO_ANNUAL_PRICE_LABEL, PRO_CHECKOUT_SUBMIT_MESSAGE, PRO_REFUND_POLICY } from '../utils/subscription'
 
+const CHECKOUT_SUCCESS_TOAST_KEY = 'symptom-tracker-checkout-success-toast'
+
 const props = defineProps<{
   open: boolean
 }>()
@@ -95,7 +97,7 @@ const emit = defineEmits<{
 }>()
 
 const config = useRuntimeConfig()
-const { createEmbeddedCheckoutSession } = useEntitlements()
+const { activateCheckoutSession, createEmbeddedCheckoutSession, loadEntitlements } = useEntitlements()
 
 const checkoutMountElement = ref<HTMLElement | null>(null)
 const isLoading = ref(false)
@@ -123,15 +125,31 @@ function emitFallback() {
 async function handleCheckoutComplete() {
   const sessionId = activeSessionId.value
 
+  isLoading.value = true
+
+  if (sessionId) {
+    try {
+      await activateCheckoutSession(sessionId)
+      await loadEntitlements({ force: true })
+      window.sessionStorage.setItem(CHECKOUT_SUCCESS_TOAST_KEY, '1')
+      console.info('[checkout] embedded completion activated Pro', { sessionId })
+    } catch (error) {
+      console.error('[checkout] embedded completion activation failed', {
+        sessionId,
+        message: error instanceof Error ? error.message : String(error)
+      })
+    }
+  }
+
   destroyCheckout()
   emit('close')
 
   if (sessionId) {
-    await navigateTo(`/upgrade/success?session_id=${encodeURIComponent(sessionId)}`)
+    window.location.assign(`/upgrade/success?session_id=${encodeURIComponent(sessionId)}`)
     return
   }
 
-  await navigateTo('/upgrade/success')
+  window.location.assign('/upgrade/success')
 }
 
 async function initializeCheckout() {

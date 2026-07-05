@@ -54,7 +54,6 @@ export function buildSubscriptionCheckoutParams(options: {
 }): Stripe.Checkout.SessionCreateParams {
   const shared = {
     mode: 'subscription' as const,
-    payment_method_types: ['card'] as Stripe.Checkout.SessionCreateParams.PaymentMethodType[],
     line_items: options.lineItems,
     customer_email: options.user.email || undefined,
     client_reference_id: options.user.id,
@@ -79,6 +78,7 @@ export function buildSubscriptionCheckoutParams(options: {
     return {
       ...shared,
       ui_mode: 'embedded',
+      redirect_on_completion: 'if_required',
       return_url: `${options.baseUrl}/upgrade/success?session_id={CHECKOUT_SESSION_ID}`
     }
   }
