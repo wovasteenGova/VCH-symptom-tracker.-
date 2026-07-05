@@ -878,7 +878,7 @@
           >
             <div
               class="relative min-h-0 w-full flex-1 overflow-hidden rounded-[1.75rem]"
-              :class="{ 'is-home-morph-active': homeSharedTransitionActive }"
+              :class="{ 'is-home-morph-active': homeSharedTransitionActive && transitionDirection === 'expand' }"
             >
               <Transition name="home-state-fade">
                 <ConditionBrowser
@@ -968,7 +968,7 @@
                   <div
                     ref="homeConditionsScrollEl"
                     data-home-conditions-scroll
-                    class="no-scrollbar min-h-0 flex-1 overflow-y-auto px-2 pb-0"
+                    class="no-scrollbar overflow-y-auto px-2 pb-0"
                     @scroll="handleConditionScroll"
                   >
                     <div class="space-y-1">
@@ -2009,17 +2009,17 @@ const homeTransitionStyleVars = computed(() => {
 })
 
 const homeCarouselStageStyle = computed(() => {
-  const lock = homeCollapseLayoutLock.value
+  const style: Record<string, string> = {}
 
-  if (!lock || !homeSharedTransitionActive.value || transitionDirection.value !== 'collapse') {
-    return {}
+  if (homeChromeBlockHeightPx.value > 0) {
+    style['--home-chrome-block-h'] = `${homeChromeBlockHeightPx.value}px`
   }
 
-  return {
-    '--home-overview-locked-h': `${lock.overviewPx}px`,
-    '--home-conditions-scroll-locked-h': `${lock.scrollPx}px`,
-    '--home-chrome-locked-h': `${lock.chromePx}px`
+  if (homeConditionsMaxScrollPx.value > 0) {
+    style['--home-conditions-max-h'] = `${homeConditionsMaxScrollPx.value}px`
   }
+
+  return style
 })
 
 const activeIndex = ref(0)
@@ -2038,11 +2038,9 @@ const homeCarouselHeroEl = ref<HTMLElement | null>(null)
 const homeCarouselOverviewEl = ref<HTMLElement | null>(null)
 const homeConditionsScrollEl = ref<HTMLElement | null>(null)
 const homeOverviewHeaderHeightPx = ref(0)
-const homeCollapseLayoutLock = ref<{
-  overviewPx: number
-  scrollPx: number
-  chromePx: number
-} | null>(null)
+const homeChromeBlockHeightPx = ref(0)
+const homeConditionsMaxScrollPx = ref(0)
+let homeConditionsMaxScrollResizeListener: (() => void) | undefined
 const homeImageTransitionKey = ref('')
 const homeImageTransitionImage = ref('')
 const homeImageTransitionAlt = ref('')
@@ -2636,10 +2634,12 @@ const calendarDays = computed(() => {
 
 const isHomeOverviewSlide = computed(() => activeIndex.value === 0)
 
-watch([isHomeOverviewSlide, homeSharedTransitionActive], ([onOverview, transitioning]) => {
-  if (onOverview && !transitioning) {
+watch([isHomeOverviewSlide, homeSharedTransitionActive, homeConditions], () => {
+  if (!homeSharedTransitionActive.value) {
     nextTick(() => {
       rememberHomeOverviewHeaderHeight()
+      rememberHomeChromeBlockHeight()
+      updateHomeConditionsMaxScroll()
     })
   }
 })
@@ -3214,6 +3214,17 @@ onMounted(async () => {
 
   await refreshTrackedConditions()
 
+  nextTick(() => {
+    rememberHomeOverviewHeaderHeight()
+    rememberHomeChromeBlockHeight()
+    updateHomeConditionsMaxScroll()
+  })
+
+  homeConditionsMaxScrollResizeListener = () => {
+    updateHomeConditionsMaxScroll()
+  }
+  window.addEventListener('resize', homeConditionsMaxScrollResizeListener)
+
   if (user.value) {
     loadProfileDisplayName()
     loadEntitlements()
@@ -3227,6 +3238,10 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   document.removeEventListener('visibilitychange', handleLogReminderVisibilityChange)
+
+  if (homeConditionsMaxScrollResizeListener) {
+    window.removeEventListener('resize', homeConditionsMaxScrollResizeListener)
+  }
 
   if (logReminderIntervalId) {
     clearInterval(logReminderIntervalId)
@@ -4453,7 +4468,6 @@ function cleanupHomeSharedTransition(token: number) {
   homeChromeRetreat.value = false
   homeHeroTitleRevealed.value = true
   homeSharedTransitionActive.value = false
-  homeCollapseLayoutLock.value = null
   clearHomeImageOverlay(token)
 
   if (homeSharedTransitionTimer) {
@@ -4463,6 +4477,8 @@ function cleanupHomeSharedTransition(token: number) {
 
   nextTick(() => {
     rememberHomeOverviewHeaderHeight()
+    rememberHomeChromeBlockHeight()
+    updateHomeConditionsMaxScroll()
   })
 }
 
@@ -4474,21 +4490,33 @@ function rememberHomeOverviewHeaderHeight() {
   }
 }
 
-function captureHomeCollapseLayoutLock() {
-  const stage = homeCarouselStageEl.value
-  const chrome = stage?.querySelector('[data-home-carousel-chrome]')
+function rememberHomeChromeBlockHeight() {
+  const chrome = homeCarouselStageEl.value?.querySelector('[data-home-carousel-chrome]')
 
-  if (!stage || !(chrome instanceof HTMLElement)) {
-    return null
+  if (!(chrome instanceof HTMLElement) || chrome.offsetHeight <= 0) {
+    return
   }
 
-  const stageHeight = stage.getBoundingClientRect().height
-  const chromePx = chrome.getBoundingClientRect().height
-  const overviewPx = Math.max(0, stageHeight - chromePx)
-  const headerPx = homeOverviewHeaderHeightPx.value || 52
-  const scrollPx = Math.max(0, overviewPx - headerPx)
+  const marginTop = Number.parseFloat(getComputedStyle(chrome).marginTop) || 0
+  homeChromeBlockHeightPx.value = Math.ceil(chrome.offsetHeight + marginTop)
+}
 
-  return { overviewPx, scrollPx, chromePx }
+function updateHomeConditionsMaxScroll() {
+  const stage = homeCarouselStageEl.value
+
+  if (!stage) {
+    return
+  }
+
+  rememberHomeChromeBlockHeight()
+  rememberHomeOverviewHeaderHeight()
+
+  const stageHeight = stage.getBoundingClientRect().height
+  const chromeBlockPx = homeChromeBlockHeightPx.value || 0
+  const headerPx = homeOverviewHeaderHeightPx.value || 0
+  const maxScrollPx = Math.max(0, stageHeight - chromeBlockPx - headerPx)
+
+  homeConditionsMaxScrollPx.value = maxScrollPx
 }
 
 function clearHomeChromeRevealTimer() {
@@ -4880,11 +4908,14 @@ async function animateHomeSlideChange(nextIndex: number, sharedConditionKey: str
   const transitionTiming = HOME_TRANSITION[sharedDirection]
 
   if (isCollapsingToOverview) {
-    homeCollapseLayoutLock.value = captureHomeCollapseLayoutLock()
+    rememberHomeChromeBlockHeight()
+    updateHomeConditionsMaxScroll()
     homeSharedTransitionActive.value = true
-    scheduleHomeChromeSequence(sharedDirection, token)
     activeIndex.value = nextIndex
     await nextTick()
+    rememberHomeOverviewHeaderHeight()
+    updateHomeConditionsMaxScroll()
+    scheduleHomeChromeSequence(sharedDirection, token)
     await ensureHomeConditionThumbnailInView(sharedConditionKey, { force: true })
     await waitForAnimationFrame()
     await waitForAnimationFrame()
@@ -6123,12 +6154,12 @@ function handleEntryPrimaryAction() {
 }
 
 .home-carousel-stage.is-overview {
-  grid-template-rows: 0fr minmax(0, 1fr) auto;
-  align-content: stretch;
+  grid-template-rows: 0fr auto auto;
+  align-content: start;
 }
 
 .home-carousel-stage.is-condition {
-  grid-template-rows: 1fr 0fr auto;
+  grid-template-rows: 1fr 0fr var(--home-chrome-block-h, auto);
   align-content: stretch;
 }
 
@@ -6146,31 +6177,8 @@ function handleEntryPrimaryAction() {
 
 .home-carousel-stage.is-shared-transition.is-shared-collapse {
   transition: none;
-  grid-template-rows: 0fr var(--home-overview-locked-h, minmax(0, 1fr)) var(--home-chrome-locked-h, auto);
-  align-content: stretch;
-}
-
-.home-carousel-stage.is-shared-collapse .home-carousel-overview {
-  opacity: 1;
-  align-self: stretch;
-  pointer-events: none;
-  height: var(--home-overview-locked-h, auto);
-  min-height: var(--home-overview-locked-h, 0);
-  max-height: var(--home-overview-locked-h, none);
-}
-
-.home-carousel-stage.is-shared-collapse [data-home-conditions-scroll] {
-  flex: none;
-  height: var(--home-conditions-scroll-locked-h, auto);
-  min-height: 0;
-  max-height: var(--home-conditions-scroll-locked-h, none);
-}
-
-.home-carousel-stage.is-shared-collapse .home-carousel-chrome {
-  height: var(--home-chrome-locked-h, auto);
-  min-height: var(--home-chrome-locked-h, auto);
-  max-height: var(--home-chrome-locked-h, none);
-  box-sizing: border-box;
+  grid-template-rows: 0fr auto auto;
+  align-content: start;
 }
 
 .home-carousel-stage.is-shared-collapse .home-carousel-hero {
@@ -6224,13 +6232,28 @@ function handleEntryPrimaryAction() {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  align-self: start;
 }
 
 .home-carousel-stage.is-overview [data-home-conditions-scroll] {
-  min-height: 0;
-  flex: 1 1 0;
+  flex: none;
+  height: auto;
+  max-height: var(--home-conditions-max-h, none);
   overflow-y: auto;
   overscroll-behavior: contain;
+}
+
+.home-carousel-stage.is-shared-collapse .home-carousel-overview {
+  opacity: 1;
+  pointer-events: none;
+  align-self: start;
+}
+
+.home-carousel-stage.is-shared-collapse [data-home-conditions-scroll] {
+  flex: none;
+  height: auto;
+  max-height: var(--home-conditions-max-h, none);
+  overflow-y: auto;
 }
 
 .home-carousel-stage.is-condition .home-carousel-overview {
@@ -6244,26 +6267,21 @@ function handleEntryPrimaryAction() {
 }
 
 .home-carousel-chrome {
-  min-height: 0;
-  align-self: start;
+  align-self: stretch;
   position: relative;
   z-index: 0;
   overflow: hidden;
-  padding-top: 1.5rem;
+  margin-top: 1.5rem;
   opacity: 1;
-  transform: translateY(0);
 }
 
 .home-carousel-stage.is-shared-transition .home-carousel-chrome {
-  transition:
-    opacity var(--home-chrome-in-ms, 720ms) var(--home-chrome-in-ease, cubic-bezier(0.22, 1, 0.36, 1)),
-    transform var(--home-chrome-in-ms, 720ms) var(--home-chrome-in-ease, cubic-bezier(0.22, 1, 0.36, 1));
+  transition: opacity var(--home-chrome-in-ms, 720ms) var(--home-chrome-in-ease, cubic-bezier(0.22, 1, 0.36, 1));
 }
 
 .home-carousel-chrome.is-chrome-retreat,
 .home-carousel-chrome.is-chrome-retreat-instant {
   opacity: 0;
-  transform: translateY(1.125rem);
   pointer-events: none;
 }
 
