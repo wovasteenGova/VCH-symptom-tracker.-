@@ -38,6 +38,14 @@ export function useSupabaseAuth() {
     if (error && typeof error === 'object') {
       const failure = error as AuthFailure
       const message = failure.message || failure.msg || ''
+      const code = failure.error_code || failure.code || ''
+
+      if (
+        /session.*(does not exist|not found|invalid)|refresh token|already used|session_not_found|auth session missing/i.test(message)
+        || /session_not_found|refresh_token_not_found|refresh_token_already_used|invalid_refresh_token/i.test(code)
+      ) {
+        return 'Your previous session just ended. Try signing in again.'
+      }
 
       if (
         failure.error_code === 'email_not_confirmed'
@@ -113,6 +121,41 @@ export function useSupabaseAuth() {
     return 'Authentication failed. Please try again.'
   }
 
+  function isStaleSessionError(error: unknown) {
+    if (!error || typeof error !== 'object') {
+      return false
+    }
+
+    const failure = error as AuthFailure
+    const message = (failure.message || failure.msg || '').toLowerCase()
+    const code = (failure.error_code || failure.code || '').toLowerCase()
+
+    return /session.*(does not exist|not found|invalid)|refresh token|already used|session_not_found|auth session missing/i.test(message)
+      || /session_not_found|refresh_token_not_found|refresh_token_already_used|invalid_refresh_token/i.test(code)
+  }
+
+  function isBenignSignOutError(error: unknown) {
+    if (!error || typeof error !== 'object') {
+      return false
+    }
+
+    const failure = error as AuthFailure
+    const message = (failure.message || failure.msg || '').toLowerCase()
+    const code = (failure.error_code || failure.code || '').toLowerCase()
+
+    return failure.status === 403
+      || /session.*(does not exist|not found|missing)|auth session missing|session_not_found/i.test(message)
+      || /session_not_found|auth_session_missing/i.test(code)
+  }
+
+  async function clearLocalAuthSession() {
+    try {
+      await supabase.auth.signOut({ scope: 'local' })
+    } catch {
+      // Ignore — storage may already be empty after a global sign-out.
+    }
+  }
+
   onMounted(async () => {
     const listener = supabase.auth.onAuthStateChange((_event, session) => {
       user.value = session?.user ?? null
@@ -159,16 +202,31 @@ export function useSupabaseAuth() {
     authError.value = ''
     const normalizedEmail = requireAuthEmail(email)
 
-    let error: unknown
-
-    try {
+    async function attemptSignIn() {
       const result = await supabase.auth.signInWithPassword({
         email: normalizedEmail,
         password
       })
-      error = result.error
+
+      return result.error
+    }
+
+    let error: unknown
+
+    try {
+      error = await attemptSignIn()
     } catch (caughtError) {
       error = caughtError
+    }
+
+    if (error && isStaleSessionError(error)) {
+      await clearLocalAuthSession()
+
+      try {
+        error = await attemptSignIn()
+      } catch (caughtError) {
+        error = caughtError
+      }
     }
 
     if (error) {
@@ -369,7 +427,9 @@ export function useSupabaseAuth() {
       error = caughtError
     }
 
-    if (error) {
+    await clearLocalAuthSession()
+
+    if (error && !isBenignSignOutError(error)) {
       authError.value = getAuthErrorMessage(error)
       throw error
     }

@@ -899,6 +899,47 @@
                 />
 
                 <div
+                  v-else-if="!hasLoadedTrackedConditions || isLoadingTrackedConditions"
+                  key="home-loading"
+                  class="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-50 px-6 text-center dark:bg-slate-950"
+                >
+                  <VchLoader :width="200" />
+                  <p class="mt-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                    Loading your tracker...
+                  </p>
+                </div>
+
+                <div
+                  v-else-if="trackedConditionsLoadError && !homeConditions.length"
+                  key="home-load-error"
+                  class="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-50 px-6 text-center dark:bg-slate-950"
+                >
+                  <UIcon name="i-lucide-triangle-alert" class="size-10 text-amber-500" />
+                  <h3 class="mt-4 text-lg font-bold text-slate-950 dark:text-white">
+                    Tracker didn't load
+                  </h3>
+                  <p class="mt-2 max-w-xs text-sm leading-6 text-slate-600 dark:text-slate-300">
+                    {{ trackedConditionsLoadError || 'Something went wrong while loading your account.' }}
+                  </p>
+                  <div class="mt-5 flex w-full max-w-xs flex-col gap-2">
+                    <button
+                      type="button"
+                      class="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-bold text-white dark:bg-white dark:text-slate-950"
+                      @click="retryHomeLoad"
+                    >
+                      Try again
+                    </button>
+                    <button
+                      type="button"
+                      class="rounded-2xl bg-slate-200 px-4 py-3 text-sm font-bold text-slate-950 dark:bg-slate-800 dark:text-white"
+                      @click="reloadAppPage"
+                    >
+                      Refresh page
+                    </button>
+                  </div>
+                </div>
+
+                <div
                   v-else-if="homeConditions.length"
                   key="home-carousel"
                   ref="homeCarouselStageEl"
@@ -1091,6 +1132,36 @@
                       @click="openConditionBrowser"
                     >
                       Browse conditions
+                    </button>
+                  </div>
+                </div>
+
+                <div
+                  v-else
+                  key="home-fallback"
+                  class="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-50 px-6 text-center dark:bg-slate-950"
+                >
+                  <UIcon name="i-lucide-circle-alert" class="size-10 text-amber-500" />
+                  <h3 class="mt-4 text-lg font-bold text-slate-950 dark:text-white">
+                    Something didn't load right
+                  </h3>
+                  <p class="mt-2 max-w-xs text-sm leading-6 text-slate-600 dark:text-slate-300">
+                    The tracker hit an unexpected state. Refresh the page or try again in a moment.
+                  </p>
+                  <div class="mt-5 flex w-full max-w-xs flex-col gap-2">
+                    <button
+                      type="button"
+                      class="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-bold text-white dark:bg-white dark:text-slate-950"
+                      @click="retryHomeLoad"
+                    >
+                      Try again
+                    </button>
+                    <button
+                      type="button"
+                      class="rounded-2xl bg-slate-200 px-4 py-3 text-sm font-bold text-slate-950 dark:bg-slate-800 dark:text-white"
+                      @click="reloadAppPage"
+                    >
+                      Refresh page
                     </button>
                   </div>
                 </div>
@@ -2131,6 +2202,8 @@ const {
   needsOnboarding,
   trackedConditionCount,
   hasLoadedTrackedConditions,
+  isLoading: isLoadingTrackedConditions,
+  loadError: trackedConditionsLoadError,
   loadTrackedConditions,
   completeOnboarding,
   updateTrackedConditions
@@ -4135,6 +4208,26 @@ async function refreshTrackedConditions() {
 
   if (needsOnboarding.value) {
     draftSelectedKeys.value = [...trackedConditionKeys.value]
+  }
+}
+
+async function retryHomeLoad() {
+  entriesError.value = ''
+
+  try {
+    await refreshTrackedConditions()
+
+    if (user.value) {
+      await loadEntries()
+    }
+  } catch (error) {
+    entriesError.value = getErrorMessage(error)
+  }
+}
+
+function reloadAppPage() {
+  if (import.meta.client) {
+    window.location.reload()
   }
 }
 
