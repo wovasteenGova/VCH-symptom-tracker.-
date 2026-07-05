@@ -182,11 +182,18 @@
 
             <button
               type="button"
-              class="grid size-10 place-items-center rounded-full bg-white text-slate-950 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-100 dark:bg-slate-900 dark:text-white dark:ring-slate-800 dark:hover:bg-slate-800"
+              class="relative grid size-10 place-items-center rounded-full bg-white text-slate-950 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-100 dark:bg-slate-900 dark:text-white dark:ring-slate-800 dark:hover:bg-slate-800"
               :aria-label="user ? 'Open account' : 'Sign in'"
               @click="handleProfileClick"
             >
-              <UIcon :name="user ? 'i-lucide-user-check' : 'i-lucide-user-round'" class="size-5" />
+              <UIcon name="i-lucide-user-round" class="size-5" />
+              <span
+                v-if="user"
+                class="absolute -right-0.5 -top-0.5 grid size-[0.825rem] place-items-center rounded-full bg-slate-950 ring-[1.5px] ring-white dark:bg-black dark:ring-slate-900"
+                aria-hidden="true"
+              >
+                <UIcon name="i-lucide-check" class="size-[0.55rem] text-emerald-400" />
+              </span>
             </button>
           </div>
         </div>
@@ -871,6 +878,7 @@
           >
             <div
               class="relative min-h-0 w-full flex-1 overflow-hidden rounded-[1.75rem]"
+              :class="{ 'is-home-morph-active': homeSharedTransitionActive }"
             >
               <Transition name="home-state-fade">
                 <ConditionBrowser
@@ -897,25 +905,31 @@
                   :class="[
                     isHomeOverviewSlide ? 'is-overview justify-start' : 'is-condition',
                     homeSharedTransitionActive ? 'is-shared-transition' : '',
-                    homeSharedTransitionActive ? `is-shared-${transitionDirection}` : ''
+                    homeSharedTransitionActive ? `is-shared-${transitionDirection}` : '',
+                    homeHeroTitleRevealed ? 'is-hero-title-revealed' : ''
                   ]"
+                  :style="homeCarouselStageStyle"
                 >
                 <div ref="homeCarouselHeroEl" class="home-carousel-hero relative shrink-0 overflow-hidden">
                   <Transition :name="heroSlideTransitionName">
-                    <img
+                    <div
                       :key="`${activeIndex}-${activeCondition.key}`"
-                      :src="activeCondition.image"
-                      :alt="activeCondition.title"
-                      class="absolute inset-0 h-full w-full object-cover"
-                      :class="homeImageTransitionKey === activeCondition.key ? 'opacity-0' : ''"
+                      class="absolute inset-0"
                     >
-                  </Transition>
+                      <img
+                        :src="activeCondition.image"
+                        :alt="activeCondition.title"
+                        class="absolute inset-0 h-full w-full object-cover"
+                        :class="homeImageTransitionKey ? 'opacity-0' : ''"
+                      >
 
-                  <div class="home-carousel-hero-title pointer-events-none absolute inset-x-0 top-0 bg-linear-to-b from-black/70 via-black/20 to-transparent p-5 pb-10">
-                    <h2 class="text-2xl font-bold text-white">
-                      {{ activeCondition.title }}
-                    </h2>
-                  </div>
+                      <div class="home-carousel-hero-title pointer-events-none absolute inset-x-0 top-0 bg-linear-to-b from-black/70 via-black/20 to-transparent p-5 pb-10">
+                        <h2 class="text-2xl font-bold text-white">
+                          {{ activeCondition.title }}
+                        </h2>
+                      </div>
+                    </div>
+                  </Transition>
 
                   <button
                     v-if="!isHomeOverviewSlide"
@@ -952,8 +966,9 @@
                   </div>
 
                   <div
+                    ref="homeConditionsScrollEl"
                     data-home-conditions-scroll
-                    class="no-scrollbar max-h-[min(18rem,42vh)] overflow-y-auto px-2 pb-0"
+                    class="no-scrollbar min-h-0 flex-1 overflow-y-auto px-2 pb-0"
                     @scroll="handleConditionScroll"
                   >
                     <div class="space-y-1">
@@ -964,13 +979,15 @@
                         class="flex w-full items-center gap-3 rounded-2xl px-2 py-3 text-left transition hover:bg-slate-100 active:scale-[0.995] dark:hover:bg-slate-800/80"
                         @click="logHomeCondition(condition)"
                       >
-                        <img
-                          :ref="(el) => setHomeConditionImageRef(condition.key, el)"
-                          :src="condition.image"
-                          :alt="condition.title"
-                          class="size-16 shrink-0 rounded-2xl object-cover"
-                          :class="homeImageTransitionKey === condition.key ? 'opacity-0' : ''"
-                        >
+                        <span class="relative size-16 shrink-0">
+                          <img
+                            :ref="(el) => setHomeConditionImageRef(condition.key, el)"
+                            :src="condition.image"
+                            :alt="condition.title"
+                            class="size-16 shrink-0 rounded-2xl object-cover"
+                            :class="homeImageTransitionKey === condition.key ? 'opacity-0' : ''"
+                          >
+                        </span>
 
                         <span class="min-w-0 flex-1">
                           <span class="block text-lg font-bold leading-snug text-slate-950 dark:text-white">
@@ -1007,7 +1024,10 @@
                 <div
                   data-home-carousel-chrome
                   class="home-carousel-chrome shrink-0 px-2 pb-1"
-                  :class="{ 'is-chrome-retreat': homeChromeRetreat }"
+                  :class="{
+                    'is-chrome-retreat': homeChromeRetreat,
+                    'is-chrome-retreat-instant': homeChromeRetreatInstant
+                  }"
                 >
                   <div class="flex justify-center gap-2">
                     <button
@@ -1930,19 +1950,18 @@ const {
 } = useTrackedConditions()
 const { showSubmissionToast } = useSubmissionToast()
 
-const profileDisplayName = ref('')
-const profileDisplayNameReady = ref(false)
-const homeGreetingWord = ref<'Hello' | 'Hey'>('Hello')
+const profileDisplayName = useState('home-profile-display-name', () => '')
+const homeGreetingWord = useState<'Hello' | 'Hey' | ''>('home-greeting-word', () => '')
 
 type HomeTransitionDirection = 'expand' | 'collapse' | 'previous' | 'next'
 
 const HOME_TRANSITION = {
   ease: 'cubic-bezier(0.22, 1, 0.36, 1)',
-  // heroMs = flying image + grid morph
-  // chromeOutMs = tips/dots slide down in parallel with hero start
-  // chromeInMs = tips/dots slide back up after hero lands
-  expand: { heroMs: 680, chromeOutMs: 420, chromeInMs: 520, logDelayMs: 140 },
-  collapse: { heroMs: 600, chromeOutMs: 360, chromeInMs: 480, logDelayMs: 0 }
+  heroMorphEase: 'cubic-bezier(0.32, 0, 0.2, 1)',
+  chromeInEase: 'cubic-bezier(0.22, 1, 0.36, 1)',
+  // chromeRevealLeadMs: start slide-up before hero morph ends (0 = wait until morph finishes)
+  expand: { heroMs: 680, chromeInMs: 720, chromeRevealLeadMs: 0, logDelayMs: 140 },
+  collapse: { heroMs: 600, chromeInMs: 620, chromeRevealLeadMs: 0, logDelayMs: 0 }
 } as const
 
 function getHomeHeroTransitionMs(direction: 'expand' | 'collapse') {
@@ -1959,8 +1978,8 @@ function getHomeTransitionStyleVars(direction: HomeTransitionDirection | null) {
   if (direction !== 'expand' && direction !== 'collapse') {
     return {
       '--home-hero-ms': `${HOME_TRANSITION.expand.heroMs}ms`,
-      '--home-chrome-out-ms': `${HOME_TRANSITION.expand.chromeOutMs}ms`,
       '--home-chrome-in-ms': `${HOME_TRANSITION.expand.chromeInMs}ms`,
+      '--home-chrome-in-ease': HOME_TRANSITION.chromeInEase,
       '--home-ui-ms': `${HOME_TRANSITION.collapse.heroMs}ms`,
       '--home-log-ms': `${HOME_TRANSITION.collapse.heroMs}ms`,
       '--home-log-delay-ms': '0ms',
@@ -1972,8 +1991,8 @@ function getHomeTransitionStyleVars(direction: HomeTransitionDirection | null) {
 
   return {
     '--home-hero-ms': `${timing.heroMs}ms`,
-    '--home-chrome-out-ms': `${timing.chromeOutMs}ms`,
     '--home-chrome-in-ms': `${timing.chromeInMs}ms`,
+    '--home-chrome-in-ease': HOME_TRANSITION.chromeInEase,
     '--home-ui-ms': `${timing.heroMs}ms`,
     '--home-log-ms': `${timing.heroMs}ms`,
     '--home-log-delay-ms': `${direction === 'expand' ? timing.logDelayMs : 0}ms`,
@@ -1989,15 +2008,41 @@ const homeTransitionStyleVars = computed(() => {
   return getHomeTransitionStyleVars(null)
 })
 
+const homeCarouselStageStyle = computed(() => {
+  const lock = homeCollapseLayoutLock.value
+
+  if (!lock || !homeSharedTransitionActive.value || transitionDirection.value !== 'collapse') {
+    return {}
+  }
+
+  return {
+    '--home-overview-locked-h': `${lock.overviewPx}px`,
+    '--home-conditions-scroll-locked-h': `${lock.scrollPx}px`,
+    '--home-chrome-locked-h': `${lock.chromePx}px`
+  }
+})
+
 const activeIndex = ref(0)
 const homeChromeRetreat = ref(false)
+const homeChromeRetreatInstant = ref(false)
+const homeHeroTitleRevealed = ref(true)
 let homeChromeRevealTimer: ReturnType<typeof setTimeout> | undefined
 const homeSharedTransitionActive = ref(false)
 let homeSharedTransitionToken = 0
 let homeSharedTransitionTimer: ReturnType<typeof setTimeout> | undefined
+let homeImageMorphTimer: ReturnType<typeof setTimeout> | undefined
+let homeHeroTitleRevealTimer: ReturnType<typeof setTimeout> | undefined
+let homeImageMorphFrame: number | undefined
 const homeCarouselStageEl = ref<HTMLElement | null>(null)
 const homeCarouselHeroEl = ref<HTMLElement | null>(null)
 const homeCarouselOverviewEl = ref<HTMLElement | null>(null)
+const homeConditionsScrollEl = ref<HTMLElement | null>(null)
+const homeOverviewHeaderHeightPx = ref(0)
+const homeCollapseLayoutLock = ref<{
+  overviewPx: number
+  scrollPx: number
+  chromePx: number
+} | null>(null)
 const homeImageTransitionKey = ref('')
 const homeImageTransitionImage = ref('')
 const homeImageTransitionAlt = ref('')
@@ -2591,6 +2636,14 @@ const calendarDays = computed(() => {
 
 const isHomeOverviewSlide = computed(() => activeIndex.value === 0)
 
+watch([isHomeOverviewSlide, homeSharedTransitionActive], ([onOverview, transitioning]) => {
+  if (onOverview && !transitioning) {
+    nextTick(() => {
+      rememberHomeOverviewHeaderHeight()
+    })
+  }
+})
+
 const heroSlideTransitionName = computed(() => {
   if (
     homeSharedTransitionActive.value
@@ -2599,11 +2652,7 @@ const heroSlideTransitionName = computed(() => {
     return 'hero-shared'
   }
 
-  if (transitionDirection.value === 'previous') {
-    return 'hero-previous'
-  }
-
-  return 'hero-next'
+  return 'hero-carousel'
 })
 
 const carouselWorkspaceClass = computed(() => {
@@ -2674,22 +2723,31 @@ const entryTitle = computed(() => {
 
   return activeCondition.value?.title || 'Custom condition'
 })
+function resolveHomeGreetingFirstName() {
+  if (!user.value) {
+    return ''
+  }
+
+  const metadataName = typeof user.value.user_metadata?.full_name === 'string'
+    ? user.value.user_metadata.full_name.trim()
+    : ''
+
+  return (profileDisplayName.value || metadataName).trim().split(/\s+/)[0] || ''
+}
+
 const homeGreetingLine = computed(() => {
   if (!user.value) {
     return 'Today'
   }
 
-  if (!profileDisplayNameReady.value) {
-    return homeGreetingWord.value
-  }
-
-  const firstName = profileDisplayName.value.trim().split(/\s+/)[0]
+  const firstName = resolveHomeGreetingFirstName()
+  const greetingWord = homeGreetingWord.value || 'Hello'
 
   if (!firstName) {
-    return homeGreetingWord.value
+    return greetingWord
   }
 
-  return `${homeGreetingWord.value}, ${firstName}`
+  return `${greetingWord}, ${firstName}`
 })
 const freeConditionLabels = computed(() => {
   return freeConditionKeys.value.map((key) => {
@@ -3144,7 +3202,9 @@ onBeforeMount(() => {
 })
 
 onMounted(async () => {
-  homeGreetingWord.value = Math.random() < 0.5 ? 'Hello' : 'Hey'
+  if (!homeGreetingWord.value) {
+    homeGreetingWord.value = Math.random() < 0.5 ? 'Hello' : 'Hey'
+  }
   setupInstallCard()
   await loadAppWelcomeState()
 
@@ -3186,7 +3246,6 @@ watch(user, async (currentUser) => {
   }
 
   profileDisplayName.value = ''
-  profileDisplayNameReady.value = false
   savedEntries.value = []
   closeEntryPanel(true, true)
   refreshEntryDraftPreview()
@@ -3276,24 +3335,28 @@ watch(trackedConditionKeys, (keys) => {
 async function loadProfileDisplayName() {
   if (!user.value) {
     profileDisplayName.value = ''
-    profileDisplayNameReady.value = false
     return
   }
 
-  profileDisplayNameReady.value = false
+  const metadataName = typeof user.value.user_metadata?.full_name === 'string'
+    ? user.value.user_metadata.full_name.trim()
+    : ''
+
+  if (metadataName && !profileDisplayName.value) {
+    profileDisplayName.value = metadataName
+  }
 
   try {
     const profile = await getProfile()
-    profileDisplayName.value = profile?.full_name?.trim()
-      || (typeof user.value.user_metadata?.full_name === 'string'
-        ? user.value.user_metadata.full_name.trim()
-        : '')
+    const resolved = profile?.full_name?.trim() || metadataName
+
+    if (resolved) {
+      profileDisplayName.value = resolved
+    }
   } catch {
-    profileDisplayName.value = typeof user.value.user_metadata?.full_name === 'string'
-      ? user.value.user_metadata.full_name.trim()
-      : ''
-  } finally {
-    profileDisplayNameReady.value = true
+    if (metadataName && !profileDisplayName.value) {
+      profileDisplayName.value = metadataName
+    }
   }
 }
 
@@ -4347,23 +4410,85 @@ function resolveSharedHomeTransitionKey(nextIndex: number, currentIndex: number)
   return ''
 }
 
+function clearHomeImageOverlay(token: number) {
+  if (token !== homeSharedTransitionToken) {
+    return
+  }
+
+  homeImageTransitionKey.value = ''
+  homeImageTransitionImage.value = ''
+  homeImageTransitionAlt.value = ''
+  homeImageTransitionStyle.value = {}
+}
+
+function clearHomeMorphTimers() {
+  cancelHomeImageMorphFrame()
+
+  if (homeImageMorphTimer) {
+    clearTimeout(homeImageMorphTimer)
+    homeImageMorphTimer = undefined
+  }
+
+  if (homeHeroTitleRevealTimer) {
+    clearTimeout(homeHeroTitleRevealTimer)
+    homeHeroTitleRevealTimer = undefined
+  }
+}
+
+function cancelHomeImageMorphFrame() {
+  if (homeImageMorphFrame !== undefined) {
+    cancelAnimationFrame(homeImageMorphFrame)
+    homeImageMorphFrame = undefined
+  }
+}
+
 function cleanupHomeSharedTransition(token: number) {
   if (token !== homeSharedTransitionToken) {
     return
   }
 
   clearHomeChromeRevealTimer()
+  clearHomeMorphTimers()
+  homeChromeRetreatInstant.value = false
   homeChromeRetreat.value = false
+  homeHeroTitleRevealed.value = true
   homeSharedTransitionActive.value = false
-  homeImageTransitionKey.value = ''
-  homeImageTransitionImage.value = ''
-  homeImageTransitionAlt.value = ''
-  homeImageTransitionStyle.value = {}
+  homeCollapseLayoutLock.value = null
+  clearHomeImageOverlay(token)
 
   if (homeSharedTransitionTimer) {
     clearTimeout(homeSharedTransitionTimer)
     homeSharedTransitionTimer = undefined
   }
+
+  nextTick(() => {
+    rememberHomeOverviewHeaderHeight()
+  })
+}
+
+function rememberHomeOverviewHeaderHeight() {
+  const header = homeCarouselOverviewEl.value?.querySelector('[data-home-overview-header]')
+
+  if (header instanceof HTMLElement && header.offsetHeight > 0) {
+    homeOverviewHeaderHeightPx.value = header.offsetHeight
+  }
+}
+
+function captureHomeCollapseLayoutLock() {
+  const stage = homeCarouselStageEl.value
+  const chrome = stage?.querySelector('[data-home-carousel-chrome]')
+
+  if (!stage || !(chrome instanceof HTMLElement)) {
+    return null
+  }
+
+  const stageHeight = stage.getBoundingClientRect().height
+  const chromePx = chrome.getBoundingClientRect().height
+  const overviewPx = Math.max(0, stageHeight - chromePx)
+  const headerPx = homeOverviewHeaderHeightPx.value || 52
+  const scrollPx = Math.max(0, overviewPx - headerPx)
+
+  return { overviewPx, scrollPx, chromePx }
 }
 
 function clearHomeChromeRevealTimer() {
@@ -4375,9 +4500,21 @@ function clearHomeChromeRevealTimer() {
 
 function scheduleHomeChromeSequence(direction: 'expand' | 'collapse', token: number) {
   clearHomeChromeRevealTimer()
+  homeChromeRetreatInstant.value = true
   homeChromeRetreat.value = true
 
-  const heroMs = HOME_TRANSITION[direction].heroMs
+  if (import.meta.client) {
+    requestAnimationFrame(() => {
+      if (token !== homeSharedTransitionToken) {
+        return
+      }
+
+      homeChromeRetreatInstant.value = false
+    })
+  }
+
+  const { heroMs, chromeRevealLeadMs } = HOME_TRANSITION[direction]
+  const revealDelayMs = Math.max(0, heroMs - chromeRevealLeadMs)
 
   homeChromeRevealTimer = setTimeout(() => {
     if (token !== homeSharedTransitionToken) {
@@ -4386,7 +4523,7 @@ function scheduleHomeChromeSequence(direction: 'expand' | 'collapse', token: num
 
     homeChromeRetreat.value = false
     homeChromeRevealTimer = undefined
-  }, heroMs)
+  }, revealDelayMs)
 }
 
 function prefersReducedHomeMotion() {
@@ -4449,12 +4586,18 @@ function getHomeHeroExpandedTargetRect() {
 }
 
 function getHomeOverviewThumbnailTargetRect(key: string) {
+  const thumbRect = homeConditionImageEls.get(key)?.getBoundingClientRect()
+
+  if (thumbRect && thumbRect.width > 0) {
+    return thumbRect
+  }
+
   const stageRect = homeCarouselStageEl.value?.getBoundingClientRect()
   const overviewEl = homeCarouselOverviewEl.value
   const headerEl = overviewEl?.querySelector('[data-home-overview-header]')
 
   if (!stageRect || !(headerEl instanceof HTMLElement)) {
-    return homeConditionImageEls.get(key)?.getBoundingClientRect() ?? null
+    return null
   }
 
   const conditionIndex = Math.max(0, homeConditions.value.findIndex((condition) => condition.key === key))
@@ -4463,38 +4606,238 @@ function getHomeOverviewThumbnailTargetRect(key: string) {
   const rowGap = 0.25 * rootFontSize
   const rowPaddingY = 0.75 * rootFontSize
   const rowHeight = thumbnailSize + (rowPaddingY * 2)
+  const scrollTop = homeConditionsScrollEl.value?.scrollTop ?? 0
   const x = stageRect.left + rootFontSize
-  const y = stageRect.top + headerEl.offsetHeight + (conditionIndex * (rowHeight + rowGap)) + rowPaddingY
+  const y = stageRect.top + headerEl.offsetHeight + (conditionIndex * (rowHeight + rowGap)) + rowPaddingY - scrollTop
 
   return new DOMRect(x, y, thumbnailSize, thumbnailSize)
 }
 
-function getHomeImageTransitionStyle(
-  fromRect: DOMRect,
-  toRect: DOMRect,
-  animated = false,
-  direction: 'expand' | 'collapse' = 'expand'
+function isHomeConditionThumbnailFullyVisible(conditionKey: string) {
+  const scrollEl = homeConditionsScrollEl.value
+  const thumbEl = homeConditionImageEls.get(conditionKey)
+
+  if (!scrollEl || !thumbEl) {
+    return true
+  }
+
+  const scrollRect = scrollEl.getBoundingClientRect()
+  const thumbRect = thumbEl.getBoundingClientRect()
+  const padding = 4
+
+  return thumbRect.top >= scrollRect.top - padding
+    && thumbRect.bottom <= scrollRect.bottom + padding
+}
+
+async function ensureHomeConditionThumbnailInView(
+  conditionKey: string,
+  options: { force?: boolean } = {}
 ) {
-  const translateX = toRect.left - fromRect.left
-  const translateY = toRect.top - fromRect.top
-  const scaleX = toRect.width / Math.max(fromRect.width, 1)
-  const scaleY = toRect.height / Math.max(fromRect.height, 1)
-  const durationMs = getHomeHeroTransitionMs(direction)
+  if (!import.meta.client) {
+    return
+  }
+
+  const scrollEl = homeConditionsScrollEl.value
+  const thumbEl = homeConditionImageEls.get(conditionKey)
+
+  if (!scrollEl || !thumbEl) {
+    return
+  }
+
+  if (!options.force && isHomeConditionThumbnailFullyVisible(conditionKey)) {
+    return
+  }
+
+  const conditionIndex = homeConditions.value.findIndex((item) => item.key === conditionKey)
+  const isLast = conditionIndex === homeConditions.value.length - 1
+
+  if (isLast) {
+    scrollEl.scrollTop = scrollEl.scrollHeight
+  } else {
+    thumbEl.scrollIntoView({
+      block: 'nearest',
+      inline: 'nearest',
+      behavior: 'auto'
+    })
+  }
+
+  await nextTick()
+  await waitForAnimationFrame()
+  await waitForAnimationFrame()
+}
+
+const HOME_HERO_RADIUS = '1.75rem'
+const HOME_THUMB_RADIUS = '1rem'
+
+function parseHomeRadiusPx(radius: string) {
+  if (!import.meta.client) {
+    return 16
+  }
+
+  const rootFontSize = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
+
+  if (radius.endsWith('rem')) {
+    return Number.parseFloat(radius) * rootFontSize
+  }
+
+  return Number.parseFloat(radius)
+}
+
+function lerpMorphValue(from: number, to: number, progress: number) {
+  return from + ((to - from) * progress)
+}
+
+function easeHomeMorph(progress: number) {
+  const p = Math.min(1, Math.max(0, progress))
+  // Quadratic ease-out — lands cleanly without the end crawl of cubic ease-out
+  return 1 - ((1 - p) ** 2)
+}
+
+function easeHomeMorphRadius(progress: number) {
+  return Math.min(1, easeHomeMorph(progress) / 0.4)
+}
+
+/** Corner-anchored box morph — not uniform rect lerp (which drags top edges downward). */
+function interpolateMorphRect(
+  from: DOMRect,
+  to: DOMRect,
+  moveProgress: number,
+  direction: 'expand' | 'collapse'
+) {
+  if (direction === 'expand') {
+    // Top-left pinned early: grow up + right from thumbnail corner, then travel to hero slot
+    const sizeProgress = easeHomeMorph(Math.min(1, moveProgress / 0.58))
+    const positionProgress = easeHomeMorph(Math.max(0, (moveProgress - 0.24) / 0.76))
+
+    return {
+      left: lerpMorphValue(from.left, to.left, positionProgress),
+      top: lerpMorphValue(from.top, to.top, positionProgress),
+      width: lerpMorphValue(from.width, to.width, sizeProgress),
+      height: lerpMorphValue(from.height, to.height, sizeProgress)
+    }
+  }
+
+  // Collapse: bottom-right corner leads — shrink up-left into list thumbnail
+  const width = lerpMorphValue(from.width, to.width, moveProgress)
+  const height = lerpMorphValue(from.height, to.height, moveProgress)
+  const right = lerpMorphValue(from.right, to.right, moveProgress)
+  const bottom = lerpMorphValue(from.bottom, to.bottom, moveProgress)
+
+  return {
+    left: right - width,
+    top: bottom - height,
+    width,
+    height
+  }
+}
+
+function getLiveMorphTargetRect(
+  direction: 'expand' | 'collapse',
+  conditionKey: string,
+  fallback: DOMRect
+) {
+  if (direction === 'expand') {
+    const heroRect = homeCarouselHeroEl.value?.getBoundingClientRect()
+
+    if (heroRect && heroRect.width > 0 && heroRect.height > 4) {
+      return heroRect
+    }
+
+    return getHomeHeroExpandedTargetRect() ?? fallback
+  }
+
+  const thumbRect = homeConditionImageEls.get(conditionKey)?.getBoundingClientRect()
+
+  if (thumbRect && thumbRect.width > 0) {
+    return thumbRect
+  }
+
+  return fallback
+}
+
+function getHomeImageMorphStartStyle(fromRect: DOMRect, direction: 'expand' | 'collapse') {
+  const fromRadius = direction === 'expand' ? HOME_THUMB_RADIUS : HOME_HERO_RADIUS
 
   return {
     left: `${fromRect.left}px`,
     top: `${fromRect.top}px`,
     width: `${fromRect.width}px`,
     height: `${fromRect.height}px`,
-    transform: animated
-      ? `translate3d(${translateX}px, ${translateY}px, 0) scale(${scaleX}, ${scaleY})`
-      : 'translate3d(0, 0, 0) scale(1, 1)',
-    transformOrigin: 'top left',
-    borderRadius: animated ? '1.75rem' : '1rem',
-    transition: animated
-      ? `transform ${durationMs}ms ${HOME_TRANSITION.ease}, border-radius ${durationMs}ms ${HOME_TRANSITION.ease}`
-      : 'none'
+    transform: 'none',
+    borderRadius: fromRadius,
+    transition: 'none'
   }
+}
+
+function runHomeImageMorphRaf(
+  fromRect: DOMRect,
+  toRect: DOMRect,
+  direction: 'expand' | 'collapse',
+  conditionKey: string,
+  token: number
+) {
+  clearHomeMorphTimers()
+
+  const durationMs = getHomeHeroTransitionMs(direction)
+  const fromRadiusPx = parseHomeRadiusPx(direction === 'expand' ? HOME_THUMB_RADIUS : HOME_HERO_RADIUS)
+  const toRadiusPx = parseHomeRadiusPx(direction === 'expand' ? HOME_HERO_RADIUS : HOME_THUMB_RADIUS)
+  const startedAt = performance.now()
+  const lockedCollapseTarget = direction === 'collapse' ? toRect : null
+
+  homeHeroTitleRevealTimer = setTimeout(() => {
+    if (token !== homeSharedTransitionToken) {
+      return
+    }
+
+    homeHeroTitleRevealed.value = true
+    homeHeroTitleRevealTimer = undefined
+  }, Math.max(0, durationMs - 160))
+
+  function resolveMorphTarget() {
+    if (lockedCollapseTarget) {
+      return lockedCollapseTarget
+    }
+
+    return getLiveMorphTargetRect(direction, conditionKey, toRect)
+  }
+
+  function applyMorphBox(target: DOMRect, moveProgress: number, radiusProgress: number) {
+    const box = interpolateMorphRect(fromRect, target, moveProgress, direction)
+
+    homeImageTransitionStyle.value = {
+      left: `${box.left}px`,
+      top: `${box.top}px`,
+      width: `${box.width}px`,
+      height: `${box.height}px`,
+      transform: 'none',
+      borderRadius: `${lerpMorphValue(fromRadiusPx, toRadiusPx, radiusProgress)}px`,
+      transition: 'none'
+    }
+  }
+
+  function tick(now: number) {
+    if (token !== homeSharedTransitionToken) {
+      return
+    }
+
+    const rawProgress = Math.min(1, (now - startedAt) / durationMs)
+    const moveProgress = easeHomeMorph(rawProgress)
+    const radiusProgress = easeHomeMorphRadius(rawProgress)
+    const target = resolveMorphTarget()
+
+    applyMorphBox(target, moveProgress, radiusProgress)
+
+    if (rawProgress < 1) {
+      homeImageMorphFrame = requestAnimationFrame(tick)
+      return
+    }
+
+    applyMorphBox(target, 1, 1)
+    clearHomeImageOverlay(token)
+    homeImageMorphFrame = undefined
+  }
+
+  homeImageMorphFrame = requestAnimationFrame(tick)
 }
 
 function waitForAnimationFrame() {
@@ -4513,23 +4856,78 @@ async function animateHomeSlideChange(nextIndex: number, sharedConditionKey: str
   }
 
   clearHomeChromeRevealTimer()
+  clearHomeMorphTimers()
 
   const currentIndex = activeIndex.value
-  homeSharedTransitionActive.value = Boolean(sharedConditionKey)
+  const isExpandingFromOverview = currentIndex === 0 && nextIndex > 0
+  const isCollapsingToOverview = currentIndex > 0 && nextIndex === 0
+  const collapseHeroSourceRect = isCollapsingToOverview
+    ? homeCarouselHeroEl.value?.getBoundingClientRect()
+    : null
 
   if (!sharedConditionKey || !import.meta.client || prefersReducedHomeMotion()) {
     homeChromeRetreat.value = false
+    homeHeroTitleRevealed.value = true
     activeIndex.value = nextIndex
     cleanupHomeSharedTransition(token)
     return
   }
 
+  homeHeroTitleRevealed.value = false
+
   const condition = homeConditions.value.find((item) => item.key === sharedConditionKey)
-  const isExpandingFromOverview = currentIndex === 0 && nextIndex > 0
-  const isCollapsingToOverview = currentIndex > 0 && nextIndex === 0
   const sharedDirection: 'expand' | 'collapse' = isCollapsingToOverview ? 'collapse' : 'expand'
   const transitionTiming = HOME_TRANSITION[sharedDirection]
+
+  if (isCollapsingToOverview) {
+    homeCollapseLayoutLock.value = captureHomeCollapseLayoutLock()
+    homeSharedTransitionActive.value = true
+    scheduleHomeChromeSequence(sharedDirection, token)
+    activeIndex.value = nextIndex
+    await nextTick()
+    await ensureHomeConditionThumbnailInView(sharedConditionKey, { force: true })
+    await waitForAnimationFrame()
+    await waitForAnimationFrame()
+
+    if (token !== homeSharedTransitionToken || !collapseHeroSourceRect || !condition) {
+      return
+    }
+
+    const targetRect = getHomeOverviewThumbnailTargetRect(sharedConditionKey)
+
+    if (!targetRect) {
+      homeChromeRetreat.value = false
+      cleanupHomeSharedTransition(token)
+      return
+    }
+
+    homeImageTransitionKey.value = sharedConditionKey
+    homeImageTransitionImage.value = condition.image
+    homeImageTransitionAlt.value = condition.title
+    homeImageTransitionStyle.value = getHomeImageMorphStartStyle(collapseHeroSourceRect, sharedDirection)
+
+    await nextTick()
+    await waitForAnimationFrame()
+
+    if (token !== homeSharedTransitionToken) {
+      return
+    }
+
+    runHomeImageMorphRaf(collapseHeroSourceRect, targetRect, sharedDirection, sharedConditionKey, token)
+    homeSharedTransitionTimer = setTimeout(
+      () => cleanupHomeSharedTransition(token),
+      transitionTiming.heroMs + transitionTiming.chromeInMs + 32
+    )
+    return
+  }
+
+  homeSharedTransitionActive.value = true
   scheduleHomeChromeSequence(sharedDirection, token)
+
+  if (isExpandingFromOverview) {
+    await ensureHomeConditionThumbnailInView(sharedConditionKey)
+  }
+
   const sourceRect = currentIndex === 0
     ? homeConditionImageEls.get(sharedConditionKey)?.getBoundingClientRect()
     : homeCarouselHeroEl.value?.getBoundingClientRect()
@@ -4541,10 +4939,18 @@ async function animateHomeSlideChange(nextIndex: number, sharedConditionKey: str
     return
   }
 
+  // Show the flying image at the thumbnail/hero rect before the grid morph runs.
   homeImageTransitionKey.value = sharedConditionKey
   homeImageTransitionImage.value = condition.image
   homeImageTransitionAlt.value = condition.title
-  homeImageTransitionStyle.value = getHomeImageTransitionStyle(sourceRect, sourceRect)
+  homeImageTransitionStyle.value = getHomeImageMorphStartStyle(sourceRect, sharedDirection)
+
+  await nextTick()
+  await waitForAnimationFrame()
+
+  if (token !== homeSharedTransitionToken) {
+    return
+  }
 
   activeIndex.value = nextIndex
   await nextTick()
@@ -4556,9 +4962,7 @@ async function animateHomeSlideChange(nextIndex: number, sharedConditionKey: str
 
   const targetRect = currentIndex === 0
     ? (isExpandingFromOverview ? getHomeHeroExpandedTargetRect() : getHomeHeroTargetRect())
-    : (isCollapsingToOverview
-        ? getHomeOverviewThumbnailTargetRect(sharedConditionKey)
-        : homeConditionImageEls.get(sharedConditionKey)?.getBoundingClientRect())
+    : homeConditionImageEls.get(sharedConditionKey)?.getBoundingClientRect()
 
   if (!targetRect) {
     homeChromeRetreat.value = false
@@ -4566,10 +4970,10 @@ async function animateHomeSlideChange(nextIndex: number, sharedConditionKey: str
     return
   }
 
-  homeImageTransitionStyle.value = getHomeImageTransitionStyle(sourceRect, targetRect, true, sharedDirection)
+  runHomeImageMorphRaf(sourceRect, targetRect, sharedDirection, sharedConditionKey, token)
   homeSharedTransitionTimer = setTimeout(
     () => cleanupHomeSharedTransition(token),
-    transitionTiming.heroMs + transitionTiming.chromeInMs + 48
+    transitionTiming.heroMs + transitionTiming.chromeInMs + 32
   )
 }
 
@@ -5678,11 +6082,22 @@ function handleEntryPrimaryAction() {
     background-color var(--home-ui-ms, 650ms) var(--home-ease, cubic-bezier(0.22, 1, 0.36, 1));
 }
 
-.hero-next-enter-active,
-.hero-next-leave-active,
-.hero-previous-enter-active,
-.hero-previous-leave-active {
-  transition: opacity 250ms ease-out;
+.hero-carousel-enter-active,
+.hero-carousel-leave-active {
+  transition: opacity 360ms var(--home-ease, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+.hero-carousel-leave-active {
+  z-index: 1;
+}
+
+.hero-carousel-enter-active {
+  z-index: 2;
+}
+
+.hero-carousel-enter-from,
+.hero-carousel-leave-to {
+  opacity: 0;
 }
 
 .hero-shared-enter-active,
@@ -5697,18 +6112,19 @@ function handleEntryPrimaryAction() {
   opacity: 1;
 }
 
-.hero-next-enter-from,
-.hero-next-leave-to,
-.hero-previous-enter-from,
-.hero-previous-leave-to {
-  opacity: 0;
-}
-
 .home-carousel-stage {
   display: grid;
   grid-template-rows: 0fr auto auto;
   align-content: start;
+}
+
+.home-carousel-stage.is-shared-transition {
   transition: grid-template-rows var(--home-hero-ms, 680ms) var(--home-ease, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+.home-carousel-stage.is-overview {
+  grid-template-rows: 0fr minmax(0, 1fr) auto;
+  align-content: stretch;
 }
 
 .home-carousel-stage.is-condition {
@@ -5723,53 +6139,108 @@ function handleEntryPrimaryAction() {
   border-radius: 1.75rem;
 }
 
+.is-home-morph-active {
+  border-radius: 0;
+  overflow: visible;
+}
+
+.home-carousel-stage.is-shared-transition.is-shared-collapse {
+  transition: none;
+  grid-template-rows: 0fr var(--home-overview-locked-h, minmax(0, 1fr)) var(--home-chrome-locked-h, auto);
+  align-content: stretch;
+}
+
+.home-carousel-stage.is-shared-collapse .home-carousel-overview {
+  opacity: 1;
+  align-self: stretch;
+  pointer-events: none;
+  height: var(--home-overview-locked-h, auto);
+  min-height: var(--home-overview-locked-h, 0);
+  max-height: var(--home-overview-locked-h, none);
+}
+
+.home-carousel-stage.is-shared-collapse [data-home-conditions-scroll] {
+  flex: none;
+  height: var(--home-conditions-scroll-locked-h, auto);
+  min-height: 0;
+  max-height: var(--home-conditions-scroll-locked-h, none);
+}
+
+.home-carousel-stage.is-shared-collapse .home-carousel-chrome {
+  height: var(--home-chrome-locked-h, auto);
+  min-height: var(--home-chrome-locked-h, auto);
+  max-height: var(--home-chrome-locked-h, none);
+  box-sizing: border-box;
+}
+
+.home-carousel-stage.is-shared-collapse .home-carousel-hero {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.home-carousel-stage.is-shared-transition .home-carousel-hero {
+  border-radius: 0;
+  background: transparent;
+}
+
 .home-image-transition {
   pointer-events: none;
   overflow: hidden;
   box-shadow: 0 1.5rem 3rem rgb(15 23 42 / 0.18);
-  will-change: transform, border-radius;
-  z-index: 70;
+  will-change: left, top, width, height, border-radius;
+  z-index: 80;
 }
 
 .home-carousel-hero-title {
+  position: relative;
+  z-index: 1;
   opacity: 0;
   transition:
-    opacity var(--home-ui-ms, 650ms) var(--home-ease, cubic-bezier(0.22, 1, 0.36, 1))
-    120ms;
+    opacity 240ms var(--home-ease, cubic-bezier(0.22, 1, 0.36, 1));
 }
 
 .home-carousel-stage.is-condition .home-carousel-hero-title {
   opacity: 1;
 }
 
+.home-carousel-stage.is-shared-transition .home-carousel-hero-title {
+  z-index: 90;
+  opacity: 0;
+}
+
+.home-carousel-stage.is-shared-transition.is-hero-title-revealed .home-carousel-hero-title {
+  opacity: 1;
+}
+
 .home-carousel-overview {
   min-height: 0;
-  align-self: start;
+  align-self: stretch;
   overflow: hidden;
   opacity: 1;
-  transition: opacity var(--home-ui-ms, 650ms) var(--home-ease, cubic-bezier(0.22, 1, 0.36, 1));
 }
 
 .home-carousel-stage.is-overview .home-carousel-overview {
   opacity: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .home-carousel-stage.is-overview [data-home-conditions-scroll] {
-  max-height: none;
-  overflow: visible;
+  min-height: 0;
+  flex: 1 1 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .home-carousel-stage.is-condition .home-carousel-overview {
   opacity: 0;
   pointer-events: none;
+  min-height: 0;
 }
 
 .home-carousel-stage.is-shared-transition .home-carousel-overview {
   transition: none;
-}
-
-.home-carousel-stage.is-shared-collapse .home-carousel-overview {
-  opacity: 1;
 }
 
 .home-carousel-chrome {
@@ -5781,23 +6252,24 @@ function handleEntryPrimaryAction() {
   padding-top: 1.5rem;
   opacity: 1;
   transform: translateY(0);
-  transition:
-    opacity var(--home-chrome-dur, 420ms) var(--home-ease, cubic-bezier(0.22, 1, 0.36, 1)),
-    transform var(--home-chrome-dur, 420ms) var(--home-ease, cubic-bezier(0.22, 1, 0.36, 1));
 }
 
-.home-carousel-chrome.is-chrome-retreat {
+.home-carousel-stage.is-shared-transition .home-carousel-chrome {
+  transition:
+    opacity var(--home-chrome-in-ms, 720ms) var(--home-chrome-in-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+    transform var(--home-chrome-in-ms, 720ms) var(--home-chrome-in-ease, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+.home-carousel-chrome.is-chrome-retreat,
+.home-carousel-chrome.is-chrome-retreat-instant {
   opacity: 0;
-  transform: translateY(1.75rem);
+  transform: translateY(1.125rem);
   pointer-events: none;
 }
 
+.home-carousel-chrome.is-chrome-retreat-instant,
 .home-carousel-stage.is-shared-transition .home-carousel-chrome.is-chrome-retreat {
-  --home-chrome-dur: var(--home-chrome-out-ms, 420ms);
-}
-
-.home-carousel-stage.is-shared-transition .home-carousel-chrome:not(.is-chrome-retreat) {
-  --home-chrome-dur: var(--home-chrome-in-ms, 520ms);
+  transition: none;
 }
 
 .home-tip-fade-enter-active,
@@ -5817,10 +6289,8 @@ function handleEntryPrimaryAction() {
 @media (prefers-reduced-motion: reduce) {
   .home-state-fade-enter-active,
   .home-state-fade-leave-active,
-  .hero-next-enter-active,
-  .hero-next-leave-active,
-  .hero-previous-enter-active,
-  .hero-previous-leave-active,
+  .hero-carousel-enter-active,
+  .hero-carousel-leave-active,
   .home-carousel-dot,
   .home-carousel-stage,
   .home-carousel-hero,
