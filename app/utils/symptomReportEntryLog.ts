@@ -1,5 +1,4 @@
 import type { jsPDF } from 'jspdf'
-import { drawSectionTitle } from './symptomReportCharts'
 import {
   formatReportEntryTimestamp,
   getEntryBackdateNote,
@@ -20,10 +19,13 @@ export type ReportEntryRecord = {
 }
 
 const slate900 = [15, 23, 42] as const
+const slate800 = [30, 41, 59] as const
 const slate700 = [51, 65, 85] as const
 const slate500 = [100, 116, 139] as const
 const slate200 = [226, 232, 240] as const
+const slate100 = [241, 245, 249] as const
 const slate50 = [248, 250, 252] as const
+const sky600 = [2, 132, 199] as const
 const amber200 = [251, 191, 36] as const
 const amber50 = [255, 251, 235] as const
 const amber900 = [120, 53, 15] as const
@@ -150,6 +152,86 @@ function normalizeDetailValue(value: unknown) {
 function wrapLines(doc: jsPDF, text: string, maxWidth: number, fontSize: number) {
   doc.setFontSize(fontSize)
   return doc.splitTextToSize(text, maxWidth) as string[]
+}
+
+function truncateText(doc: jsPDF, text: string, maxWidth: number) {
+  if (doc.getTextWidth(text) <= maxWidth) {
+    return text
+  }
+
+  let truncated = text
+
+  while (truncated.length > 1 && doc.getTextWidth(`${truncated}…`) > maxWidth) {
+    truncated = truncated.slice(0, -1)
+  }
+
+  return `${truncated.trimEnd()}…`
+}
+
+function buildConditionSourceSummary(entries: ReportEntryRecord[]) {
+  let veteranCount = 0
+  let familyCount = 0
+
+  for (const entry of entries) {
+    if (entry.source === 'family') {
+      familyCount += 1
+    } else {
+      veteranCount += 1
+    }
+  }
+
+  return { veteranCount, familyCount }
+}
+
+function formatConditionSourceSummary(veteranCount: number, familyCount: number) {
+  const parts: string[] = []
+
+  if (veteranCount) {
+    parts.push(`${veteranCount} veteran ${veteranCount === 1 ? 'log' : 'logs'}`)
+  }
+
+  if (familyCount) {
+    parts.push(`${familyCount} family ${familyCount === 1 ? 'observation' : 'observations'}`)
+  }
+
+  return parts.join(' · ')
+}
+
+function measureConditionIntroHeight(
+  doc: jsPDF,
+  width: number,
+  label: string,
+  statement: string,
+  sourceSummary: string
+) {
+  const padding = 16
+  const accentGap = 10
+  const contentWidth = width - padding * 2 - accentGap - 4
+  const titleWidth = contentWidth - 72
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(13)
+  const titleLines = wrapLines(doc, label, titleWidth, 13).length
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9)
+  const statementLines = statement
+    ? wrapLines(doc, statement, contentWidth - 20, 9.5).length
+    : 0
+
+  let height = padding + 10 + titleLines * 15 + 8
+
+  if (sourceSummary) {
+    height += 12
+  }
+
+  height += padding
+
+  if (statementLines) {
+    height += 10 + 10 + statementLines * 12 + 12
+  }
+
+  return height
 }
 
 function buildEntryBlocks(doc: jsPDF, entry: ReportEntryRecord, innerWidth: number) {
@@ -284,13 +366,15 @@ function measureEntryHeight(
     backdateNote?: EntryBackdateNote | null
     edited?: boolean
     includeFamilyBadge?: boolean
+    hideConditionTitle?: boolean
   } = {}
 ) {
   const padding = 18
   const primaryBlocks = blocks.filter((block) => block.kind === 'primary')
   const detailBlocks = blocks.filter((block) => block.kind === 'detail')
   const badgeHeight = options.includeFamilyBadge ? ENTRY_TYPE_BADGE_HEIGHT + 10 : 0
-  let height = padding + 34 + badgeHeight + 12 + padding
+  const headerHeight = options.hideConditionTitle ? 18 : 34
+  let height = padding + headerHeight + badgeHeight + 12 + padding
 
   if (options.edited) {
     height += 13
@@ -393,49 +477,89 @@ function drawConditionIntro(
   ctx: LayoutContext,
   label: string,
   statement: string,
-  entryCount: number
+  entries: ReportEntryRecord[]
 ) {
-  const padding = 14
-  const innerWidth = ctx.width - padding * 2
+  const padding = 16
+  const accentWidth = 4
+  const accentGap = 10
+  const contentX = ctx.x + padding + accentWidth + accentGap
+  const contentWidth = ctx.width - padding * 2 - accentWidth - accentGap
+  const entryCount = entries.length
+  const { veteranCount, familyCount } = buildConditionSourceSummary(entries)
+  const sourceSummary = formatConditionSourceSummary(veteranCount, familyCount)
+  const countLabel = `${entryCount} ${entryCount === 1 ? 'log' : 'logs'}`
 
   ctx.doc.setFont('helvetica', 'normal')
-  ctx.doc.setFontSize(10)
+  ctx.doc.setFontSize(9.5)
   const statementLines = statement
-    ? wrapLines(ctx.doc, statement, innerWidth, 10)
+    ? wrapLines(ctx.doc, statement, contentWidth - 20, 9.5)
     : []
 
-  const boxHeight = 36 + (statementLines.length ? statementLines.length * 13 + 14 : 0)
-  ensureSpace(ctx, boxHeight + 12)
+  const boxHeight = measureConditionIntroHeight(ctx.doc, ctx.width, label, statement, sourceSummary)
+  ensureSpace(ctx, boxHeight + 14)
 
   const boxY = ctx.y
   setStroke(ctx.doc, slate200)
-  setFill(ctx.doc, slate50)
+  setFill(ctx.doc, [255, 255, 255])
   ctx.doc.roundedRect(ctx.x, boxY, ctx.width, boxHeight, 12, 12, 'FD')
 
+  setFill(ctx.doc, sky600)
+  ctx.doc.roundedRect(ctx.x + 1, boxY + 1, accentWidth, boxHeight - 2, 2, 2, 'F')
+
   ctx.y = boxY + padding
+
   ctx.doc.setFont('helvetica', 'bold')
-  ctx.doc.setFontSize(11)
-  setText(ctx.doc, slate900)
-  ctx.doc.text(label, ctx.x + padding, ctx.y)
-
-  ctx.doc.setFont('helvetica', 'normal')
-  ctx.doc.setFontSize(8.5)
+  ctx.doc.setFontSize(7.5)
   setText(ctx.doc, slate500)
-  ctx.doc.text(
-    `${entryCount} ${entryCount === 1 ? 'entry' : 'entries'}`,
-    ctx.x + ctx.width - padding,
-    ctx.y,
-    { align: 'right' }
-  )
+  ctx.doc.text('CONDITION LOG', contentX, ctx.y)
 
-  if (statementLines.length) {
-    ctx.y += 17
-    drawBlockLabel(ctx, 'Veteran condition statement', ctx.x + padding, 8)
-    ctx.y += 12
-    drawBlockLines(ctx, statementLines, ctx.x + padding, 10, 13)
+  const pillPaddingX = 10
+  ctx.doc.setFont('helvetica', 'bold')
+  ctx.doc.setFontSize(8.5)
+  const pillTextWidth = ctx.doc.getTextWidth(countLabel)
+  const pillWidth = pillTextWidth + pillPaddingX * 2
+  const pillHeight = 18
+  const pillX = ctx.x + ctx.width - padding - pillWidth
+  const pillY = ctx.y - 8
+
+  setFill(ctx.doc, slate100)
+  setStroke(ctx.doc, slate200)
+  ctx.doc.roundedRect(pillX, pillY, pillWidth, pillHeight, 9, 9, 'FD')
+  setText(ctx.doc, slate800)
+  ctx.doc.text(countLabel, pillX + pillWidth / 2, pillY + 12, { align: 'center' })
+
+  ctx.y += 12
+  ctx.doc.setFont('helvetica', 'bold')
+  ctx.doc.setFontSize(13)
+  setText(ctx.doc, slate900)
+  ctx.doc.text(truncateText(ctx.doc, label, contentWidth - pillWidth - 8), contentX, ctx.y)
+
+  if (sourceSummary) {
+    ctx.y += 14
+    ctx.doc.setFont('helvetica', 'normal')
+    ctx.doc.setFontSize(9)
+    setText(ctx.doc, slate500)
+    ctx.doc.text(sourceSummary, contentX, ctx.y)
   }
 
-  ctx.y = boxY + boxHeight + 12
+  if (statementLines.length) {
+    ctx.y += 16
+    const statementBoxX = contentX
+    const statementBoxWidth = contentWidth
+    const statementBoxHeight = 10 + statementLines.length * 12 + 12
+    const statementBoxY = ctx.y
+
+    setFill(ctx.doc, slate50)
+    setStroke(ctx.doc, slate200)
+    ctx.doc.roundedRect(statementBoxX, statementBoxY, statementBoxWidth, statementBoxHeight, 8, 8, 'FD')
+
+    ctx.y = statementBoxY + 10
+    drawBlockLabel(ctx, 'Veteran condition statement', statementBoxX + 12, 7.5)
+    ctx.y += 11
+    drawBlockLines(ctx, statementLines, statementBoxX + 12, 9.5, 12, slate700)
+  }
+
+  ctx.y = boxY + boxHeight + 14
 }
 
 function drawBlockLabel(ctx: LayoutContext, label: string, x: number, fontSize: number) {
@@ -466,7 +590,8 @@ function drawEntryCard(
   ctx: LayoutContext,
   entry: ReportEntryRecord,
   index: number,
-  backdateContext: BackdateReportContext = {}
+  backdateContext: BackdateReportContext = {},
+  options: { hideConditionTitle?: boolean } = {}
 ) {
   const padding = 18
   const innerX = ctx.x + padding
@@ -480,7 +605,8 @@ function drawEntryCard(
   const cardHeight = measureEntryHeight(blocks, {
     backdateNote,
     edited,
-    includeFamilyBadge
+    includeFamilyBadge,
+    hideConditionTitle: options.hideConditionTitle
   })
 
   ensureSpace(ctx, cardHeight + 14)
@@ -492,20 +618,29 @@ function drawEntryCard(
 
   ctx.y = cardY + padding
 
-  ctx.doc.setFont('helvetica', 'bold')
-  ctx.doc.setFontSize(12.5)
-  setText(ctx.doc, slate900)
-  ctx.doc.text(entry.condition_label, innerX, ctx.y)
+  const dateLabel = formatReportEntryDate(entry.occurred_at || entry.created_at)
 
-  ctx.doc.setFont('helvetica', 'normal')
-  ctx.doc.setFontSize(10)
-  setText(ctx.doc, slate500)
-  ctx.doc.text(
-    formatReportEntryDate(entry.occurred_at || entry.created_at),
-    ctx.x + ctx.width - padding,
-    ctx.y,
-    { align: 'right' }
-  )
+  if (options.hideConditionTitle) {
+    ctx.doc.setFont('helvetica', 'bold')
+    ctx.doc.setFontSize(11)
+    setText(ctx.doc, slate900)
+    ctx.doc.text(dateLabel, innerX, ctx.y)
+
+    ctx.doc.setFont('helvetica', 'normal')
+    ctx.doc.setFontSize(9.5)
+    setText(ctx.doc, slate500)
+    ctx.doc.text(`Entry ${index + 1}`, ctx.x + ctx.width - padding, ctx.y, { align: 'right' })
+  } else {
+    ctx.doc.setFont('helvetica', 'bold')
+    ctx.doc.setFontSize(12.5)
+    setText(ctx.doc, slate900)
+    ctx.doc.text(entry.condition_label, innerX, ctx.y)
+
+    ctx.doc.setFont('helvetica', 'normal')
+    ctx.doc.setFontSize(10)
+    setText(ctx.doc, slate500)
+    ctx.doc.text(dateLabel, ctx.x + ctx.width - padding, ctx.y, { align: 'right' })
+  }
 
   ctx.y += 16
 
@@ -517,7 +652,12 @@ function drawEntryCard(
   ctx.doc.setFont('helvetica', 'normal')
   ctx.doc.setFontSize(9.5)
   setText(ctx.doc, slate500)
-  ctx.doc.text(`${severityLabel} · Entry ${index + 1}`, innerX, ctx.y)
+
+  if (options.hideConditionTitle) {
+    ctx.doc.text(severityLabel, innerX, ctx.y)
+  } else {
+    ctx.doc.text(`${severityLabel} · Entry ${index + 1}`, innerX, ctx.y)
+  }
 
   if (edited) {
     ctx.y += 13
@@ -624,14 +764,26 @@ export function drawEntryLogSection(
     ? ENTRY_TYPE_BADGE_HEIGHT + 20
     : 28 + (showAdvancedChartsNote ? 16 : 0)
 
-  if (firstEntry) {
+  const conditionGroups = groupEntriesByCondition(sortedEntries)
+
+  if (firstEntry && conditionGroups[0]) {
+    const firstGroup = conditionGroups[0]
+    const { veteranCount, familyCount } = buildConditionSourceSummary(firstGroup.entries)
+    const firstGroupIntroHeight = measureConditionIntroHeight(
+      doc,
+      width,
+      firstGroup.label,
+      firstGroup.statement,
+      formatConditionSourceSummary(veteranCount, familyCount)
+    )
     const firstBlocks = buildEntryBlocks(doc, firstEntry, width - 36)
     const firstCardHeight = measureEntryHeight(firstBlocks, {
       backdateNote: getEntryBackdateNote(firstEntry, backdateContext),
       edited: wasEntryEdited(firstEntry),
-      includeFamilyBadge: shouldShowFamilyEntryBadge(ctx, firstEntry)
+      includeFamilyBadge: shouldShowFamilyEntryBadge(ctx, firstEntry),
+      hideConditionTitle: true
     })
-    keepWithHeader = Math.min(firstCardHeight + 14, 360)
+    keepWithHeader = Math.min(firstGroupIntroHeight + firstCardHeight + 28, 360)
   }
 
   ensureSpace(ctx, headerHeight + keepWithHeader)
@@ -651,13 +803,11 @@ export function drawEntryLogSection(
     }
   }
 
-  const conditionGroups = groupEntriesByCondition(sortedEntries)
-
   conditionGroups.forEach((group) => {
-    drawConditionIntro(ctx, group.label, group.statement, group.entries.length)
+    drawConditionIntro(ctx, group.label, group.statement, group.entries)
 
     group.entries.forEach((entry, index) => {
-      drawEntryCard(ctx, entry, index, backdateContext)
+      drawEntryCard(ctx, entry, index, backdateContext, { hideConditionTitle: true })
     })
   })
 
