@@ -4,6 +4,10 @@ type KeyboardAwareScrollOptions = {
   footerHeight?: MaybeRef<number>
 }
 
+const KEYBOARD_OPEN_THRESHOLD = 80
+const FIELD_KEYBOARD_GAP = 12
+const FIELD_TOP_GAP = 16
+
 export function useKeyboardAwareScroll(
   scrollEl: Ref<HTMLElement | null>,
   options: KeyboardAwareScrollOptions = {}
@@ -19,16 +23,18 @@ export function useKeyboardAwareScroll(
     return Math.max(0, unref(footerHeight))
   })
 
-  const isKeyboardOpen = computed(() => keyboardInset.value > 80)
+  const isKeyboardOpen = computed(() => keyboardInset.value > KEYBOARD_OPEN_THRESHOLD)
 
   const scrollStyle = computed(() => {
-    const footerReserve = resolvedFooterHeight.value
-    const keyboardPadding = keyboardInset.value > 0
-      ? keyboardInset.value + 16
-      : 0
+    if (isKeyboardOpen.value) {
+      // Footer chrome is hidden while the keyboard is open; only reserve keyboard scroll room.
+      return {
+        paddingBottom: `${Math.max(FIELD_TOP_GAP, keyboardInset.value)}px`
+      }
+    }
 
     return {
-      paddingBottom: `${footerReserve + keyboardPadding}px`
+      paddingBottom: `${resolvedFooterHeight.value}px`
     }
   })
 
@@ -46,6 +52,42 @@ export function useKeyboardAwareScroll(
     keyboardInset.value = Math.max(0, Math.round(window.innerHeight - viewport.height - viewport.offsetTop))
   }
 
+  function scrollFocusedFieldIntoView(target: HTMLElement) {
+    const container = scrollEl.value
+    if (!container) {
+      return
+    }
+
+    updateKeyboardInset()
+
+    const keyboardOpen = keyboardInset.value > KEYBOARD_OPEN_THRESHOLD
+    const containerRect = container.getBoundingClientRect()
+    const targetRect = target.getBoundingClientRect()
+    const viewport = window.visualViewport
+
+    let visibleBottom: number
+    if (viewport && keyboardOpen) {
+      visibleBottom = viewport.offsetTop + viewport.height - FIELD_KEYBOARD_GAP
+    } else {
+      const footerReserve = keyboardOpen ? 0 : resolvedFooterHeight.value
+      visibleBottom = containerRect.bottom - footerReserve - FIELD_KEYBOARD_GAP
+    }
+
+    const overflow = targetRect.bottom - visibleBottom
+    if (overflow > 0) {
+      container.scrollTop += overflow
+      return
+    }
+
+    const visibleTop = viewport && keyboardOpen
+      ? viewport.offsetTop + FIELD_TOP_GAP
+      : containerRect.top + FIELD_TOP_GAP
+
+    if (targetRect.top < visibleTop) {
+      container.scrollTop -= visibleTop - targetRect.top
+    }
+  }
+
   function handleFieldFocus(event: FocusEvent) {
     const target = event.target
     if (!(target instanceof HTMLElement) || !scrollEl.value) {
@@ -57,38 +99,36 @@ export function useKeyboardAwareScroll(
     }
 
     window.setTimeout(() => {
-      const container = scrollEl.value
-      if (!container) {
-        return
-      }
+      scrollFocusedFieldIntoView(target)
+    }, 280)
+  }
 
-      const containerRect = container.getBoundingClientRect()
-      const targetRect = target.getBoundingClientRect()
-      const footerReserve = resolvedFooterHeight.value
-      const keyboardReserve = keyboardInset.value > 0 ? keyboardInset.value + 12 : 0
-      const visibleBottom = containerRect.bottom - footerReserve - keyboardReserve
-      const overflow = targetRect.bottom - visibleBottom + 20
+  function handleViewportChange() {
+    updateKeyboardInset()
 
-      if (overflow > 0) {
-        container.scrollTop += overflow
-        return
-      }
+    const active = document.activeElement
+    if (!(active instanceof HTMLElement) || !scrollEl.value?.contains(active)) {
+      return
+    }
 
-      if (targetRect.top < containerRect.top + 16) {
-        container.scrollTop -= containerRect.top + 16 - targetRect.top
-      }
-    }, 320)
+    if (!active.matches('input, textarea, select')) {
+      return
+    }
+
+    window.requestAnimationFrame(() => {
+      scrollFocusedFieldIntoView(active)
+    })
   }
 
   onMounted(() => {
     updateKeyboardInset()
-    window.visualViewport?.addEventListener('resize', updateKeyboardInset)
-    window.visualViewport?.addEventListener('scroll', updateKeyboardInset)
+    window.visualViewport?.addEventListener('resize', handleViewportChange)
+    window.visualViewport?.addEventListener('scroll', handleViewportChange)
   })
 
   onUnmounted(() => {
-    window.visualViewport?.removeEventListener('resize', updateKeyboardInset)
-    window.visualViewport?.removeEventListener('scroll', updateKeyboardInset)
+    window.visualViewport?.removeEventListener('resize', handleViewportChange)
+    window.visualViewport?.removeEventListener('scroll', handleViewportChange)
   })
 
   return {

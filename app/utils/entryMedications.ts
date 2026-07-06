@@ -42,13 +42,9 @@ export function readSavedMedicationList(userId?: string | null, conditionKey?: s
   }
 
   if (conditionKey?.trim()) {
-    const conditionSpecific = parseMedicationList(
+    return parseMedicationList(
       window.localStorage.getItem(storageKey(userId, conditionKey))
     )
-
-    if (conditionSpecific.length) {
-      return conditionSpecific
-    }
   }
 
   return parseMedicationList(window.localStorage.getItem(storageKey(userId)))
@@ -93,8 +89,32 @@ export function rememberMedicationsFromEntry(
   return merged
 }
 
+type EntryMedicationSource = {
+  details?: Record<string, unknown> | null
+  updated_at?: string | null
+  created_at?: string | null
+  occurred_at?: string | null
+}
+
+function entryMedicationTimestamp(entry: EntryMedicationSource) {
+  return new Date(entry.updated_at || entry.created_at || entry.occurred_at || 0).getTime()
+}
+
+export function getMedicationsFromLastEntry(entries: EntryMedicationSource[]) {
+  const latestEntry = [...entries].sort(
+    (left, right) => entryMedicationTimestamp(right) - entryMedicationTimestamp(left)
+  )[0]
+
+  const raw = latestEntry?.details?.medications_for_this_entry
+  if (typeof raw !== 'string' || !raw.trim()) {
+    return []
+  }
+
+  return splitMedicationTokens(raw)
+}
+
 export function collectMedicationsFromEntries(
-  entries: Array<{ details?: Record<string, unknown> | null, updated_at?: string | null, created_at?: string | null }>
+  entries: EntryMedicationSource[]
 ) {
   const frequency = new Map<string, { label: string, count: number, latestAt: number }>()
 
@@ -104,7 +124,7 @@ export function collectMedicationsFromEntries(
       return
     }
 
-    const timestamp = new Date(entry.updated_at || entry.created_at || 0).getTime()
+    const timestamp = entryMedicationTimestamp(entry)
     splitMedicationTokens(raw).forEach((medication) => {
       const key = medication.toLowerCase()
       const existing = frequency.get(key)

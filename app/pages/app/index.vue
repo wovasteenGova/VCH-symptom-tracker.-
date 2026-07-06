@@ -2134,8 +2134,8 @@ import {
   toggleEntryFieldPresetValue
 } from '../../utils/entryFieldPresets'
 import {
-  collectMedicationsFromEntries,
   formatMedicationListForEntry,
+  getMedicationsFromLastEntry,
   readSavedMedicationList,
   rememberMedicationsFromEntry
 } from '../../utils/entryMedications'
@@ -3505,16 +3505,18 @@ const activeEntryIsMentalHealth = computed(() => {
 })
 
 const savedMedicationList = computed(() => {
-  const conditionKeyForMeds = conditionKey(entryTitle.value)
-  const fromEntries = collectMedicationsFromEntries(
-    savedEntries.value.filter((entry) => entry.condition_key === conditionKeyForMeds)
+  const fromLastEntry = getMedicationsFromLastEntry(
+    savedEntriesForCondition(entryTitle.value)
   )
 
-  if (fromEntries.length) {
-    return fromEntries
+  if (fromLastEntry.length) {
+    return fromLastEntry
   }
 
-  return readSavedMedicationList(user.value?.id, conditionKeyForMeds)
+  return readSavedMedicationList(
+    user.value?.id,
+    resolveEntryStatementConditionKey(entryTitle.value)
+  )
 })
 function filterConditionResults(query: string) {
   return filterAndRankConditions(conditionResults, query)
@@ -4009,20 +4011,14 @@ function appendSavedMedicationToEntry(medication: string) {
   entryForm.value[key] = parts.join('\n')
 }
 
-function prefillEntryMedications() {
+function prefillEntryMedications(label = entryTitle.value) {
   const key = fieldKey('Medications for this entry')
   if (entryForm.value[key]?.trim()) {
     return
   }
 
-  const conditionKeyForMeds = conditionKey(entryTitle.value)
-  const fromEntries = collectMedicationsFromEntries(
-    savedEntries.value.filter((entry) => entry.condition_key === conditionKeyForMeds)
-  )
   const saved = formatMedicationListForEntry(
-    fromEntries.length
-      ? fromEntries
-      : readSavedMedicationList(user.value?.id, conditionKeyForMeds)
+    getMedicationsFromLastEntry(savedEntriesForCondition(label))
   )
 
   if (saved) {
@@ -4040,7 +4036,6 @@ function resetEntryForm() {
   severityValue.value = 5
   entryTimeWasManuallySelected = false
   entryForm.value.date_and_time = getMaxEntryDateTimeLocal()
-  prefillEntryMedications()
   syncEntryInputsFromForm()
 }
 
@@ -4223,14 +4218,17 @@ function resolveEntryStatementConditionKey(label: string) {
   return resolved?.key || conditionKey(label)
 }
 
-function findSavedConditionStatement(label: string) {
+function savedEntriesForCondition(label: string) {
   const targetKey = resolveEntryStatementConditionKey(label)
-  const matchingEntries = savedEntries.value
-    .filter((entry) => {
-      const entryKey = resolveCatalogConditionByStoredKey(entry.condition_key || entry.condition_label)?.key
-        || conditionKey(entry.condition_label || '')
-      return entryKey === targetKey
-    })
+  return savedEntries.value.filter((entry) => {
+    const entryKey = resolveCatalogConditionByStoredKey(entry.condition_key || entry.condition_label)?.key
+      || conditionKey(entry.condition_label || '')
+    return entryKey === targetKey
+  })
+}
+
+function findSavedConditionStatement(label: string) {
+  const matchingEntries = savedEntriesForCondition(label)
     .sort((left, right) => {
       const leftTime = new Date(left.updated_at || left.created_at || left.occurred_at).getTime()
       const rightTime = new Date(right.updated_at || right.created_at || right.occurred_at).getTime()
@@ -6035,7 +6033,7 @@ function changeEntryCondition(condition: { title: string, category: string, desc
 
   const medicationKey = fieldKey('Medications for this entry')
   delete entryForm.value[medicationKey]
-  prefillEntryMedications()
+  prefillEntryMedications(condition.title)
 
   if (!isPro.value && !editingEntryId.value) {
     void ensureFreeConditionAccess(
@@ -6063,6 +6061,10 @@ function applyCustomEntryCondition() {
   entryStep.value = 0
   isConditionPickerOpen.value = false
   prefillConditionStatementForEntry(customName)
+
+  const medicationKey = fieldKey('Medications for this entry')
+  delete entryForm.value[medicationKey]
+  prefillEntryMedications(customName)
 
   if (!isPro.value && !editingEntryId.value) {
     void ensureFreeConditionAccess(
@@ -6873,6 +6875,7 @@ function openEntryPanelInner(options: {
   }
 
   prefillConditionStatementForEntry()
+  prefillEntryMedications()
   isEntryOpen.value = true
 }
 
