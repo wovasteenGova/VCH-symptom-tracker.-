@@ -1,8 +1,9 @@
-import { useSupabaseClient } from '#imports'
+import { useSupabaseClient, useState } from '#imports'
 import { computed, ref } from 'vue'
 import { useTrackerDb } from './useTrackerDb'
 import {
   APP_WELCOME_COMPLETED_STORAGE_KEY,
+  clearAppWelcomeStep,
   LOGGING_CADENCE_STORAGE_KEY,
   TERMS_ACCEPTED_AT_STORAGE_KEY,
   WEEKLY_LOG_DAY_STORAGE_KEY,
@@ -68,7 +69,7 @@ function isMissingReminderEveningHourError(error: unknown) {
 export function useAppWelcome() {
   const supabase = useSupabaseClient()
   const trackerDb = useTrackerDb()
-  const appWelcomeCompleted = ref(readLocalWelcomeCompleted())
+  const appWelcomeCompleted = useState('tracker-app-welcome-completed', () => readLocalWelcomeCompleted())
   const loggingCadence = ref<LoggingCadence>(readLocalCadence())
   const weeklyLogDay = ref(readLocalWeeklyLogDay())
   const termsAcceptedAt = ref<string | null>(
@@ -137,6 +138,7 @@ export function useAppWelcome() {
 
   async function completeAppWelcome(preferences: AppWelcomePreferences) {
     writeLocalPreferences(preferences)
+    clearAppWelcomeStep()
     appWelcomeCompleted.value = true
     loggingCadence.value = preferences.loggingCadence
     weeklyLogDay.value = preferences.weeklyLogDay

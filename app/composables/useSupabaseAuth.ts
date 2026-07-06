@@ -32,7 +32,47 @@ export function useSupabaseAuth() {
   const user = useState<User | null>('tracker-auth-user', () => null)
   const isAuthLoading = useState('tracker-auth-loading', () => true)
   const authError = useState('tracker-auth-error', () => '')
+  const authBootstrapStarted = useState('tracker-auth-bootstrap-started', () => false)
   let unsubscribe: (() => void) | undefined
+
+  async function bootstrapAuth() {
+    if (authBootstrapStarted.value) {
+      return
+    }
+
+    authBootstrapStarted.value = true
+
+    const listener = supabase.auth.onAuthStateChange((_event, session) => {
+      user.value = session?.user ?? null
+    })
+
+    unsubscribe = listener.data.subscription.unsubscribe
+
+    try {
+      // Hydrate from the local session first so signed-in users never flash the login UI.
+      const { data: sessionData } = await supabase.auth.getSession()
+
+      if (sessionData.session?.user) {
+        user.value = sessionData.session.user
+      }
+
+      const { data, error } = await supabase.auth.getUser()
+
+      if (error) {
+        authError.value = getAuthErrorMessage(error)
+      } else if (data.user) {
+        user.value = data.user
+      }
+    } catch (error) {
+      authError.value = getAuthErrorMessage(error)
+    } finally {
+      isAuthLoading.value = false
+    }
+  }
+
+  if (import.meta.client) {
+    void bootstrapAuth()
+  }
 
   function getAuthErrorMessage(error: unknown) {
     if (error && typeof error === 'object') {
@@ -156,32 +196,9 @@ export function useSupabaseAuth() {
     }
   }
 
-  onMounted(async () => {
-    const listener = supabase.auth.onAuthStateChange((_event, session) => {
-      user.value = session?.user ?? null
-    })
-
-    unsubscribe = listener.data.subscription.unsubscribe
-
-    try {
-      // Hydrate from the local session first so signed-in users never flash the login UI.
-      const { data: sessionData } = await supabase.auth.getSession()
-
-      if (sessionData.session?.user) {
-        user.value = sessionData.session.user
-      }
-
-      const { data, error } = await supabase.auth.getUser()
-
-      if (error) {
-        authError.value = getAuthErrorMessage(error)
-      } else if (data.user) {
-        user.value = data.user
-      }
-    } catch (error) {
-      authError.value = getAuthErrorMessage(error)
-    } finally {
-      isAuthLoading.value = false
+  onMounted(() => {
+    if (!authBootstrapStarted.value) {
+      void bootstrapAuth()
     }
   })
 

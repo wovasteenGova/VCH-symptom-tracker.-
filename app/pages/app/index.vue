@@ -1,5 +1,6 @@
 <template>
   <main
+    id="tracker-app-shell"
     class="app-shell relative overflow-hidden bg-slate-50 text-slate-950 transition-colors dark:bg-slate-950 dark:text-white"
     :class="{ 'app-shell-embed': isEmbeddedPreview }"
   >
@@ -220,19 +221,18 @@
         leave-from-class="translate-y-0 opacity-100"
         leave-to-class="opacity-0"
       >
-        <div
+        <AppOverlayShell
           v-if="isAuthPanelOpen && !isAuthLoading"
-          class="app-overlay-shell fixed inset-0 z-[110] bg-slate-200/70 backdrop-blur-sm dark:bg-slate-950/70"
-          @click.self="isAuthPanelOpen = false"
+          backdrop-class="bg-slate-200/70 backdrop-blur-sm dark:bg-slate-950/70"
+          @dismiss="isAuthPanelOpen = false"
         >
-          <div class="app-overlay-inner">
-            <section
-              class="app-overlay-panel rounded-4xl border border-slate-200 bg-white p-4 shadow-2xl shadow-slate-950/10 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/40"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="auth-panel-title"
-              @click.stop
-            >
+          <section
+            class="app-overlay-panel rounded-4xl border border-slate-200 bg-white p-4 shadow-2xl shadow-slate-950/10 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/40"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="auth-panel-title"
+            @click.stop
+          >
             <div class="flex items-start justify-between gap-3">
               <div>
                 <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
@@ -392,16 +392,15 @@
             <p v-if="authError" class="text-center text-sm font-medium text-red-600 dark:text-red-300" aria-live="assertive">{{ authError }}</p>
             </form>
           </section>
-          </div>
-        </div>
+        </AppOverlayShell>
       </Transition>
 
       <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
         <Transition
           mode="out-in"
-          enter-active-class="transition duration-[550ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
-          enter-from-class="translate-y-6 opacity-0"
-          enter-to-class="translate-y-0 opacity-100"
+          :enter-active-class="suppressHomeMotionOnMount ? '' : 'transition duration-[550ms] ease-[cubic-bezier(0.22,1,0.36,1)]'"
+          :enter-from-class="suppressHomeMotionOnMount ? '' : 'translate-y-6 opacity-0'"
+          :enter-to-class="suppressHomeMotionOnMount ? '' : 'translate-y-0 opacity-100'"
           leave-active-class="transition duration-[450ms] ease-[cubic-bezier(0.55,0,1,0.45)]"
           leave-from-class="translate-y-0 opacity-100"
           leave-to-class="translate-y-4 opacity-0"
@@ -876,6 +875,7 @@
             v-else
             key="home-workspace"
             class="home-workspace relative mt-2 flex min-h-0 flex-1 flex-col gap-2 overflow-hidden"
+            :class="{ 'home-workspace--history-hidden': shouldHideHistoryChrome }"
           >
         <div
           class="flex min-h-0 flex-col px-4"
@@ -912,7 +912,7 @@
                 />
 
                 <div
-                  v-else-if="!hasLoadedTrackedConditions || isLoadingTrackedConditions"
+                  v-else-if="(!hasLoadedTrackedConditions || isLoadingTrackedConditions) && !homeConditions.length"
                   key="home-loading"
                   class="absolute inset-0 z-10 bg-slate-50 dark:bg-slate-950"
                   aria-hidden="true"
@@ -1252,7 +1252,7 @@
         </div>
 
         <section
-          v-if="!isAuthPanelOpen"
+          v-if="!shouldHideHistoryChrome"
           class="home-history-panel flex min-h-0 flex-col overflow-hidden rounded-t-[1.75rem] border-t border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-900"
           :class="historyPanelClass"
           @pointerdown="handleHistoryPointerDown"
@@ -1707,7 +1707,7 @@
     >
       <div
         v-if="isEmbeddedPreview && isEmbedProfileOpen"
-        class="absolute inset-0 z-[100] flex min-h-0 flex-col overflow-hidden bg-slate-950"
+        class="absolute inset-0 z-[110] flex min-h-0 flex-col overflow-hidden bg-slate-950"
       >
         <ProfilePage />
       </div>
@@ -1722,13 +1722,12 @@
     leave-from-class="opacity-100"
     leave-to-class="opacity-0"
   >
-    <div
+    <AppOverlayShell
       v-if="pendingDeleteDraft"
-      class="app-overlay-shell fixed inset-0 z-[110] bg-slate-950/55"
-      @click.self="cancelDeleteEntryDraft"
+      backdrop-class="bg-slate-950/55"
+      @dismiss="cancelDeleteEntryDraft"
     >
-      <div class="app-overlay-inner">
-        <div class="app-overlay-panel app-overlay-panel--compact rounded-[1.75rem] bg-white p-5 shadow-2xl dark:bg-slate-900" role="dialog" aria-modal="true" aria-labelledby="delete-draft-title">
+      <div class="app-overlay-panel app-overlay-panel--compact rounded-[1.75rem] bg-white p-5 shadow-2xl dark:bg-slate-900" role="dialog" aria-modal="true" aria-labelledby="delete-draft-title">
         <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
           Draft
         </p>
@@ -1756,9 +1755,8 @@
             Delete draft
           </button>
         </div>
-        </div>
       </div>
-    </div>
+    </AppOverlayShell>
   </Transition>
 
   <Transition
@@ -1769,13 +1767,12 @@
     leave-from-class="opacity-100"
     leave-to-class="opacity-0"
   >
-    <div
+    <AppOverlayShell
       v-if="viewedHistoryEntry && viewedHistoryRawEntry"
-      class="app-overlay-shell fixed inset-0 z-[120] bg-slate-950/70"
-      @click.self="closeEntryDetailsOverlay"
+      :z-index="120"
+      @dismiss="closeEntryDetailsOverlay"
     >
-      <div class="app-overlay-inner">
-        <div class="app-overlay-panel app-overlay-panel--stack app-overlay-panel--lg overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900" role="dialog" aria-modal="true" aria-labelledby="log-details-title">
+      <div class="app-overlay-panel app-overlay-panel--stack app-overlay-panel--lg overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900" role="dialog" aria-modal="true" aria-labelledby="log-details-title">
         <div class="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 dark:border-slate-800">
           <div class="min-w-0">
             <p class="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-sky-600 dark:text-sky-300">
@@ -1880,9 +1877,8 @@
             Edit log
           </button>
         </div>
-        </div>
       </div>
-    </div>
+    </AppOverlayShell>
   </Transition>
 
   <Transition
@@ -1893,13 +1889,12 @@
     leave-from-class="opacity-100"
     leave-to-class="opacity-0"
   >
-    <div
+    <AppOverlayShell
       v-if="pendingDelete"
-      class="app-overlay-shell fixed inset-0 z-[110] bg-slate-950/55"
-      @click.self="cancelDeleteEntry"
+      backdrop-class="bg-slate-950/55"
+      @dismiss="cancelDeleteEntry"
     >
-      <div class="app-overlay-inner">
-        <div class="app-overlay-panel app-overlay-panel--compact rounded-[1.75rem] bg-white p-5 shadow-2xl dark:bg-slate-900" role="dialog" aria-modal="true" aria-labelledby="delete-entry-title">
+      <div class="app-overlay-panel app-overlay-panel--compact rounded-[1.75rem] bg-white p-5 shadow-2xl dark:bg-slate-900" role="dialog" aria-modal="true" aria-labelledby="delete-entry-title">
         <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
           Move to deleted
         </p>
@@ -1927,9 +1922,8 @@
             Move to Deleted
           </button>
         </div>
-        </div>
       </div>
-    </div>
+    </AppOverlayShell>
   </Transition>
 
   <Transition
@@ -1940,13 +1934,12 @@
     leave-from-class="opacity-100"
     leave-to-class="opacity-0"
   >
-    <div
+    <AppOverlayShell
       v-if="isShareLinkOpen && shareLinkEntry"
-      class="app-overlay-shell fixed inset-0 z-[110] bg-slate-950/55"
-      @click.self="closeShareLinkModal"
+      backdrop-class="bg-slate-950/55"
+      @dismiss="closeShareLinkModal"
     >
-      <div class="app-overlay-inner">
-        <div class="app-overlay-panel app-overlay-panel--compact rounded-[1.75rem] bg-white p-5 shadow-2xl dark:bg-slate-900" role="dialog" aria-modal="true" aria-labelledby="share-entry-title">
+      <div class="app-overlay-panel app-overlay-panel--compact rounded-[1.75rem] bg-white p-5 shadow-2xl dark:bg-slate-900" role="dialog" aria-modal="true" aria-labelledby="share-entry-title">
         <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
           Private supporter link
         </p>
@@ -2007,13 +2000,12 @@
         >
           Close
         </button>
-        </div>
       </div>
-    </div>
+    </AppOverlayShell>
   </Transition>
 
   <AppWelcomeCarousel
-    v-if="needsAppWelcome && !isEntryOpen"
+    v-if="needsAppWelcome"
     :install-platform="installPlatform"
     :install-instruction-text="installInstructionText"
     :install-guide-video-url="installGuideVideoUrl"
@@ -2052,13 +2044,11 @@
     leave-from-class="opacity-100"
     leave-to-class="opacity-0"
   >
-    <div
+    <AppOverlayShell
       v-if="isConditionSlotOpen"
-      class="app-overlay-shell fixed inset-0 z-[110] bg-slate-950/70"
-      @click.self="closeConditionSlotModal"
+      @dismiss="closeConditionSlotModal"
     >
-      <div class="app-overlay-inner">
-        <div class="app-overlay-panel app-overlay-panel--compact rounded-[1.75rem] border border-slate-800 bg-slate-900 p-5 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="condition-slot-title">
+      <div class="app-overlay-panel app-overlay-panel--compact rounded-[1.75rem] border border-slate-800 bg-slate-900 p-5 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="condition-slot-title">
         <p class="text-xs font-bold uppercase tracking-[0.16em] text-sky-300">Free plan</p>
         <h3 id="condition-slot-title" class="mt-2 text-xl font-bold text-white">
           {{ pendingConditionSlotMode === 'replace' ? 'Switch to' : 'Use' }} {{ pendingConditionSlotLabel }}?
@@ -2100,9 +2090,8 @@
             Cancel
           </button>
         </div>
-        </div>
       </div>
-    </div>
+    </AppOverlayShell>
   </Transition>
 </template>
 
@@ -2178,6 +2167,7 @@ import {
   type EntryDraftSnapshot
 } from '../../composables/useEntryDraft'
 import { useTrackerLayout, TRACKER_CLOSE_EMBED_PROFILE_KEY } from '../../composables/useTrackerLayout'
+import { useAppOverlayHistoryInset } from '../../composables/useAppOverlayHistoryInset'
 import ProfilePage from '../profile.vue'
 
 const {
@@ -2325,6 +2315,7 @@ const homeImageTransitionAlt = ref('')
 const homeImageTransitionStyle = ref<Record<string, string>>({})
 const homeConditionImageEls = new Map<string, HTMLImageElement>()
 const activeHistoryTab = ref('Entries')
+const suppressHomeMotionOnMount = ref(true)
 const isEntryOpen = ref(false)
 const isConditionPickerOpen = ref(false)
 const customConditionInput = ref('')
@@ -2577,6 +2568,23 @@ const pendingCadenceEntryOptions = ref<{
 } | null>(null)
 const conditionSlotError = ref('')
 const isConditionBrowserOpen = ref(false)
+
+/** Hide History chrome whenever a blocking overlay owns the screen. */
+const shouldHideHistoryChrome = computed(() => (
+  needsAppWelcome.value
+  || isAuthPanelOpen.value
+  || isHomeTipsOverlayOpen.value
+  || isUpgradePromptOpen.value
+  || isLoggingCadencePromptOpen.value
+  || pendingDeleteDraft.value
+  || Boolean(pendingDelete.value)
+  || Boolean(viewedHistoryEntryId.value)
+  || (isShareLinkOpen.value && Boolean(shareLinkEntry.value))
+  || isConditionSlotOpen.value
+  || (isEmbeddedPreview && isEmbedProfileOpen.value)
+))
+
+useAppOverlayHistoryInset(historyExpanded, { historyHidden: shouldHideHistoryChrome })
 const draftSelectedKeys = ref<string[]>([])
 const isSavingTrackedConditions = ref(false)
 const trackedConditionsError = ref('')
@@ -3146,8 +3154,11 @@ watch(homeVisitTip, () => {
 
 const heroSlideTransitionName = computed(() => {
   if (
-    homeSharedTransitionActive.value
-    && (transitionDirection.value === 'expand' || transitionDirection.value === 'collapse')
+    suppressHomeMotionOnMount.value
+    || (
+      homeSharedTransitionActive.value
+      && (transitionDirection.value === 'expand' || transitionDirection.value === 'collapse')
+    )
   ) {
     return 'hero-shared'
   }
@@ -3656,6 +3667,10 @@ function restoreEntryDraftSnapshot(snapshot: EntryDraftSnapshot) {
 }
 
 function resumeEntryDraft() {
+  if (needsAppWelcome.value) {
+    return
+  }
+
   closeSubmissionDropdown()
 
   if (
@@ -3747,6 +3762,9 @@ onMounted(async () => {
   await loadAppWelcomeState()
 
   await refreshTrackedConditions()
+  nextTick(() => {
+    suppressHomeMotionOnMount.value = false
+  })
   restoreCachedHomeConditionOrderKeys()
 
   nextTick(() => {
@@ -3773,7 +3791,6 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   document.removeEventListener('visibilitychange', handleLogReminderVisibilityChange)
-  document.documentElement.style.removeProperty('--app-overlay-history-inset')
 
   if (homeConditionsMaxScrollResizeListener) {
     window.removeEventListener('resize', homeConditionsMaxScrollResizeListener)
@@ -3831,16 +3848,13 @@ watch(isEntryOpen, (open) => {
   scheduleEntryDraftSave()
 })
 
-function syncAppOverlayHistoryInset(expanded: boolean) {
-  document.documentElement.style.setProperty(
-    '--app-overlay-history-inset',
-    expanded ? '80dvh' : 'var(--history-sheet-collapsed-height)'
-  )
-}
+watch(shouldHideHistoryChrome, (hide) => {
+  if (hide) {
+    historyExpanded.value = false
+  }
+})
 
 watch(historyExpanded, (expanded, wasExpanded) => {
-  syncAppOverlayHistoryInset(expanded)
-
   if (wasExpanded !== undefined) {
     historyPanelAnimating.value = true
     window.setTimeout(() => {
@@ -6581,6 +6595,10 @@ function openEntryForEdit(entryId: string) {
     return
   }
 
+  if (needsAppWelcome.value) {
+    return
+  }
+
   if (!user.value) {
     openAuthPanel()
     return
@@ -6712,6 +6730,10 @@ async function openEntryPanelAsync(options: {
     image: string
   }
 } = {}) {
+  if (needsAppWelcome.value) {
+    return
+  }
+
   if (!user.value) {
     openAuthPanel()
     return
@@ -6812,6 +6834,10 @@ function openEntryPanelInner(options: {
     image: string
   }
 } = {}) {
+  if (needsAppWelcome.value) {
+    return
+  }
+
   historyExpanded.value = false
   transitionDirection.value = 'expand'
   entryStep.value = 0
@@ -7031,7 +7057,7 @@ function handleEntryPrimaryAction() {
 
 .home-state-fade-enter-from,
 .home-state-fade-leave-to {
-  opacity: 0;
+  opacity: 1;
 }
 
 .home-carousel-dot {
@@ -7082,6 +7108,10 @@ function handleEntryPrimaryAction() {
 
 .home-workspace {
   padding-bottom: var(--history-sheet-collapsed-height);
+}
+
+.home-workspace--history-hidden {
+  padding-bottom: 0;
 }
 
 .home-history-panel {

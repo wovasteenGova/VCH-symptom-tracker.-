@@ -7,13 +7,11 @@
     leave-from-class="opacity-100"
     leave-to-class="opacity-0"
   >
-    <div
+    <AppOverlayShell
       v-if="open"
-      class="app-overlay-shell fixed inset-0 z-[110] bg-slate-950/70"
-      @click.self="emit('close')"
+      @dismiss="emit('close')"
     >
-      <div class="app-overlay-inner">
-        <div class="app-overlay-panel app-overlay-panel--compact rounded-[1.75rem] border border-slate-800 bg-slate-900 p-5 shadow-2xl">
+      <div class="app-overlay-panel app-overlay-panel--compact rounded-[1.75rem] border border-slate-800 bg-slate-900 p-5 shadow-2xl">
         <div class="flex items-start justify-between gap-3">
           <div>
             <p class="text-xs font-bold uppercase tracking-[0.16em] text-amber-300">Pro feature</p>
@@ -84,9 +82,8 @@
             Can't pay? Contact us for free access
           </a>
         </div>
-        </div>
       </div>
-    </div>
+    </AppOverlayShell>
   </Transition>
 </template>
 

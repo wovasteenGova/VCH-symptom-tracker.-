@@ -3,7 +3,33 @@ export type LoggingCadence = 'daily' | 'weekly'
 export const LOGGING_CADENCE_STORAGE_KEY = 'symptom-tracker-logging-cadence'
 export const WEEKLY_LOG_DAY_STORAGE_KEY = 'symptom-tracker-weekly-log-day'
 export const APP_WELCOME_COMPLETED_STORAGE_KEY = 'symptom-tracker-app-welcome-completed'
+export const APP_WELCOME_STEP_STORAGE_KEY = 'symptom-tracker-app-welcome-step'
 export const TERMS_ACCEPTED_AT_STORAGE_KEY = 'symptom-tracker-terms-accepted-at'
+
+export function readAppWelcomeStep() {
+  if (!import.meta.client) {
+    return 0
+  }
+
+  const parsed = Number(window.sessionStorage.getItem(APP_WELCOME_STEP_STORAGE_KEY))
+  return Number.isInteger(parsed) && parsed >= 0 && parsed <= 2 ? parsed : 0
+}
+
+export function writeAppWelcomeStep(step: number) {
+  if (!import.meta.client) {
+    return
+  }
+
+  window.sessionStorage.setItem(APP_WELCOME_STEP_STORAGE_KEY, String(step))
+}
+
+export function clearAppWelcomeStep() {
+  if (!import.meta.client) {
+    return
+  }
+
+  window.sessionStorage.removeItem(APP_WELCOME_STEP_STORAGE_KEY)
+}
 
 export const WEEKLY_LOG_DAY_OPTIONS = [
   { value: 0, label: 'Sunday' },

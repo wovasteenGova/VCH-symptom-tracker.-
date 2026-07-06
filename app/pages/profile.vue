@@ -301,6 +301,23 @@
           </button>
         </div>
 
+        <div
+          v-if="needsAppWelcome"
+          class="scroll-mt-3 rounded-4xl border border-teal-500/40 bg-teal-950/40 p-5"
+        >
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-teal-300">Setup incomplete</p>
+          <p class="mt-2 text-sm leading-6 text-teal-50">
+            Finish the quick setup wizard to choose how often you log and accept the terms.
+          </p>
+          <NuxtLink
+            to="/app"
+            class="mt-4 inline-flex items-center gap-2 rounded-2xl bg-teal-400 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-teal-300"
+          >
+            Resume setup
+            <UIcon name="i-lucide-arrow-right" class="size-4" />
+          </NuxtLink>
+        </div>
+
         <section id="settings-logging" class="scroll-mt-3 rounded-4xl border border-slate-800 bg-slate-900 p-5">
           <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Logging rhythm</p>
           <h2 class="mt-1 text-xl font-bold text-white">When you log symptoms</h2>
@@ -1169,6 +1186,7 @@ const {
 const {
   loggingCadence,
   weeklyLogDay,
+  needsAppWelcome,
   loadAppWelcomeState,
   updateLoggingCadence
 } = useAppWelcome()

@@ -77,105 +77,100 @@ function handleOpenContact() {
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition
-      enter-active-class="transition duration-200 ease-out"
-      enter-from-class="opacity-0"
-      enter-to-class="opacity-100"
-      leave-active-class="transition duration-150 ease-in"
-      leave-from-class="opacity-100"
-      leave-to-class="opacity-0"
+  <Transition
+    enter-active-class="transition duration-200 ease-out"
+    enter-from-class="opacity-0"
+    enter-to-class="opacity-100"
+    leave-active-class="transition duration-150 ease-in"
+    leave-from-class="opacity-100"
+    leave-to-class="opacity-0"
+  >
+    <AppOverlayShell
+      v-if="open"
+      @dismiss="$emit('close')"
     >
-      <div
-        v-if="open"
-        class="app-overlay-shell fixed inset-0 z-[110] bg-slate-950/70"
-        @click.self="$emit('close')"
+      <Transition
+        enter-active-class="transition duration-250 ease-out"
+        enter-from-class="translate-y-6 opacity-0 sm:translate-y-0 sm:scale-95"
+        enter-to-class="translate-y-0 opacity-100 sm:scale-100"
+        leave-active-class="transition duration-200 ease-in"
+        leave-from-class="translate-y-0 opacity-100 sm:scale-100"
+        leave-to-class="translate-y-4 opacity-0 sm:translate-y-0 sm:scale-95"
       >
-        <div class="app-overlay-inner">
-          <Transition
-            enter-active-class="transition duration-250 ease-out"
-            enter-from-class="translate-y-6 opacity-0 sm:translate-y-0 sm:scale-95"
-            enter-to-class="translate-y-0 opacity-100 sm:scale-100"
-            leave-active-class="transition duration-200 ease-in"
-            leave-from-class="translate-y-0 opacity-100 sm:scale-100"
-            leave-to-class="translate-y-4 opacity-0 sm:translate-y-0 sm:scale-95"
-          >
-            <section
-              v-if="open"
-              class="app-overlay-panel app-overlay-panel--stack overflow-hidden rounded-[1.75rem] border border-slate-800 bg-slate-900 shadow-2xl"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="faq-title"
-          >
-            <div class="flex shrink-0 items-start justify-between gap-3 border-b border-slate-800 px-5 py-4">
-              <div>
-                <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
-                  Help
-                </p>
-                <h2 id="faq-title" class="mt-1 text-xl font-bold text-white">
-                  Frequently asked questions
-                </h2>
-              </div>
+        <section
+          v-if="open"
+          class="app-overlay-panel app-overlay-panel--stack overflow-hidden rounded-[1.75rem] border border-slate-800 bg-slate-900 shadow-2xl"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="faq-title"
+        >
+          <div class="flex shrink-0 items-start justify-between gap-3 border-b border-slate-800 px-5 py-4">
+            <div>
+              <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                Help
+              </p>
+              <h2 id="faq-title" class="mt-1 text-xl font-bold text-white">
+                Frequently asked questions
+              </h2>
+            </div>
+            <button
+              type="button"
+              class="grid size-10 place-items-center rounded-full bg-slate-800 text-slate-200 transition hover:bg-slate-700"
+              aria-label="Close FAQ"
+              @click="$emit('close')"
+            >
+              <UIcon name="i-lucide-x" class="size-5" />
+            </button>
+          </div>
+
+          <div class="min-h-0 flex-1 overflow-y-auto px-5 py-2 no-scrollbar">
+            <div
+              v-for="item in faqItems"
+              :key="item.id"
+              class="border-b border-slate-800 last:border-b-0"
+            >
               <button
                 type="button"
-                class="grid size-10 place-items-center rounded-full bg-slate-800 text-slate-200 transition hover:bg-slate-700"
-                aria-label="Close FAQ"
-                @click="$emit('close')"
+                class="flex w-full items-start justify-between gap-3 py-4 text-left"
+                :aria-expanded="openItemId === item.id"
+                @click="toggleItem(item.id)"
               >
-                <UIcon name="i-lucide-x" class="size-5" />
+                <span class="font-semibold text-white">{{ item.question }}</span>
+                <UIcon
+                  :name="openItemId === item.id ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
+                  class="mt-0.5 size-5 shrink-0 text-slate-400"
+                />
               </button>
-            </div>
 
-            <div class="min-h-0 flex-1 overflow-y-auto px-5 py-2 no-scrollbar">
               <div
-                v-for="item in faqItems"
-                :key="item.id"
-                class="border-b border-slate-800 last:border-b-0"
+                v-show="openItemId === item.id"
+                class="pb-4 text-sm leading-6 text-slate-300"
               >
-                <button
-                  type="button"
-                  class="flex w-full items-start justify-between gap-3 py-4 text-left"
-                  :aria-expanded="openItemId === item.id"
-                  @click="toggleItem(item.id)"
-                >
-                  <span class="font-semibold text-white">{{ item.question }}</span>
-                  <UIcon
-                    :name="openItemId === item.id ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
-                    class="mt-0.5 size-5 shrink-0 text-slate-400"
-                  />
-                </button>
-
-                <div
-                  v-show="openItemId === item.id"
-                  class="pb-4 text-sm leading-6 text-slate-300"
-                >
-                  <p>{{ item.answer }}</p>
-                  <template v-if="item.id === 'privacy-data'">
-                    <a
-                      :href="VCH_PRIVACY_URL"
-                      target="_blank"
-                      rel="noopener"
-                      class="mt-2 inline-flex items-center gap-1 text-xs font-bold text-sky-300 underline decoration-sky-500/50 underline-offset-2 hover:text-sky-200"
-                    >
-                      Privacy policy
-                      <UIcon name="i-lucide-external-link" class="size-3.5" />
-                    </a>
-                  </template>
-                  <button
-                    v-if="item.id === 'contact'"
-                    type="button"
-                    class="mt-3 inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-slate-200"
-                    @click="handleOpenContact"
+                <p>{{ item.answer }}</p>
+                <template v-if="item.id === 'privacy-data'">
+                  <a
+                    :href="VCH_PRIVACY_URL"
+                    target="_blank"
+                    rel="noopener"
+                    class="mt-2 inline-flex items-center gap-1 text-xs font-bold text-sky-300 underline decoration-sky-500/50 underline-offset-2 hover:text-sky-200"
                   >
-                    Contact us
-                  </button>
-                </div>
+                    Privacy policy
+                    <UIcon name="i-lucide-external-link" class="size-3.5" />
+                  </a>
+                </template>
+                <button
+                  v-if="item.id === 'contact'"
+                  type="button"
+                  class="mt-3 inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-slate-200"
+                  @click="handleOpenContact"
+                >
+                  Contact us
+                </button>
               </div>
             </div>
-          </section>
-        </Transition>
-        </div>
-      </div>
-    </Transition>
-  </Teleport>
+          </div>
+        </section>
+      </Transition>
+    </AppOverlayShell>
+  </Transition>
 </template>

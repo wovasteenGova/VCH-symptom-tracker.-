@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import {
+  readAppWelcomeStep,
   WEEKLY_LOG_DAY_OPTIONS,
+  writeAppWelcomeStep,
   type LoggingCadence
 } from '../utils/loggingCadence'
 import {
@@ -31,7 +33,7 @@ const emit = defineEmits<{
   promptInstall: []
 }>()
 
-const activeStep = ref(0)
+const activeStep = ref(readAppWelcomeStep())
 const loggingCadence = ref<LoggingCadence>('weekly')
 const weeklyLogDay = ref(0)
 const termsAccepted = ref(false)
@@ -39,6 +41,10 @@ const enableLogReminders = ref(true)
 const reminderHour = ref(DEFAULT_LOG_REMINDER_HOUR)
 const reminderTimezone = ref(getBrowserTimezone())
 const isSaving = ref(false)
+
+watch(activeStep, (step) => {
+  writeAppWelcomeStep(step)
+})
 
 const reminderTimezoneLabel = computed(() => formatTimezoneLabel(reminderTimezone.value))
 
@@ -102,8 +108,11 @@ async function finishWelcome() {
 </script>
 
 <template>
-  <div class="fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto bg-slate-950/80 p-4 backdrop-blur-sm">
-    <section class="flex max-h-[min(calc(var(--app-height)-2rem),44rem)] w-full max-w-md flex-col overflow-hidden rounded-[1.75rem] border border-teal-200 bg-teal-50 shadow-2xl shadow-teal-950/15 dark:border-teal-500/30 dark:bg-slate-900 dark:shadow-black/40">
+  <AppOverlayShell
+    :dismissible="false"
+    backdrop-class="bg-slate-950/80 backdrop-blur-sm"
+  >
+    <section class="app-overlay-panel app-overlay-panel--stack rounded-[1.75rem] border border-teal-200 bg-teal-50 shadow-2xl shadow-teal-950/15 dark:border-teal-500/30 dark:bg-slate-900 dark:shadow-black/40">
       <div class="shrink-0 border-b border-teal-200/80 px-5 py-4 dark:border-teal-500/20">
         <p class="text-xs font-bold uppercase tracking-[0.2em] text-teal-700 dark:text-teal-200">
           Step {{ activeStep + 1 }} of {{ totalSteps }}
@@ -305,5 +314,5 @@ async function finishWelcome() {
         </div>
       </div>
     </section>
-  </div>
+  </AppOverlayShell>
 </template>

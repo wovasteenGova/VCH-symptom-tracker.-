@@ -1,5 +1,5 @@
 <template>
-  <Teleport to="body">
+  <Teleport :to="teleportTarget">
     <Transition
       enter-active-class="transition duration-200 ease-out"
       enter-from-class="opacity-0"
@@ -10,7 +10,8 @@
     >
       <div
         v-if="open"
-        class="fixed inset-0 z-[80] flex flex-col bg-slate-950/95 backdrop-blur-sm"
+        class="inset-0 z-[110] flex flex-col bg-slate-950/95 backdrop-blur-sm"
+        :class="positionClass"
       >
         <header class="flex shrink-0 items-center justify-between gap-3 border-b border-slate-800 px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))]">
           <div>
@@ -79,9 +80,10 @@
 </template>
 
 <script setup lang="ts">
+import { computed, inject, nextTick, onUnmounted, ref, watch } from 'vue'
 import { loadStripe, type StripeEmbeddedCheckout } from '@stripe/stripe-js'
-import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import { useEntitlements } from '../composables/useEntitlements'
+import { TRACKER_EMBED_KEY } from '../composables/useTrackerLayout'
 import { PRO_ANNUAL_PRICE_LABEL, PRO_CHECKOUT_SUBMIT_MESSAGE, PRO_REFUND_POLICY } from '../utils/subscription'
 
 const CHECKOUT_SUCCESS_TOAST_KEY = 'symptom-tracker-checkout-success-toast'
@@ -95,6 +97,10 @@ const emit = defineEmits<{
   error: [message: string]
   fallback: []
 }>()
+
+const isEmbeddedPreview = inject(TRACKER_EMBED_KEY, false)
+const teleportTarget = computed(() => (isEmbeddedPreview ? '#tracker-app-shell' : 'body'))
+const positionClass = computed(() => (isEmbeddedPreview ? 'absolute' : 'fixed'))
 
 const config = useRuntimeConfig()
 const { activateCheckoutSession, createEmbeddedCheckoutSession, loadEntitlements } = useEntitlements()

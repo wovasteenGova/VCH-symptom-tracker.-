@@ -4,7 +4,18 @@
 :root {
   --app-height: 100dvh;
   --history-sheet-collapsed-height: calc(4.95rem + env(safe-area-inset-bottom, 0px));
+  --history-sheet-expanded-height: 80dvh;
+  --app-overlay-history-inset: var(--history-sheet-collapsed-height);
 }
+
+/*
+ * Z-index ladder (Symptom Tracker app shell)
+ * - App content: default (0)
+ * - History collapsed (.home-history-panel): 90
+ * - History expanded (.home-history-panel.is-history-expanded): 100
+ * - Modals / prompts (.app-overlay-shell via AppOverlayShell): 110+
+ * - Critical confirms (delete, log details): 120
+ */
 
 html {
   background: #f8fafc;
@@ -66,11 +77,17 @@ button:disabled,
   display: none;
 }
 
-/* App overlays: centered above history chrome (--app-overlay-history-inset on :root) */
+/*
+ * App overlays — keep prompts/modals above the History bottom sheet.
+ *
+ * 1. Wrap in <AppOverlayShell> (teleports to body or #tracker-app-shell in embed, z-index 110+).
+ * 2. Put content in `.app-overlay-panel` (+ `--stack` / `--compact` as needed).
+ * 3. On the app page, call `useAppOverlayHistoryInset(historyExpanded, { historyHidden })` so
+ *    `--app-overlay-history-inset` tracks History; hidden chrome uses full-frame overlays.
+ */
 .app-overlay-shell {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
   overflow-y: auto;
   overscroll-behavior-y: contain;
   padding-inline: 1rem;
@@ -85,15 +102,14 @@ button:disabled,
 .app-overlay-inner {
   display: flex;
   width: 100%;
+  min-height: 0;
+  flex: 1 1 auto;
   justify-content: center;
-  align-items: center;
+  align-items: safe center;
 }
 
 .app-overlay-panel {
-  width: 100%;
-  max-width: 28rem;
-  height: fit-content;
-  max-height: min(
+  --app-overlay-panel-max-height: min(
     80dvh,
     calc(
       100dvh
@@ -103,12 +119,17 @@ button:disabled,
       - 2rem
     )
   );
+
+  width: 100%;
+  max-width: 28rem;
+  max-height: var(--app-overlay-panel-max-height);
   overflow-y: auto;
   overscroll-behavior-y: contain;
 }
 
 .app-overlay-panel--compact {
   flex: none;
+  height: fit-content;
 }
 
 .app-overlay-panel--stack {
@@ -116,6 +137,8 @@ button:disabled,
   flex-direction: column;
   overflow: hidden;
   min-height: 0;
+  height: var(--app-overlay-panel-max-height);
+  max-height: var(--app-overlay-panel-max-height);
 }
 
 .app-overlay-panel--lg {
