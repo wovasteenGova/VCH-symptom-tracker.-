@@ -12,6 +12,17 @@ function formatExportDate(date = new Date()) {
   ].join('-')
 }
 
+/** Date + time so repeat downloads on the same day get unique filenames. */
+function formatExportTimestamp(date = new Date()) {
+  const timePart = [
+    String(date.getHours()).padStart(2, '0'),
+    String(date.getMinutes()).padStart(2, '0'),
+    String(date.getSeconds()).padStart(2, '0')
+  ].join('')
+
+  return `${formatExportDate(date)}_${timePart}`
+}
+
 export function slugifyConditionScope(conditionLabel: string | null | undefined) {
   if (!conditionLabel) {
     return 'all_conditions'
@@ -29,9 +40,12 @@ export function slugifyConditionScope(conditionLabel: string | null | undefined)
     .replace(/^_+|_+$/g, '')
 }
 
-export function buildSymptomReportPdfFilename(options: SymptomReportFilenameOptions = {}) {
+export function buildSymptomReportPdfFilename(
+  options: SymptomReportFilenameOptions = {},
+  exportedAt = new Date()
+) {
   const scope = slugifyConditionScope(options.conditionLabel)
-  const datePart = formatExportDate()
+  const datePart = formatExportTimestamp(exportedAt)
 
   if (options.reportVariant === 'family') {
     return `VCH_family_report_${scope}_${datePart}.pdf`
@@ -46,9 +60,12 @@ export function buildSymptomReportPdfFilename(options: SymptomReportFilenameOpti
   return `VCH_${reportKind}_${scope}_${datePart}.pdf`
 }
 
-export function buildPersonalReviewPdfFilename(conditionLabel: string | null | undefined) {
+export function buildPersonalReviewPdfFilename(
+  conditionLabel: string | null | undefined,
+  exportedAt = new Date()
+) {
   const scope = slugifyConditionScope(conditionLabel)
-  const datePart = formatExportDate()
+  const datePart = formatExportTimestamp(exportedAt)
 
   return `VCH_personal_review_${scope}_${datePart}.pdf`
 }

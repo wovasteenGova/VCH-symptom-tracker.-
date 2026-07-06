@@ -2153,6 +2153,15 @@
           <p v-if="exportError" class="mt-4 text-sm font-medium text-red-600 dark:text-red-300" aria-live="assertive">
             {{ exportError }}
           </p>
+
+          <p
+            v-if="pdfExportDownloadStarted && exportNotice"
+            class="mt-4 flex items-start gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs leading-5 text-emerald-950 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-100"
+            aria-live="polite"
+          >
+            <UIcon name="i-lucide-circle-check" class="mt-0.5 size-4 shrink-0" />
+            <span>{{ exportNotice }}</span>
+          </p>
           </template>
         </div>
 
@@ -2168,11 +2177,17 @@
           <button
             v-else-if="exportableConditions.length"
             type="button"
-            class="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3.5 text-xs font-bold text-white transition hover:bg-slate-800 disabled:opacity-40 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+            class="flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3.5 text-xs font-bold transition disabled:opacity-40"
+            :class="pdfExportDownloadStarted
+              ? 'bg-emerald-600 text-white hover:bg-emerald-500 dark:bg-emerald-500 dark:hover:bg-emerald-400'
+              : 'bg-slate-950 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200'"
             :disabled="!canConfirmPdfExport"
             @click="runPdfExport"
           >
-            <UIcon name="i-lucide-download" class="size-4" />
+            <UIcon
+              :name="pdfExportDownloadStarted ? 'i-lucide-folder-down' : 'i-lucide-download'"
+              class="size-4"
+            />
             {{ exportButtonLabel }}
           </button>
         </div>
@@ -2448,6 +2463,7 @@ let entriesLoadPromise: Promise<void> | null = null
 const homeConditionOrderKeys = ref<string[]>([])
 const conditionBrowserListOrder = ref<string[]>([])
 const isExportingPdf = ref(false)
+const pdfExportDownloadStarted = ref(false)
 const exportError = ref('')
 const exportNotice = ref('')
 const pdfExportType = ref<'full' | 'cp-exam'>('full')
@@ -3460,7 +3476,7 @@ const exportableFamilyEntryCount = computed(() => (
 ))
 
 const canConfirmPdfExport = computed(() => {
-  if (isExportingPdf.value || !user.value || !exportableConditions.value.length || !selectedExportConditionKeys.value.length) {
+  if (isExportingPdf.value || pdfExportDownloadStarted.value || !user.value || !exportableConditions.value.length || !selectedExportConditionKeys.value.length) {
     return false
   }
 
@@ -3472,6 +3488,10 @@ const canConfirmPdfExport = computed(() => {
 })
 
 const exportButtonLabel = computed(() => {
+  if (pdfExportDownloadStarted.value) {
+    return 'Check your downloads'
+  }
+
   if (isExportingPdf.value) {
     return 'Preparing...'
   }
@@ -3491,6 +3511,7 @@ const exportButtonLabel = computed(() => {
 
 function openPdfExportOverlay() {
   exportError.value = ''
+  pdfExportDownloadStarted.value = false
   isPdfExportOverlayOpen.value = true
 }
 
@@ -3499,8 +3520,19 @@ function closePdfExportOverlay() {
     return
   }
 
+  pdfExportDownloadStarted.value = false
   isPdfExportOverlayOpen.value = false
 }
+
+watch(
+  [pdfExportType, pdfExportContentMode, pdfExportSeparateFamily, selectedExportConditionKeys, pdfExportAcknowledged],
+  () => {
+    if (pdfExportDownloadStarted.value) {
+      pdfExportDownloadStarted.value = false
+      exportNotice.value = ''
+    }
+  }
+)
 
 function isExportConditionSelected(conditionKey: string) {
   return selectedExportConditionKeys.value.includes(conditionKey)
@@ -4310,7 +4342,8 @@ async function exportCpExamPdf(conditionKeys: string[]) {
       conditionLabel
     })
 
-    closePdfExportOverlay()
+    exportNotice.value = 'Your personal review PDF should be in your downloads folder.'
+    pdfExportDownloadStarted.value = true
   } catch (error) {
     exportError.value = getErrorMessage(error)
   } finally {
@@ -4372,14 +4405,16 @@ async function exportEntriesPdf(conditionKeys: string[]) {
     }
 
     if (separateFamily && veteranEntries.length && familyEntries.length) {
-      exportNotice.value = 'Downloaded two PDFs: your veteran logs and a separate family and friend observations report.'
+      exportNotice.value = 'Downloaded two PDFs. Check your downloads folder for your veteran logs and the family observations report.'
     } else if (!isPro.value && includeCharts) {
-      exportNotice.value = 'PDF downloaded with your entries and weekly symptom counts. Pro adds severity trends and advanced charts.'
+      exportNotice.value = 'PDF downloaded with your entries and weekly symptom counts. Pro adds severity trends and advanced charts. Check your downloads folder.'
     } else if (pdfExportContentMode.value === 'entries-only') {
-      exportNotice.value = 'PDF downloaded with summary stats and your entry log.'
+      exportNotice.value = 'PDF downloaded with summary stats and your entry log. Check your downloads folder.'
+    } else {
+      exportNotice.value = 'Your PDF should be in your downloads folder.'
     }
 
-    closePdfExportOverlay()
+    pdfExportDownloadStarted.value = true
   } catch (error) {
     exportError.value = getErrorMessage(error)
   } finally {

@@ -260,7 +260,7 @@ function drawMedicationListSection(
 
   doc.setFontSize(8)
   doc.setTextColor(100, 116, 139)
-  doc.text('Pulled from medication fields across this export for rater review.', margin + 10, y + boxHeight - 8)
+  doc.text('Pulled from medication input fields.', margin + 10, y + boxHeight - 8)
 
   return y + boxHeight + PDF_SECTION_GAP
 }
@@ -672,11 +672,13 @@ export function useSymptomPdfExport() {
       drawPageFooter(doc, pageNumber, totalPages, margin)
     }
 
+    const exportedAt = new Date()
+
     doc.save(buildSymptomReportPdfFilename({
       conditionLabel,
       reportVariant,
       reportMode: entryLogIncludesCharts ? 'full' : 'entries-only'
-    }))
+    }, exportedAt))
   }
 
   async function downloadCpExamPdf(
@@ -707,7 +709,7 @@ export function useSymptomPdfExport() {
       conditionLabel
     })
 
-    doc.save(buildPersonalReviewPdfFilename(conditionLabel))
+    doc.save(buildPersonalReviewPdfFilename(conditionLabel, new Date()))
   }
 
   return {
