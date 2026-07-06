@@ -33,7 +33,7 @@
             <button
               type="button"
               class="rounded-full bg-slate-950 px-4 py-2 text-sm font-bold text-white shadow-sm dark:bg-white dark:text-slate-950"
-              @click="closeEntryPanel(true)"
+              @click="handleEntryDone"
             >
               Done
             </button>
@@ -537,13 +537,17 @@
               </Transition>
 
               <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
-                <div class="relative z-10 mb-6 shrink-0 flex items-center justify-between gap-4 bg-slate-50 px-1 dark:bg-slate-950">
+                <div
+                  v-if="!isEntryKeyboardOpen"
+                  class="relative z-10 mb-6 shrink-0 flex items-center justify-between gap-4 bg-slate-50 px-1 dark:bg-slate-950"
+                  data-step-swipe-block
+                >
                     <button
                       type="button"
                       class="grid size-10 place-items-center rounded-full bg-slate-100 text-slate-950 transition hover:bg-slate-200 disabled:opacity-30 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
                       :disabled="entryStep === 0"
                       aria-label="Previous entry step"
-                      @click="showPreviousEntryStep"
+                      @click.stop="showPreviousEntryStep"
                     >
                       <UIcon name="i-lucide-chevron-left" class="size-5" />
                     </button>
@@ -565,7 +569,7 @@
                       class="grid size-10 place-items-center rounded-full bg-slate-100 text-slate-950 transition hover:bg-slate-200 disabled:opacity-30 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
                       :disabled="isLastEntryStep"
                       aria-label="Next entry step"
-                      @click="handleEntryNextStep"
+                      @click.stop="handleEntryNextStep"
                     >
                       <UIcon name="i-lucide-chevron-right" class="size-5" />
                     </button>
@@ -824,8 +828,9 @@
               </div>
 
               <div
+                v-if="!isEntryKeyboardOpen"
                 class="mt-auto shrink-0"
-                :style="{ minHeight: isEntryKeyboardOpen ? '0px' : `${entryActionBarHeight}px` }"
+                :style="{ minHeight: `${entryActionBarHeight}px` }"
               >
               <StickyActionBar
                 class="-mx-5 rounded-none border-x-0 dark:border-slate-800"
@@ -842,6 +847,7 @@
                 </button>
 
                 <button
+                  v-if="!isEntryKeyboardOpen"
                   type="button"
                   class="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-4 text-base font-bold text-white shadow-lg transition hover:bg-slate-800 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600"
                   :disabled="isSavingEntry"
@@ -855,6 +861,13 @@
                 </p>
               </StickyActionBar>
               </div>
+              <p
+                v-if="isEntryKeyboardOpen && entryError"
+                class="mt-3 shrink-0 text-center text-sm font-medium text-red-300"
+                aria-live="assertive"
+              >
+                {{ entryError }}
+              </p>
             </div>
         </div>
       </section>
@@ -901,10 +914,9 @@
                 <div
                   v-else-if="!hasLoadedTrackedConditions || isLoadingTrackedConditions"
                   key="home-loading"
-                  class="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-50 px-6 text-center dark:bg-slate-950"
-                >
-                  <VchLoader :width="200" />
-                </div>
+                  class="absolute inset-0 z-10 bg-slate-50 dark:bg-slate-950"
+                  aria-hidden="true"
+                />
 
                 <div
                   v-else-if="trackedConditionsLoadError && !homeConditions.length"
@@ -977,7 +989,7 @@
                     :class="isConditionSlideEntryEnabled ? 'cursor-pointer' : 'pointer-events-none'"
                     :tabindex="isConditionSlideEntryEnabled ? 0 : -1"
                     :aria-label="`Log ${activeCondition.title} entry`"
-                    @click="startEntryFromCurrentSlide"
+                    @click.stop="startEntryFromCurrentSlide"
                     @keydown.enter.prevent="startEntryFromCurrentSlide"
                     @keydown.space.prevent="startEntryFromCurrentSlide"
                   />
@@ -1168,11 +1180,14 @@
             <div
               v-if="homeConditions.length && !showConditionBrowser"
               class="home-carousel-footer mb-2 shrink-0 pt-3"
-              :class="{ 'has-mobile-log-space': !isDesktopLayout && (homeSharedTransitionActive || !isHomeOverviewSlide) }"
+              :class="{
+                'has-mobile-log-space': !isDesktopLayout && (homeSharedTransitionActive || !isHomeOverviewSlide),
+                'pointer-events-none': historyExpanded
+              }"
             >
               <Transition name="home-log-btn">
                 <div
-                  v-if="!isDesktopLayout && !isHomeOverviewSlide"
+                  v-if="!isDesktopLayout && !isHomeOverviewSlide && !historyExpanded && isConditionSlideEntryEnabled"
                   key="condition-log-btn"
                   class="mt-4 flex w-full justify-center"
                 >
@@ -1180,7 +1195,7 @@
                     type="button"
                     class="flex w-full max-w-xs items-center justify-center gap-2 rounded-full bg-slate-950 px-6 py-3.5 text-base font-bold text-white shadow-xl transition active:scale-[0.98] dark:bg-white dark:text-slate-950"
                     :aria-label="`Log ${activeCondition.title} entry`"
-                    @click="startEntryFromCurrentSlide"
+                    @click.stop="startEntryFromCurrentSlide"
                   >
                     <UIcon name="i-lucide-plus" class="size-5" />
                     Log {{ activeCondition.title }}
@@ -1197,7 +1212,7 @@
                   type="button"
                   class="grid size-11 place-items-center rounded-full bg-white text-slate-950 shadow-lg ring-1 ring-slate-200 transition hover:bg-slate-100 dark:bg-slate-900 dark:text-white dark:ring-slate-800 dark:hover:bg-slate-800"
                   aria-label="Previous slide"
-                  @click="showPreviousCondition"
+                  @click.stop="showPreviousCondition"
                 >
                   <UIcon name="i-lucide-chevron-left" class="size-5" />
                 </button>
@@ -1207,7 +1222,7 @@
                   type="button"
                   class="grid size-[4.5rem] place-items-center rounded-full bg-white text-slate-950 shadow-xl ring-1 ring-slate-200 transition hover:bg-slate-100 dark:bg-slate-800 dark:text-white dark:ring-slate-700 dark:hover:bg-slate-700"
                   aria-label="Log a symptom entry"
-                  @click="startEntryFromOverview"
+                  @click.stop="startEntryFromOverview"
                 >
                   <UIcon name="i-lucide-plus" class="size-9" />
                 </button>
@@ -1217,7 +1232,7 @@
                   class="grid size-[4.5rem] place-items-center rounded-full bg-white text-slate-950 shadow-xl ring-1 ring-slate-200 transition hover:bg-slate-100 dark:bg-slate-800 dark:text-white dark:ring-slate-700 dark:hover:bg-slate-700"
                   :class="historyExpanded ? 'scale-90' : 'scale-100'"
                   :aria-label="`Add ${activeCondition.title} entry`"
-                  @click="startEntryFromCurrentSlide"
+                  @click.stop="startEntryFromCurrentSlide"
                 >
                   <UIcon name="i-lucide-plus" class="size-9" />
                 </button>
@@ -1226,7 +1241,7 @@
                   type="button"
                   class="grid size-11 place-items-center rounded-full bg-white text-slate-950 shadow-lg ring-1 ring-slate-200 transition hover:bg-slate-100 dark:bg-slate-900 dark:text-white dark:ring-slate-800 dark:hover:bg-slate-800"
                   aria-label="Next slide"
-                  @click="showNextCondition"
+                  @click.stop="showNextCondition"
                 >
                   <UIcon name="i-lucide-chevron-right" class="size-5" />
                 </button>
@@ -1244,6 +1259,7 @@
           @pointermove="handleHistoryPointerMove"
           @pointerup="handleHistoryPointerUp"
           @pointercancel="handleHistoryPointerCancel"
+          @transitionend="handleHistoryPanelTransitionEnd"
         >
           <div class="history-panel-handle flex w-full shrink-0 cursor-grab flex-col items-center py-3 active:cursor-grabbing">
             <span class="h-1.5 w-14 rounded-full bg-slate-300 dark:bg-slate-600" />
@@ -1336,10 +1352,10 @@
             </div>
 
             <div
-              v-show="historyExpanded"
               class="history-panel-tabs mt-4 rounded-full bg-slate-100 p-1 dark:bg-slate-800/80"
               role="tablist"
               aria-label="History sections"
+              @click.stop
               @touchstart.passive="handleHistoryTabSwipeStart"
               @touchend="handleHistoryTabSwipeEnd"
             >
@@ -1362,7 +1378,6 @@
           </div>
 
           <div
-            v-show="historyExpanded"
             ref="historyScrollEl"
             class="history-panel-scroll min-h-0 flex-1 overscroll-contain bg-white px-4 pb-2 pt-3 no-scrollbar dark:bg-slate-900"
             :class="historyExpanded ? 'overflow-y-auto' : 'overflow-hidden touch-pan-y'"
@@ -2128,6 +2143,7 @@ import {
   toggleEntryFieldPresetValue
 } from '../../utils/entryFieldPresets'
 import {
+  collectMedicationsFromEntries,
   formatMedicationListForEntry,
   readSavedMedicationList,
   rememberMedicationsFromEntry
@@ -2339,7 +2355,7 @@ const entryForm = ref<Record<string, string>>({})
 const isSavingEntry = ref(false)
 const entryError = ref('')
 const isLoadingEntries = ref(false)
-const loadingEntriesMessage = ref(Math.random() < 0.5 ? 'Loading entries...' : 'Getting You in the Main Frame')
+const loadingEntriesMessage = ref('Loading entries...')
 const entriesError = ref('')
 const savedEntries = ref<any[]>([])
 const hasLoadedEntriesOnce = ref(false)
@@ -2356,6 +2372,7 @@ const transitionDirection = ref<HomeTransitionDirection>('next')
 const installPlatform = ref<'ios' | 'android' | 'desktop'>('desktop')
 const deferredInstallPrompt = ref<any>(null)
 const historyExpanded = ref(false)
+const historyPanelAnimating = ref(false)
 const historyScrollEl = ref<HTMLElement | null>(null)
 const conditionSlideEntryBlocked = ref(false)
 let conditionSlideEntryBlockedTimer: ReturnType<typeof setTimeout> | undefined
@@ -3142,9 +3159,10 @@ const carouselWorkspaceClass = computed(() => {
   return 'flex-1 pb-3'
 })
 
-const historyPanelClass = computed(() => (
-  historyExpanded.value ? 'is-history-expanded' : 'is-history-collapsed'
-))
+const historyPanelClass = computed(() => [
+  historyExpanded.value ? 'is-history-expanded' : 'is-history-collapsed',
+  historyPanelAnimating.value ? 'is-history-animating' : ''
+])
 
 const isConditionSlideEntryEnabled = computed(() => {
   return !historyExpanded.value && !conditionSlideEntryBlocked.value
@@ -3473,7 +3491,18 @@ const activeEntryIsMentalHealth = computed(() => {
   return category.toLowerCase().includes('mental')
 })
 
-const savedMedicationList = computed(() => readSavedMedicationList(user.value?.id))
+const savedMedicationList = computed(() => {
+  const conditionKeyForMeds = conditionKey(entryTitle.value)
+  const fromEntries = collectMedicationsFromEntries(
+    savedEntries.value.filter((entry) => entry.condition_key === conditionKeyForMeds)
+  )
+
+  if (fromEntries.length) {
+    return fromEntries
+  }
+
+  return readSavedMedicationList(user.value?.id, conditionKeyForMeds)
+})
 function filterConditionResults(query: string) {
   return filterAndRankConditions(conditionResults, query)
 }
@@ -3809,8 +3838,15 @@ function syncAppOverlayHistoryInset(expanded: boolean) {
   )
 }
 
-watch(historyExpanded, (expanded) => {
+watch(historyExpanded, (expanded, wasExpanded) => {
   syncAppOverlayHistoryInset(expanded)
+
+  if (wasExpanded !== undefined) {
+    historyPanelAnimating.value = true
+    window.setTimeout(() => {
+      historyPanelAnimating.value = false
+    }, HISTORY_TRANSITION_LOCK_MS + 50)
+  }
 
   if (expanded) {
     conditionSlideEntryBlocked.value = true
@@ -3900,7 +3936,15 @@ async function loadProfileDisplayName() {
   }
 }
 
+const ENTRY_FIELD_KEY_ALIASES: Record<string, string> = {
+  'Possible Factors (optional)': 'medication_or_food_trigger'
+}
+
 function fieldKey(label: string) {
+  if (ENTRY_FIELD_KEY_ALIASES[label]) {
+    return ENTRY_FIELD_KEY_ALIASES[label]
+  }
+
   return label
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '_')
@@ -3943,7 +3987,16 @@ function prefillEntryMedications() {
     return
   }
 
-  const saved = formatMedicationListForEntry(readSavedMedicationList(user.value?.id))
+  const conditionKeyForMeds = conditionKey(entryTitle.value)
+  const fromEntries = collectMedicationsFromEntries(
+    savedEntries.value.filter((entry) => entry.condition_key === conditionKeyForMeds)
+  )
+  const saved = formatMedicationListForEntry(
+    fromEntries.length
+      ? fromEntries
+      : readSavedMedicationList(user.value?.id, conditionKeyForMeds)
+  )
+
   if (saved) {
     entryForm.value[key] = saved
   }
@@ -4650,7 +4703,11 @@ async function saveEntry() {
       await focusSubmission(savedEntryId)
     }
 
-    rememberMedicationsFromEntry(entryForm.value.medications_for_this_entry, user.value?.id)
+    rememberMedicationsFromEntry(
+      entryForm.value.medications_for_this_entry,
+      user.value?.id,
+      payload.condition_key
+    )
 
     showSubmissionToast({
       message: wasEditing ? 'Entry updated.' : 'Entry saved.',
@@ -5946,6 +6003,10 @@ function changeEntryCondition(condition: { title: string, category: string, desc
   isConditionPickerOpen.value = false
   prefillConditionStatementForEntry(condition.title)
 
+  const medicationKey = fieldKey('Medications for this entry')
+  delete entryForm.value[medicationKey]
+  prefillEntryMedications()
+
   if (!isPro.value && !editingEntryId.value) {
     void ensureFreeConditionAccess(
       conditionKeyFromLabel(condition.title),
@@ -6059,12 +6120,14 @@ let historyPointerId: number | null = null
 let historyPointerStartY = 0
 let historyPointerDeltaY = 0
 let historyPointerStartedOnInteractive = false
+let historyPointerDidChangeState = false
 
 function resetHistoryPointer() {
   historyPointerId = null
   historyPointerStartY = 0
   historyPointerDeltaY = 0
   historyPointerStartedOnInteractive = false
+  historyPointerDidChangeState = false
 }
 
 function handleHistoryPointerDown(event: PointerEvent) {
@@ -6089,6 +6152,7 @@ function handleHistoryPointerDown(event: PointerEvent) {
   historyPointerId = event.pointerId
   historyPointerStartY = event.clientY
   historyPointerDeltaY = 0
+  historyPointerDidChangeState = false
   ;(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
 }
 
@@ -6101,6 +6165,7 @@ function handleHistoryPointerMove(event: PointerEvent) {
 
   if (!historyExpanded.value && historyPointerDeltaY > HISTORY_DRAG_ACTIVATE_PX) {
     expandHistorySheet()
+    historyPointerDidChangeState = true
   }
 
   if (
@@ -6109,6 +6174,7 @@ function handleHistoryPointerMove(event: PointerEvent) {
     && (historyScrollEl.value?.scrollTop ?? 0) <= 0
   ) {
     collapseHistorySheet()
+    historyPointerDidChangeState = true
   }
 }
 
@@ -6126,12 +6192,14 @@ function handleHistoryPointerUp(event: PointerEvent) {
     const delta = historyPointerDeltaY
 
     if (Math.abs(delta) < HISTORY_DRAG_ACTIVATE_PX) {
-      lockHistoryEntryActivation()
-      blockConditionSlideEntry(HISTORY_ENTRY_ACTIVATION_LOCK_MS)
-      if (historyExpanded.value) {
-        collapseHistorySheet()
-      } else {
-        expandHistorySheet()
+      if (!historyPointerDidChangeState) {
+        lockHistoryEntryActivation()
+        blockConditionSlideEntry(HISTORY_ENTRY_ACTIVATION_LOCK_MS)
+        if (historyExpanded.value) {
+          collapseHistorySheet()
+        } else {
+          expandHistorySheet()
+        }
       }
     } else if (delta > HISTORY_DRAG_SNAP_PX) {
       lockHistoryEntryActivation()
@@ -6149,6 +6217,14 @@ function handleHistoryPointerUp(event: PointerEvent) {
 
 function handleHistoryPointerCancel() {
   resetHistoryPointer()
+}
+
+function handleHistoryPanelTransitionEnd(event: TransitionEvent) {
+  if (event.target !== event.currentTarget || event.propertyName !== 'height') {
+    return
+  }
+
+  historyPanelAnimating.value = false
 }
 
 let conditionSwipeStartX = 0
@@ -6528,7 +6604,9 @@ function openEntryForEdit(entryId: string) {
   hasActiveDraft.value = true
   isEntryOpen.value = true
 
-  resetEntryForm()
+  entryForm.value = {}
+  severityValue.value = 5
+  entryTimeWasManuallySelected = false
   populateEntryFormFromRecord(entry)
 
   if (resolved.customName) {
@@ -6806,6 +6884,15 @@ async function confirmConditionSlot() {
   }
 }
 
+async function handleEntryDone() {
+  if (isEditingEntry.value) {
+    await saveEntry()
+    return
+  }
+
+  closeEntryPanel(true)
+}
+
 function closeEntryPanel(clearDraft = false, preservePersistedDraft = false) {
   const wasEntryOpen = isEntryOpen.value
 
@@ -6935,7 +7022,7 @@ function handleEntryPrimaryAction() {
 
 .home-state-fade-enter-active,
 .home-state-fade-leave-active {
-  transition: opacity 240ms ease-out;
+  transition: none;
 }
 
 .home-state-fade-leave-active {
@@ -7008,6 +7095,7 @@ function handleEntryPrimaryAction() {
   padding-bottom: env(safe-area-inset-bottom, 0px);
   transition:
     height 650ms cubic-bezier(0.22, 1, 0.36, 1),
+    max-height 650ms cubic-bezier(0.22, 1, 0.36, 1),
     box-shadow 650ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -7017,9 +7105,9 @@ function handleEntryPrimaryAction() {
   justify-content: flex-start;
 }
 
-.home-history-panel.is-history-collapsed .history-panel-header-extra,
-.home-history-panel.is-history-collapsed .history-panel-tabs,
-.home-history-panel.is-history-collapsed .history-panel-scroll {
+.home-history-panel.is-history-collapsed:not(.is-history-animating) .history-panel-header-extra,
+.home-history-panel.is-history-collapsed:not(.is-history-animating) .history-panel-tabs,
+.home-history-panel.is-history-collapsed:not(.is-history-animating) .history-panel-scroll {
   display: none;
 }
 

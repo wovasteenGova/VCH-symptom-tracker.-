@@ -3,7 +3,7 @@
 
 :root {
   --app-height: 100dvh;
-  --history-sheet-collapsed-height: calc(5.75rem + env(safe-area-inset-bottom, 0px));
+  --history-sheet-collapsed-height: calc(4.95rem + env(safe-area-inset-bottom, 0px));
 }
 
 html {

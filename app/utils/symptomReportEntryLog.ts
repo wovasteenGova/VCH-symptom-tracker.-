@@ -53,7 +53,7 @@ const detailLabelMap: Record<string, string> = {
   nerve_symptoms: 'Nerve symptoms',
   digestive_symptom: 'Digestive symptom',
   digestive_symptoms: 'Digestive symptoms',
-  medication_or_food_trigger: 'Medication or food trigger',
+  medication_or_food_trigger: 'Possible Factors (optional)',
   medications_for_this_entry: 'Medications for this entry',
   symptoms_managed_by_medication: 'Symptoms managed by medication',
   night_symptoms: 'Night symptoms',

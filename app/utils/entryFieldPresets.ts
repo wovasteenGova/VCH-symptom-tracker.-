@@ -13,6 +13,9 @@ export const durationPresets: EntryFieldPreset[] = [
 ]
 
 export const stopActivityPresets: EntryFieldPreset[] = [
+  { label: 'Annoying', value: 'Annoying' },
+  { label: 'Irritating', value: 'Irritating' },
+  { label: 'Disruptive', value: 'Disruptive' },
   { label: 'No impact', value: 'No major impact on activity or sleep' },
   { label: 'Slowed down', value: 'Slowed down but continued' },
   { label: 'Had to rest', value: 'Yes - had to rest or lie down' },
@@ -205,7 +208,7 @@ const multiSelectPresetFields = new Set([
   'Headache symptoms',
   'Digestive symptoms',
   'Night symptoms',
-  'Medication or food trigger',
+  'Possible Factors (optional)',
   'Nerve symptoms',
   'Daytime effect',
   'Breathing symptoms',
@@ -281,7 +284,7 @@ export function getEntryFieldPresets(fieldLabel: string): EntryFieldPreset[] {
       return digestiveSymptomPresets
     case 'Night symptoms':
       return digestiveNightSymptomPresets
-    case 'Medication or food trigger':
+    case 'Possible Factors (optional)':
       return digestiveTriggerPresets
     case 'Nerve symptoms':
       return nerveSymptomPresets

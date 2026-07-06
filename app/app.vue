@@ -6,7 +6,7 @@
         class="fixed inset-0 z-[100] grid place-items-center bg-slate-950"
         aria-hidden="true"
       >
-        <img src="/vch-tank-loader.svg" alt="" class="w-72 max-w-[85vw] sm:w-80">
+        <img src="/vch-tank-loader.svg" alt="" class="w-[min(28rem,92vw)] sm:w-[32rem]">
       </div>
     </Transition>
     <NuxtRouteAnnouncer />

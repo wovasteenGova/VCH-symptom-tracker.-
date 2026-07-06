@@ -32,7 +32,7 @@ export const reportBranding = {
   logoPath: '/vch-logo.png'
 }
 
-export const CP_PREP_DISCLAIMER_TITLE = 'Personal reference only — not for VA submission'
+export const CP_PREP_DISCLAIMER_TITLE = 'Not for VA submission'
 
 export const CP_PREP_DISCLAIMER_BODY =
   'For your own review before medical visits. Do not upload this sheet as VA evidence. Use your own words; only describe what is still true for you.'

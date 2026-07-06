@@ -1,7 +1,13 @@
 const STORAGE_PREFIX = 'symptom-tracker-entry-medications'
 
-function storageKey(userId?: string | null) {
-  return userId ? `${STORAGE_PREFIX}:${userId}` : `${STORAGE_PREFIX}:guest`
+function storageKey(userId?: string | null, conditionKey?: string | null) {
+  const userPart = userId || 'guest'
+
+  if (conditionKey?.trim()) {
+    return `${STORAGE_PREFIX}:${userPart}:${conditionKey.trim()}`
+  }
+
+  return `${STORAGE_PREFIX}:${userPart}`
 }
 
 function splitMedicationTokens(value: string) {
@@ -11,17 +17,12 @@ function splitMedicationTokens(value: string) {
     .filter(Boolean)
 }
 
-export function readSavedMedicationList(userId?: string | null): string[] {
-  if (!import.meta.client) {
+function parseMedicationList(raw: string | null) {
+  if (!raw) {
     return []
   }
 
   try {
-    const raw = window.localStorage.getItem(storageKey(userId))
-    if (!raw) {
-      return []
-    }
-
     const parsed = JSON.parse(raw)
     if (!Array.isArray(parsed)) {
       return []
@@ -35,25 +36,51 @@ export function readSavedMedicationList(userId?: string | null): string[] {
   }
 }
 
-export function writeSavedMedicationList(medications: string[], userId?: string | null) {
+export function readSavedMedicationList(userId?: string | null, conditionKey?: string | null): string[] {
+  if (!import.meta.client) {
+    return []
+  }
+
+  if (conditionKey?.trim()) {
+    const conditionSpecific = parseMedicationList(
+      window.localStorage.getItem(storageKey(userId, conditionKey))
+    )
+
+    if (conditionSpecific.length) {
+      return conditionSpecific
+    }
+  }
+
+  return parseMedicationList(window.localStorage.getItem(storageKey(userId)))
+}
+
+export function writeSavedMedicationList(
+  medications: string[],
+  userId?: string | null,
+  conditionKey?: string | null
+) {
   if (!import.meta.client) {
     return
   }
 
-  window.localStorage.setItem(storageKey(userId), JSON.stringify(medications))
+  window.localStorage.setItem(storageKey(userId, conditionKey), JSON.stringify(medications))
 }
 
 export function formatMedicationListForEntry(medications: string[]) {
   return medications.join('\n')
 }
 
-export function rememberMedicationsFromEntry(value: string | undefined, userId?: string | null) {
+export function rememberMedicationsFromEntry(
+  value: string | undefined,
+  userId?: string | null,
+  conditionKey?: string | null
+) {
   const incoming = splitMedicationTokens(value || '')
   if (!incoming.length) {
-    return readSavedMedicationList(userId)
+    return readSavedMedicationList(userId, conditionKey)
   }
 
-  const merged = [...readSavedMedicationList(userId)]
+  const merged = [...readSavedMedicationList(userId, conditionKey)]
 
   incoming.forEach((medication) => {
     const exists = merged.some((item) => item.toLowerCase() === medication.toLowerCase())
@@ -62,7 +89,7 @@ export function rememberMedicationsFromEntry(value: string | undefined, userId?:
     }
   })
 
-  writeSavedMedicationList(merged, userId)
+  writeSavedMedicationList(merged, userId, conditionKey)
   return merged
 }
 
