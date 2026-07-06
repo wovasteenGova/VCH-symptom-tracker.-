@@ -28,6 +28,18 @@ const amber200 = [251, 191, 36] as const
 const amber50 = [255, 251, 235] as const
 const amber900 = [120, 53, 15] as const
 
+const ENTRY_TYPE_BADGE_HEIGHT = 22
+
+const familyBadgeFill = [219, 234, 254] as const
+const familyBadgeStroke = [147, 197, 253] as const
+const familyBadgeText = [30, 64, 175] as const
+
+export type EntryLogSectionOptions = BackdateReportContext & {
+  reportMode?: 'full' | 'entries-only'
+  reportVariant?: 'veteran' | 'family'
+  includeAdvancedCharts?: boolean
+}
+
 const skippedDetailKeys = new Set([
   'date_and_time',
   'how_bad_was_it',
@@ -76,6 +88,7 @@ type LayoutContext = {
   margin: number
   pageHeight: number
   bottomLimit: number
+  reportVariant?: 'veteran' | 'family'
 }
 
 function setText(doc: jsPDF, color: readonly [number, number, number]) {
@@ -210,17 +223,74 @@ function drawBackdateNote(
   ctx.y = boxTop + backdateNoteHeight + 8
 }
 
+function drawReportTypeHeader(doc: jsPDF, title: string, x: number, y: number) {
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(16)
+  setText(doc, slate900)
+  doc.text(title, x, y)
+}
+
+function getReportModeTitle(reportMode: 'full' | 'entries-only') {
+  return reportMode === 'full' ? 'Full Report' : 'Entries Only Report'
+}
+
+function isFamilyEntry(entry: ReportEntryRecord) {
+  return entry.source === 'family'
+}
+
+function shouldShowFamilyEntryBadge(ctx: LayoutContext, entry: ReportEntryRecord) {
+  return isFamilyEntry(entry) && !ctx.reportVariant
+}
+
+function drawFamilyObservationsBanner(ctx: LayoutContext) {
+  const bannerHeight = ENTRY_TYPE_BADGE_HEIGHT + 4
+
+  setFill(ctx.doc, familyBadgeFill)
+  setStroke(ctx.doc, familyBadgeStroke)
+  ctx.doc.setLineWidth(0.75)
+  ctx.doc.roundedRect(ctx.x, ctx.y, ctx.width, bannerHeight, 6, 6, 'FD')
+
+  ctx.doc.setFont('helvetica', 'bold')
+  ctx.doc.setFontSize(10)
+  setText(ctx.doc, familyBadgeText)
+  ctx.doc.text('Family & friend observations', ctx.x + 10, ctx.y + 15)
+
+  ctx.y += bannerHeight + 16
+}
+
+function drawFamilyEntryBadge(
+  ctx: LayoutContext,
+  innerX: number,
+  innerWidth: number
+) {
+  const badgeY = ctx.y
+
+  setFill(ctx.doc, familyBadgeFill)
+  setStroke(ctx.doc, familyBadgeStroke)
+  ctx.doc.setLineWidth(0.75)
+  ctx.doc.roundedRect(innerX, badgeY, innerWidth, ENTRY_TYPE_BADGE_HEIGHT, 6, 6, 'FD')
+
+  ctx.doc.setFont('helvetica', 'bold')
+  ctx.doc.setFontSize(9)
+  setText(ctx.doc, familyBadgeText)
+  ctx.doc.text('Family & friend observation', innerX + 10, badgeY + 14)
+
+  ctx.y = badgeY + ENTRY_TYPE_BADGE_HEIGHT + 10
+}
+
 function measureEntryHeight(
   blocks: EntryBlock[],
   options: {
     backdateNote?: EntryBackdateNote | null
     edited?: boolean
+    includeFamilyBadge?: boolean
   } = {}
 ) {
   const padding = 18
   const primaryBlocks = blocks.filter((block) => block.kind === 'primary')
   const detailBlocks = blocks.filter((block) => block.kind === 'detail')
-  let height = padding + 34 + 12 + padding
+  const badgeHeight = options.includeFamilyBadge ? ENTRY_TYPE_BADGE_HEIGHT + 10 : 0
+  let height = padding + 34 + badgeHeight + 12 + padding
 
   if (options.edited) {
     height += 13
@@ -406,9 +476,11 @@ function drawEntryCard(
   const detailBlocks = blocks.filter((block) => block.kind === 'detail')
   const backdateNote = getEntryBackdateNote(entry, backdateContext)
   const edited = wasEntryEdited(entry)
+  const includeFamilyBadge = shouldShowFamilyEntryBadge(ctx, entry)
   const cardHeight = measureEntryHeight(blocks, {
     backdateNote,
-    edited
+    edited,
+    includeFamilyBadge
   })
 
   ensureSpace(ctx, cardHeight + 14)
@@ -437,12 +509,15 @@ function drawEntryCard(
 
   ctx.y += 16
 
-  const sourceLabel = entry.source === 'family' ? 'Family/friends/other report' : 'Veteran log'
+  if (includeFamilyBadge) {
+    drawFamilyEntryBadge(ctx, innerX, innerWidth)
+  }
+
   const severityLabel = typeof entry.severity === 'number' ? `Severity ${entry.severity}/10` : 'Severity not recorded'
   ctx.doc.setFont('helvetica', 'normal')
   ctx.doc.setFontSize(9.5)
   setText(ctx.doc, slate500)
-  ctx.doc.text(`${severityLabel} · ${sourceLabel} · Entry ${index + 1}`, innerX, ctx.y)
+  ctx.doc.text(`${severityLabel} · Entry ${index + 1}`, innerX, ctx.y)
 
   if (edited) {
     ctx.y += 13
@@ -518,8 +593,14 @@ export function drawEntryLogSection(
   width: number,
   margin: number,
   pageHeight: number,
-  backdateContext: BackdateReportContext = {}
+  options: EntryLogSectionOptions = {}
 ) {
+  const reportMode = options.reportMode ?? 'full'
+  const reportTitle = getReportModeTitle(reportMode)
+  const backdateContext: BackdateReportContext = {
+    loggingCadence: options.loggingCadence,
+    weeklyLogDay: options.weeklyLogDay
+  }
   const bottomLimit = pageHeight - 48
   const ctx: LayoutContext = {
     doc,
@@ -528,38 +609,47 @@ export function drawEntryLogSection(
     width,
     margin,
     pageHeight,
-    bottomLimit
+    bottomLimit,
+    reportVariant: options.reportVariant
   }
 
   const sortedEntries = [...entries].sort(
     (left, right) => getEntryDate(right).getTime() - getEntryDate(left).getTime()
   )
 
-  // Keep the section header attached to the first entry card: if the header
-  // plus the first card (capped at roughly half a page) won't fit, start a
-  // fresh page before drawing the header instead of orphaning it.
-  const headerHeight = 38
   const firstEntry = sortedEntries[0]
   let keepWithHeader = 96
+  const showAdvancedChartsNote = reportMode === 'full' && Boolean(options.includeAdvancedCharts)
+  let headerHeight = options.reportVariant === 'family'
+    ? ENTRY_TYPE_BADGE_HEIGHT + 20
+    : 28 + (showAdvancedChartsNote ? 16 : 0)
 
   if (firstEntry) {
     const firstBlocks = buildEntryBlocks(doc, firstEntry, width - 36)
     const firstCardHeight = measureEntryHeight(firstBlocks, {
       backdateNote: getEntryBackdateNote(firstEntry, backdateContext),
-      edited: wasEntryEdited(firstEntry)
+      edited: wasEntryEdited(firstEntry),
+      includeFamilyBadge: shouldShowFamilyEntryBadge(ctx, firstEntry)
     })
     keepWithHeader = Math.min(firstCardHeight + 14, 360)
   }
 
   ensureSpace(ctx, headerHeight + keepWithHeader)
-  drawSectionTitle(doc, 'Symptom entry log', x, ctx.y)
-  ctx.y += 16
 
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(10)
-  setText(doc, slate500)
-  doc.text('Readable record of logged symptoms, severity, functional impact, and edit history.', x, ctx.y)
-  ctx.y += 22
+  if (options.reportVariant === 'family') {
+    drawFamilyObservationsBanner(ctx)
+  } else {
+    drawReportTypeHeader(doc, reportTitle, x, ctx.y)
+    ctx.y += 24
+
+    if (showAdvancedChartsNote) {
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(9)
+      setText(doc, slate500)
+      doc.text('All charts are generated from these entries.', x, ctx.y)
+      ctx.y += 16
+    }
+  }
 
   const conditionGroups = groupEntriesByCondition(sortedEntries)
 

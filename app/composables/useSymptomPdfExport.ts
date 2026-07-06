@@ -22,7 +22,8 @@ import {
   formatAggregateLoggingSummary
 } from '../utils/loggingActivityReport'
 import { buildCpExamReportTitle, buildCpExamSummaries } from '../utils/cpExamReport'
-import { buildCpExamPdfFilename, drawCpExamReportPdf } from '../utils/cpExamReportPdf'
+import { buildPersonalReviewPdfFilename, buildSymptomReportPdfFilename } from '../utils/pdfDownloadFilenames'
+import { drawCpExamReportPdf } from '../utils/cpExamReportPdf'
 import { collectMedicationsFromEntries } from '../utils/entryMedications'
 
 type SymptomEntryRecord = {
@@ -51,6 +52,7 @@ type PdfExportOptions = VeteranSignatureInfo & {
   conditionLabel?: string | null
   loggingCadence?: LoggingCadence
   weeklyLogDay?: number
+  reportVariant?: 'veteran' | 'family'
 }
 
 function resolveTypedSignatureName(signatureInfo: VeteranSignatureInfo) {
@@ -217,25 +219,6 @@ function drawVeteranElectronicSignatureSection(
   return y + boxContentHeight + 12
 }
 
-function buildPdfDownloadFilename(conditionLabel: string | null | undefined) {
-  const now = new Date()
-  const datePart = [
-    now.getFullYear(),
-    String(now.getMonth() + 1).padStart(2, '0'),
-    String(now.getDate()).padStart(2, '0')
-  ].join('-')
-  const timePart = [
-    String(now.getHours()).padStart(2, '0'),
-    String(now.getMinutes()).padStart(2, '0'),
-    String(now.getSeconds()).padStart(2, '0')
-  ].join('')
-  const fileSlug = conditionLabel
-    ? conditionLabel.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
-    : 'all-conditions'
-
-  return `vch-symptom-report-${fileSlug}-${datePart}-${timePart}.pdf`
-}
-
 const PDF_SECTION_GAP = 28
 const PDF_LOGGING_TO_WEEKLY_GAP = 36
 
@@ -346,7 +329,8 @@ export function useSymptomPdfExport() {
       veteranEmail = null,
       conditionLabel = null,
       loggingCadence = 'weekly',
-      weeklyLogDay = 0
+      weeklyLogDay = 0,
+      reportVariant
     } = options
     const showAdvancedCharts = includeCharts ?? includeAdvancedCharts
     const signatureInfo = { veteranName, veteranEmail }
@@ -418,8 +402,13 @@ export function useSymptomPdfExport() {
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(9)
     doc.setTextColor(148, 163, 184)
+    const reportSubtitle = reportVariant === 'family'
+      ? 'Family and friend observations'
+      : reportVariant === 'veteran'
+        ? (conditionLabel ? `${conditionLabel} veteran logs` : 'Veteran symptom logs')
+        : (conditionLabel ? `${conditionLabel} symptom log` : reportBranding.reportSubtitle)
     doc.text(
-      conditionLabel ? `${conditionLabel} symptom log` : reportBranding.reportSubtitle,
+      reportSubtitle,
       headerX,
       72
     )
@@ -650,6 +639,7 @@ export function useSymptomPdfExport() {
     }
 
     y = ensurePageSpace(doc, y, 120, margin, pageHeight)
+    const entryLogIncludesCharts = includeLoggingCharts || showAdvancedCharts
     y = drawEntryLogSection(
       doc,
       entries,
@@ -660,7 +650,10 @@ export function useSymptomPdfExport() {
       pageHeight,
       {
         loggingCadence,
-        weeklyLogDay
+        weeklyLogDay,
+        reportMode: entryLogIncludesCharts ? 'full' : 'entries-only',
+        reportVariant,
+        includeAdvancedCharts: showAdvancedCharts
       }
     )
 
@@ -679,7 +672,11 @@ export function useSymptomPdfExport() {
       drawPageFooter(doc, pageNumber, totalPages, margin)
     }
 
-    doc.save(buildPdfDownloadFilename(conditionLabel))
+    doc.save(buildSymptomReportPdfFilename({
+      conditionLabel,
+      reportVariant,
+      reportMode: entryLogIncludesCharts ? 'full' : 'entries-only'
+    }))
   }
 
   async function downloadCpExamPdf(
@@ -710,7 +707,7 @@ export function useSymptomPdfExport() {
       conditionLabel
     })
 
-    doc.save(buildCpExamPdfFilename(conditionLabel))
+    doc.save(buildPersonalReviewPdfFilename(conditionLabel))
   }
 
   return {

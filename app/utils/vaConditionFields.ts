@@ -340,6 +340,11 @@ export function resolveEntryTemplateKeyForCondition(condition: { title: string, 
     return 'IBS / Bowel Symptoms'
   }
 
+  if (category.includes('urinary') || title.includes('urin') || title.includes('bladder')
+    || title.includes('incontinen') || title.includes('nocturia') || title.includes('overactive bladder')) {
+    return 'Sleep Issues'
+  }
+
   if (title.includes('apnea') || category.includes('sleep') || title.includes('insomnia')) {
     return 'Sleep Issues'
   }

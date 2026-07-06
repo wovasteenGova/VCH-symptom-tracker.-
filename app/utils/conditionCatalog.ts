@@ -119,6 +119,15 @@ const digestiveFocus = [
 const digestiveTip =
   'Bowel and stomach flares are easy to forget once the urgency passes. A quick log after eating, waking up, or needing the bathroom helps a lot.'
 
+const urinaryFocus = [
+  'How often you urinate during the day or at night',
+  'Urgency, leaks, or trouble making it to the bathroom in time',
+  'Sleep interruption, travel limits, work breaks, or activity limits'
+] as const
+
+const urinaryTip =
+  'Frequent urination is a urinary/bladder issue—not the same as bowel or IBS. Log trips, night wake-ups, urgency, and what you had to stop doing.'
+
 const gerdFocus = [
   'Heartburn, reflux, regurgitation, chest or throat burning, nausea, or trouble swallowing',
   'Food, medication, stress, position, or sleep triggers when you know them',
@@ -323,6 +332,27 @@ export const conditionCatalogDefinitions: ConditionCatalogEntry[] = [
     tip: digestiveTip
   },
   {
+    title: 'Urinary frequency',
+    category: 'Urinary',
+    description: 'Frequent urination, urgency, night trips, leaks, and daily impact.',
+    searchAliases: [
+      'frequent peeing',
+      'peeing a lot',
+      'urination',
+      'urinary frequency',
+      'overactive bladder',
+      'OAB',
+      'nocturia',
+      'night urination',
+      'bladder',
+      'urge to pee',
+      'incontinence',
+      'bathroom trips'
+    ],
+    vaFocus: urinaryFocus,
+    tip: urinaryTip
+  },
+  {
     title: 'GERD / Acid Reflux',
     category: 'Digestive',
     description: 'Reflux, heartburn, regurgitation, throat burning, swallowing trouble, medication use, and food or sleep triggers.',
@@ -495,6 +525,11 @@ const conditionSearchAliasMap: Record<string, readonly string[]> = {
     'IBS', 'bowel symptoms', 'irritable bowel syndrome', 'diarrhea', 'constipation',
     'stomach cramps', 'abdominal pain', 'bathroom urgency', 'loose stool', 'bloating',
     'gas', 'cramping', 'bowel movement'
+  ],
+  'Urinary frequency': [
+    'frequent peeing', 'peeing a lot', 'urination', 'urinary frequency', 'overactive bladder',
+    'OAB', 'nocturia', 'night urination', 'bladder', 'urge to pee', 'incontinence',
+    'bathroom trips', 'leaks', 'urgency', 'prostate', 'BPH', 'interstitial cystitis'
   ],
   'GERD / Acid Reflux': [
     'GERD', 'acid reflux', 'heartburn', 'reflux', 'regurgitation', 'esophagus',

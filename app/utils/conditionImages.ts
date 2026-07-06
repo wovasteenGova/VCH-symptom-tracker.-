@@ -32,6 +32,7 @@ const categoryImageMap: Record<string, string> = {
   'Back, Neck, and Joint': conditionImageAssets.backJointPain,
   Nerve: conditionImageAssets.nerveRadiculopathy,
   Digestive: conditionImageAssets.ibsBowelSymptoms,
+  Urinary: conditionImageAssets.sleepIssues,
   Respiratory: conditionImageAssets.asthma,
   Hearing: conditionImageAssets.tinnitus,
   Skin: conditionImageAssets.eczema,
@@ -56,7 +57,8 @@ const conditionTitleImageOverrides: Record<string, string> = {
   Psoriasis: conditionImageAssets.psoriasis,
   Dermatitis: conditionImageAssets.dermatitis,
   Fibromyalgia: conditionImageAssets.fibromyalgia,
-  'Chronic fatigue': conditionImageAssets.chronicFatigue
+  'Chronic fatigue': conditionImageAssets.chronicFatigue,
+  'Urinary frequency': conditionImageAssets.sleepIssues
 }
 
 export const carouselConditions = [

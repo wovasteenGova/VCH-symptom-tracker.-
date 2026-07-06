@@ -1537,138 +1537,7 @@
               <LoggingActivityReport :metrics="loggingActivityMetrics" />
             </div>
 
-            <div v-else-if="activeHistoryTab === 'Export'" class="pb-4">
-              <div
-                class="rounded-full bg-slate-100 p-1 dark:bg-slate-800/80"
-              >
-                <div class="grid grid-cols-2 gap-1">
-                  <button
-                    type="button"
-                    data-history-interactive
-                    class="rounded-full px-3 py-2.5 text-xs font-semibold transition"
-                    :class="pdfExportType === 'full'
-                      ? 'bg-white text-slate-950 shadow-sm dark:bg-slate-700 dark:text-white'
-                      : 'text-slate-500 dark:text-slate-400'"
-                    @click="pdfExportType = 'full'"
-                  >
-                    Full report
-                  </button>
-                  <button
-                    type="button"
-                    data-history-interactive
-                    class="rounded-full px-3 py-2.5 text-xs font-semibold transition"
-                    :class="pdfExportType === 'cp-exam'
-                      ? 'bg-white text-slate-950 shadow-sm dark:bg-slate-700 dark:text-white'
-                      : 'text-slate-500 dark:text-slate-400'"
-                    @click="pdfExportType = 'cp-exam'"
-                  >
-                    Personal review
-                  </button>
-                </div>
-              </div>
-
-              <p class="mt-3 text-xs leading-5 text-slate-500 dark:text-slate-400">
-                {{ pdfExportDescription }}
-              </p>
-
-              <div v-if="!user && !isAuthLoading" class="py-8 text-center">
-                <p class="font-bold text-slate-950 dark:text-white">Sign in to export</p>
-                <p class="mt-1 text-xs text-slate-600 dark:text-slate-400">
-                  Your symptom logs need to be saved to your account before you can download a PDF.
-                </p>
-                <button
-                  type="button"
-                  data-history-interactive
-                  class="mt-4 rounded-full bg-slate-950 px-5 py-3 text-xs font-bold text-white dark:bg-white dark:text-slate-950"
-                  @click="toggleAuthPanel"
-                >
-                  Sign in
-                </button>
-              </div>
-
-              <div v-else-if="!exportableConditions.length" class="py-8 text-center">
-                <p class="font-bold text-slate-950 dark:text-white">Nothing to export yet</p>
-                <p class="mt-1 text-xs text-slate-600 dark:text-slate-400">
-                  Log at least one symptom entry, then come back here to build your PDF.
-                </p>
-              </div>
-
-              <template v-else>
-                <div class="mt-4 flex items-center justify-between gap-3">
-                  <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                    Conditions
-                  </p>
-                  <button
-                    type="button"
-                    data-history-interactive
-                    class="text-xs font-semibold text-sky-600 transition hover:text-sky-700 dark:text-sky-300 dark:hover:text-sky-200"
-                    @click="toggleAllExportConditions"
-                  >
-                    {{ allExportConditionsSelected ? 'Clear all' : 'Select all' }}
-                  </button>
-                </div>
-
-                <div class="mt-2 space-y-2">
-                  <label
-                    v-for="condition in exportableConditions"
-                    :key="condition.key"
-                    data-history-interactive
-                    class="flex cursor-pointer items-center gap-3 rounded-2xl px-4 py-3 transition"
-                    :class="isExportConditionSelected(condition.key)
-                      ? 'bg-slate-100 dark:bg-slate-800/80'
-                      : 'bg-transparent'"
-                  >
-                    <input
-                      type="checkbox"
-                      class="size-4 shrink-0 rounded border-slate-300 text-slate-950 focus:ring-slate-400 dark:border-slate-600 dark:bg-slate-900"
-                      :checked="isExportConditionSelected(condition.key)"
-                      @change="toggleExportCondition(condition.key)"
-                    >
-                    <span class="min-w-0 flex-1">
-                      <span class="block truncate font-semibold text-slate-950 dark:text-white">{{ condition.label }}</span>
-                      <span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">
-                        {{ condition.entryCount }} {{ condition.entryCount === 1 ? 'entry' : 'entries' }}
-                      </span>
-                    </span>
-                  </label>
-                </div>
-
-                <p
-                  v-if="!selectedExportConditionKeys.length"
-                  class="mt-3 text-xs font-medium text-amber-700 dark:text-amber-200"
-                >
-                  Select at least one condition to include in the PDF.
-                </p>
-
-                <label
-                  v-if="pdfExportType === 'full'"
-                  class="mt-4 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 dark:border-amber-900/60 dark:bg-amber-950/30"
-                >
-                  <input
-                    v-model="pdfExportAcknowledged"
-                    type="checkbox"
-                    data-history-interactive
-                    class="mt-0.5 size-4 rounded border-slate-300 text-slate-950 focus:ring-slate-400 dark:border-slate-600 dark:bg-slate-900"
-                  >
-                  <span class="text-xs leading-5 text-amber-950 dark:text-amber-100">
-                    {{ PDF_EXPORT_ACKNOWLEDGMENT_LABEL }}
-                  </span>
-                </label>
-
-                <button
-                  type="button"
-                  data-history-interactive
-                  class="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3.5 text-xs font-bold text-white transition hover:bg-slate-800 disabled:opacity-40 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
-                  :disabled="!canConfirmPdfExport"
-                  @click="runPdfExport"
-                >
-                  <UIcon name="i-lucide-download" class="size-4" />
-                  {{ exportButtonLabel }}
-                </button>
-              </template>
-            </div>
-
-            <div v-if="activeHistoryTab !== 'Export'" class="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 pb-1 text-xs font-semibold text-slate-500">
+            <div class="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 pb-1 text-xs font-semibold text-slate-500">
               <NuxtLink to="/install" data-history-interactive class="hover:text-slate-700 dark:hover:text-slate-300">Install</NuxtLink>
               <a
                 href="mailto:support@veteranscentralhub.com?subject=Accessibility%20help%20with%20VCH"
@@ -2083,6 +1952,233 @@
       </div>
     </AppOverlayShell>
   </Transition>
+
+  <Transition
+    enter-active-class="transition duration-200 ease-out"
+    enter-from-class="opacity-0"
+    enter-to-class="opacity-100"
+    leave-active-class="transition duration-150 ease-in"
+    leave-from-class="opacity-100"
+    leave-to-class="opacity-0"
+  >
+    <AppOverlayShell
+      v-if="isPdfExportOverlayOpen"
+      :z-index="120"
+      @dismiss="closePdfExportOverlay"
+    >
+      <div
+        class="app-overlay-panel app-overlay-panel--stack app-overlay-panel--lg overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pdf-export-title"
+      >
+        <div class="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 dark:border-slate-800">
+          <div class="min-w-0">
+            <p class="text-xs font-bold uppercase tracking-[0.16em] text-sky-600 dark:text-sky-300">
+              Export
+            </p>
+            <h3 id="pdf-export-title" class="mt-2 text-xl font-bold text-slate-950 dark:text-white">
+              Download PDF
+            </h3>
+            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              Choose report type, conditions, and download options.
+            </p>
+          </div>
+          <button
+            type="button"
+            class="grid size-10 shrink-0 place-items-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-white"
+            aria-label="Close download options"
+            @click="closePdfExportOverlay"
+          >
+            <UIcon name="i-lucide-x" class="size-5" />
+          </button>
+        </div>
+
+        <div class="no-scrollbar min-h-0 flex-1 overflow-y-auto px-5 py-4">
+          <div v-if="!user && !isAuthLoading" class="py-8 text-center">
+            <p class="font-bold text-slate-950 dark:text-white">Sign in to export</p>
+            <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
+              Your symptom logs need to be saved to your account before you can download a PDF.
+            </p>
+          </div>
+
+          <div v-else-if="!exportableConditions.length" class="py-8 text-center">
+            <p class="font-bold text-slate-950 dark:text-white">Nothing to export yet</p>
+            <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
+              Log at least one symptom entry, then come back here to build your PDF.
+            </p>
+          </div>
+
+          <template v-else>
+          <div class="rounded-full bg-slate-100 p-1 dark:bg-slate-800/80">
+            <div class="grid grid-cols-2 gap-1">
+              <button
+                type="button"
+                class="rounded-full px-3 py-2.5 text-xs font-semibold transition"
+                :class="pdfExportType === 'full'
+                  ? 'bg-white text-slate-950 shadow-sm dark:bg-slate-700 dark:text-white'
+                  : 'text-slate-500 dark:text-slate-400'"
+                @click="pdfExportType = 'full'"
+              >
+                Full report
+              </button>
+              <button
+                type="button"
+                class="rounded-full px-3 py-2.5 text-xs font-semibold transition"
+                :class="pdfExportType === 'cp-exam'
+                  ? 'bg-white text-slate-950 shadow-sm dark:bg-slate-700 dark:text-white'
+                  : 'text-slate-500 dark:text-slate-400'"
+                @click="pdfExportType = 'cp-exam'"
+              >
+                Personal review
+              </button>
+            </div>
+          </div>
+
+          <p class="mt-3 text-xs leading-5 text-slate-500 dark:text-slate-400">
+            {{ pdfExportDescription }}
+          </p>
+
+          <div v-if="pdfExportType === 'full'" class="mt-4 space-y-4">
+            <div>
+              <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                Report content
+              </p>
+              <div class="mt-2 rounded-full bg-slate-100 p-1 dark:bg-slate-800/80">
+                <div class="grid grid-cols-2 gap-1">
+                  <button
+                    type="button"
+                    class="rounded-full px-3 py-2.5 text-xs font-semibold transition"
+                    :class="pdfExportContentMode === 'charts'
+                      ? 'bg-white text-slate-950 shadow-sm dark:bg-slate-700 dark:text-white'
+                      : 'text-slate-500 dark:text-slate-400'"
+                    @click="pdfExportContentMode = 'charts'"
+                  >
+                    Charts + entries
+                  </button>
+                  <button
+                    type="button"
+                    class="rounded-full px-3 py-2.5 text-xs font-semibold transition"
+                    :class="pdfExportContentMode === 'entries-only'
+                      ? 'bg-white text-slate-950 shadow-sm dark:bg-slate-700 dark:text-white'
+                      : 'text-slate-500 dark:text-slate-400'"
+                    @click="pdfExportContentMode = 'entries-only'"
+                  >
+                    Entries only
+                  </button>
+                </div>
+              </div>
+              <p class="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                {{ pdfExportContentDescription }}
+              </p>
+            </div>
+
+            <label
+              v-if="exportSelectedFamilyEntryCount"
+              class="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 dark:border-slate-800 dark:bg-slate-950/70"
+            >
+              <input
+                v-model="pdfExportSeparateFamily"
+                type="checkbox"
+                class="mt-0.5 size-4 rounded border-slate-300 text-slate-950 focus:ring-slate-400 dark:border-slate-600 dark:bg-slate-900"
+              >
+              <span class="text-xs leading-5 text-slate-700 dark:text-slate-200">
+                <span class="font-semibold text-slate-950 dark:text-white">Download family and friend reports separately</span>
+                <span class="mt-1 block">
+                  Family and friend observations can be powerful evidence. Submitting them in a separate PDF makes it harder for raters to miss them.
+                  You will get two files: your logs and a family observations report.
+                </span>
+              </span>
+            </label>
+          </div>
+
+          <div class="mt-5 flex items-center justify-between gap-3">
+            <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+              Conditions
+            </p>
+            <button
+              type="button"
+              class="text-xs font-semibold text-sky-600 transition hover:text-sky-700 dark:text-sky-300 dark:hover:text-sky-200"
+              @click="toggleAllExportConditions"
+            >
+              {{ allExportConditionsSelected ? 'Clear all' : 'Select all' }}
+            </button>
+          </div>
+
+          <div class="mt-2 space-y-2">
+            <label
+              v-for="condition in exportableConditions"
+              :key="condition.key"
+              class="flex cursor-pointer items-center gap-3 rounded-2xl px-4 py-3 transition"
+              :class="isExportConditionSelected(condition.key)
+                ? 'bg-slate-100 dark:bg-slate-800/80'
+                : 'bg-transparent'"
+            >
+              <input
+                type="checkbox"
+                class="size-4 shrink-0 rounded border-slate-300 text-slate-950 focus:ring-slate-400 dark:border-slate-600 dark:bg-slate-900"
+                :checked="isExportConditionSelected(condition.key)"
+                @change="toggleExportCondition(condition.key)"
+              >
+              <span class="min-w-0 flex-1">
+                <span class="block truncate font-semibold text-slate-950 dark:text-white">{{ condition.label }}</span>
+                <span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">
+                  {{ condition.entryCount }} {{ condition.entryCount === 1 ? 'entry' : 'entries' }}
+                </span>
+              </span>
+            </label>
+          </div>
+
+          <p
+            v-if="!selectedExportConditionKeys.length"
+            class="mt-3 text-xs font-medium text-amber-700 dark:text-amber-200"
+          >
+            Select at least one condition to include in the PDF.
+          </p>
+
+          <label
+            v-if="pdfExportType === 'full'"
+            class="mt-4 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 dark:border-amber-900/60 dark:bg-amber-950/30"
+          >
+            <input
+              v-model="pdfExportAcknowledged"
+              type="checkbox"
+              class="mt-0.5 size-4 rounded border-slate-300 text-slate-950 focus:ring-slate-400 dark:border-slate-600 dark:bg-slate-900"
+            >
+            <span class="text-xs leading-5 text-amber-950 dark:text-amber-100">
+              {{ PDF_EXPORT_ACKNOWLEDGMENT_LABEL }}
+            </span>
+          </label>
+
+          <p v-if="exportError" class="mt-4 text-sm font-medium text-red-600 dark:text-red-300" aria-live="assertive">
+            {{ exportError }}
+          </p>
+          </template>
+        </div>
+
+        <div class="border-t border-slate-200 px-5 py-4 dark:border-slate-800">
+          <button
+            v-if="!user && !isAuthLoading"
+            type="button"
+            class="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3.5 text-xs font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+            @click="closePdfExportOverlay(); toggleAuthPanel()"
+          >
+            Sign in to export
+          </button>
+          <button
+            v-else-if="exportableConditions.length"
+            type="button"
+            class="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3.5 text-xs font-bold text-white transition hover:bg-slate-800 disabled:opacity-40 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+            :disabled="!canConfirmPdfExport"
+            @click="runPdfExport"
+          >
+            <UIcon name="i-lucide-download" class="size-4" />
+            {{ exportButtonLabel }}
+          </button>
+        </div>
+      </div>
+    </AppOverlayShell>
+  </Transition>
 </template>
 
 <script setup lang="ts">
@@ -2348,6 +2444,9 @@ const isExportingPdf = ref(false)
 const exportError = ref('')
 const exportNotice = ref('')
 const pdfExportType = ref<'full' | 'cp-exam'>('full')
+const pdfExportContentMode = ref<'charts' | 'entries-only'>('charts')
+const pdfExportSeparateFamily = ref(false)
+const isPdfExportOverlayOpen = ref(false)
 const selectedExportConditionKeys = ref<string[]>([])
 const pdfExportAcknowledged = ref(false)
 const transitionDirection = ref<HomeTransitionDirection>('next')
@@ -2572,6 +2671,7 @@ const shouldHideHistoryChrome = computed(() => (
   || Boolean(viewedHistoryEntryId.value)
   || (isShareLinkOpen.value && Boolean(shareLinkEntry.value))
   || isConditionSlotOpen.value
+  || isPdfExportOverlayOpen.value
   || (isEmbeddedPreview && isEmbedProfileOpen.value)
 ))
 
@@ -3297,8 +3397,63 @@ const pdfExportDescription = computed(() => {
   return 'Signed Veteran Symptom History Report with summary stats, logging consistency charts, and your full entry log.'
 })
 
+const pdfExportContentDescription = computed(() => {
+  if (pdfExportContentMode.value === 'entries-only') {
+    return 'Summary stats and your full entry log without logging charts or advanced analytics.'
+  }
+
+  if (isPro.value) {
+    return 'Includes logging consistency charts, severity trends, and advanced analytics plus your full entry log.'
+  }
+
+  return 'Includes logging consistency charts plus your full entry log. Pro adds severity trends and advanced analytics.'
+})
+
+function isFamilySourceEntry(entry: { source?: string | null }) {
+  return entry.source === 'family'
+}
+
+function resolveExportEntries(
+  conditionKeys: string[],
+  options: { source?: 'veteran' | 'family' | 'all' } = {}
+) {
+  const { source = 'all' } = options
+  const keySet = new Set(conditionKeys)
+
+  return savedEntries.value.filter((entry) => {
+    const resolvedCondition = resolveCatalogConditionByStoredKey(entry.condition_key || entry.condition_label)
+    const entryKey = resolvedCondition?.key || entry.condition_key || conditionKey(entry.condition_label)
+
+    if (!keySet.has(entryKey)) {
+      return false
+    }
+
+    if (source === 'veteran' && isFamilySourceEntry(entry)) {
+      return false
+    }
+
+    if (source === 'family' && !isFamilySourceEntry(entry)) {
+      return false
+    }
+
+    return true
+  })
+}
+
+const exportSelectedFamilyEntryCount = computed(() => (
+  resolveExportEntries(selectedExportConditionKeys.value, { source: 'family' }).length
+))
+
+const exportSelectedVeteranEntryCount = computed(() => (
+  resolveExportEntries(selectedExportConditionKeys.value, { source: 'veteran' }).length
+))
+
+const exportableFamilyEntryCount = computed(() => (
+  resolveExportEntries(exportableConditions.value.map((condition) => condition.key), { source: 'family' }).length
+))
+
 const canConfirmPdfExport = computed(() => {
-  if (isExportingPdf.value || !selectedExportConditionKeys.value.length) {
+  if (isExportingPdf.value || !user.value || !exportableConditions.value.length || !selectedExportConditionKeys.value.length) {
     return false
   }
 
@@ -3320,8 +3475,25 @@ const exportButtonLabel = computed(() => {
     return count === 1 ? 'Download personal review' : `Download personal review (${count} conditions)`
   }
 
+  if (pdfExportSeparateFamily.value && exportSelectedFamilyEntryCount.value > 0 && exportSelectedVeteranEntryCount.value > 0) {
+    return 'Download 2 PDFs'
+  }
+
   return count === 1 ? 'Download signed PDF' : `Download signed PDF (${count} conditions)`
 })
+
+function openPdfExportOverlay() {
+  exportError.value = ''
+  isPdfExportOverlayOpen.value = true
+}
+
+function closePdfExportOverlay() {
+  if (isExportingPdf.value) {
+    return
+  }
+
+  isPdfExportOverlayOpen.value = false
+}
 
 function isExportConditionSelected(conditionKey: string) {
   return selectedExportConditionKeys.value.includes(conditionKey)
@@ -3357,16 +3529,6 @@ function ensureExportConditionSelection() {
   selectedExportConditionKeys.value = retained.length
     ? retained
     : exportableConditions.value.map((condition) => condition.key)
-}
-
-function resolveExportEntries(conditionKeys: string[]) {
-  const keySet = new Set(conditionKeys)
-
-  return savedEntries.value.filter((entry) => {
-    const resolvedCondition = resolveCatalogConditionByStoredKey(entry.condition_key || entry.condition_label)
-    const entryKey = resolvedCondition?.key || entry.condition_key || conditionKey(entry.condition_label)
-    return keySet.has(entryKey)
-  })
 }
 
 function buildExportConditionLabel(conditionKeys: string[]) {
@@ -4140,6 +4302,8 @@ async function exportCpExamPdf(conditionKeys: string[]) {
       veteranName: veteranName || null,
       conditionLabel
     })
+
+    closePdfExportOverlay()
   } catch (error) {
     exportError.value = getErrorMessage(error)
   } finally {
@@ -4153,10 +4317,17 @@ async function exportEntriesPdf(conditionKeys: string[]) {
   exportNotice.value = ''
 
   try {
-    const entries = resolveExportEntries(conditionKeys)
     const conditionLabel = buildExportConditionLabel(conditionKeys)
+    const separateFamily = pdfExportSeparateFamily.value && exportSelectedFamilyEntryCount.value > 0
+    const includeCharts = pdfExportContentMode.value === 'charts'
+    const veteranEntries = separateFamily
+      ? resolveExportEntries(conditionKeys, { source: 'veteran' })
+      : resolveExportEntries(conditionKeys)
+    const familyEntries = separateFamily
+      ? resolveExportEntries(conditionKeys, { source: 'family' })
+      : []
 
-    if (!entries.length) {
+    if (!veteranEntries.length && !familyEntries.length) {
       exportError.value = 'No entries found for the selected conditions.'
       return
     }
@@ -4167,19 +4338,41 @@ async function exportEntriesPdf(conditionKeys: string[]) {
         ? user.value.user_metadata.full_name.trim()
         : '')
 
-    await downloadEntriesPdf(entries, {
+    const baseOptions = {
       veteranName: veteranName || null,
       veteranEmail: user.value?.email || null,
-      includeLoggingCharts: true,
-      includeAdvancedCharts: isPro.value,
       conditionLabel,
       loggingCadence: loggingCadence.value,
-      weeklyLogDay: weeklyLogDay.value
-    })
-
-    if (!isPro.value) {
-      exportNotice.value = 'PDF downloaded with your entries and weekly symptom counts. Pro adds severity trends and advanced charts. '
+      weeklyLogDay: weeklyLogDay.value,
+      includeLoggingCharts: includeCharts,
+      includeAdvancedCharts: includeCharts && isPro.value
     }
+
+    if (veteranEntries.length) {
+      await downloadEntriesPdf(veteranEntries, {
+        ...baseOptions,
+        reportVariant: separateFamily ? 'veteran' : undefined
+      })
+    }
+
+    if (familyEntries.length) {
+      await downloadEntriesPdf(familyEntries, {
+        ...baseOptions,
+        reportVariant: 'family',
+        includeLoggingCharts: false,
+        includeAdvancedCharts: false
+      })
+    }
+
+    if (separateFamily && veteranEntries.length && familyEntries.length) {
+      exportNotice.value = 'Downloaded two PDFs: your veteran logs and a separate family and friend observations report.'
+    } else if (!isPro.value && includeCharts) {
+      exportNotice.value = 'PDF downloaded with your entries and weekly symptom counts. Pro adds severity trends and advanced charts.'
+    } else if (pdfExportContentMode.value === 'entries-only') {
+      exportNotice.value = 'PDF downloaded with summary stats and your entry log.'
+    }
+
+    closePdfExportOverlay()
   } catch (error) {
     exportError.value = getErrorMessage(error)
   } finally {
@@ -6110,6 +6303,19 @@ function collapseHistorySheet() {
 }
 
 function selectHistoryTab(tab: string) {
+  if (tab === 'Export') {
+    lockHistoryEntryActivation()
+    blockConditionSlideEntry(HISTORY_ENTRY_ACTIVATION_LOCK_MS)
+
+    if (!historyExpanded.value) {
+      expandHistorySheet()
+    }
+
+    ensureExportConditionSelection()
+    openPdfExportOverlay()
+    return
+  }
+
   if (activeHistoryTab.value === tab && historyExpanded.value) {
     return
   }
@@ -6119,10 +6325,6 @@ function selectHistoryTab(tab: string) {
 
   if (!historyExpanded.value) {
     expandHistorySheet()
-  }
-
-  if (tab === 'Export') {
-    ensureExportConditionSelection()
   }
 
   activeHistoryTab.value = tab

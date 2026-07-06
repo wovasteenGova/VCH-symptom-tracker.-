@@ -1,5 +1,6 @@
 import type { jsPDF } from 'jspdf'
 import type { CpExamConditionSummary } from './cpExamReport'
+import { buildPersonalReviewPdfFilename } from './pdfDownloadFilenames'
 import { CP_PREP_DISCLAIMER_BODY, CP_PREP_DISCLAIMER_TITLE, reportBranding } from './reportBranding'
 
 const slate900 = [15, 23, 42] as const
@@ -330,15 +331,5 @@ export function drawCpExamReportPdf(options: {
 }
 
 export function buildCpExamPdfFilename(conditionLabel: string | null | undefined) {
-  const now = new Date()
-  const datePart = [
-    now.getFullYear(),
-    String(now.getMonth() + 1).padStart(2, '0'),
-    String(now.getDate()).padStart(2, '0')
-  ].join('-')
-  const fileSlug = conditionLabel
-    ? conditionLabel.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
-    : 'all-conditions'
-
-  return `vch-cp-exam-prep-${fileSlug}-${datePart}.pdf`
+  return buildPersonalReviewPdfFilename(conditionLabel)
 }
