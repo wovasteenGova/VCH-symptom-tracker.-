@@ -99,6 +99,10 @@ const conditionEpisodeConfig: Record<string, ConditionEpisodeConfig> = {
     duration: durationField,
     followUp: functionalImpactField
   },
+  'Urinary frequency': {
+    duration: durationField,
+    followUp: functionalImpactField
+  },
   Respiratory: {
     duration: durationField,
     followUp: functionalImpactField
@@ -242,6 +246,28 @@ export const entryFieldsByCondition: Record<string, EntryFieldDef[]> = {
       placeholder: 'Fatigue, naps, trouble focusing, CPAP use, missed activity...'
     }
   ]),
+  'Urinary frequency': buildEntryFields('Urinary frequency', [
+    {
+      label: 'Bathroom trips',
+      type: 'text',
+      placeholder: 'Example: 10 daytime trips, 3 at night, or every 30–60 minutes.'
+    },
+    {
+      label: 'Urinary symptoms',
+      type: 'text',
+      placeholder: 'Urgency, frequency, leaks, incomplete emptying, burning, or pain.'
+    },
+    {
+      label: 'Night wake-ups',
+      type: 'text',
+      placeholder: 'Got up to urinate, rushed to bathroom, leaks, or lost sleep.'
+    },
+    {
+      label: 'Trigger or limit',
+      type: 'text',
+      placeholder: 'Caffeine, fluids before bed, diuretics, travel, work breaks, or activity limits.'
+    }
+  ]),
   Respiratory: buildEntryFields('Respiratory', [
     {
       label: 'Breathing symptoms',
@@ -342,7 +368,7 @@ export function resolveEntryTemplateKeyForCondition(condition: { title: string, 
 
   if (category.includes('urinary') || title.includes('urin') || title.includes('bladder')
     || title.includes('incontinen') || title.includes('nocturia') || title.includes('overactive bladder')) {
-    return 'Sleep Issues'
+    return 'Urinary frequency'
   }
 
   if (title.includes('apnea') || category.includes('sleep') || title.includes('insomnia')) {

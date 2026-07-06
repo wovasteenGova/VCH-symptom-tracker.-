@@ -104,6 +104,14 @@ export const medicationPresetsByTemplate: Record<EntryTemplateKey, EntryFieldPre
     { label: 'Sleep aid', value: 'Trazodone 50mg at bedtime' },
     { label: 'Melatonin', value: 'Melatonin 3mg at bedtime' }
   ],
+  'Urinary frequency': [
+    { label: 'Oxybutynin', value: 'Oxybutynin 5mg BID' },
+    { label: 'Myrbetriq', value: 'Mirabegron 25mg daily' },
+    { label: 'Tamsulosin', value: 'Tamsulosin 0.4mg at bedtime' },
+    { label: 'Finasteride', value: 'Finasteride 5mg daily' },
+    { label: 'Desmopressin', value: 'Desmopressin 0.2mg at bedtime' },
+    { label: 'No med taken', value: 'No medication taken' }
+  ],
   Respiratory: [
     { label: 'Rescue inhaler', value: 'Albuterol inhaler PRN' },
     { label: 'Daily inhaler', value: 'Fluticasone/salmeterol daily' },
@@ -286,6 +294,44 @@ export const sleepDayEffectPresets: EntryFieldPreset[] = [
   { label: 'Missed activity', value: 'Missed work or activity' }
 ]
 
+export const urinarySymptomPresets: EntryFieldPreset[] = [
+  { label: 'Urgency', value: 'Urgency' },
+  { label: 'Frequency', value: 'Frequent urination' },
+  { label: 'Nocturia', value: 'Nighttime urination' },
+  { label: 'Leaks', value: 'Leaks or incontinence' },
+  { label: 'Incomplete emptying', value: 'Incomplete emptying' },
+  { label: 'Burning', value: 'Burning or pain' },
+  { label: 'Hesitancy', value: 'Hesitancy or weak stream' }
+]
+
+export const urinaryNightPresets: EntryFieldPreset[] = [
+  { label: '1–2 times', value: 'Got up 1–2 times' },
+  { label: '3+ times', value: 'Got up 3 or more times' },
+  { label: 'Rushed to bathroom', value: 'Rushed to bathroom' },
+  { label: 'Leaks in bed', value: 'Leaks or wetting' },
+  { label: 'Lost sleep', value: 'Lost sleep from bathroom trips' },
+  { label: 'No night issues', value: 'No major night symptoms' }
+]
+
+export const urinaryTriggerPresets: EntryFieldPreset[] = [
+  { label: 'Caffeine', value: 'Caffeine' },
+  { label: 'Fluids before bed', value: 'Fluids before bed' },
+  { label: 'Diuretic', value: 'Diuretic medication' },
+  { label: 'Alcohol', value: 'Alcohol' },
+  { label: 'Travel/outing', value: 'Travel or limited bathroom access' },
+  { label: 'Work breaks', value: 'Needed extra work breaks' },
+  { label: 'Unknown', value: 'Unknown trigger' }
+]
+
+export const bathroomTripPresets: EntryFieldPreset[] = [
+  { label: 'Every hour', value: 'About every hour' },
+  { label: 'Every 30 min', value: 'About every 30 minutes' },
+  { label: '8+ daytime', value: '8+ daytime trips' },
+  { label: '2 night trips', value: '2 nighttime trips' },
+  { label: '3+ night trips', value: '3+ nighttime trips' },
+  { label: 'Constant urge', value: 'Constant urge all day' }
+]
+
 export const respiratorySymptomPresets: EntryFieldPreset[] = [
   { label: 'Short of breath', value: 'Shortness of breath' },
   { label: 'Wheezing', value: 'Wheezing' },
@@ -435,6 +481,9 @@ const multiSelectPresetFields = new Set([
   'Side affected',
   'Sleep interruption',
   'Trigger or limit',
+  'Bathroom trips',
+  'Urinary symptoms',
+  'Night wake-ups',
   'Areas affected',
   'Treatment used',
   'Useful function today',
@@ -624,12 +673,20 @@ export function getEntryFieldPresets(
       return sleepInterruptionPresets
     case 'Daytime effect':
       return sleepDayEffectPresets
+    case 'Bathroom trips':
+      return bathroomTripPresets
+    case 'Urinary symptoms':
+      return urinarySymptomPresets
+    case 'Night wake-ups':
+      return urinaryNightPresets
     case 'Breathing symptoms':
       return respiratorySymptomPresets
     case 'Rescue treatment used':
       return respiratoryTreatmentPresets
     case 'Trigger or limit':
-      return respiratoryTriggerPresets
+      return templateKey === 'Urinary frequency'
+        ? urinaryTriggerPresets
+        : respiratoryTriggerPresets
     case 'Skin symptoms':
       return skinSymptomPresets
     case 'Areas affected':

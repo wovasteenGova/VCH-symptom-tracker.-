@@ -2194,6 +2194,12 @@ import { useAppWelcome } from '../../composables/useAppWelcome'
 import { useTimedPasswordReveal } from '../../composables/useTimedPasswordReveal'
 import { FREE_CONDITION_LIMIT, PRO_ANNUAL_PRICE_LABEL, formatConditionKeyLabel, conditionKeyFromLabel } from '../../utils/subscription'
 import { mapEntryHistoryItem } from '../../utils/entryDisplay'
+import {
+  buildSymptomEntrySavePayload,
+  buildSymptomEntrySavePayloadFromRecord,
+  symptomEntrySavePayloadsEqual,
+  type SymptomEntrySavePayload
+} from '../../utils/symptomEntrySavePayload'
 import { copyToClipboard } from '../../utils/copyToClipboard'
 import { PDF_EXPORT_ACKNOWLEDGMENT_LABEL } from '../../utils/pdfExportCertification'
 import {
@@ -2425,6 +2431,7 @@ const isRestoringEntryDraft = ref(false)
 const entryStep = ref(0)
 const editingEntryId = ref<string | null>(null)
 const editingEntryConditionLabel = ref<string | null>(null)
+const editingEntrySaveSnapshot = ref<SymptomEntrySavePayload | null>(null)
 const severityValue = ref(5)
 const isEditingEntry = computed(() => Boolean(editingEntryId.value))
 
@@ -4878,25 +4885,24 @@ async function saveEntry() {
     }
   }
 
+  const payload = buildSymptomEntrySavePayload({
+    entryTitle: entryTitle.value,
+    severity: severityValue.value,
+    entryForm: entryForm.value
+  })
+
+  if (editingEntryId.value && editingEntrySaveSnapshot.value && symptomEntrySavePayloadsEqual(editingEntrySaveSnapshot.value, payload)) {
+    hasActiveDraft.value = false
+    closeEntryPanel(true)
+    return
+  }
+
   isSavingEntry.value = true
   entryError.value = ''
 
   try {
     const wasEditing = Boolean(editingEntryId.value)
     const { createEntry, updateEntry } = useSymptomEntries()
-    const details = { ...entryForm.value }
-    const occurredAt = entryForm.value.date_and_time
-      ? new Date(entryForm.value.date_and_time).toISOString()
-      : null
-    const payload = {
-      condition_key: conditionKey(entryTitle.value),
-      condition_label: entryTitle.value,
-      severity: severityValue.value,
-      occurred_at: occurredAt,
-      summary: entryForm.value.what_happened || entryForm.value.condition_name || entryTitle.value,
-      impact: entryForm.value.daily_impact || null,
-      details
-    }
 
     let savedEntryId: string | null = null
 
@@ -4909,6 +4915,7 @@ async function saveEntry() {
 
     hasActiveDraft.value = false
     clearPersistedEntryDraft()
+    editingEntrySaveSnapshot.value = null
     closeEntryPanel(true)
     await loadEntries()
     await syncHomeConditionsAfterEntrySave(payload.condition_key)
@@ -6844,6 +6851,17 @@ function openEntryForEdit(entryId: string) {
   if (resolved.customName) {
     entryForm.value.condition_name = resolved.customName
   }
+
+  const entryTitleForSnapshot = resolved.searchCondition?.title
+    ?? resolved.conditionLabel
+    ?? resolved.customName
+    ?? normalizeConditionLabel(entry.condition_label)
+
+  editingEntrySaveSnapshot.value = buildSymptomEntrySavePayloadFromRecord(
+    entry,
+    entryTitleForSnapshot,
+    { customName: resolved.customName }
+  )
 }
 
 function openConditionSlotModal(options: {
@@ -7153,6 +7171,7 @@ function closeEntryPanel(clearDraft = false, preservePersistedDraft = false) {
 
     editingEntryId.value = null
     editingEntryConditionLabel.value = null
+    editingEntrySaveSnapshot.value = null
     selectedSearchCondition.value = null
     isConditionPickerOpen.value = false
     customConditionInput.value = ''
@@ -7178,6 +7197,7 @@ function closeEntryPanel(clearDraft = false, preservePersistedDraft = false) {
   } else {
     editingEntryId.value = null
     editingEntryConditionLabel.value = null
+    editingEntrySaveSnapshot.value = null
     selectedSearchCondition.value = null
     isConditionPickerOpen.value = false
     customConditionInput.value = ''

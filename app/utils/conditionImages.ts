@@ -10,6 +10,7 @@ export const conditionImageAssets = {
   ibsBowelSymptoms: '/image/ibs-bowel-symptoms.png',
   gerdAcidReflux: '/image/gerd-acid-reflux.png',
   sleepIssues: '/image/sleep-issues.png',
+  urinaryFrequency: '/image/urinary-frequency.png',
   asthma: '/image/asthma.png',
   sleepApnea: '/image/sleep-apnea.png',
   sinusitis: '/image/sinusitis.png',
@@ -32,7 +33,7 @@ const categoryImageMap: Record<string, string> = {
   'Back, Neck, and Joint': conditionImageAssets.backJointPain,
   Nerve: conditionImageAssets.nerveRadiculopathy,
   Digestive: conditionImageAssets.ibsBowelSymptoms,
-  Urinary: conditionImageAssets.sleepIssues,
+  Urinary: conditionImageAssets.urinaryFrequency,
   Respiratory: conditionImageAssets.asthma,
   Hearing: conditionImageAssets.tinnitus,
   Skin: conditionImageAssets.eczema,
@@ -58,7 +59,7 @@ const conditionTitleImageOverrides: Record<string, string> = {
   Dermatitis: conditionImageAssets.dermatitis,
   Fibromyalgia: conditionImageAssets.fibromyalgia,
   'Chronic fatigue': conditionImageAssets.chronicFatigue,
-  'Urinary frequency': conditionImageAssets.sleepIssues
+  'Urinary frequency': conditionImageAssets.urinaryFrequency
 }
 
 export const carouselConditions = [
