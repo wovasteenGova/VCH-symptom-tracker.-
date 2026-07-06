@@ -210,7 +210,12 @@
           </div>
         </div>
 
-        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{{ homeGreetingLine }}</p>
+        <p
+          v-if="homeGreetingLine"
+          class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400"
+        >
+          {{ homeGreetingLine }}
+        </p>
       </header>
 
       <Transition
@@ -1002,9 +1007,6 @@
                         Your conditions
                       </h2>
                       <div class="flex shrink-0 items-center gap-2">
-                        <span class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-                          {{ trackedConditionCount }} picked
-                        </span>
                         <button
                           type="button"
                           class="rounded-full bg-slate-950 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
@@ -2208,7 +2210,6 @@ const {
 const {
   trackedConditionKeys,
   needsOnboarding,
-  trackedConditionCount,
   hasLoadedTrackedConditions,
   isLoading: isLoadingTrackedConditions,
   loadError: trackedConditionsLoadError,
@@ -3237,7 +3238,7 @@ function resolveHomeGreetingFirstName() {
 
 const homeGreetingLine = computed(() => {
   if (!user.value) {
-    return 'Today'
+    return ''
   }
 
   const firstName = resolveHomeGreetingFirstName()

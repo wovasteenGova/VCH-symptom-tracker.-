@@ -61,14 +61,6 @@
 
       </div>
 
-
-
-      <p class="mt-3 text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-
-        {{ selectedCount }} picked
-
-      </p>
-
       <p
         v-if="mode === 'manage' && selectedCount === 0"
         class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300"
