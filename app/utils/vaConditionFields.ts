@@ -64,7 +64,7 @@ const medicationsForEntryField: EntryFieldDef = {
   type: 'textarea',
   stepRole: 'medications',
   placeholder: 'Example: Omeprazole 40mg AM, Sumatriptan 100mg PRN, Ibuprofen 800mg.',
-  helper: 'List meds you took for this condition. We remember them for your next log.'
+  helper: 'Tap a chip from your last entry or our examples, or type your own.'
 }
 
 const symptomsManagedField: EntryFieldDef = {
@@ -312,55 +312,67 @@ export const entryFieldsByCondition: Record<string, EntryFieldDef[]> = {
   ])
 }
 
-export function getEntryFieldsForSearchCondition(condition: { title: string, category: string }) {
+export type EntryTemplateKey = keyof typeof entryFieldsByCondition | '__generic__'
+
+export function resolveEntryTemplateKeyForCondition(condition: { title: string, category: string }): EntryTemplateKey {
   const title = condition.title.toLowerCase()
   const category = condition.category.toLowerCase()
 
   if (category.includes('mental')) {
-    return entryFieldsByCondition['PTSD / Mental Health']!
+    return 'PTSD / Mental Health'
   }
 
   if (category.includes('back') || category.includes('neck') || category.includes('joint')
     || title.includes('arthritis') || title.includes('knee') || title.includes('shoulder')) {
-    return entryFieldsByCondition['Back or Joint Pain']!
+    return 'Back or Joint Pain'
   }
 
   if (category.includes('nerve') || title.includes('sciatica') || title.includes('neuropathy') || title.includes('radiculopathy')) {
-    return entryFieldsByCondition['Nerve / Radiculopathy']!
+    return 'Nerve / Radiculopathy'
   }
 
   if (category.includes('neurological') || title.includes('migraine') || title.includes('headache') || title.includes('vertigo') || title.includes('seizure')) {
-    return entryFieldsByCondition['Migraine / Headache']!
+    return 'Migraine / Headache'
   }
 
   if (category.includes('digestive') || title.includes('gerd') || title.includes('ibs')
     || title.includes('bowel') || title.includes('diarrhea') || title.includes('constipation')) {
-    return entryFieldsByCondition['IBS / Bowel Symptoms']!
+    return 'IBS / Bowel Symptoms'
   }
 
-  if (category.includes('respiratory') || title.includes('asthma') || title.includes('apnea')
+  if (title.includes('apnea') || category.includes('sleep') || title.includes('insomnia')) {
+    return 'Sleep Issues'
+  }
+
+  if (category.includes('respiratory') || title.includes('asthma')
     || title.includes('sinus') || title.includes('rhinitis')) {
-    return entryFieldsByCondition.Respiratory!
+    return 'Respiratory'
   }
 
   if (category.includes('hearing') || title.includes('tinnitus') || title.includes('hearing')) {
-    return entryFieldsByCondition.Hearing!
+    return 'Hearing'
   }
 
   if (category.includes('skin') || title.includes('eczema') || title.includes('psoriasis') || title.includes('dermatitis')) {
-    return entryFieldsByCondition['Skin Conditions']!
+    return 'Skin Conditions'
   }
 
   if (category.includes('chronic pain') || category.includes('fatigue')
     || title.includes('fibromyalgia') || title.includes('fatigue')) {
-    return entryFieldsByCondition['Chronic Pain / Fatigue']!
+    return 'Chronic Pain / Fatigue'
   }
 
-  if (category.includes('sleep') || title.includes('insomnia')) {
-    return entryFieldsByCondition['Sleep Issues']!
+  return '__generic__'
+}
+
+export function getEntryFieldsForSearchCondition(condition: { title: string, category: string }) {
+  const templateKey = resolveEntryTemplateKeyForCondition(condition)
+
+  if (templateKey === '__generic__') {
+    return buildDefaultEntryFields()
   }
 
-  return buildDefaultEntryFields()
+  return entryFieldsByCondition[templateKey]!
 }
 
 export function buildDefaultEntryFields() {

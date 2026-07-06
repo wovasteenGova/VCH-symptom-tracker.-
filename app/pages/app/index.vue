@@ -754,34 +754,22 @@
                           </div>
                         </div>
                         <div
-                          v-else-if="isEpisodeDurationField(field) || isEpisodeFollowUpField(field) || isMedicationsStepField(field) || getEntryFieldPresets(field.label).length"
+                          v-else-if="isEpisodeDurationField(field) || isEpisodeFollowUpField(field) || isMedicationsStepField(field) || getPresetsForEntryField(field.label).length"
                           class="space-y-5"
                         >
-                          <div
-                            v-if="field.label === 'Medications for this entry' && savedMedicationList.length"
-                            class="flex flex-wrap gap-2"
-                          >
-                            <button
-                              v-for="medication in savedMedicationList"
-                              :key="medication"
-                              type="button"
-                              class="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-                              @click="appendSavedMedicationToEntry(medication)"
-                            >
-                              + {{ medication }}
-                            </button>
-                          </div>
                           <div class="flex flex-wrap gap-2.5">
                             <button
-                              v-for="preset in getEntryFieldPresets(field.label)"
-                              :key="preset.label"
+                              v-for="preset in getPresetsForEntryField(field.label)"
+                              :key="`${preset.fromLastEntry ? 'last' : 'catalog'}-${preset.value}`"
                               type="button"
                               class="rounded-full px-3 py-1.5 text-xs font-bold transition"
-                              :class="(isMultiSelectPresetField(field.label)
-                                ? entryPresetIsSelected(entryForm[fieldKey(field.label)], preset.value)
+                              :class="(isMultiSelectPresetField(field.label) || isAppendPresetField(field.label)
+                                ? entryPresetIsSelected(entryForm[fieldKey(field.label)], preset.value, field.label)
                                 : entryForm[fieldKey(field.label)] === preset.value)
                                 ? 'bg-slate-950 text-white dark:bg-white dark:text-slate-950'
-                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'"
+                                : preset.fromLastEntry
+                                  ? 'bg-slate-200 text-slate-800 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600'
+                                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'"
                               @click="applyEntryFieldPreset(field.label, preset.value)"
                             >
                               {{ preset.label }}
@@ -819,7 +807,7 @@
                           class="w-full resize-none border-0 border-b border-slate-300/80 bg-transparent px-0 py-4 text-base font-medium leading-7 text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-700 dark:text-white dark:focus:border-slate-400"
                         />
                         <input
-                          v-else-if="field.type !== 'slider' && field.type !== 'datetime' && !isEpisodeDurationField(field) && !isEpisodeFollowUpField(field) && !isMedicationsStepField(field) && !getEntryFieldPresets(field.label).length"
+                          v-else-if="field.type !== 'slider' && field.type !== 'datetime' && !isEpisodeDurationField(field) && !isEpisodeFollowUpField(field) && !isMedicationsStepField(field) && !getPresetsForEntryField(field.label).length"
                           v-model="entryForm[fieldKey(field.label)]"
                           :type="field.type"
                           :placeholder="field.placeholder"
@@ -2130,13 +2118,13 @@ import {
 import {
   entryPresetIsSelected,
   getEntryFieldPresets,
+  getValuesFromLastEntry,
+  isAppendPresetField,
   isMultiSelectPresetField,
+  mergeEntryFieldPresets,
   toggleEntryFieldPresetValue
 } from '../../utils/entryFieldPresets'
 import {
-  formatMedicationListForEntry,
-  getMedicationsFromLastEntry,
-  readSavedMedicationList,
   rememberMedicationsFromEntry
 } from '../../utils/entryMedications'
 import {
@@ -2146,6 +2134,7 @@ import {
   isEpisodeDurationField,
   isEpisodeFollowUpField,
   isMedicationsStepField,
+  resolveEntryTemplateKeyForCondition,
   type EntryFieldDef
 } from '../../utils/vaConditionFields'
 import { reportBranding } from '../../utils/reportBranding'
@@ -3504,20 +3493,32 @@ const activeEntryIsMentalHealth = computed(() => {
   return category.toLowerCase().includes('mental')
 })
 
-const savedMedicationList = computed(() => {
-  const fromLastEntry = getMedicationsFromLastEntry(
-    savedEntriesForCondition(entryTitle.value)
-  )
-
-  if (fromLastEntry.length) {
-    return fromLastEntry
+const activeEntryTemplateKey = computed(() => {
+  if (selectedSearchCondition.value) {
+    return resolveEntryTemplateKeyForCondition(selectedSearchCondition.value)
   }
 
-  return readSavedMedicationList(
-    user.value?.id,
-    resolveEntryStatementConditionKey(entryTitle.value)
-  )
+  if (editingEntryConditionLabel.value && editingEntryConditionLabel.value in entryFieldsByCondition) {
+    return editingEntryConditionLabel.value as keyof typeof entryFieldsByCondition
+  }
+
+  const active = activeCondition.value
+  if (active) {
+    return resolveEntryTemplateKeyForCondition(active)
+  }
+
+  return '__generic__' as const
 })
+
+function getPresetsForEntryField(fieldLabel: string) {
+  const catalogPresets = getEntryFieldPresets(fieldLabel, activeEntryTemplateKey.value)
+  const lastEntryValues = getValuesFromLastEntry(
+    savedEntriesForCondition(entryTitle.value),
+    fieldLabel
+  )
+
+  return mergeEntryFieldPresets(catalogPresets, lastEntryValues)
+}
 function filterConditionResults(query: string) {
   return filterAndRankConditions(conditionResults, query)
 }
@@ -3988,6 +3989,11 @@ function applySeverityPreset(value: number) {
 function applyEntryFieldPreset(label: string, value: string) {
   const key = fieldKey(label)
 
+  if (isAppendPresetField(label)) {
+    appendSavedMedicationToEntry(value)
+    return
+  }
+
   if (isMultiSelectPresetField(label)) {
     entryForm.value[key] = toggleEntryFieldPresetValue(entryForm.value[key], value)
     return
@@ -4004,26 +4010,16 @@ function appendSavedMedicationToEntry(medication: string) {
     .map((part) => part.trim())
     .filter(Boolean)
 
-  if (!parts.some((part) => part.toLowerCase() === medication.toLowerCase())) {
-    parts.push(medication)
+  const normalized = medication.trim().toLowerCase()
+  const existingIndex = parts.findIndex((part) => part.toLowerCase() === normalized)
+
+  if (existingIndex >= 0) {
+    parts.splice(existingIndex, 1)
+  } else {
+    parts.push(medication.trim())
   }
 
-  entryForm.value[key] = parts.join('\n')
-}
-
-function prefillEntryMedications(label = entryTitle.value) {
-  const key = fieldKey('Medications for this entry')
-  if (entryForm.value[key]?.trim()) {
-    return
-  }
-
-  const saved = formatMedicationListForEntry(
-    getMedicationsFromLastEntry(savedEntriesForCondition(label))
-  )
-
-  if (saved) {
-    entryForm.value[key] = saved
-  }
+  entryForm.value[key] = parts.length ? parts.join('\n') : ''
 }
 
 function refreshEntryDateLimits() {
@@ -6033,7 +6029,6 @@ function changeEntryCondition(condition: { title: string, category: string, desc
 
   const medicationKey = fieldKey('Medications for this entry')
   delete entryForm.value[medicationKey]
-  prefillEntryMedications(condition.title)
 
   if (!isPro.value && !editingEntryId.value) {
     void ensureFreeConditionAccess(
@@ -6064,7 +6059,6 @@ function applyCustomEntryCondition() {
 
   const medicationKey = fieldKey('Medications for this entry')
   delete entryForm.value[medicationKey]
-  prefillEntryMedications(customName)
 
   if (!isPro.value && !editingEntryId.value) {
     void ensureFreeConditionAccess(
@@ -6875,7 +6869,6 @@ function openEntryPanelInner(options: {
   }
 
   prefillConditionStatementForEntry()
-  prefillEntryMedications()
   isEntryOpen.value = true
 }
 
