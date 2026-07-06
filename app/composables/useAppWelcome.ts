@@ -1,5 +1,6 @@
 import { useSupabaseClient, useState } from '#imports'
 import { computed, ref } from 'vue'
+import { useSupabaseAuth } from './useSupabaseAuth'
 import { useTrackerDb } from './useTrackerDb'
 import {
   APP_WELCOME_COMPLETED_STORAGE_KEY,
@@ -66,9 +67,28 @@ function isMissingReminderEveningHourError(error: unknown) {
   )
 }
 
+function profileAlreadySetUp(profile: {
+  terms_accepted_at?: string | null
+  logging_cadence?: string | null
+  conditions_onboarding_completed?: boolean | null
+  tracked_condition_keys?: string[] | null
+} | null | undefined) {
+  if (!profile) {
+    return false
+  }
+
+  return Boolean(
+    profile.terms_accepted_at
+    || profile.logging_cadence
+    || profile.conditions_onboarding_completed
+    || (profile.tracked_condition_keys?.length ?? 0) > 0
+  )
+}
+
 export function useAppWelcome() {
   const supabase = useSupabaseClient()
   const trackerDb = useTrackerDb()
+  const { user, isAuthLoading } = useSupabaseAuth()
   const appWelcomeCompleted = useState('tracker-app-welcome-completed', () => readLocalWelcomeCompleted())
   const loggingCadence = ref<LoggingCadence>(readLocalCadence())
   const weeklyLogDay = ref(readLocalWeeklyLogDay())
@@ -76,17 +96,63 @@ export function useAppWelcome() {
     import.meta.client ? window.localStorage.getItem(TERMS_ACCEPTED_AT_STORAGE_KEY) : null
   )
   const isLoading = ref(false)
+  const hasLoadedWelcomeState = ref(false)
 
-  const needsAppWelcome = computed(() => !appWelcomeCompleted.value)
+  const needsAppWelcome = computed(() => {
+    if (!user.value || isAuthLoading.value || isLoading.value || !hasLoadedWelcomeState.value) {
+      return false
+    }
+
+    return !appWelcomeCompleted.value
+  })
+
+  async function markReturningUserWelcomeComplete(profile: {
+    logging_cadence?: string | null
+    weekly_log_day?: number | null
+    terms_accepted_at?: string | null
+  } | null | undefined) {
+    const preferences: AppWelcomePreferences = {
+      loggingCadence: profile?.logging_cadence === 'daily' ? 'daily' : readLocalCadence(),
+      weeklyLogDay: profile?.weekly_log_day ?? readLocalWeeklyLogDay(),
+      termsAcceptedAt: profile?.terms_accepted_at
+        || (import.meta.client ? window.localStorage.getItem(TERMS_ACCEPTED_AT_STORAGE_KEY) : null)
+        || new Date().toISOString()
+    }
+
+    writeLocalPreferences(preferences)
+    clearAppWelcomeStep()
+    appWelcomeCompleted.value = true
+    loggingCadence.value = preferences.loggingCadence
+    weeklyLogDay.value = preferences.weeklyLogDay
+    termsAcceptedAt.value = preferences.termsAcceptedAt
+
+    const { data: userData } = await supabase.auth.getUser()
+
+    if (!userData.user) {
+      return
+    }
+
+    const { error } = await trackerDb
+      .from('user_profiles')
+      .upsert({
+        user_id: userData.user.id,
+        app_welcome_completed: true,
+        updated_at: new Date().toISOString()
+      })
+
+    if (error) {
+      throw error
+    }
+  }
 
   async function loadAppWelcomeState() {
     isLoading.value = true
+    hasLoadedWelcomeState.value = false
 
     try {
       const { data: userData, error: userError } = await supabase.auth.getUser()
 
       if (userError || !userData.user) {
-        appWelcomeCompleted.value = readLocalWelcomeCompleted()
         loggingCadence.value = readLocalCadence()
         weeklyLogDay.value = readLocalWeeklyLogDay()
         termsAcceptedAt.value = import.meta.client
@@ -97,7 +163,7 @@ export function useAppWelcome() {
 
       const { data: profile, error: profileError } = await trackerDb
         .from('user_profiles')
-        .select('app_welcome_completed, logging_cadence, weekly_log_day, terms_accepted_at')
+        .select('app_welcome_completed, logging_cadence, weekly_log_day, terms_accepted_at, conditions_onboarding_completed, tracked_condition_keys')
         .eq('user_id', userData.user.id)
         .maybeSingle()
 
@@ -118,6 +184,27 @@ export function useAppWelcome() {
         return
       }
 
+      if (profileAlreadySetUp(profile)) {
+        await markReturningUserWelcomeComplete(profile)
+        return
+      }
+
+      const { count: entryCount, error: entryCountError } = await trackerDb
+        .from('symptom_entries')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userData.user.id)
+
+      if (entryCountError) {
+        throw entryCountError
+      }
+
+      if ((entryCount ?? 0) > 0) {
+        await markReturningUserWelcomeComplete(profile)
+        return
+      }
+
+      appWelcomeCompleted.value = false
+
       if (readLocalWelcomeCompleted()) {
         try {
           await completeAppWelcome({
@@ -133,6 +220,7 @@ export function useAppWelcome() {
       }
     } finally {
       isLoading.value = false
+      hasLoadedWelcomeState.value = true
     }
   }
 

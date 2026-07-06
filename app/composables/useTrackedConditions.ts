@@ -1,5 +1,6 @@
 import { useSupabaseClient } from '#imports'
 import { computed, ref } from 'vue'
+import { useSupabaseAuth } from './useSupabaseAuth'
 import { useTrackerDb } from './useTrackerDb'
 import { conditionKeyFromLabel } from '../utils/subscription'
 import { normalizeTrackedConditionKeys, resolveCatalogConditionByStoredKey } from '../utils/conditionCatalog'
@@ -45,6 +46,7 @@ function writeLocalState(keys: string[], completed: boolean) {
 export function useTrackedConditions() {
   const supabase = useSupabaseClient()
   const trackerDb = useTrackerDb()
+  const { user, isAuthLoading } = useSupabaseAuth()
   const initialStoredKeys = readStoredKeys()
   const initialOnboardingCompleted = readStoredOnboardingCompleted() || initialStoredKeys.length > 0
   const trackedConditionKeys = ref<string[]>(normalizeTrackedConditionKeys(initialStoredKeys))
@@ -53,7 +55,13 @@ export function useTrackedConditions() {
   const hasLoadedTrackedConditions = ref(false)
   const loadError = ref('')
 
-  const needsOnboarding = computed(() => !onboardingCompleted.value)
+  const needsOnboarding = computed(() => {
+    if (!user.value || isAuthLoading.value) {
+      return false
+    }
+
+    return !onboardingCompleted.value
+  })
   const trackedConditionCount = computed(() => trackedConditionKeys.value.length)
 
   function applyLocalState(keys: string[], completed: boolean) {
