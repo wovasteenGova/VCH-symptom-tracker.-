@@ -1111,28 +1111,6 @@
                   :style="homeImageTransitionStyle"
                   aria-hidden="true"
                 >
-              </div>
-
-                <div
-                  v-else-if="!showConditionBrowser && hasLoadedTrackedConditions"
-                  key="empty-conditions"
-                  class="absolute inset-0 z-10 flex flex-col bg-slate-50 dark:bg-slate-950"
-                >
-                  <div class="flex min-h-0 flex-1 flex-col items-center justify-center px-6 text-center">
-                    <h2 class="text-xl font-bold text-slate-950 dark:text-white">
-                      No conditions on your home screen
-                    </h2>
-                    <p class="mt-2 max-w-xs text-sm leading-6 text-slate-600 dark:text-slate-300">
-                      Tap conditions below to add them to your home screen.
-                    </p>
-                    <button
-                      type="button"
-                      class="mt-5 rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
-                      @click="openConditionBrowser"
-                    >
-                      Browse conditions
-                    </button>
-                  </div>
                 </div>
 
                 <div
@@ -2884,7 +2862,9 @@ const showConditionBrowser = computed(() => {
     return false
   }
 
-  return needsOnboarding.value || isConditionBrowserOpen.value
+  return needsOnboarding.value
+    || isConditionBrowserOpen.value
+    || !homeConditions.value.length
 })
 
 function trackedConditionKeysSignature(keys: string[]) {
@@ -4027,6 +4007,15 @@ watch(user, async (currentUser) => {
   closeEntryPanel(true, true)
   refreshEntryDraftPreview()
   await refreshTrackedConditions()
+})
+
+watch(showConditionBrowser, (showing, wasShowing) => {
+  if (!showing || needsOnboarding.value || wasShowing) {
+    return
+  }
+
+  draftSelectedKeys.value = [...trackedConditionKeys.value]
+  conditionBrowserListOrder.value = buildConditionBrowserListOrder(trackedConditionKeys.value)
 })
 
 watch(needsOnboarding, (needsOnboardingNow) => {
