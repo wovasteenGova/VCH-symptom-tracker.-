@@ -1,7 +1,7 @@
 <template>
-  <main class="flex min-h-screen flex-col bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-white">
+  <main class="flex min-h-screen flex-col bg-slate-50 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-slate-950 dark:bg-slate-950 dark:text-white">
     <div class="flex flex-1 items-center">
-      <div class="mx-auto grid w-full max-w-7xl items-start gap-10 px-6 py-12 lg:grid-cols-[1fr_minmax(20rem,28rem)] lg:gap-14 lg:py-16 xl:gap-20">
+      <div class="mx-auto grid w-full max-w-7xl items-start gap-10 px-6 py-12 pb-[max(2rem,env(safe-area-inset-bottom))] lg:grid-cols-[1fr_minmax(20rem,28rem)] lg:gap-14 lg:py-16 lg:pb-16 xl:gap-20">
         <div class="flex flex-col justify-center gap-8 lg:pr-2">
           <div class="space-y-6">
             <div class="flex items-center gap-3">
@@ -37,7 +37,7 @@
 
             <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <UButton
-                to="/app"
+                :href="trackerAppUrl"
                 color="primary"
                 size="xl"
                 trailing-icon="i-lucide-arrow-right"
@@ -63,7 +63,10 @@
           />
         </div>
 
-        <div class="mx-auto w-full max-w-[28rem] lg:mx-0 lg:justify-self-end">
+        <div
+          v-if="isDesktopLayout"
+          class="mx-auto w-full max-w-[28rem] lg:mx-0 lg:justify-self-end"
+        >
           <div class="h-[min(820px,calc(100vh-10rem))] min-h-[620px] overflow-hidden rounded-[2.5rem] bg-slate-950 shadow-2xl ring-1 ring-slate-200 dark:ring-slate-800">
             <ClientOnly>
               <TrackerLivePreview />
@@ -120,7 +123,7 @@
           </p>
           <div class="flex flex-col gap-3 sm:flex-row sm:shrink-0">
             <UButton
-              to="/app"
+              :href="trackerAppUrl"
               color="primary"
               size="lg"
             >
@@ -175,9 +178,6 @@ onMounted(() => {
     }
   }
 
-  if (!isDesktopLayout.value) {
-    navigateTo('/app', { replace: true })
-  }
 })
 
 const highlights = [

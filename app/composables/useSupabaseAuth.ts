@@ -1,6 +1,6 @@
 import { useState, useSupabaseClient } from '#imports'
 import type { User } from '@supabase/supabase-js'
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted } from 'vue'
 import { useTrackerAuthRedirects } from '../utils/authRedirects'
 import { clearOAuthFlowMarker, markOAuthFlowStarted } from './useAuthEmailLink'
 
@@ -33,7 +33,6 @@ export function useSupabaseAuth() {
   const isAuthLoading = useState('tracker-auth-loading', () => true)
   const authError = useState('tracker-auth-error', () => '')
   const authBootstrapStarted = useState('tracker-auth-bootstrap-started', () => false)
-  let unsubscribe: (() => void) | undefined
 
   async function bootstrapAuth() {
     if (authBootstrapStarted.value) {
@@ -42,11 +41,14 @@ export function useSupabaseAuth() {
 
     authBootstrapStarted.value = true
 
-    const listener = supabase.auth.onAuthStateChange((_event, session) => {
-      user.value = session?.user ?? null
-    })
+    supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || !session?.user) {
+        user.value = null
+        return
+      }
 
-    unsubscribe = listener.data.subscription.unsubscribe
+      user.value = session.user
+    })
 
     try {
       // Hydrate from the local session first so signed-in users never flash the login UI.
@@ -200,10 +202,6 @@ export function useSupabaseAuth() {
     if (!authBootstrapStarted.value) {
       void bootstrapAuth()
     }
-  })
-
-  onUnmounted(() => {
-    unsubscribe?.()
   })
 
   function requireAuthEmail(email: string) {
@@ -430,6 +428,8 @@ export function useSupabaseAuth() {
       authError.value = getAuthErrorMessage(error)
       throw error
     }
+
+    user.value = null
   }
 
   async function signOutEverywhere() {
@@ -445,6 +445,7 @@ export function useSupabaseAuth() {
     }
 
     await clearLocalAuthSession()
+    user.value = null
 
     if (error && !isBenignSignOutError(error)) {
       authError.value = getAuthErrorMessage(error)

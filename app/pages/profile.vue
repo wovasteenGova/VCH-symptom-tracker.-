@@ -2181,16 +2181,24 @@ async function handleGoogleSignIn() {
   }
 }
 
+const pendingAuthPanelOpen = useState('tracker-pending-auth-panel-open', () => false)
+
 async function handleSignOut() {
   pendingSessionAction.value = 'local'
   pageError.value = ''
 
   try {
     await signOut()
+    authMode.value = 'login'
+    authMessage.value = ''
 
     if (closeEmbedProfile) {
+      pendingAuthPanelOpen.value = true
       closeEmbedProfile()
+      return
     }
+
+    await navigateTo('/app?login=1')
   } catch {
     pageError.value = authError.value
   } finally {
@@ -2208,10 +2216,16 @@ async function handleSignOutEverywhere() {
 
   try {
     await signOutEverywhere()
+    authMode.value = 'login'
+    authMessage.value = ''
 
     if (closeEmbedProfile) {
+      pendingAuthPanelOpen.value = true
       closeEmbedProfile()
+      return
     }
+
+    await navigateTo('/app?login=1')
   } catch {
     pageError.value = authError.value
   } finally {

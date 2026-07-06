@@ -2322,6 +2322,7 @@ const isConditionPickerOpen = ref(false)
 const customConditionInput = ref('')
 const debouncedCustomConditionPreview = ref('')
 const isAuthPanelOpen = ref(false)
+const pendingAuthPanelOpen = useState('tracker-pending-auth-panel-open', () => false)
 const authMode = ref<'login' | 'signup'>('login')
 const colorMode = useColorMode()
 const googleButtonTheme = computed(() => colorMode.value === 'dark' ? 'dark' : 'light')
@@ -3877,6 +3878,18 @@ watch(() => route.query.login, (value) => {
   }
 })
 
+watch(pendingAuthPanelOpen, (pending) => {
+  if (!pending) {
+    return
+  }
+
+  pendingAuthPanelOpen.value = false
+  authMode.value = 'login'
+  authError.value = ''
+  authMessage.value = ''
+  openAuthPanel()
+}, { flush: 'post' })
+
 watch(
   [entryForm, () => severityValue.value, entryStep, selectedSearchCondition, customConditionInput],
   () => {
@@ -5202,10 +5215,12 @@ async function handleSignOut() {
 
   try {
     await signOut()
-    isAuthPanelOpen.value = false
+    authMode.value = 'login'
+    authError.value = ''
     hasActiveDraft.value = false
     closeEntryPanel(true, true)
     refreshEntryDraftPreview()
+    openAuthPanel()
   } catch {
     authMessage.value = authError.value || 'Could not sign out.'
   } finally {
