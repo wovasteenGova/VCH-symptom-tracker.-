@@ -1,7 +1,7 @@
 <template>
-  <div class="vch-loader" role="status" :aria-label="label || 'Getting you into the main frame'">
+  <div class="vch-loader" role="status" :aria-label="label || 'Getting things ready.'">
     <img
-      src="/vch-tank-loader.svg?v=2"
+      src="/vch-tank-loader.svg?v=3"
       class="vch-loader-img"
       :style="{ width: `${width}px` }"
       alt=""
