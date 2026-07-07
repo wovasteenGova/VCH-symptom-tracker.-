@@ -1,5 +1,6 @@
 import type { SubmissionToastPayload } from '../composables/useSubmissionToast'
 import { VCH_CONTACT_URL } from './subscription'
+import { isAuthEmailCooldownMessage } from './authEmailCooldown'
 
 export const AUTH_NOTICE_DURATION_MS = 5200
 
@@ -161,6 +162,12 @@ export function handleAuthApiFailure(options: {
   }
 
   if (isAuthValidationMessage(message)) {
+    options.setValidationMessage(message)
+    options.clearAuthError()
+    return
+  }
+
+  if (isAuthEmailCooldownMessage(message)) {
     options.setValidationMessage(message)
     options.clearAuthError()
     return

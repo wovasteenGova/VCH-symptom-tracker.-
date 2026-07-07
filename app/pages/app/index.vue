@@ -413,20 +413,20 @@
               v-if="authMode === 'login'"
               type="button"
               class="w-full rounded-2xl px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-300"
-              :disabled="isAuthSubmitting"
+              :disabled="isAuthSubmitting || isEmailCooldownActive"
               @click="handleForgotPassword"
             >
-              Forgot password?
+              {{ forgotPasswordLabel }}
             </button>
 
             <button
               v-if="needsEmailConfirmation"
               type="button"
               class="w-full rounded-2xl px-4 py-2 text-sm font-semibold text-sky-600 dark:text-sky-300"
-              :disabled="isAuthSubmitting || !authEmail"
+              :disabled="isAuthSubmitting || !authEmail || isEmailCooldownActive"
               @click="handleResendConfirmation"
             >
-              Resend confirmation email
+              {{ resendConfirmationLabel }}
             </button>
             </form>
           </section>
@@ -2446,6 +2446,12 @@ const colorMode = useColorMode()
 const googleButtonTheme = computed(() => colorMode.value === 'dark' ? 'dark' : 'light')
 const authName = ref('')
 const authEmail = ref('')
+const {
+  isEmailCooldownActive,
+  resendConfirmationLabel,
+  forgotPasswordLabel,
+  refreshCooldown
+} = useAuthEmailCooldown(authEmail)
 const authPassword = ref('')
 const authConfirmPassword = ref('')
 const signupPasswordReveal = useTimedPasswordReveal()
@@ -5376,10 +5382,13 @@ function openLoginFromQuery() {
 
 
 async function handleAuthSubmit() {
+  if (isAuthSubmitting.value) {
+    return
+  }
+
   authValidationMessage.value = ''
   authError.value = ''
   clearAuthPanelNotice()
-  needsEmailConfirmation.value = false
 
   const validationMessage = validateSignupForm({
     mode: authMode.value,
@@ -5409,6 +5418,7 @@ async function handleAuthSubmit() {
         showSubmissionToast(authSuccessToast('Account created. You are signed in.'))
       } else if (data.needsEmailConfirmation || data.user) {
         needsEmailConfirmation.value = true
+        refreshCooldown()
         showAuthFeedback(authNoticeToast(AUTH_NOTICES.signupCheckEmail))
         authMode.value = 'login'
       } else {
@@ -5439,6 +5449,10 @@ async function handleAuthSubmit() {
 }
 
 async function handleResendConfirmation() {
+  if (isAuthSubmitting.value) {
+    return
+  }
+
   authValidationMessage.value = ''
   clearAuthPanelNotice()
 
@@ -5453,6 +5467,7 @@ async function handleResendConfirmation() {
   try {
     await resendConfirmationEmail(authEmail.value)
     needsEmailConfirmation.value = true
+    refreshCooldown()
     showAuthFeedback(authNoticeToast(AUTH_NOTICES.confirmationEmailSent))
   } catch {
     handleAuthApiFailure({
@@ -5515,6 +5530,10 @@ async function handlePasskeySignIn() {
 }
 
 async function handleForgotPassword() {
+  if (isAuthSubmitting.value) {
+    return
+  }
+
   authValidationMessage.value = ''
   authError.value = ''
   clearAuthPanelNotice()
@@ -5528,6 +5547,7 @@ async function handleForgotPassword() {
 
   try {
     await sendPasswordReset(authEmail.value)
+    refreshCooldown()
     showAuthFeedback(authNoticeToast(AUTH_NOTICES.passwordResetSent))
   } catch {
     handleAuthApiFailure({

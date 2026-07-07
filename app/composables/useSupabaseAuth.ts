@@ -3,6 +3,7 @@ import type { User } from '@supabase/supabase-js'
 import { onMounted } from 'vue'
 import { useTrackerAuthRedirects } from '../utils/authRedirects'
 import { AUTH_NOTICES, AUTH_VALIDATION, normalizeAuthEmail, validateAuthEmailField } from '../utils/authNotices'
+import { assertAuthEmailCooldown, formatAuthEmailCooldownMessage, isAuthEmailCooldownMessage, markAuthEmailSent } from '../utils/authEmailCooldown'
 import { clearOAuthFlowMarker, markOAuthFlowStarted } from './useAuthEmailLink'
 
 type AuthFailure = {
@@ -30,6 +31,15 @@ export function useSupabaseAuth() {
   const isAuthLoading = useState('tracker-auth-loading', () => true)
   const authError = useState('tracker-auth-error', () => '')
   const authBootstrapStarted = useState('tracker-auth-bootstrap-started', () => false)
+  const pendingConfirmEmail = useState<string | null>('tracker-pending-confirm-email', () => null)
+
+  function clearPendingConfirmEmail() {
+    pendingConfirmEmail.value = null
+  }
+
+  function markPendingConfirmEmail(email: string) {
+    pendingConfirmEmail.value = normalizeAuthEmail(email)
+  }
 
   async function bootstrapAuth() {
     if (authBootstrapStarted.value) {
@@ -45,6 +55,10 @@ export function useSupabaseAuth() {
       }
 
       user.value = session.user
+
+      if (session.user.email_confirmed_at) {
+        clearPendingConfirmEmail()
+      }
     })
 
     try {
@@ -145,7 +159,11 @@ export function useSupabaseAuth() {
       }
 
       if (/for security purposes, you can only request this after/i.test(message)) {
-        return 'Please wait about 30 seconds before trying again.'
+        return formatAuthEmailCooldownMessage(30_000)
+      }
+
+      if (isAuthEmailCooldownMessage(message)) {
+        return message
       }
 
       if (failure.status === 400 && message) {
@@ -252,11 +270,32 @@ export function useSupabaseAuth() {
       authError.value = getAuthErrorMessage(error)
       throw error
     }
+
+    clearPendingConfirmEmail()
+  }
+
+  function enforceAuthEmailCooldown(email: string) {
+    try {
+      assertAuthEmailCooldown(email)
+    } catch (error) {
+      authError.value = getAuthErrorMessage(error)
+      throw error
+    }
   }
 
   async function signUp(email: string, password: string, fullName: string) {
     authError.value = ''
     const normalizedEmail = requireAuthEmail(email)
+
+    enforceAuthEmailCooldown(normalizedEmail)
+
+    if (pendingConfirmEmail.value === normalizedEmail) {
+      return {
+        user: null,
+        session: null,
+        needsEmailConfirmation: true
+      }
+    }
 
     const emailRedirectTo = import.meta.client
       ? authRedirects.confirmUrl()
@@ -304,6 +343,9 @@ export function useSupabaseAuth() {
       const needsEmailConfirmation = !data.user.confirmed_at && !data.session
 
       if (needsEmailConfirmation) {
+        markAuthEmailSent(normalizedEmail)
+        markPendingConfirmEmail(normalizedEmail)
+
         return {
           user: data.user,
           session: null,
@@ -315,6 +357,9 @@ export function useSupabaseAuth() {
         await signIn(normalizedEmail, password)
       } catch (signInError) {
         if (/confirm your email/i.test(authError.value)) {
+          markAuthEmailSent(normalizedEmail)
+          markPendingConfirmEmail(normalizedEmail)
+
           return {
             user: data.user,
             session: null,
@@ -343,6 +388,8 @@ export function useSupabaseAuth() {
     authError.value = ''
     const normalizedEmail = requireAuthEmail(email)
 
+    enforceAuthEmailCooldown(normalizedEmail)
+
     const emailRedirectTo = import.meta.client
       ? authRedirects.confirmUrl()
       : undefined
@@ -366,6 +413,9 @@ export function useSupabaseAuth() {
       authError.value = getAuthErrorMessage(error)
       throw error
     }
+
+    markAuthEmailSent(normalizedEmail)
+    markPendingConfirmEmail(normalizedEmail)
   }
 
   async function signInWithGoogle() {
@@ -408,6 +458,8 @@ export function useSupabaseAuth() {
     authError.value = ''
     const normalizedEmail = requireAuthEmail(email)
 
+    enforceAuthEmailCooldown(normalizedEmail)
+
     const redirectTo = import.meta.client
       ? authRedirects.resetPasswordUrl()
       : undefined
@@ -427,6 +479,8 @@ export function useSupabaseAuth() {
       authError.value = getAuthErrorMessage(error)
       throw error
     }
+
+    markAuthEmailSent(normalizedEmail)
   }
 
   async function signOut() {
