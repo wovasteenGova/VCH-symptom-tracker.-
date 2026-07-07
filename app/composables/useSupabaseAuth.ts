@@ -2,6 +2,7 @@ import { useState, useSupabaseClient } from '#imports'
 import type { User } from '@supabase/supabase-js'
 import { onMounted } from 'vue'
 import { useTrackerAuthRedirects } from '../utils/authRedirects'
+import { AUTH_NOTICES, AUTH_VALIDATION, normalizeAuthEmail, validateAuthEmailField } from '../utils/authNotices'
 import { clearOAuthFlowMarker, markOAuthFlowStarted } from './useAuthEmailLink'
 
 type AuthFailure = {
@@ -12,18 +13,14 @@ type AuthFailure = {
   status?: number
 }
 
-function normalizeAuthEmail(email: string) {
-  return email.trim().toLowerCase()
-}
-
 function validateAuthEmail(email: string) {
-  const normalized = normalizeAuthEmail(email)
+  const message = validateAuthEmailField(email)
 
-  if (!normalized || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
-    throw new Error('Enter a valid email address.')
+  if (message) {
+    throw new Error(message)
   }
 
-  return normalized
+  return normalizeAuthEmail(email)
 }
 
 export function useSupabaseAuth() {
@@ -94,7 +91,7 @@ export function useSupabaseAuth() {
         || failure.code === 'email_not_confirmed'
         || /email not confirmed/i.test(message)
       ) {
-        return 'Confirm your email first. Check spam for mail from Supabase, or tap Resend confirmation email below.'
+        return AUTH_NOTICES.emailConfirmationRequired
       }
 
       if (
@@ -136,7 +133,7 @@ export function useSupabaseAuth() {
         || /unable to validate email address/i.test(message)
         || /email address.*invalid/i.test(message)
       ) {
-        return 'Enter a valid email address.'
+        return AUTH_VALIDATION.validEmail
       }
 
       if (failure.status === 400 && message) {
@@ -205,12 +202,7 @@ export function useSupabaseAuth() {
   })
 
   function requireAuthEmail(email: string) {
-    try {
-      return validateAuthEmail(email)
-    } catch (error) {
-      authError.value = getAuthErrorMessage(error)
-      throw error
-    }
+    return validateAuthEmail(email)
   }
 
   async function signIn(email: string, password: string) {
@@ -290,23 +282,35 @@ export function useSupabaseAuth() {
     }
 
     if (data.session) {
-      return data
+      return {
+        ...data,
+        needsEmailConfirmation: false
+      }
     }
 
     if (data.user) {
+      const needsEmailConfirmation = !data.user.confirmed_at && !data.session
+
+      if (needsEmailConfirmation) {
+        return {
+          user: data.user,
+          session: null,
+          needsEmailConfirmation: true
+        }
+      }
+
       try {
         await signIn(normalizedEmail, password)
       } catch (signInError) {
         if (/confirm your email/i.test(authError.value)) {
-          throw signInError
+          return {
+            user: data.user,
+            session: null,
+            needsEmailConfirmation: true
+          }
         }
 
-        if (!data.user.confirmed_at) {
-          authError.value = 'Account created. Confirm your email, then sign in. Check spam for mail from Supabase.'
-        } else {
-          authError.value = authError.value || 'Account created, but sign-in did not start. Try Sign in with the same password.'
-        }
-
+        authError.value = authError.value || 'Account created, but sign-in did not start. Try Sign in with the same password.'
         throw signInError
       }
 
@@ -314,7 +318,8 @@ export function useSupabaseAuth() {
 
       return {
         user: sessionData.session?.user ?? data.user,
-        session: sessionData.session
+        session: sessionData.session,
+        needsEmailConfirmation: false
       }
     }
 

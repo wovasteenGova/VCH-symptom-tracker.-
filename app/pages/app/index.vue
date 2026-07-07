@@ -241,10 +241,10 @@
             <div class="flex items-start justify-between gap-3">
               <div>
                 <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-                  {{ user ? 'Account' : authMode === 'login' ? 'Welcome back' : 'Create account' }}
+                  {{ user ? 'Account' : 'Account access' }}
                 </p>
                 <h2 id="auth-panel-title" class="mt-1 text-xl font-bold text-slate-950 dark:text-white">
-                  {{ user ? user.email : authMode === 'login' ? 'Sign in to save entries' : 'Sign up to back up your logs' }}
+                  {{ user ? user.email : 'Welcome to Symptom Tracker' }}
                 </h2>
               </div>
 
@@ -283,10 +283,28 @@
               >
                 {{ isAuthSubmitting ? 'Signing out...' : 'Sign out' }}
               </button>
-              <p v-if="authError" class="text-center text-sm font-medium text-red-600 dark:text-red-300" aria-live="assertive">{{ authError }}</p>
             </div>
 
             <form v-else class="mt-4 space-y-3" @submit.prevent="handleAuthSubmit">
+            <AuthModeTabs v-model="authMode" />
+
+            <div
+              v-if="authPanelNotice"
+              class="flex items-start gap-3 rounded-2xl border px-4 py-3"
+              :class="authPanelNotice.tone === 'error'
+                ? 'border-red-300/80 bg-red-50 text-red-950 dark:border-red-800/70 dark:bg-red-950/90 dark:text-red-100'
+                : 'border-emerald-300/80 bg-emerald-50 text-emerald-950 dark:border-emerald-700/70 dark:bg-emerald-950/90 dark:text-emerald-100'"
+              aria-live="polite"
+            >
+              <UIcon
+                :name="authPanelNotice.tone === 'error' ? 'i-lucide-alert-circle' : 'i-lucide-check-circle-2'"
+                class="mt-0.5 size-5 shrink-0"
+              />
+              <p class="min-w-0 flex-1 text-sm font-semibold leading-5">
+                {{ authPanelNotice.message }}
+              </p>
+            </div>
+
             <label v-if="authMode === 'signup'" class="block">
               <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Name</span>
               <input
@@ -336,6 +354,14 @@
               />
             </label>
 
+            <p
+              v-if="authValidationMessage"
+              class="text-center text-sm font-medium text-amber-700 dark:text-amber-300"
+              aria-live="polite"
+            >
+              {{ authValidationMessage }}
+            </p>
+
             <button
               type="submit"
               class="w-full rounded-2xl bg-slate-950 px-4 py-4 text-base font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
@@ -384,17 +410,6 @@
             >
               Resend confirmation email
             </button>
-
-            <button
-              type="button"
-              class="w-full rounded-2xl px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-300"
-              @click="authMode = authMode === 'login' ? 'signup' : 'login'"
-            >
-              {{ authMode === 'login' ? 'Need an account? Sign up' : 'Already have an account? Sign in' }}
-            </button>
-
-            <p v-if="authMessage" class="text-center text-sm font-medium text-slate-600 dark:text-slate-300" aria-live="polite">{{ authMessage }}</p>
-            <p v-if="authError" class="text-center text-sm font-medium text-red-600 dark:text-red-300" aria-live="assertive">{{ authError }}</p>
             </form>
           </section>
         </AppOverlayShell>
@@ -2194,6 +2209,7 @@ import {
   type SymptomEntrySavePayload
 } from '../../utils/symptomEntrySavePayload'
 import { copyToClipboard } from '../../utils/copyToClipboard'
+import { AUTH_NOTICES, authNoticeToast, authSuccessToast, handleAuthApiFailure, resolveAuthApiErrorMessage, validateSignupForm, AUTH_VALIDATION, authErrorToast, isEmailConfirmationNotice } from '../../utils/authNotices'
 import { PDF_EXPORT_ACKNOWLEDGMENT_LABEL } from '../../utils/pdfExportCertification'
 import {
   calendarDateToDateString,
@@ -2415,7 +2431,9 @@ const authEmail = ref('')
 const authPassword = ref('')
 const authConfirmPassword = ref('')
 const signupPasswordReveal = useTimedPasswordReveal()
-const authMessage = ref('')
+const authValidationMessage = ref('')
+const authPanelNotice = ref<SubmissionToastPayload | null>(null)
+let authPanelNoticeTimer: ReturnType<typeof setTimeout> | undefined
 const needsEmailConfirmation = ref(false)
 const isAuthSubmitting = ref(false)
 const hasActiveDraft = ref(false)
@@ -4033,6 +4051,13 @@ watch(needsOnboarding, (needsOnboardingNow) => {
 watch(authMode, () => {
   signupPasswordReveal.hide()
   authConfirmPassword.value = ''
+  authValidationMessage.value = ''
+})
+
+watch(isAuthPanelOpen, (open) => {
+  if (!open) {
+    clearAuthPanelNotice()
+  }
 })
 
 watch(isEntryOpen, (open) => {
@@ -4079,7 +4104,7 @@ watch(pendingAuthPanelOpen, (pending) => {
   pendingAuthPanelOpen.value = false
   authMode.value = 'login'
   authError.value = ''
-  authMessage.value = ''
+  authValidationMessage.value = ''
   openAuthPanel()
 }, { flush: 'post' })
 
@@ -5278,7 +5303,37 @@ function openAuthPanel() {
   closeAppOverlaysExcept('auth')
   historyExpanded.value = false
   isSubmissionDropdownOpen.value = false
+  clearAuthPanelNotice()
   isAuthPanelOpen.value = true
+}
+
+function clearAuthPanelNotice() {
+  if (authPanelNoticeTimer) {
+    clearTimeout(authPanelNoticeTimer)
+    authPanelNoticeTimer = undefined
+  }
+
+  authPanelNotice.value = null
+}
+
+function showAuthFeedback(payload: string | SubmissionToastPayload) {
+  const normalized = normalizeSubmissionToastPayload(payload)
+
+  if (isAuthPanelOpen.value) {
+    clearAuthPanelNotice()
+    authPanelNotice.value = normalized
+
+    const durationMs = normalized.durationMs
+      ?? (normalized.tone === 'error' ? 5200 : 5200)
+
+    authPanelNoticeTimer = setTimeout(() => {
+      authPanelNotice.value = null
+      authPanelNoticeTimer = undefined
+    }, durationMs)
+    return
+  }
+
+  showSubmissionToast(normalized)
 }
 
 function openHomeTipsOverlay() {
@@ -5294,29 +5349,29 @@ function openLoginFromQuery() {
   clearOAuthFlowMarker()
   authMode.value = 'login'
   authError.value = ''
-  authMessage.value = ''
+  authValidationMessage.value = ''
   openAuthPanel()
 
   void router.replace({ path: '/app', query: {} })
 }
 
+
 async function handleAuthSubmit() {
-  authMessage.value = ''
+  authValidationMessage.value = ''
   authError.value = ''
+  clearAuthPanelNotice()
   needsEmailConfirmation.value = false
 
-  if (authMode.value === 'signup' && !authName.value.trim()) {
-    authMessage.value = 'Enter your full name.'
-    return
-  }
+  const validationMessage = validateSignupForm({
+    mode: authMode.value,
+    name: authName.value,
+    email: authEmail.value,
+    password: authPassword.value,
+    confirmPassword: authConfirmPassword.value
+  })
 
-  if (authMode.value === 'signup' && authPassword.value.length < 6) {
-    authMessage.value = 'Password must be at least 6 characters.'
-    return
-  }
-
-  if (authMode.value === 'signup' && authPassword.value !== authConfirmPassword.value) {
-    authMessage.value = 'Passwords do not match.'
+  if (validationMessage) {
+    authValidationMessage.value = validationMessage
     return
   }
 
@@ -5325,50 +5380,73 @@ async function handleAuthSubmit() {
   try {
     if (authMode.value === 'login') {
       await signIn(authEmail.value, authPassword.value)
-      showSubmissionToast('Signed in.')
       isAuthPanelOpen.value = false
+      showSubmissionToast(authSuccessToast('Signed in.'))
     } else {
       const data = await signUp(authEmail.value, authPassword.value, authName.value.trim())
 
       if (data.session || user.value) {
-        showSubmissionToast('Account created. You are signed in.')
         isAuthPanelOpen.value = false
-      } else if (data.user) {
-        authMessage.value = 'Account created, but sign-in did not start. Try Sign in with the same password.'
+        showSubmissionToast(authSuccessToast('Account created. You are signed in.'))
+      } else if (data.needsEmailConfirmation || data.user) {
+        needsEmailConfirmation.value = true
+        showAuthFeedback(authNoticeToast(AUTH_NOTICES.signupCheckEmail))
+        authMode.value = 'login'
       } else {
-        authMessage.value = 'Signup did not return a user. Check Supabase Auth settings and try again.'
+        showAuthFeedback(authErrorToast('Signup did not return a user. Check Supabase Auth settings and try again.'))
       }
     }
   } catch {
-    if (/already exists|already has a VCH account/i.test(authError.value)) {
-      authMode.value = 'login'
-    }
-    if (/confirm your email/i.test(authError.value)) {
-      needsEmailConfirmation.value = true
-    }
-    authMessage.value = authError.value || 'Could not sign in. Check your email and password.'
+    handleAuthApiFailure({
+      message: resolveAuthApiErrorMessage(authError.value, 'Could not sign in. Check your email and password.'),
+      authEmail: authEmail.value,
+      setValidationMessage: (message) => {
+        authValidationMessage.value = message
+      },
+      clearAuthError: () => {
+        authError.value = ''
+      },
+      showToast: showAuthFeedback,
+      setNeedsEmailConfirmation: (value) => {
+        needsEmailConfirmation.value = value
+      },
+      setAuthModeLogin: () => {
+        authMode.value = 'login'
+      }
+    })
   } finally {
     isAuthSubmitting.value = false
   }
 }
 
 async function handleResendConfirmation() {
-  if (!authEmail.value) {
-    authMessage.value = 'Enter your email first, then tap Resend confirmation email.'
+  authValidationMessage.value = ''
+  clearAuthPanelNotice()
+
+  if (!authEmail.value.trim()) {
+    authValidationMessage.value = AUTH_VALIDATION.enterEmailForResendConfirmation
     return
   }
 
   isAuthSubmitting.value = true
-  authMessage.value = ''
   authError.value = ''
 
   try {
     await resendConfirmationEmail(authEmail.value)
     needsEmailConfirmation.value = true
-    authMessage.value = 'Confirmation email sent again. Check spam for mail from Supabase.'
-    showSubmissionToast('Confirmation email sent.')
+    showAuthFeedback(authNoticeToast(AUTH_NOTICES.confirmationEmailSent))
   } catch {
-    authMessage.value = authError.value || 'Could not resend the confirmation email.'
+    handleAuthApiFailure({
+      message: resolveAuthApiErrorMessage(authError.value, 'Could not resend the confirmation email.'),
+      authEmail: authEmail.value,
+      setValidationMessage: (message) => {
+        authValidationMessage.value = message
+      },
+      clearAuthError: () => {
+        authError.value = ''
+      },
+      showToast: showAuthFeedback
+    })
   } finally {
     isAuthSubmitting.value = false
   }
@@ -5376,7 +5454,8 @@ async function handleResendConfirmation() {
 
 async function handleGoogleSignIn() {
   isAuthSubmitting.value = true
-  authMessage.value = ''
+  authValidationMessage.value = ''
+  clearAuthPanelNotice()
 
   try {
     await signInWithGoogle()
@@ -5384,7 +5463,8 @@ async function handleGoogleSignIn() {
     if (import.meta.client) {
       window.sessionStorage.removeItem('symptom-tracker-auth-success')
     }
-    authMessage.value = authError.value || 'Could not sign in with Google.'
+    showAuthFeedback(authErrorToast(resolveAuthApiErrorMessage(authError.value, 'Could not sign in with Google.')))
+    authError.value = ''
   } finally {
     isAuthSubmitting.value = false
   }
@@ -5392,26 +5472,36 @@ async function handleGoogleSignIn() {
 
 async function handlePasskeySignIn() {
   isAuthSubmitting.value = true
-  authMessage.value = ''
+  authValidationMessage.value = ''
   authError.value = ''
+  clearAuthPanelNotice()
 
   try {
     await signInWithPasskey()
-    showSubmissionToast('Signed in with your passkey.')
     isAuthPanelOpen.value = false
+    showSubmissionToast(authSuccessToast('Signed in with your passkey.'))
   } catch (error) {
-    authMessage.value = error instanceof Error ? error.message : 'Could not sign in with a passkey.'
+    const message = error instanceof Error ? error.message : 'Could not sign in with a passkey.'
+
+    if (isEmailConfirmationNotice(message)) {
+      needsEmailConfirmation.value = true
+      showAuthFeedback(authNoticeToast(AUTH_NOTICES.emailConfirmationRequired))
+      return
+    }
+
+    showAuthFeedback(authErrorToast(message))
   } finally {
     isAuthSubmitting.value = false
   }
 }
 
 async function handleForgotPassword() {
-  authMessage.value = ''
+  authValidationMessage.value = ''
   authError.value = ''
+  clearAuthPanelNotice()
 
   if (!authEmail.value.trim()) {
-    authMessage.value = 'Enter your email first, then tap Forgot password again.'
+    authValidationMessage.value = AUTH_VALIDATION.enterEmailForForgotPassword
     return
   }
 
@@ -5419,9 +5509,19 @@ async function handleForgotPassword() {
 
   try {
     await sendPasswordReset(authEmail.value)
-    showSubmissionToast('Password reset email sent. Check spam if it does not arrive.')
+    showAuthFeedback(authNoticeToast(AUTH_NOTICES.passwordResetSent))
   } catch {
-    authMessage.value = authError.value || 'Could not send the reset email.'
+    handleAuthApiFailure({
+      message: resolveAuthApiErrorMessage(authError.value, 'Could not send the reset email.'),
+      authEmail: authEmail.value,
+      setValidationMessage: (message) => {
+        authValidationMessage.value = message
+      },
+      clearAuthError: () => {
+        authError.value = ''
+      },
+      showToast: showAuthFeedback
+    })
   } finally {
     isAuthSubmitting.value = false
   }
@@ -5429,7 +5529,7 @@ async function handleForgotPassword() {
 
 async function handleSignOut() {
   isAuthSubmitting.value = true
-  authMessage.value = ''
+  authValidationMessage.value = ''
 
   try {
     await signOut()
@@ -5440,7 +5540,8 @@ async function handleSignOut() {
     refreshEntryDraftPreview()
     openAuthPanel()
   } catch {
-    authMessage.value = authError.value || 'Could not sign out.'
+    showSubmissionToast(authErrorToast(resolveAuthApiErrorMessage(authError.value, 'Could not sign out.')))
+    authError.value = ''
   } finally {
     isAuthSubmitting.value = false
   }

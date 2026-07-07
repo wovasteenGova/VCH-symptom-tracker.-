@@ -1,9 +1,12 @@
 import { useRoute, useSupabaseClient } from '#imports'
 import type { Session } from '@supabase/supabase-js'
 
-type EmailLinkResult = {
+export type EmailLinkStatus = 'signed-in' | 'confirmed-needs-sign-in' | 'no-session'
+
+export type EmailLinkResult = {
   session: Session | null
   linkType: string | null
+  status: EmailLinkStatus
 }
 
 function readHashParams() {
@@ -33,12 +36,7 @@ export function clearOAuthFlowMarker() {
 }
 
 async function readAccessToken(supabase: ReturnType<typeof useSupabaseClient>) {
-  const { data, error } = await supabase.auth.getSession()
-
-  if (error) {
-    throw error
-  }
-
+  const { data } = await supabase.auth.getSession()
   return data.session?.access_token ?? null
 }
 
@@ -75,11 +73,52 @@ async function exchangeAuthCode(supabase: ReturnType<typeof useSupabaseClient>, 
 }
 
 function isPkceVerifierMissingError(error: unknown) {
-  const authError = error as { message?: string, code?: string } | null
-  const message = String(authError?.message || '').toLowerCase()
+  const authError = error as { message?: string, code?: string, msg?: string } | null
+  const message = String(authError?.message || authError?.msg || '').toLowerCase()
   const code = String(authError?.code || '').toLowerCase()
 
-  return message.includes('code verifier') || code.includes('pkce')
+  return message.includes('code verifier')
+    || message.includes('pkce')
+    || code.includes('pkce')
+}
+
+function normalizeRoutePath(path: string) {
+  if (!path || path === '/') {
+    return path
+  }
+
+  return path.replace(/\/$/, '')
+}
+
+function resolveEmailLinkResult(
+  session: Session | null,
+  linkType: string | null,
+  status: EmailLinkStatus = session ? 'signed-in' : 'no-session'
+): EmailLinkResult {
+  return {
+    session,
+    linkType,
+    status
+  }
+}
+
+async function resolveEmailConfirmationFailure(
+  supabase: ReturnType<typeof useSupabaseClient>,
+  error: unknown,
+  linkType: string | null
+): Promise<EmailLinkResult> {
+  const recoveredSession = await waitForAnySession(supabase, 8, 150)
+
+  if (recoveredSession) {
+    return resolveEmailLinkResult(recoveredSession, linkType, 'signed-in')
+  }
+
+  if (isPkceVerifierMissingError(error)) {
+    // Supabase confirms the email when the link is opened. PKCE only affects auto sign-in.
+    return resolveEmailLinkResult(null, linkType, 'confirmed-needs-sign-in')
+  }
+
+  throw error
 }
 
 export { isPkceVerifierMissingError }
@@ -102,6 +141,38 @@ async function waitForAnySession(
   }
 
   return null
+}
+
+async function completeEmailConfirmation(
+  supabase: ReturnType<typeof useSupabaseClient>,
+  code: string,
+  linkType: string | null
+): Promise<EmailLinkResult> {
+  try {
+    const existingSession = await waitForAnySession(supabase, 5, 150)
+
+    if (existingSession) {
+      return resolveEmailLinkResult(existingSession, linkType, 'signed-in')
+    }
+
+    const previousAccessToken = import.meta.client
+      ? await readAccessToken(supabase)
+      : null
+
+    const autoExchangedSession = import.meta.client
+      ? await waitForNewOAuthSession(supabase, previousAccessToken, 12, 150)
+      : null
+
+    if (autoExchangedSession) {
+      return resolveEmailLinkResult(autoExchangedSession, linkType, 'signed-in')
+    }
+
+    const session = await exchangeAuthCode(supabase, code)
+
+    return resolveEmailLinkResult(session, linkType, 'signed-in')
+  } catch (error) {
+    return resolveEmailConfirmationFailure(supabase, error, linkType)
+  }
 }
 
 async function completeOAuthCallback(
@@ -146,7 +217,8 @@ async function completeOAuthCallback(
       clearOAuthOriginMarker()
       return {
         session: autoExchangedSession,
-        linkType
+        linkType,
+        status: 'signed-in'
       }
     }
 
@@ -157,7 +229,8 @@ async function completeOAuthCallback(
         clearOAuthOriginMarker()
         return {
           session: data.session,
-          linkType
+          linkType,
+          status: 'signed-in'
         }
       }
     }
@@ -204,7 +277,8 @@ async function completeOAuthCallback(
 
     return {
       session,
-      linkType
+      linkType,
+      status: 'signed-in'
     }
   } finally {
     authSubscription?.unsubscribe()
@@ -218,16 +292,31 @@ export async function establishSessionFromEmailLink(): Promise<EmailLinkResult> 
   const queryCode = route.query.code
   const queryType = typeof route.query.type === 'string' ? route.query.type : null
   const tokenHash = route.query.token_hash
-  const isOAuthCallbackRoute = route.path === '/auth/callback'
+  const routePath = normalizeRoutePath(route.path)
+  const isOAuthCallbackRoute = routePath === '/auth/callback'
+  const isConfirmRoute = routePath === '/auth/confirm'
 
   if (typeof queryCode === 'string' && queryCode) {
     if (isOAuthCallbackRoute) {
       return completeOAuthCallback(supabase, queryCode, queryType)
     }
 
-    return {
-      session: await exchangeAuthCode(supabase, queryCode),
-      linkType: queryType
+    if (isConfirmRoute) {
+      return completeEmailConfirmation(supabase, queryCode, queryType)
+    }
+
+    try {
+      return resolveEmailLinkResult(
+        await exchangeAuthCode(supabase, queryCode),
+        queryType,
+        'signed-in'
+      )
+    } catch (error) {
+      if (routePath.startsWith('/auth/confirm')) {
+        return resolveEmailConfirmationFailure(supabase, error, queryType)
+      }
+
+      throw error
     }
   }
 
@@ -244,7 +333,8 @@ export async function establishSessionFromEmailLink(): Promise<EmailLinkResult> 
 
     return {
       session: data.session,
-      linkType: queryType || otpType
+      linkType: queryType || otpType,
+      status: data.session ? 'signed-in' : 'no-session'
     }
   }
 
@@ -266,7 +356,8 @@ export async function establishSessionFromEmailLink(): Promise<EmailLinkResult> 
   if (sessionData.session) {
     return {
       session: sessionData.session,
-      linkType: hashType || queryType
+      linkType: hashType || queryType,
+      status: 'signed-in'
     }
   }
 
@@ -281,12 +372,14 @@ export async function establishSessionFromEmailLink(): Promise<EmailLinkResult> 
 
     return {
       session: refreshedSession.session,
-      linkType: hashType || queryType
+      linkType: hashType || queryType,
+      status: refreshedSession.session ? 'signed-in' : 'no-session'
     }
   }
 
   return {
     session: null,
-    linkType: hashType || queryType
+    linkType: hashType || queryType,
+    status: 'no-session'
   }
 }

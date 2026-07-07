@@ -47,10 +47,9 @@
       <form v-else-if="!user" class="mt-6 flex min-h-0 flex-1 flex-col" @submit.prevent="handleAuthSubmit">
         <div class="flex-1 overflow-y-auto no-scrollbar">
           <section class="rounded-4xl border border-slate-800 bg-slate-900 p-5">
-            <h2 class="text-xl font-bold text-white">
-              {{ authMode === 'login' ? 'Sign in' : 'Create account' }}
-            </h2>
-            <p class="mt-2 text-sm leading-6 text-slate-400">
+            <AuthModeTabs v-model="authMode" tone="dark" />
+
+            <p class="mt-3 text-sm leading-6 text-slate-400">
               Sign in to save symptom entries, export reports, and manage deleted logs.
             </p>
 
@@ -132,21 +131,18 @@
               >
                 Resend confirmation email
               </button>
-
-              <button
-                type="button"
-                class="w-full rounded-2xl px-4 py-2 text-sm font-semibold text-slate-300"
-                @click="authMode = authMode === 'login' ? 'signup' : 'login'"
-              >
-                {{ authMode === 'login' ? 'Need an account? Sign up' : 'Already have an account? Sign in' }}
-              </button>
             </div>
           </section>
         </div>
 
         <StickyActionBar tone="dark">
-          <p v-if="authMessage" class="mb-3 text-center text-sm font-medium text-slate-300">{{ authMessage }}</p>
-          <p v-if="authError" class="mb-3 text-center text-sm font-medium text-red-300">{{ authError }}</p>
+          <p
+            v-if="authValidationMessage"
+            class="mb-3 text-center text-sm font-medium text-amber-300"
+            aria-live="polite"
+          >
+            {{ authValidationMessage }}
+          </p>
 
           <button
             type="submit"
@@ -1110,6 +1106,7 @@ import { useTrackerLayout, TRACKER_CLOSE_EMBED_PROFILE_KEY, type TrackerLayoutMo
 import type { SettingsSection } from '../composables/useSettingsSectionNav'
 import { mapEntryHistoryItem } from '../utils/entryDisplay'
 import { copyToClipboard } from '../utils/copyToClipboard'
+import { AUTH_NOTICES, authNoticeToast, authSuccessToast, handleAuthApiFailure, resolveAuthApiErrorMessage, validateSignupForm, AUTH_VALIDATION, authErrorToast, isEmailConfirmationNotice } from '../utils/authNotices'
 import { computed, inject, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
@@ -1312,13 +1309,14 @@ const authEmail = ref('')
 const authPassword = ref('')
 const authConfirmPassword = ref('')
 const signupPasswordReveal = useTimedPasswordReveal()
-const authMessage = ref('')
+const authValidationMessage = ref('')
 const needsEmailConfirmation = ref(false)
 const isAuthSubmitting = ref(false)
 
 watch(authMode, () => {
   signupPasswordReveal.hide()
   authConfirmPassword.value = ''
+  authValidationMessage.value = ''
 })
 
 // Cached across visits so the page renders instantly with the last known
@@ -1964,22 +1962,20 @@ function redirectAfterAuth() {
 }
 
 async function handleAuthSubmit() {
-  authMessage.value = ''
+  authValidationMessage.value = ''
   authError.value = ''
   needsEmailConfirmation.value = false
 
-  if (authMode.value === 'signup' && !authName.value.trim()) {
-    authMessage.value = 'Enter your full name.'
-    return
-  }
+  const validationMessage = validateSignupForm({
+    mode: authMode.value,
+    name: authName.value,
+    email: authEmail.value,
+    password: authPassword.value,
+    confirmPassword: authConfirmPassword.value
+  })
 
-  if (authMode.value === 'signup' && authPassword.value.length < 6) {
-    authMessage.value = 'Password must be at least 6 characters.'
-    return
-  }
-
-  if (authMode.value === 'signup' && authPassword.value !== authConfirmPassword.value) {
-    authMessage.value = 'Passwords do not match.'
+  if (validationMessage) {
+    authValidationMessage.value = validationMessage
     return
   }
 
@@ -1988,61 +1984,83 @@ async function handleAuthSubmit() {
   try {
     if (authMode.value === 'login') {
       await signIn(authEmail.value, authPassword.value)
-      showSubmissionToast('Signed in.')
+      showSubmissionToast(authSuccessToast('Signed in.'))
       redirectAfterAuth()
     } else {
       const data = await signUp(authEmail.value, authPassword.value, authName.value.trim())
 
       if (data.session || user.value) {
-        showSubmissionToast('Account created. You are signed in.')
+        showSubmissionToast(authSuccessToast('Account created. You are signed in.'))
         redirectAfterAuth()
-      } else if (data.user) {
-        authMessage.value = 'Account created, but sign-in did not start. Try Sign in with the same password.'
+      } else if (data.needsEmailConfirmation || data.user) {
+        needsEmailConfirmation.value = true
+        showSubmissionToast(authNoticeToast(AUTH_NOTICES.signupCheckEmail))
+        authMode.value = 'login'
       } else {
-        authMessage.value = 'Signup did not return a user. Check Supabase Auth settings and try again.'
+        showSubmissionToast(authErrorToast('Signup did not return a user. Check Supabase Auth settings and try again.'))
       }
     }
   } catch {
-    if (/already exists|already has a VCH account/i.test(authError.value)) {
-      authMode.value = 'login'
-    }
-    if (/confirm your email/i.test(authError.value)) {
-      needsEmailConfirmation.value = true
-    }
-    authMessage.value = authError.value || 'Could not sign in. Check your email and password.'
+    handleAuthApiFailure({
+      message: resolveAuthApiErrorMessage(authError.value, 'Could not sign in. Check your email and password.'),
+      authEmail: authEmail.value,
+      setValidationMessage: (message) => {
+        authValidationMessage.value = message
+      },
+      clearAuthError: () => {
+        authError.value = ''
+      },
+      showToast: showSubmissionToast,
+      setNeedsEmailConfirmation: (value) => {
+        needsEmailConfirmation.value = value
+      },
+      setAuthModeLogin: () => {
+        authMode.value = 'login'
+      }
+    })
   } finally {
     isAuthSubmitting.value = false
   }
 }
 
 async function handleResendConfirmation() {
-  if (!authEmail.value) {
-    authMessage.value = 'Enter your email first, then tap Resend confirmation email.'
+  authValidationMessage.value = ''
+
+  if (!authEmail.value.trim()) {
+    authValidationMessage.value = AUTH_VALIDATION.enterEmailForResendConfirmation
     return
   }
 
   isAuthSubmitting.value = true
-  authMessage.value = ''
   authError.value = ''
 
   try {
     await resendConfirmationEmail(authEmail.value)
     needsEmailConfirmation.value = true
-    authMessage.value = 'Confirmation email sent again. Check spam for mail from Supabase.'
-    showSubmissionToast('Confirmation email sent.')
+    showSubmissionToast(authNoticeToast(AUTH_NOTICES.confirmationEmailSent))
   } catch {
-    authMessage.value = authError.value || 'Could not resend the confirmation email.'
+    handleAuthApiFailure({
+      message: resolveAuthApiErrorMessage(authError.value, 'Could not resend the confirmation email.'),
+      authEmail: authEmail.value,
+      setValidationMessage: (message) => {
+        authValidationMessage.value = message
+      },
+      clearAuthError: () => {
+        authError.value = ''
+      },
+      showToast: showSubmissionToast
+    })
   } finally {
     isAuthSubmitting.value = false
   }
 }
 
 async function handleForgotPassword() {
-  authMessage.value = ''
+  authValidationMessage.value = ''
   authError.value = ''
 
   if (!authEmail.value.trim()) {
-    authMessage.value = 'Enter your email first, then tap Forgot password again.'
+    authValidationMessage.value = AUTH_VALIDATION.enterEmailForForgotPassword
     return
   }
 
@@ -2050,9 +2068,19 @@ async function handleForgotPassword() {
 
   try {
     await sendPasswordReset(authEmail.value)
-    showSubmissionToast('Password reset email sent. Check spam if it does not arrive.')
+    showSubmissionToast(authNoticeToast(AUTH_NOTICES.passwordResetSent))
   } catch {
-    authMessage.value = authError.value || 'Could not send the reset email.'
+    handleAuthApiFailure({
+      message: resolveAuthApiErrorMessage(authError.value, 'Could not send the reset email.'),
+      authEmail: authEmail.value,
+      setValidationMessage: (message) => {
+        authValidationMessage.value = message
+      },
+      clearAuthError: () => {
+        authError.value = ''
+      },
+      showToast: showSubmissionToast
+    })
   } finally {
     isAuthSubmitting.value = false
   }
@@ -2060,14 +2088,22 @@ async function handleForgotPassword() {
 
 async function handlePasskeySignIn() {
   isAuthSubmitting.value = true
-  authMessage.value = ''
+  authValidationMessage.value = ''
   authError.value = ''
 
   try {
     await signInWithPasskey()
     showSubmissionToast('Signed in with your passkey.')
   } catch (error) {
-    authMessage.value = error instanceof Error ? error.message : 'Could not sign in with a passkey.'
+    const message = error instanceof Error ? error.message : 'Could not sign in with a passkey.'
+
+    if (isEmailConfirmationNotice(message)) {
+      needsEmailConfirmation.value = true
+      showSubmissionToast(authNoticeToast(AUTH_NOTICES.emailConfirmationRequired))
+      return
+    }
+
+    showSubmissionToast(authErrorToast(message))
   } finally {
     isAuthSubmitting.value = false
   }
@@ -2167,7 +2203,7 @@ async function confirmDeletePasskey() {
 
 async function handleGoogleSignIn() {
   isAuthSubmitting.value = true
-  authMessage.value = ''
+  authValidationMessage.value = ''
 
   try {
     await signInWithGoogle()
@@ -2175,7 +2211,8 @@ async function handleGoogleSignIn() {
     if (import.meta.client) {
       window.sessionStorage.removeItem('symptom-tracker-auth-success')
     }
-    authMessage.value = authError.value || 'Could not sign in with Google.'
+    showSubmissionToast(authErrorToast(resolveAuthApiErrorMessage(authError.value, 'Could not sign in with Google.')))
+    authError.value = ''
   } finally {
     isAuthSubmitting.value = false
   }
@@ -2190,7 +2227,7 @@ async function handleSignOut() {
   try {
     await signOut()
     authMode.value = 'login'
-    authMessage.value = ''
+    authValidationMessage.value = ''
 
     if (closeEmbedProfile) {
       pendingAuthPanelOpen.value = true
@@ -2217,7 +2254,7 @@ async function handleSignOutEverywhere() {
   try {
     await signOutEverywhere()
     authMode.value = 'login'
-    authMessage.value = ''
+    authValidationMessage.value = ''
 
     if (closeEmbedProfile) {
       pendingAuthPanelOpen.value = true

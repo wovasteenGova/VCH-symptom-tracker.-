@@ -1,6 +1,6 @@
 <template>
   <div
-    class="submission-toast-root pointer-events-none fixed inset-x-0 z-[63] flex justify-center px-4"
+    class="submission-toast-root pointer-events-none fixed inset-x-0 z-[130] flex justify-center px-4"
     aria-live="polite"
     aria-atomic="true"
   >
@@ -14,11 +14,11 @@
           : 'border-emerald-300/80 bg-emerald-50/95 text-emerald-950 dark:border-emerald-700/70 dark:bg-emerald-950/90 dark:text-emerald-100'"
       >
         <span
-          v-if="activeToast.highlight"
+          v-if="compactHighlight"
           class="submission-toast-highlight shrink-0 text-2xl font-bold leading-none"
           :class="activeToast.tone === 'error' ? 'text-red-600 dark:text-red-300' : 'text-emerald-600 dark:text-emerald-300'"
         >
-          {{ activeToast.highlight }}
+          {{ compactHighlight }}
         </span>
         <span
           v-else
@@ -49,7 +49,19 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+
 const { activeToast, toastKey, clearSubmissionToast } = useSubmissionToast()
+
+const compactHighlight = computed(() => {
+  const highlight = activeToast.value?.highlight?.trim()
+
+  if (!highlight || highlight.length > 8) {
+    return ''
+  }
+
+  return highlight
+})
 </script>
 
 <style scoped>

@@ -1,15 +1,13 @@
 import { useState } from '#imports'
 
-export type SubmissionToastPayload = {
+type SubmissionToastPayload = {
   message: string
   highlight?: string
   tone?: 'success' | 'error'
   durationMs?: number
 }
 
-let dismissTimer: ReturnType<typeof setTimeout> | undefined
-
-function normalizePayload(payload: string | SubmissionToastPayload): SubmissionToastPayload {
+function normalizeSubmissionToastPayload(payload: string | SubmissionToastPayload): SubmissionToastPayload {
   if (typeof payload === 'string') {
     return { message: payload, tone: 'success' }
   }
@@ -18,6 +16,15 @@ function normalizePayload(payload: string | SubmissionToastPayload): SubmissionT
     tone: 'success',
     ...payload
   }
+}
+
+export { normalizeSubmissionToastPayload }
+export type { SubmissionToastPayload }
+
+let dismissTimer: ReturnType<typeof setTimeout> | undefined
+
+function normalizePayload(payload: string | SubmissionToastPayload): SubmissionToastPayload {
+  return normalizeSubmissionToastPayload(payload)
 }
 
 export function useSubmissionToast() {
@@ -29,7 +36,7 @@ export function useSubmissionToast() {
       clearTimeout(dismissTimer)
     }
 
-    const normalized = normalizePayload(payload)
+    const normalized = normalizeSubmissionToastPayload(payload)
     const isReplacement = activeToast.value !== null
 
     if (!isReplacement) {
