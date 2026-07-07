@@ -332,11 +332,21 @@
             <label class="block">
               <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Password</span>
               <PasswordInput
+                v-if="authMode === 'login'"
+                key="auth-login-password"
                 v-model="authPassword"
-                :autocomplete="authMode === 'signup' ? 'new-password' : 'current-password'"
+                autocomplete="current-password"
+                placeholder="Your password"
+                required
+              />
+              <PasswordInput
+                v-else
+                key="auth-signup-password"
+                v-model="authPassword"
+                autocomplete="new-password"
                 placeholder="At least 6 characters"
-                :revealed="authMode === 'signup' ? signupPasswordReveal.visible : undefined"
-                :countdown="authMode === 'signup' ? signupPasswordReveal.countdown : undefined"
+                :revealed="signupPasswordReveal.visible"
+                :countdown="signupPasswordReveal.countdown"
                 @reveal="signupPasswordReveal.start"
                 required
               />
@@ -348,7 +358,6 @@
                 v-model="authConfirmPassword"
                 autocomplete="new-password"
                 placeholder="Re-enter password"
-                :revealed="signupPasswordReveal.visible"
                 :show-toggle="false"
                 required
               />
@@ -5303,6 +5312,7 @@ function openAuthPanel() {
   closeAppOverlaysExcept('auth')
   historyExpanded.value = false
   isSubmissionDropdownOpen.value = false
+  signupPasswordReveal.hide()
   clearAuthPanelNotice()
   isAuthPanelOpen.value = true
 }

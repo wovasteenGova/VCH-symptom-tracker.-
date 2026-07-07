@@ -136,6 +136,18 @@ export function useSupabaseAuth() {
         return AUTH_VALIDATION.validEmail
       }
 
+      if (
+        failure.status === 429
+        || /email rate limit exceeded/i.test(message)
+        || /over_email_send_rate_limit/i.test(code)
+      ) {
+        return 'Too many auth emails were sent. Wait about an hour, sign in with Google, or use a new +tag address (for example you+test@gmail.com).'
+      }
+
+      if (/for security purposes, you can only request this after/i.test(message)) {
+        return 'Please wait about 30 seconds before trying again.'
+      }
+
       if (failure.status === 400 && message) {
         return message
       }
