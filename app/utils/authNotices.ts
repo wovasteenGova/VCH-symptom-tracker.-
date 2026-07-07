@@ -1,4 +1,5 @@
 import type { SubmissionToastPayload } from '../composables/useSubmissionToast'
+import { VCH_CONTACT_URL } from './subscription'
 
 export const AUTH_NOTICE_DURATION_MS = 5200
 
@@ -16,7 +17,9 @@ export const AUTH_NOTICES = {
     'Confirm your email first. Check spam for mail from Supabase, or tap Resend confirmation email below.',
   signupCheckEmail: 'Check your email to confirm your account.',
   confirmationEmailSent: 'Confirmation email sent. Check spam if you do not see it.',
-  passwordResetSent: 'Password reset email sent. Check spam if it does not arrive.'
+  passwordResetSent: 'Password reset email sent. Check spam if it does not arrive.',
+  authRateLimit:
+    'We had an error logging you in due to an auth limit. If this error is unexpected, please contact us.'
 } as const
 
 const AUTH_VALIDATION_MESSAGES = new Set<string>(Object.values(AUTH_VALIDATION))
@@ -69,6 +72,30 @@ export function isAuthValidationMessage(message: string) {
 
 export function isEmailConfirmationNotice(message: string) {
   return /confirm your email/i.test(message)
+}
+
+export function isAuthRateLimitMessage(message: string) {
+  return message === AUTH_NOTICES.authRateLimit
+}
+
+export function authRateLimitErrorToast(): SubmissionToastPayload {
+  return {
+    message: AUTH_NOTICES.authRateLimit,
+    tone: 'error',
+    durationMs: AUTH_NOTICE_DURATION_MS,
+    action: {
+      href: VCH_CONTACT_URL,
+      label: 'Contact us'
+    }
+  }
+}
+
+export function authErrorToastForMessage(message: string): SubmissionToastPayload {
+  if (isAuthRateLimitMessage(message)) {
+    return authRateLimitErrorToast()
+  }
+
+  return authErrorToast(message)
 }
 
 export function authNoticeToast(
@@ -139,6 +166,6 @@ export function handleAuthApiFailure(options: {
     return
   }
 
-  options.showToast(authErrorToast(message))
+  options.showToast(authErrorToastForMessage(message))
   options.clearAuthError()
 }

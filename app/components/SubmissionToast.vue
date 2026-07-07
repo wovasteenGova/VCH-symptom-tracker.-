@@ -32,9 +32,20 @@
             class="size-5"
           />
         </span>
-        <p class="min-w-0 flex-1 text-[0.9375rem] font-semibold leading-5">
-          {{ activeToast.message }}
-        </p>
+        <div class="min-w-0 flex-1">
+          <p class="text-[0.9375rem] font-semibold leading-5">
+            {{ activeToast.message }}
+          </p>
+          <a
+            v-if="activeToast.action"
+            :href="activeToast.action.href"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="mt-1 inline-block text-sm font-semibold underline underline-offset-2"
+          >
+            {{ activeToast.action.label }}
+          </a>
+        </div>
         <button
           type="button"
           class="grid size-8 shrink-0 place-items-center rounded-full text-current/60 transition hover:bg-black/5 hover:text-current dark:hover:bg-white/10"

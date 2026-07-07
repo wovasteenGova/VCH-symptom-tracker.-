@@ -5,6 +5,10 @@ type SubmissionToastPayload = {
   highlight?: string
   tone?: 'success' | 'error'
   durationMs?: number
+  action?: {
+    href: string
+    label: string
+  }
 }
 
 function normalizeSubmissionToastPayload(payload: string | SubmissionToastPayload): SubmissionToastPayload {

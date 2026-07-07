@@ -141,7 +141,7 @@ export function useSupabaseAuth() {
         || /email rate limit exceeded/i.test(message)
         || /over_email_send_rate_limit/i.test(code)
       ) {
-        return 'Too many auth emails were sent. Wait about an hour, sign in with Google, or use a new +tag address (for example you+test@gmail.com).'
+        return AUTH_NOTICES.authRateLimit
       }
 
       if (/for security purposes, you can only request this after/i.test(message)) {

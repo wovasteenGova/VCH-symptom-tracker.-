@@ -302,6 +302,15 @@
               />
               <p class="min-w-0 flex-1 text-sm font-semibold leading-5">
                 {{ authPanelNotice.message }}
+                <a
+                  v-if="authPanelNotice.action"
+                  :href="authPanelNotice.action.href"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="mt-1 block underline underline-offset-2"
+                >
+                  {{ authPanelNotice.action.label }}
+                </a>
               </p>
             </div>
 
