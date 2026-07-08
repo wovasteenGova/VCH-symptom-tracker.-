@@ -4,6 +4,7 @@
     v-model:placeholder="placeholder"
     :view-control="false"
     class="mx-auto w-full"
+    data-step-swipe-block
   >
     <template #day="{ day }">
       <span

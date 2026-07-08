@@ -3266,7 +3266,7 @@ function onEntryCalendarDateUpdate(date: unknown) {
 
   window.setTimeout(() => {
     isApplyingEntryCalendarSelection = false
-  }, 0)
+  }, 300)
 }
 
 const loggingActivityMetrics = computed(() => {
@@ -6736,7 +6736,7 @@ function isStepSwipeBlockedTarget(target: EventTarget | null) {
   }
 
   return Boolean(target.closest(
-    'input, textarea, select, button, [role="slider"], [data-step-swipe-block]'
+    'input, textarea, select, button, [role="slider"], [data-step-swipe-block], [data-slot="day"], [role="gridcell"], .ucalendar, table td, table th'
   ))
 }
 
@@ -6755,7 +6755,12 @@ function handleEntrySwipeEnd(event: TouchEvent) {
     return
   }
 
-  if (entrySwipeStartedOnControl || currentStepHasSliderField()) {
+  if (
+    entrySwipeStartedOnControl
+    || currentStepHasSliderField()
+    || currentStepHasDateTimeField()
+    || isApplyingEntryCalendarSelection
+  ) {
     entrySwipeStartedOnControl = false
     return
   }
