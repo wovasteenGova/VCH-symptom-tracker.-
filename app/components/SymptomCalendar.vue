@@ -1,21 +1,22 @@
 <template>
-  <UCalendar
-    v-model="modelValue"
-    v-model:placeholder="placeholder"
-    :view-control="false"
-    class="mx-auto w-full"
-    data-step-swipe-block
-  >
-    <template #day="{ day }">
-      <span
-        class="inline-flex min-h-[1.75rem] min-w-[1.75rem] items-center justify-center leading-none"
-        :class="hasLoggedEntryOnDay(day) ? 'text-base' : 'text-sm font-semibold'"
-        :title="getLoggedDaySeverityTitle(day)"
-      >
-        {{ getCalendarDayDisplay(day) }}
-      </span>
-    </template>
-  </UCalendar>
+  <div class="w-full" data-step-swipe-block data-symptom-calendar>
+    <UCalendar
+      v-model="modelValue"
+      v-model:placeholder="placeholder"
+      :view-control="false"
+      class="mx-auto w-full"
+    >
+      <template #day="{ day }">
+        <span
+          class="inline-flex min-h-[1.75rem] min-w-[1.75rem] items-center justify-center leading-none"
+          :class="hasLoggedEntryOnDay(day) ? 'text-base' : 'text-sm font-semibold'"
+          :title="getLoggedDaySeverityTitle(day)"
+        >
+          {{ getCalendarDayDisplay(day) }}
+        </span>
+      </template>
+    </UCalendar>
+  </div>
 </template>
 
 <script setup lang="ts">

@@ -33,10 +33,11 @@
             </button>
             <button
               type="button"
-              class="rounded-full bg-slate-950 px-4 py-2 text-sm font-bold text-white shadow-sm dark:bg-white dark:text-slate-950"
+              class="rounded-full bg-slate-950 px-4 py-2 text-sm font-bold text-white shadow-sm disabled:opacity-50 dark:bg-white dark:text-slate-950"
+              :disabled="isSavingEntry"
               @click="handleEntryDone"
             >
-              Done
+              {{ entryHeaderActionLabel }}
             </button>
           </div>
 
@@ -614,7 +615,7 @@
 
                   <div
                     class="flex min-h-0 flex-1 flex-col overflow-hidden"
-                    @touchstart.passive="handleEntrySwipeStart"
+                    @touchstart.capture.passive="handleEntrySwipeStart"
                     @touchend="handleEntrySwipeEnd"
                   >
                     <Transition
@@ -760,6 +761,7 @@
                             @click.stop
                             @pointerdown.stop
                             @touchstart.stop
+                            @touchend.stop
                           >
                             <!-- Keep the calendar and Now button event-isolated. Removing these stops can make mobile date taps trigger Now. -->
                             <SymptomCalendar
@@ -3700,6 +3702,21 @@ const entrySteps = computed(() => {
 })
 const currentEntryStepFields = computed(() => entrySteps.value[entryStep.value] || [])
 const isLastEntryStep = computed(() => entryStep.value >= entrySteps.value.length - 1)
+const entryHeaderActionLabel = computed(() => {
+  if (isSavingEntry.value) {
+    return 'Saving...'
+  }
+
+  if (isEditingEntry.value) {
+    return 'Save changes'
+  }
+
+  if (isLastEntryStep.value) {
+    return 'Finish'
+  }
+
+  return 'Save draft'
+})
 const entryProgressWidth = computed(() => {
   if (!entrySteps.value.length) {
     return '0%'
@@ -6736,7 +6753,7 @@ function isStepSwipeBlockedTarget(target: EventTarget | null) {
   }
 
   return Boolean(target.closest(
-    'input, textarea, select, button, [role="slider"], [data-step-swipe-block], [data-slot="day"], [role="gridcell"], .ucalendar, table td, table th'
+    'input, textarea, select, button, [role="slider"], [data-step-swipe-block], [data-symptom-calendar], [data-slot="day"], [role="gridcell"], .ucalendar, table td, table th'
   ))
 }
 
@@ -6746,6 +6763,8 @@ function handleEntrySwipeStart(event: TouchEvent) {
   }
 
   entrySwipeStartedOnControl = isStepSwipeBlockedTarget(event.target)
+    || currentStepHasDateTimeField()
+
   entrySwipeStartX = event.touches[0]?.clientX ?? 0
   entrySwipeStartY = event.touches[0]?.clientY ?? 0
 }
@@ -7312,8 +7331,18 @@ async function confirmConditionSlot() {
 }
 
 async function handleEntryDone() {
-  if (isEditingEntry.value) {
+  if (isEditingEntry.value || isLastEntryStep.value) {
     await saveEntry()
+    return
+  }
+
+  if (isMeaningfulEntryDraft({
+    entryStep: entryStep.value,
+    entryForm: entryForm.value,
+    selectedSearchCondition: selectedSearchCondition.value,
+    customConditionInput: customConditionInput.value
+  })) {
+    closeEntryPanel(false)
     return
   }
 
