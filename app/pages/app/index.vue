@@ -3962,6 +3962,8 @@ function confirmDeleteEntryDraft() {
   if (isEntryOpen.value && !editingEntryId.value) {
     closeEntryPanel(true)
   }
+
+  showSubmissionToast('Draft deleted.')
 }
 
 watch(searchQuery, (value) => {
@@ -5052,8 +5054,20 @@ async function archiveEntry(id: string) {
     const { deleteEntry } = useSymptomEntries()
     await deleteEntry(id)
     await loadEntries()
+
+    showSubmissionToast({
+      message: 'Moved to Deleted.',
+      action: {
+        href: '/profile#settings-recovery',
+        label: 'Open Recovery'
+      }
+    })
   } catch (error) {
     entriesError.value = getErrorMessage(error)
+    showSubmissionToast({
+      message: getErrorMessage(error),
+      tone: 'error'
+    })
   }
 }
 

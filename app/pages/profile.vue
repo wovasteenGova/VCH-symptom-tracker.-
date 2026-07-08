@@ -1840,6 +1840,10 @@ async function confirmDeleteSupporter() {
     await loadProfilePage()
   } catch (error) {
     pageError.value = getErrorMessage(error)
+    showSubmissionToast({
+      message: getErrorMessage(error),
+      tone: 'error'
+    })
   } finally {
     isDeletingSupporterId.value = null
   }
@@ -1884,6 +1888,10 @@ async function restoreDeletedEntry(entryId: string) {
     showSubmissionToast('Entry restored.')
   } catch (error) {
     pageError.value = getErrorMessage(error)
+    showSubmissionToast({
+      message: getErrorMessage(error),
+      tone: 'error'
+    })
   } finally {
     isRestoringEntryId.value = null
   }
@@ -1964,6 +1972,11 @@ async function confirmDeleteAllLogs() {
     showSubmissionToast('All logs deleted.')
   } catch (error) {
     deleteAllLogsError.value = getErrorMessage(error)
+    showSubmissionToast({
+      message: getErrorMessage(error),
+      tone: 'error',
+      durationMs: 4200
+    })
   } finally {
     isDeletingAllLogs.value = false
   }
@@ -2227,6 +2240,10 @@ async function confirmDeletePasskey() {
     showSubmissionToast('Passkey deleted.')
   } catch (error) {
     deletePasskeyError.value = error instanceof Error ? error.message : 'Could not delete the passkey.'
+    showSubmissionToast({
+      message: deletePasskeyError.value,
+      tone: 'error'
+    })
   } finally {
     isDeletingPasskey.value = false
   }
