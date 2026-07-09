@@ -421,22 +421,12 @@
           </div>
 
           <div class="mt-4 rounded-3xl border border-slate-700 bg-slate-800/50 px-4 py-4">
-            <label class="block text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
-              Morning reminder
-            </label>
-            <select
-              :value="reminderHour"
-              class="mt-2 w-full rounded-2xl border border-slate-600 bg-slate-900 px-4 py-3 text-sm font-semibold text-white"
-              @change="handleReminderHourChange"
-            >
-              <option
-                v-for="option in logReminderHourOptions"
-                :key="option.value"
-                :value="option.value"
-              >
-                {{ option.label }}
-              </option>
-            </select>
+            <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+              Reminder schedule
+            </p>
+            <p class="mt-2 text-sm leading-6 text-slate-300">
+              {{ logReminderScheduleDescription }}
+            </p>
             <p class="mt-2 text-xs leading-5 text-slate-500">
               Uses your local timezone: {{ logReminderTimezoneLabel }} ({{ reminderTimezone }}).
             </p>
@@ -460,7 +450,7 @@
           </div>
 
           <p class="mt-3 text-xs leading-5 text-slate-500">
-            Install the app for background alerts when the app is closed. Up to two nudges per day — your morning time and 8 PM — if you have not logged yet. On Android, set this app’s notification channel to Sound and pop-up if alerts only appear in the shade. Chrome’s separate “copy URL” system notice is not a VCH reminder.
+            Install the app for background alerts when the app is closed. Reminders repeat every hour until you log (daily) or until you log for the week (weekly). On Android, set this app’s notification channel to Sound and pop-up if alerts only appear in the shade. Chrome’s separate “copy URL” system notice is not a VCH reminder.
           </p>
         </section>
 
