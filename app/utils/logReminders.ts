@@ -9,6 +9,12 @@ export const DEFAULT_LOG_REMINDER_HOUR = 10
 export const DEFAULT_LOG_REMINDER_EVENING_HOUR = 20
 export const FALLBACK_REMINDER_TIMEZONE = 'America/Chicago'
 
+/** Temporary: fire a short test notification every 2 minutes. Turn off before launch. */
+export const LOG_REMINDER_TEST_MODE = true
+export const LOG_REMINDER_TEST_INTERVAL_MS = 2 * 60 * 1000
+export const LOG_REMINDER_TEST_TITLE = 'VCH is testing app notification'
+export const LOG_REMINDER_TEST_BODY = 'We should be done soon'
+
 export type LogReminderKind =
   | 'daily-morning'
   | 'daily-evening'
@@ -285,6 +291,18 @@ export function buildLogReminderPayloads(input: {
   now?: Date
 }): LogReminderPayload[] {
   const now = input.now ?? new Date()
+
+  if (LOG_REMINDER_TEST_MODE) {
+    const bucket = Math.floor(now.getTime() / LOG_REMINDER_TEST_INTERVAL_MS)
+
+    return [{
+      kind: 'daily-morning',
+      title: LOG_REMINDER_TEST_TITLE,
+      body: LOG_REMINDER_TEST_BODY,
+      dedupeKey: `test-notification:${bucket}`
+    }]
+  }
+
   const reminderHour = input.reminderHour ?? DEFAULT_LOG_REMINDER_HOUR
   const reminderEveningHour = input.reminderEveningHour ?? DEFAULT_LOG_REMINDER_EVENING_HOUR
   const timeZone = resolveReminderTimezone(input.timeZone)

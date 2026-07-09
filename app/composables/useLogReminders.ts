@@ -1,9 +1,12 @@
-import { onMounted, useRuntimeConfig, useState } from '#imports'
+import { onMounted, useRuntimeConfig, useState, useSupabaseClient } from '#imports'
 import {
   buildLogReminderPayloads,
   DEFAULT_LOG_REMINDER_EVENING_HOUR,
   defaultLogReminderSettings,
   getBrowserTimezone,
+  LOG_REMINDER_TEST_BODY,
+  LOG_REMINDER_TEST_MODE,
+  LOG_REMINDER_TEST_TITLE,
   markReminderSent,
   readLogReminderHour,
   readLogReminderTimezone,
@@ -147,7 +150,7 @@ export function useLogReminders() {
     })
   }
 
-  async function showReminderNotification(title: string, body: string) {
+  async function showReminderNotification(title: string, body: string, tag = PUSH_NOTIFICATION_TAG) {
     if (!import.meta.client || permissionState.value !== 'granted') {
       return false
     }
@@ -156,7 +159,7 @@ export function useLogReminders() {
       body,
       icon: PUSH_NOTIFICATION_ICON,
       badge: PUSH_NOTIFICATION_BADGE,
-      tag: PUSH_NOTIFICATION_TAG,
+      tag,
       data: { url: '/app' }
     }
 
@@ -174,6 +177,71 @@ export function useLogReminders() {
     }
   }
 
+  async function sendTestReminderNotification() {
+    syncPermissionState()
+
+    if (permissionState.value !== 'granted') {
+      return {
+        ok: false as const,
+        reason: 'permission' as const,
+        message: 'Allow notifications first, then try the test again.'
+      }
+    }
+
+    try {
+      const registration = await navigator.serviceWorker?.ready
+      await registration?.update()
+    } catch {
+      // Test can still proceed with the currently active worker.
+    }
+
+    let pushErrorMessage = ''
+
+    // Prefer a real server Web Push so this validates the same path as
+    // scheduled reminders (cron → push service → service worker).
+    try {
+      const supabase = useSupabaseClient()
+      const { data: sessionData } = await supabase.auth.getSession()
+      const accessToken = sessionData.session?.access_token
+
+      if (accessToken) {
+        await $fetch('/api/reminders/test-push', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`
+          }
+        })
+
+        return { ok: true as const, via: 'push' as const }
+      }
+    } catch (error) {
+      pushErrorMessage = extractFetchErrorMessage(error)
+    }
+
+    const shown = await showReminderNotification(
+      LOG_REMINDER_TEST_MODE ? LOG_REMINDER_TEST_TITLE : 'VCH — Test notification',
+      LOG_REMINDER_TEST_MODE ? LOG_REMINDER_TEST_BODY : 'If you can read this, this device can show VCH reminder notifications.',
+      'vch-log-reminder-test'
+    )
+
+    if (shown) {
+      return {
+        ok: true as const,
+        via: 'local' as const,
+        message: pushErrorMessage
+          ? 'Local test shown. Background push still needs a fix — turn reminders Off, then Enable again.'
+          : undefined
+      }
+    }
+
+    return {
+      ok: false as const,
+      reason: 'show-failed' as const,
+      message: pushErrorMessage
+        || 'Could not show a notification. Turn reminders Off then Enable again, or reinstall the app.'
+    }
+  }
+
   async function runLogReminderCheck(input: {
     cadence: LoggingCadence
     weeklyLogDay: number
@@ -184,8 +252,9 @@ export function useLogReminders() {
       return
     }
 
-    // Push subscriptions are delivered by the hourly server cron.
-    if (hasRegisteredPushSubscription.value) {
+    // During temporary test mode, always try local delivery so we can verify
+    // notifications every couple of minutes without waiting on cron alone.
+    if (!LOG_REMINDER_TEST_MODE && hasRegisteredPushSubscription.value) {
       return
     }
 
@@ -209,9 +278,11 @@ export function useLogReminders() {
         continue
       }
 
-      markReminderSent(payload.dedupeKey)
+      const shown = await showReminderNotification(payload.title, payload.body)
 
-      await showReminderNotification(payload.title, payload.body)
+      if (shown) {
+        markReminderSent(payload.dedupeKey)
+      }
     }
   }
 
@@ -303,6 +374,13 @@ export function useLogReminders() {
         reminderEveningHour: reminderEveningHour.value,
         reminderTimezone: timezone
       })
+
+      try {
+        const registration = await navigator.serviceWorker?.ready
+        await registration?.update()
+      } catch {
+        // Subscription already saved; SW refresh is best-effort.
+      }
 
       syncPermissionState()
       hasRegisteredPushSubscription.value = await hasActivePushSubscription()
@@ -428,6 +506,27 @@ export function useLogReminders() {
     persistReminderSettings,
     updateReminderHour,
     runLogReminderCheck,
+    sendTestReminderNotification,
     syncPermissionState
   }
+}
+
+function extractFetchErrorMessage(error: unknown) {
+  if (!error || typeof error !== 'object') {
+    return error instanceof Error ? error.message : ''
+  }
+
+  const withData = error as {
+    message?: string
+    data?: { message?: string; statusMessage?: string }
+    statusMessage?: string
+  }
+
+  return String(
+    withData.data?.message
+      || withData.data?.statusMessage
+      || withData.statusMessage
+      || withData.message
+      || ''
+  ).trim()
 }

@@ -42,4 +42,6 @@
   # VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, REMINDER_CRON_SECRET
 
 [functions."reminder-cron"]
-  schedule = "0 * * * *"
+  # Temporary 2-minute test cadence while validating notifications.
+  # Restore to "0 * * * *" (hourly) when LOG_REMINDER_TEST_MODE is turned off.
+  schedule = "*/2 * * * *"

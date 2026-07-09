@@ -50,7 +50,13 @@ export async function sendWebPushNotification(
       title: payload.title,
       body: payload.body,
       url: payload.url || '/app'
-    })
+    }),
+    {
+      // High urgency helps Android/FCM wake the device instead of waiting for
+      // the next Doze maintenance window — important for timed log reminders.
+      TTL: 60 * 60,
+      urgency: 'high'
+    }
   )
 }
 

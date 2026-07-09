@@ -442,8 +442,25 @@
             </p>
           </div>
 
+          <div class="mt-4 flex items-center justify-between gap-3 rounded-3xl border border-slate-700 bg-slate-800/50 px-4 py-4">
+            <div class="min-w-0">
+              <p class="font-bold text-white">Test notification</p>
+              <p class="mt-1 text-sm text-slate-400">
+                Sends a real OS notification now so you can confirm this device is set up.
+              </p>
+            </div>
+            <button
+              type="button"
+              class="shrink-0 rounded-full bg-slate-700 px-4 py-2 text-sm font-bold text-slate-200 ring-1 ring-slate-600 transition hover:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-60"
+              :disabled="isReminderTogglePending || isSendingTestReminder"
+              @click="sendTestLogReminder"
+            >
+              {{ isSendingTestReminder ? 'Sending...' : 'Send test' }}
+            </button>
+          </div>
+
           <p class="mt-3 text-xs leading-5 text-slate-500">
-            Install the app for background alerts when the app is closed. Up to two nudges per day — your morning time and 8 PM — if you have not logged yet.
+            Temporary test mode: notifications may fire about every 2 minutes with “VCH is testing app notification / We should be done soon.” Install the app for background alerts when closed. On Android, set this app’s notification channel to Sound and pop-up if alerts only appear in the shade. Chrome’s separate “copy URL” system notice is not a VCH reminder.
           </p>
         </section>
 
@@ -1212,9 +1229,11 @@ const {
   disableReminders,
   hydrateReminderSettings,
   updateReminderHour,
+  sendTestReminderNotification,
   syncPermissionState
 } = useLogReminders()
 const logReminderHourOptions = LOG_REMINDER_HOUR_OPTIONS
+const isSendingTestReminder = ref(false)
 
 const logReminderScheduleDescription = computed(() => {
   return describeLogReminderSchedule(
@@ -1722,6 +1741,34 @@ async function handleReminderHourChange(event: Event) {
     showSubmissionToast({ message: `Reminder time set to ${logReminderHourOptions.find((option) => option.value === hour)?.label || 'your chosen time'}.` })
   } catch (error) {
     pageError.value = getErrorMessage(error)
+  }
+}
+
+async function sendTestLogReminder() {
+  if (isSendingTestReminder.value) {
+    return
+  }
+
+  isSendingTestReminder.value = true
+
+  try {
+    const result = await sendTestReminderNotification()
+
+    if (result.ok) {
+      showSubmissionToast({
+        message: result.via === 'push'
+          ? 'Background push test sent. Check your notification shade.'
+          : result.message || 'Test notification shown. Check your notification shade.'
+      })
+      return
+    }
+
+    showSubmissionToast({
+      message: result.message || 'Could not send a test notification.',
+      tone: 'error'
+    })
+  } finally {
+    isSendingTestReminder.value = false
   }
 }
 

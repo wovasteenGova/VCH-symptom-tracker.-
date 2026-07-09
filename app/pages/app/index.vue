@@ -2274,6 +2274,7 @@ import { filterAndRankConditions } from '../../utils/conditionSearch'
 import { getWeeklyLogCaution, type WeeklyLogCaution } from '../../utils/loggingCadence'
 import { buildLoggingActivityMetrics } from '../../utils/loggingActivityReport'
 import { conditionCatalog, buildHomeVisitTips, normalizeConditionLabel, pickRandomHomeVisitTip, resolveCatalogConditionByStoredKey, VA_CRISIS_LINE_SHORT, type HomeVisitTip } from '../../utils/conditionCatalog'
+import { LOG_REMINDER_TEST_INTERVAL_MS, LOG_REMINDER_TEST_MODE } from '../../utils/logReminders'
 import { conditionImageAssets } from '../../utils/conditionImages'
 import { getSeverityEmoji, getSeverityGuidance, severityQuickPresets } from '../../utils/severityGuidance'
 import { CalendarDate } from '@internationalized/date'
@@ -4033,7 +4034,10 @@ onMounted(async () => {
   }
 
   document.addEventListener('visibilitychange', handleLogReminderVisibilityChange)
-  logReminderIntervalId = window.setInterval(scheduleLogReminderCheck, 60 * 60 * 1000)
+  logReminderIntervalId = window.setInterval(
+    scheduleLogReminderCheck,
+    LOG_REMINDER_TEST_MODE ? LOG_REMINDER_TEST_INTERVAL_MS : 60 * 60 * 1000
+  )
 })
 
 onBeforeUnmount(() => {

@@ -4,8 +4,8 @@ const PUSH_TAG = 'vch-log-reminder'
 
 self.addEventListener('push', (event) => {
   let payload = {
-    title: 'VCH — Log reminder',
-    body: 'Open the app to add your symptom entry.',
+    title: 'VCH is testing app notification',
+    body: 'We should be done soon',
     url: '/app'
   }
 
@@ -26,13 +26,17 @@ self.addEventListener('push', (event) => {
 })
 
 async function showPushNotification(payload) {
+  const title = String(payload.title || 'VCH is testing app notification').trim() || 'VCH is testing app notification'
+  const body = String(payload.body || 'We should be done soon').trim()
+    || 'We should be done soon'
   const targetUrl = resolveNotificationUrl(payload.url)
   const baseOptions = {
-    body: payload.body,
+    body,
     tag: PUSH_TAG,
     renotify: true,
     lang: 'en',
     dir: 'ltr',
+    vibrate: [120, 60, 120],
     data: {
       url: targetUrl,
       type: 'log-reminder'
@@ -42,16 +46,26 @@ async function showPushNotification(payload) {
   const attempts = [
     { ...baseOptions, icon: PUSH_ICON, badge: PUSH_BADGE },
     { ...baseOptions, icon: PUSH_ICON },
-    baseOptions
+    baseOptions,
+    { body, data: { url: targetUrl, type: 'log-reminder' } }
   ]
 
   for (const options of attempts) {
     try {
-      await self.registration.showNotification(payload.title, options)
+      await self.registration.showNotification(title, options)
       return
     } catch (error) {
       console.warn('[vch-push] showNotification failed', error)
     }
+  }
+
+  // Last resort: Chrome requires a visible notification for userVisibleOnly pushes.
+  // If every attempt fails, still try the absolute minimum so the OS does not
+  // substitute a generic/default notification.
+  try {
+    await self.registration.showNotification(title, { body })
+  } catch (error) {
+    console.error('[vch-push] all showNotification attempts failed', error)
   }
 }
 
