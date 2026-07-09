@@ -4,8 +4,8 @@ const PUSH_TAG = 'vch-log-reminder'
 
 self.addEventListener('push', (event) => {
   let payload = {
-    title: 'VCH is testing app notification',
-    body: 'We should be done soon',
+    title: 'VCH — Log reminder',
+    body: 'Open the app to add your symptom entry.',
     url: '/app'
   }
 
@@ -26,9 +26,9 @@ self.addEventListener('push', (event) => {
 })
 
 async function showPushNotification(payload) {
-  const title = String(payload.title || 'VCH is testing app notification').trim() || 'VCH is testing app notification'
-  const body = String(payload.body || 'We should be done soon').trim()
-    || 'We should be done soon'
+  const title = String(payload.title || 'VCH — Log reminder').trim() || 'VCH — Log reminder'
+  const body = String(payload.body || 'Open the app to add your symptom entry.').trim()
+    || 'Open the app to add your symptom entry.'
   const targetUrl = resolveNotificationUrl(payload.url)
   const baseOptions = {
     body,

@@ -9,8 +9,8 @@ export const DEFAULT_LOG_REMINDER_HOUR = 10
 export const DEFAULT_LOG_REMINDER_EVENING_HOUR = 20
 export const FALLBACK_REMINDER_TIMEZONE = 'America/Chicago'
 
-/** Temporary: fire a short test notification every 2 minutes. Turn off before launch. */
-export const LOG_REMINDER_TEST_MODE = true
+/** Temporary test hook — keep false in production. */
+export const LOG_REMINDER_TEST_MODE = false
 export const LOG_REMINDER_TEST_INTERVAL_MS = 2 * 60 * 1000
 export const LOG_REMINDER_TEST_TITLE = 'VCH is testing app notification'
 export const LOG_REMINDER_TEST_BODY = 'We should be done soon'

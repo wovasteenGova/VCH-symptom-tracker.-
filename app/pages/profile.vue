@@ -460,7 +460,7 @@
           </div>
 
           <p class="mt-3 text-xs leading-5 text-slate-500">
-            Temporary test mode: notifications may fire about every 2 minutes with “VCH is testing app notification / We should be done soon.” Install the app for background alerts when closed. On Android, set this app’s notification channel to Sound and pop-up if alerts only appear in the shade. Chrome’s separate “copy URL” system notice is not a VCH reminder.
+            Install the app for background alerts when the app is closed. Up to two nudges per day — your morning time and 8 PM — if you have not logged yet. On Android, set this app’s notification channel to Sound and pop-up if alerts only appear in the shade. Chrome’s separate “copy URL” system notice is not a VCH reminder.
           </p>
         </section>
 
