@@ -23,7 +23,7 @@ export const VCH_CONTACT_URL = 'https://veteranscentralhub.us/contact'
 export const VCH_CLAIM_MAKER_URL = 'https://veteranscentralhub.us/claims-maker'
 
 export const WHY_WE_CHARGE_COPY =
-  'Pro subscriptions help fund our upcoming VCH Claim Maker — a separate tool for organizing service history, symptoms, and claim evidence into a stronger first draft. It is not live yet. This is a self-funded build, so symptom tracker Pro helps cover servers and development until Claim Maker ships.'
+  "Pro subscriptions help fund our upcoming VCH Claim Maker — a separate tool for organizing service history, symptoms, and claim evidence into a stronger first draft. It is not live yet. This is a self-funded build, so symptom tracker Pro helps cover servers and development until Claim Maker ships. Don't wait on us to file — file on VA.gov when you're ready."
 
 export const FREE_TIER_FEATURES = [
   'Pick 1 condition to track',

@@ -17,7 +17,20 @@ function getSearchTokens(query: string) {
 }
 
 function wordMatchesToken(word: string, token: string) {
-  return word === token || (token.length >= 4 && word.startsWith(token))
+  if (word === token) {
+    return true
+  }
+
+  if (token.length >= 3 && word.startsWith(token)) {
+    return true
+  }
+
+  // "ankles" → alias word "ankle", "knees" → "knee"
+  if (word.length >= 3 && token.startsWith(word)) {
+    return true
+  }
+
+  return false
 }
 
 function fieldMatchesToken(field: string, token: string) {

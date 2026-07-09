@@ -17,7 +17,7 @@
                   VCH
                 </p>
                 <p class="mt-1 text-base text-slate-600 dark:text-slate-300 lg:text-lg">
-                  VCH Symptom Tracker is a VCH tool.
+                  Symptom Tracker is a VCH tool.
                 </p>
               </div>
             </div>

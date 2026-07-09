@@ -349,7 +349,10 @@ export function resolveEntryTemplateKeyForCondition(condition: { title: string, 
   }
 
   if (category.includes('back') || category.includes('neck') || category.includes('joint')
-    || title.includes('arthritis') || title.includes('knee') || title.includes('shoulder')) {
+    || title.includes('arthritis') || title.includes('knee') || title.includes('shoulder')
+    || title.includes('hip') || title.includes('ankle') || title.includes('foot')
+    || title.includes('elbow') || title.includes('wrist') || title.includes('hand')
+    || title.includes('finger') || title.includes('tmj') || title.includes('jaw')) {
     return 'Back or Joint Pain'
   }
 

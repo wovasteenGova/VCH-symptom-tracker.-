@@ -16,3 +16,9 @@
 --   tracker.log_reminder_deliveries
 
 -- RPC: get_supporter_profile_by_token, submit_supporter_observation
+--
+-- RLS (see migrations/20260709010000_tracker_rls_policies.sql):
+--   Owner-scoped CRUD on profiles, entries, drafts, supporter tables, push.
+--   user_entitlements + log_reminder_deliveries: SELECT only for clients.
+--   Family submit via SECURITY DEFINER RPCs (anon/authenticated EXECUTE).
+--   Entitlement / reminder writes: service_role only.

@@ -198,18 +198,18 @@ const hearingLossTip =
 
 export const conditionCatalogDefinitions: ConditionCatalogEntry[] = [
   {
-    title: 'Mental Health',
-    category: 'Mental Health',
-    description: 'All mental health symptoms: anxiety, depression, panic, nightmares, and daily impact in one log.',
-    vaFocus: mentalHealthFocus,
-    tip: mentalHealthTip('Mental Health')
-  },
-  {
     title: 'Lower back pain',
     category: 'Back, Neck, and Joint',
     description: 'Pain level, flare-ups, limits sitting, standing, walking, and lifting.',
     vaFocus: musculoskeletalFocus,
     tip: musculoskeletalTip
+  },
+  {
+    title: 'Mental Health',
+    category: 'Mental Health',
+    description: 'All mental health symptoms: anxiety, depression, panic, nightmares, and daily impact in one log.',
+    vaFocus: mentalHealthFocus,
+    tip: mentalHealthTip('Mental Health')
   },
   {
     title: 'PTSD',
@@ -296,9 +296,51 @@ export const conditionCatalogDefinitions: ConditionCatalogEntry[] = [
     tip: musculoskeletalTip
   },
   {
-    title: 'Arthritis',
+    title: 'Joint Pain & Arthritis',
     category: 'Back, Neck, and Joint',
-    description: 'Joint pain, stiffness, flare-ups, movement limits, and medication use.',
+    description: 'Joint pain, stiffness, swelling, flare-ups, movement limits, and medication use.',
+    vaFocus: musculoskeletalFocus,
+    tip: musculoskeletalTip
+  },
+  {
+    title: 'Hip conditions',
+    category: 'Back, Neck, and Joint',
+    description: 'Hip pain, stiffness, limping, stairs, sitting limits, and flare-ups.',
+    vaFocus: musculoskeletalFocus,
+    tip: musculoskeletalTip
+  },
+  {
+    title: 'Foot & Ankle conditions',
+    category: 'Back, Neck, and Joint',
+    description: 'Foot or ankle pain, sprains, instability, heel or arch pain, swelling, and walking limits.',
+    vaFocus: musculoskeletalFocus,
+    tip: musculoskeletalTip
+  },
+  {
+    title: 'Elbow conditions',
+    category: 'Back, Neck, and Joint',
+    description: 'Elbow pain, lifting limits, grip impact, numbness, and flare-ups.',
+    vaFocus: musculoskeletalFocus,
+    tip: musculoskeletalTip
+  },
+  {
+    title: 'Wrist conditions',
+    category: 'Back, Neck, and Joint',
+    description: 'Wrist pain, weakness, lifting limits, numbness, and typing or tool use impact.',
+    vaFocus: musculoskeletalFocus,
+    tip: musculoskeletalTip
+  },
+  {
+    title: 'Hand & finger conditions',
+    category: 'Back, Neck, and Joint',
+    description: 'Hand or finger pain, stiffness, grip weakness, swelling, and daily task limits.',
+    vaFocus: musculoskeletalFocus,
+    tip: musculoskeletalTip
+  },
+  {
+    title: 'TMJ / Jaw pain',
+    category: 'Back, Neck, and Joint',
+    description: 'Jaw pain, chewing limits, clicking, locking, headaches, and facial pain.',
     vaFocus: musculoskeletalFocus,
     tip: musculoskeletalTip
   },
@@ -482,8 +524,11 @@ const conditionSearchAliasMap: Record<string, readonly string[]> = {
     'hygiene', 'isolation', 'sleep too much', 'not eating', 'loss of interest'
   ],
   'Knee conditions': [
-    'knee pain', 'knees', 'instability', 'buckling', 'swelling', 'stairs', 'standing',
-    'walking', 'squatting', 'kneeling', 'brace'
+    'knee', 'knees', 'knee pain', 'meniscus', 'meniscus tear', 'torn meniscus',
+    'patellofemoral', 'patellofemoral pain', 'patellofemoral pain syndrome', 'PFPS',
+    'knee strain', 'MCL', 'ACL', 'instability', 'gave out', 'knee gave out', 'buckling',
+    'limited range of motion', 'ROM', 'swelling', 'stairs', 'standing', 'walking',
+    'squatting', 'kneeling', 'brace', 'knee brace'
   ],
   'Panic attacks': [
     'panic attack', 'panic', 'racing heart', 'heart pounding', 'shortness of breath',
@@ -502,12 +547,47 @@ const conditionSearchAliasMap: Record<string, readonly string[]> = {
     'nightmares', 'restless', 'tired', 'fatigue', 'daytime sleepiness', 'poor sleep'
   ],
   'Shoulder conditions': [
-    'shoulder pain', 'rotator cuff', 'arm lift', 'overhead', 'range of motion',
+    'shoulder', 'shoulders', 'shoulder pain', 'rotator cuff', 'rotator cuff tear',
+    'tendinitis', 'tendonitis', 'impingement', 'shoulder impingement', 'frozen shoulder',
+    'adhesive capsulitis', 'arm lift', 'overhead', 'range of motion', 'limited range of motion',
     'lifting', 'sleep on shoulder', 'shoulder stiffness'
   ],
-  Arthritis: [
-    'joint pain', 'joint stiffness', 'degenerative arthritis', 'osteoarthritis',
-    'swelling', 'flare ups', 'limited motion', 'painful motion'
+  'Joint Pain & Arthritis': [
+    'arthritis', 'arth', 'joint pain', 'joint stiffness', 'degenerative arthritis', 'osteoarthritis',
+    'rheumatoid', 'swelling', 'flare ups', 'limited motion', 'painful motion', 'joints'
+  ],
+  'Hip conditions': [
+    'hip', 'hips', 'hip pain', 'hip strain', 'groin pain', 'labral', 'labral tear',
+    'hip labrum', 'bursitis', 'hip bursitis', 'trochanteric bursitis', 'arthritis',
+    'hip arthritis', 'limping', 'stairs', 'sitting pain', 'instability'
+  ],
+  'Foot & Ankle conditions': [
+    'foot', 'feet', 'ankle', 'ankles', 'foot pain', 'ankle pain', 'sprain', 'sprained ankle',
+    'chronic sprain', 'rolled ankle', 'instability', 'ankle instability', 'giving way', 'swelling',
+    'plantar fasciitis', 'plantar', 'heel pain', 'heel spur', 'flat feet', 'pes planus',
+    'fallen arches', 'hallux valgus', 'bunion', 'bunions', 'metatarsalgia', 'forefoot pain',
+    'ball of foot', 'arch pain', 'arthritis', 'ankle arthritis', 'tendinitis', 'tendonitis',
+    'peroneal', 'brace', 'toe pain'
+  ],
+  'Elbow conditions': [
+    'elbow', 'elbows', 'elbow pain', 'tennis elbow', 'lateral epicondylitis',
+    'golfers elbow', 'golfer\'s elbow', 'medial epicondylitis', 'arthritis',
+    'cubital tunnel', 'ulnar nerve', 'numbness fingers', 'tingling fingers', 'lifting pain'
+  ],
+  'Wrist conditions': [
+    'wrist', 'wrists', 'wrist pain', 'arthritis', 'tendinitis', 'tendonitis',
+    'ganglion', 'ganglion cyst', 'TFCC', 'TFCC injury', 'triangular fibrocartilage',
+    'typing pain', 'weak grip', 'lifting pain', 'numbness', 'tingling'
+  ],
+  'Hand & finger conditions': [
+    'hand', 'hands', 'finger', 'fingers', 'hand pain', 'finger pain', 'arthritis',
+    'trigger finger', 'trigger thumb', 'stiff fingers', 'grip strength', 'weak grip',
+    'limited grip', 'swelling', 'knuckle pain', 'finger injury', 'thumb pain'
+  ],
+  'TMJ / Jaw pain': [
+    'TMJ', 'TMD', 'jaw', 'jaw pain', 'temporomandibular', 'chewing pain', 'pain chewing',
+    'jaw locking', 'locked jaw', 'clicking jaw', 'jaw clicking', 'jaw popping',
+    'facial pain', 'headache', 'headaches from jaw', 'grinding teeth', 'bruxism'
   ],
   Radiculopathy: [
     'nerve pain', 'pinched nerve', 'radiating pain', 'shooting pain', 'numbness',
@@ -607,7 +687,11 @@ const conditionKeyAliases: Record<string, string> = {
   [conditionKeyFromLabel('IBS')]: conditionKeyFromLabel('IBS / Bowel Symptoms'),
   [conditionKeyFromLabel('GERD / IBS')]: conditionKeyFromLabel('GERD / Acid Reflux'),
   [conditionKeyFromLabel('Chronic diarrhea')]: conditionKeyFromLabel('IBS / Bowel Symptoms'),
-  [conditionKeyFromLabel('Constipation')]: conditionKeyFromLabel('IBS / Bowel Symptoms')
+  [conditionKeyFromLabel('Constipation')]: conditionKeyFromLabel('IBS / Bowel Symptoms'),
+  [conditionKeyFromLabel('Arthritis')]: conditionKeyFromLabel('Joint Pain & Arthritis'),
+  arthritis: conditionKeyFromLabel('Joint Pain & Arthritis'),
+  ankle_conditions: conditionKeyFromLabel('Foot & Ankle conditions'),
+  foot_conditions: conditionKeyFromLabel('Foot & Ankle conditions')
 }
 
 export function resolveCatalogConditionByStoredKey(storedKey: string): ConditionCatalogItem | null {
