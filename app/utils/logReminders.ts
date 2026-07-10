@@ -16,7 +16,6 @@ export const LOG_REMINDER_TEST_TITLE = 'VCH is testing app notification'
 export const LOG_REMINDER_TEST_BODY = 'We should be done soon'
 
 export type LogReminderKind =
-  | 'daily-hourly'
   | 'daily-morning'
   | 'daily-evening'
   | 'weekly-eve'
@@ -282,12 +281,6 @@ export function isReminderHourMatch(
   return hour === reminderHour
 }
 
-function getReminderHourBucketKey(now: Date, timeZone: string) {
-  const parts = getZonedDateParts(now, resolveReminderTimezone(timeZone))
-
-  return `${parts.year}-${pad(parts.month)}-${pad(parts.day)}-${pad(parts.hour)}`
-}
-
 export function buildLogReminderPayloads(input: {
   cadence: LoggingCadence
   weeklyLogDay: number
@@ -310,22 +303,39 @@ export function buildLogReminderPayloads(input: {
     }]
   }
 
+  const reminderHour = input.reminderHour ?? DEFAULT_LOG_REMINDER_HOUR
+  const reminderEveningHour = input.reminderEveningHour ?? DEFAULT_LOG_REMINDER_EVENING_HOUR
   const timeZone = resolveReminderTimezone(input.timeZone)
   const payloads: LogReminderPayload[] = []
-  const hourBucketKey = getReminderHourBucketKey(now, timeZone)
+  const dateKey = getLocalDateKeyInTimezone(now, timeZone)
 
   if (input.cadence === 'daily') {
     if (hasLoggedToday(input.entries, now, timeZone)) {
       return payloads
     }
 
-    payloads.push({
-      kind: 'daily-hourly',
-      title: 'VCH — Time to log symptoms',
-      body: 'Add a quick entry while today is still fresh.',
-      dedupeKey: `daily-hourly:${hourBucketKey}`
-    })
+    if (isReminderHourMatch(reminderHour, now, timeZone)) {
+      payloads.push({
+        kind: 'daily-morning',
+        title: 'VCH — Time to log symptoms',
+        body: 'Add a quick entry while today is still fresh.',
+        dedupeKey: `daily-morning:${dateKey}`
+      })
+    }
 
+    if (isReminderHourMatch(reminderEveningHour, now, timeZone)) {
+      payloads.push({
+        kind: 'daily-evening',
+        title: 'VCH — Evening log reminder',
+        body: 'You have not logged today yet. Add a quick entry before the day ends.',
+        dedupeKey: `daily-evening:${dateKey}`
+      })
+    }
+
+    return payloads
+  }
+
+  if (!isReminderHourMatch(reminderHour, now, timeZone)) {
     return payloads
   }
 
@@ -335,30 +345,30 @@ export function buildLogReminderPayloads(input: {
   const dayAfter = (input.weeklyLogDay + 1) % 7
   const loggedThisWeek = hasLoggedThisLogWeek(input.entries, input.weeklyLogDay, now, timeZone)
 
-  if (loggedThisWeek) {
-    return payloads
-  }
-
   if (today === dayBefore) {
     payloads.push({
       kind: 'weekly-eve',
       title: 'VCH — Log day is tomorrow',
       body: `You chose ${logDayLabel}s for weekly logging. Plan a few minutes tomorrow to capture the week.`,
-      dedupeKey: `weekly-eve:${hourBucketKey}`
+      dedupeKey: `weekly-eve:${dateKey}`
     })
-  } else if (today === input.weeklyLogDay) {
+  }
+
+  if (today === input.weeklyLogDay && !loggedThisWeek) {
     payloads.push({
       kind: 'weekly-day',
       title: 'VCH — Today is your log day',
       body: `It is ${logDayLabel}. Log once and capture the week together.`,
-      dedupeKey: `weekly-day:${hourBucketKey}`
+      dedupeKey: `weekly-day:${dateKey}`
     })
-  } else if (today === dayAfter) {
+  }
+
+  if (today === dayAfter && !loggedThisWeek) {
     payloads.push({
       kind: 'weekly-followup',
       title: 'VCH — Catch up on your weekly log',
       body: `You planned to log on ${logDayLabel}. Add an entry when you can while the week is still fresh.`,
-      dedupeKey: `weekly-followup:${hourBucketKey}`
+      dedupeKey: `weekly-followup:${dateKey}`
     })
   }
 
@@ -396,19 +406,21 @@ export function formatTimezoneLabel(timeZone: string) {
 export function describeLogReminderSchedule(
   cadence: LoggingCadence,
   weeklyLogDay: number,
-  _reminderHour = DEFAULT_LOG_REMINDER_HOUR,
+  reminderHour = DEFAULT_LOG_REMINDER_HOUR,
   timeZone?: string,
-  _reminderEveningHour = DEFAULT_LOG_REMINDER_EVENING_HOUR
+  reminderEveningHour = DEFAULT_LOG_REMINDER_EVENING_HOUR
 ) {
+  const timeLabel = formatLogReminderHour(reminderHour)
+  const eveningLabel = formatLogReminderHour(reminderEveningHour)
   const zoneLabel = formatTimezoneLabel(resolveReminderTimezone(timeZone))
 
   if (cadence === 'daily') {
-    return `Hourly reminders (${zoneLabel}) until you log for the day.`
+    return `Reminders at ${timeLabel} and ${eveningLabel} (${zoneLabel}) if you have not logged yet.`
   }
 
   const logDayLabel = getWeeklyLogDayLabel(weeklyLogDay)
 
-  return `Hourly reminders around ${logDayLabel} — day before, on ${logDayLabel}, and the day after (${zoneLabel}) — until you log for the week.`
+  return `Reminders around ${logDayLabel} — day before, on ${logDayLabel}, and the day after — each at ${timeLabel} (${zoneLabel}).`
 }
 
 export function defaultLogReminderSettings(): LogReminderSettings {

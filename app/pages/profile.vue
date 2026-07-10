@@ -421,16 +421,50 @@
           </div>
 
           <div class="mt-4 rounded-3xl border border-slate-700 bg-slate-800/50 px-4 py-4">
-            <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
-              Reminder schedule
-            </p>
-            <p class="mt-2 text-sm leading-6 text-slate-300">
-              {{ logReminderScheduleDescription }}
-            </p>
-            <p class="mt-2 text-xs leading-5 text-slate-500">
-              Uses your local timezone: {{ logReminderTimezoneLabel }} ({{ reminderTimezone }}).
-            </p>
+            <label class="block text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+              {{ loggingCadence === 'daily' ? 'Morning reminder' : 'Reminder time' }}
+            </label>
+            <select
+              :value="reminderHour"
+              class="mt-2 w-full rounded-2xl border border-slate-600 bg-slate-900 px-4 py-3 text-sm font-semibold text-white"
+              @change="handleReminderHourChange"
+            >
+              <option
+                v-for="option in logReminderHourOptions"
+                :key="option.value"
+                :value="option.value"
+              >
+                {{ option.label }}
+              </option>
+            </select>
           </div>
+
+          <div
+            v-if="loggingCadence === 'daily'"
+            class="mt-4 rounded-3xl border border-slate-700 bg-slate-800/50 px-4 py-4"
+          >
+            <label class="block text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+              Evening reminder
+            </label>
+            <select
+              :value="reminderEveningHour"
+              class="mt-2 w-full rounded-2xl border border-slate-600 bg-slate-900 px-4 py-3 text-sm font-semibold text-white"
+              @change="handleReminderEveningHourChange"
+            >
+              <option
+                v-for="option in logReminderHourOptions"
+                :key="`evening-${option.value}`"
+                :value="option.value"
+              >
+                {{ option.label }}
+              </option>
+            </select>
+          </div>
+
+          <p class="mt-3 text-xs leading-5 text-slate-500">
+            Uses your local timezone: {{ logReminderTimezoneLabel }} ({{ reminderTimezone }}).
+            Install the app for background alerts when closed. On Android, set notification channel to Sound and pop-up if alerts only appear in the shade.
+          </p>
 
           <div class="mt-4 flex items-center justify-between gap-3 rounded-3xl border border-slate-700 bg-slate-800/50 px-4 py-4">
             <div class="min-w-0">
@@ -448,10 +482,6 @@
               {{ isSendingTestReminder ? 'Sending...' : 'Send test' }}
             </button>
           </div>
-
-          <p class="mt-3 text-xs leading-5 text-slate-500">
-            Install the app for background alerts when the app is closed. Reminders repeat every hour until you log (daily) or until you log for the week (weekly). On Android, set this app’s notification channel to Sound and pop-up if alerts only appear in the shade. Chrome’s separate “copy URL” system notice is not a VCH reminder.
-          </p>
         </section>
 
         <section id="settings-display" class="scroll-mt-3 rounded-4xl border border-slate-800 bg-slate-900 p-5">
@@ -1219,6 +1249,7 @@ const {
   disableReminders,
   hydrateReminderSettings,
   updateReminderHour,
+  updateReminderEveningHour,
   sendTestReminderNotification,
   syncPermissionState
 } = useLogReminders()
@@ -1729,6 +1760,26 @@ async function handleReminderHourChange(event: Event) {
   try {
     await updateReminderHour(hour)
     showSubmissionToast({ message: `Reminder time set to ${logReminderHourOptions.find((option) => option.value === hour)?.label || 'your chosen time'}.` })
+  } catch (error) {
+    pageError.value = getErrorMessage(error)
+  }
+}
+
+async function handleReminderEveningHourChange(event: Event) {
+  const target = event.target as HTMLSelectElement
+  const hour = Number(target.value)
+
+  if (!Number.isFinite(hour)) {
+    return
+  }
+
+  pageError.value = ''
+
+  try {
+    await updateReminderEveningHour(hour)
+    showSubmissionToast({
+      message: `Evening reminder set to ${logReminderHourOptions.find((option) => option.value === hour)?.label || 'your chosen time'}.`
+    })
   } catch (error) {
     pageError.value = getErrorMessage(error)
   }

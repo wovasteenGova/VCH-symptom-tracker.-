@@ -447,6 +447,17 @@ export function useLogReminders() {
     })
   }
 
+  async function updateReminderEveningHour(hour: number) {
+    reminderEveningHour.value = hour
+
+    await syncProfileReminderSettings({
+      enabled: remindersEnabled.value,
+      reminderHour: reminderHour.value,
+      reminderEveningHour: hour,
+      reminderTimezone: reminderTimezone.value
+    })
+  }
+
   function startPermissionWatchers() {
     if (!import.meta.client || permissionWatchersStarted) {
       return
@@ -505,6 +516,7 @@ export function useLogReminders() {
     hydrateReminderSettings,
     persistReminderSettings,
     updateReminderHour,
+    updateReminderEveningHour,
     runLogReminderCheck,
     sendTestReminderNotification,
     syncPermissionState
