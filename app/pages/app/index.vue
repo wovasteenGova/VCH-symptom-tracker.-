@@ -4002,6 +4002,7 @@ onBeforeMount(() => {
 
 onMounted(async () => {
   openLoginFromQuery()
+  openExportFromQuery()
 
   if (!homeGreetingWord.value) {
     homeGreetingWord.value = Math.random() < 0.5 ? 'Hello' : 'Hey'
@@ -4140,6 +4141,12 @@ watch(historyExpanded, (expanded, wasExpanded) => {
 watch(() => route.query.login, (value) => {
   if (value === '1') {
     openLoginFromQuery()
+  }
+})
+
+watch(() => route.query.export, (value) => {
+  if (value === '1') {
+    openExportFromQuery()
   }
 })
 
@@ -5411,6 +5418,16 @@ function openLoginFromQuery() {
   authError.value = ''
   authValidationMessage.value = ''
   openAuthPanel()
+
+  void router.replace({ path: '/app', query: {} })
+}
+
+function openExportFromQuery() {
+  if (route.query.export !== '1') {
+    return
+  }
+
+  selectHistoryTab('Export')
 
   void router.replace({ path: '/app', query: {} })
 }
