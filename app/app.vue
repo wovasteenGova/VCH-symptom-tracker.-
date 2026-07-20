@@ -18,6 +18,13 @@
 <script setup lang="ts">
 import { onBeforeMount, onMounted, onUnmounted, ref } from 'vue'
 
+useHead({
+  htmlAttrs: {
+    lang: 'en',
+    'data-theme': 'classic-warm'
+  }
+})
+
 const { showSubmissionToast } = useSubmissionToast()
 const supabase = useSupabaseClient()
 

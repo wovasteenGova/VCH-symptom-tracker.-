@@ -42,11 +42,7 @@
           </div>
 
           <div v-else class="ml-auto flex shrink-0 items-center gap-2">
-            <UColorModeSwitch
-              size="md"
-              color="primary"
-              class="header-color-toggle"
-            />
+            <VchThemeToggle size="md" />
 
             <button
               v-if="notificationNeedsAttention"

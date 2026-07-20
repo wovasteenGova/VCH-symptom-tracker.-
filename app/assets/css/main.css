@@ -1,6 +1,62 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
+@theme static {
+  /* VCH brass — primary accent */
+  --color-brass-50: #faf7f0;
+  --color-brass-100: #f2ead8;
+  --color-brass-200: #e4d4b0;
+  --color-brass-300: #d4bc85;
+  --color-brass-400: #c4a05c;
+  --color-brass-500: #b08844;
+  --color-brass-600: #946b35;
+  --color-brass-700: #78532c;
+  --color-brass-800: #624428;
+  --color-brass-900: #523a25;
+  --color-brass-950: #2f1f12;
+
+  /* Warm copper — partial / warning states */
+  --color-copper-50: #faf6f1;
+  --color-copper-100: #f3e8da;
+  --color-copper-200: #e6cfb3;
+  --color-copper-300: #d4ae7f;
+  --color-copper-400: #c08d54;
+  --color-copper-500: #a8723f;
+  --color-copper-600: #8c5a33;
+  --color-copper-700: #70462c;
+  --color-copper-800: #5c3a27;
+  --color-copper-900: #4d3223;
+  --color-copper-950: #2a1910;
+
+  /* Muted rosewood — missing / error states */
+  --color-rosewood-50: #faf5f4;
+  --color-rosewood-100: #f4e8e6;
+  --color-rosewood-200: #e8cfc9;
+  --color-rosewood-300: #d4a99f;
+  --color-rosewood-400: #bc7d70;
+  --color-rosewood-500: #a35f52;
+  --color-rosewood-600: #884c42;
+  --color-rosewood-700: #713f38;
+  --color-rosewood-800: #5e3631;
+  --color-rosewood-900: #50302c;
+  --color-rosewood-950: #2b1714;
+
+  /* Toggle on-state — matches VCH Symptom Tracker visibility */
+  --color-green-50: #f0fdf4;
+  --color-green-100: #dcfce7;
+  --color-green-200: #bbf7d0;
+  --color-green-300: #86efac;
+  --color-green-400: #4ade80;
+  --color-green-500: #22c55e;
+  --color-green-600: #16a34a;
+  --color-green-700: #15803d;
+  --color-green-800: #166534;
+  --color-green-900: #14532d;
+  --color-green-950: #052e16;
+}
+
+@import "./claim-themes.css";
+
 :root {
   --app-height: 100dvh;
   --history-sheet-collapsed-height: calc(4.95rem + env(safe-area-inset-bottom, 0px));
@@ -19,7 +75,7 @@
  */
 
 html {
-  background: #f8fafc;
+  background: var(--ui-bg);
   scrollbar-width: none;
   overscroll-behavior: none;
   height: var(--app-height);
@@ -27,7 +83,7 @@ html {
 }
 
 html.dark {
-  background: #020617;
+  background: var(--ui-bg);
 }
 
 body {
@@ -35,16 +91,16 @@ body {
   height: var(--app-height);
   min-height: var(--app-height);
   max-height: var(--app-height);
-  color: #020617;
-  background: #f8fafc;
+  color: var(--ui-text);
+  background: var(--ui-bg);
   scrollbar-width: none;
   -ms-overflow-style: none;
   overscroll-behavior: none;
 }
 
 html.dark body {
-  color: #ffffff;
-  background: #020617;
+  color: var(--ui-text);
+  background: var(--ui-bg);
 }
 
 .app-shell {
@@ -165,6 +221,54 @@ html:has(.app-shell-embed) {
 
 .header-color-toggle {
   flex-shrink: 0;
+}
+
+.header-color-toggle :deep([data-slot="base"]) {
+  border-width: 2px;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.header-color-toggle :deep([data-slot="thumb"]) {
+  transition: background-color 0.2s ease, color 0.2s ease;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.28);
+}
+
+.header-color-toggle :deep([data-slot="icon"]) {
+  opacity: 1;
+}
+
+:root:not(.dark) .header-color-toggle :deep([data-slot="base"][data-state="unchecked"]) {
+  background: #131110;
+  border-color: #131110;
+}
+
+:root:not(.dark) .header-color-toggle :deep([data-slot="thumb"]) {
+  background: #ffffff;
+  color: #131110;
+}
+
+:root:not(.dark) .header-color-toggle :deep([data-slot="icon"]) {
+  color: #131110;
+}
+
+.dark .header-color-toggle :deep([data-slot="base"][data-state="checked"]) {
+  background: rgb(255 255 255 / 0.22);
+  border-color: rgb(255 255 255 / 0.72);
+}
+
+.dark .header-color-toggle :deep([data-slot="base"][data-state="checked"] [data-slot="thumb"]) {
+  background: #ffffff;
+  color: #131110;
+}
+
+.dark .header-color-toggle :deep([data-slot="base"][data-state="checked"] [data-slot="icon"]) {
+  color: #131110;
+}
+
+/* Theme swatch trigger */
+.header-theme-swatch-trigger:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--ui-primary) 45%, transparent);
+  outline-offset: 2px;
 }
 
 .sym-entry-time-menu button {

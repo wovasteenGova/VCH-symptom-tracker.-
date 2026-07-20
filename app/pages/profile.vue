@@ -491,6 +491,16 @@
             Auto hides arrow controls on small screens. Choose desktop to keep arrows and the wide layout on a tablet or narrow window.
           </p>
 
+          <div class="mt-5 flex items-center justify-between gap-4 rounded-3xl border border-slate-700 bg-slate-800/50 px-4 py-3">
+            <div class="min-w-0">
+              <p class="font-bold text-white">Color theme</p>
+              <p class="mt-1 text-sm leading-6 text-slate-400">
+                Pick a palette and light or dark mode.
+              </p>
+            </div>
+            <VchThemeToggle size="md" />
+          </div>
+
           <div class="mt-4 grid gap-3">
             <button
               v-for="option in layoutOptions"

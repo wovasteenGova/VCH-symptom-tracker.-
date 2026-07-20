@@ -20,11 +20,7 @@
           </div>
         </div>
 
-        <UColorModeSwitch
-          size="md"
-          color="primary"
-          class="header-color-toggle shrink-0"
-        />
+        <VchThemeToggle size="md" />
       </header>
 
       <section v-if="isLoading" class="flex flex-1 items-center justify-center py-12 text-center text-slate-500 dark:text-slate-400">
