@@ -72,7 +72,10 @@
               <TrackerLivePreview />
               <template #fallback>
                 <div class="grid h-full place-items-center">
-                  <VchLoader :width="720" />
+                  <VchLoader
+                    :width="720"
+                    show-brand
+                  />
                 </div>
               </template>
             </ClientOnly>

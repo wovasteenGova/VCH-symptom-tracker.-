@@ -3,10 +3,28 @@
     <Transition name="app-splash-fade">
       <div
         v-if="showAppSplash"
-        class="fixed inset-0 z-[100] grid place-items-center bg-slate-950"
+        class="fixed inset-0 z-[100] grid place-items-center bg-slate-950 px-4"
         aria-hidden="true"
       >
-        <img src="/vch-tank-loader.svg" alt="" class="w-[min(28rem,92vw)] sm:w-[32rem]">
+        <div class="flex w-full max-w-[min(28rem,92vw)] flex-col items-center gap-4 sm:max-w-[32rem]">
+          <div class="flex items-center justify-center gap-3">
+            <img
+              src="/vch-logo.png"
+              alt="Veterans Central Hub"
+              class="size-11 shrink-0 rounded-full object-cover object-center ring-1 ring-slate-700 shadow-sm"
+              decoding="async"
+            >
+            <span class="text-[2rem] font-semibold leading-none tracking-[0.12em] text-white">
+              VCH
+            </span>
+          </div>
+          <img
+            src="/vch-tank-loader.svg"
+            alt=""
+            class="w-full select-none"
+            decoding="async"
+          >
+        </div>
       </div>
     </Transition>
     <NuxtRouteAnnouncer />
@@ -39,18 +57,14 @@ const showGlobalSubmissionToast = computed(() => {
 })
 
 const showAppSplash = ref(true)
-const APP_SPLASH_MIN_MS = 1200
 // Skip the splash when the page reloads shortly after showing it (e.g. the
 // PWA service worker auto-update reload), so users don't see it twice.
 const APP_SPLASH_REPLAY_WINDOW_MS = 60_000
 const APP_SPLASH_SHOWN_AT_KEY = 'symptom-tracker-splash-shown-at'
 const CHECKOUT_SUCCESS_TOAST_KEY = 'symptom-tracker-checkout-success-toast'
 
-function dismissAppSplash(mountedAt: number) {
-  const elapsed = Date.now() - mountedAt
-  window.setTimeout(() => {
-    showAppSplash.value = false
-  }, Math.max(0, APP_SPLASH_MIN_MS - elapsed))
+function dismissAppSplash() {
+  showAppSplash.value = false
 }
 
 onBeforeMount(() => {
@@ -80,7 +94,7 @@ function updateAppHeight() {
 }
 
 onMounted(async () => {
-  dismissAppSplash(Date.now())
+  dismissAppSplash()
   updateAppHeight()
   if (import.meta.client && window.sessionStorage.getItem(CHECKOUT_SUCCESS_TOAST_KEY)) {
     window.sessionStorage.removeItem(CHECKOUT_SUCCESS_TOAST_KEY)

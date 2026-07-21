@@ -1,5 +1,17 @@
 <template>
   <div class="vch-loader" role="status" :aria-label="label || 'Getting things ready.'">
+    <div
+      v-if="showBrand"
+      class="vch-loader-brand"
+    >
+      <img
+        src="/vch-logo.png"
+        alt="Veterans Central Hub"
+        class="vch-loader-logo"
+        decoding="async"
+      >
+      <span class="vch-loader-wordmark text-slate-950 dark:text-white">VCH</span>
+    </div>
     <img
       src="/vch-tank-loader.svg?v=3"
       class="vch-loader-img"
@@ -15,9 +27,12 @@
 withDefaults(defineProps<{
   label?: string
   width?: number
+  /** Logo + VCH above the tank — use for main/workspace loaders, not auth. */
+  showBrand?: boolean
 }>(), {
   label: '',
-  width: 720
+  width: 720,
+  showBrand: false
 })
 </script>
 
@@ -26,7 +41,32 @@ withDefaults(defineProps<{
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.75rem;
+}
+
+.vch-loader-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.vch-loader-logo {
+  width: 2.75rem;
+  height: 2.75rem;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  object-fit: cover;
+  object-position: center;
+  border: 1px solid rgb(51 65 85);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.2);
+}
+
+.vch-loader-wordmark {
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.12em;
 }
 
 .vch-loader-img {
