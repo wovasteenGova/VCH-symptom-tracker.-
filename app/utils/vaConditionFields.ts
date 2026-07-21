@@ -44,7 +44,7 @@ const functionalImpactField: EntryFieldDef = {
   label: 'Functional impact',
   type: 'text',
   placeholder: 'Annoying, irritating, disruptive — or had to rest, stop work, cancel plans, or lose sleep?',
-  helper: 'VA raters look for work, social, and sleep disruption from this episode.'
+  helper: 'Tap one or more chips. VA raters look for work, social, and sleep disruption from this episode.'
 }
 
 const episodeDurationField: EntryFieldDef = {

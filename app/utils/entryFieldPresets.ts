@@ -461,6 +461,9 @@ export const dailyImpactPresets: EntryFieldPreset[] = [
 const multiSelectPresetFields = new Set([
   'Episode type',
   'Daily impact',
+  'Functional impact',
+  'Had to stop activity?',
+  'Had to stop and rest?',
   'Symptoms noticed',
   'Joint symptoms',
   'Pain and fatigue symptoms',
