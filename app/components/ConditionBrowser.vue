@@ -325,6 +325,8 @@ const props = defineProps<{
 
   error?: string
 
+  demoSearchQuery?: string
+
 }>()
 
 
@@ -369,7 +371,14 @@ watch(searchQuery, (value) => {
 
 }, { immediate: true })
 
+watch(() => props.demoSearchQuery, (value) => {
+  if (value === undefined) {
+    return
+  }
 
+  searchQuery.value = value
+  debouncedSearchQuery.value = value
+})
 
 const lockedKeySet = computed(() => new Set(props.lockedKeys || []))
 

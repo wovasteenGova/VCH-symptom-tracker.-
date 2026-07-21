@@ -6,6 +6,9 @@ export type TrackerLayoutMode = 'auto' | 'desktop' | 'mobile'
 
 export const TRACKER_LAYOUT_STORAGE_KEY = 'symptom-tracker-layout-mode'
 export const TRACKER_EMBED_KEY = Symbol('tracker-embed')
+export const TRACKER_DEMO_KEY = Symbol('tracker-demo')
+export const TRACKER_DEMO_ACTIONS_KEY = Symbol('tracker-demo-actions')
+export const TRACKER_DEMO_CONTROL_KEY = Symbol('tracker-demo-control')
 export const TRACKER_CLOSE_EMBED_PROFILE_KEY = Symbol('close-embed-profile')
 
 function readStoredLayoutMode(): TrackerLayoutMode {

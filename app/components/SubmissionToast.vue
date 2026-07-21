@@ -1,6 +1,7 @@
 <template>
   <div
-    class="submission-toast-root pointer-events-none fixed inset-x-0 z-[130] flex justify-center px-4"
+    class="submission-toast-root pointer-events-none flex justify-center px-4"
+    :class="embedded ? 'submission-toast-root--embedded' : 'submission-toast-root--global'"
     aria-live="polite"
     aria-atomic="true"
   >
@@ -62,6 +63,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+withDefaults(defineProps<{
+  embedded?: boolean
+}>(), {
+  embedded: false
+})
+
 const { activeToast, toastKey, clearSubmissionToast } = useSubmissionToast()
 
 const compactHighlight = computed(() => {
@@ -76,18 +83,29 @@ const compactHighlight = computed(() => {
 </script>
 
 <style scoped>
-.submission-toast-root {
+.submission-toast-root--global {
+  position: fixed;
+  inset-inline: 0;
+  z-index: 130;
   top: calc(env(safe-area-inset-top, 0px) + 5.75rem);
   bottom: auto;
 }
 
 @media (min-width: 768px) {
-  .submission-toast-root {
+  .submission-toast-root--global {
     top: calc(env(safe-area-inset-top, 0px) + 1rem);
     bottom: auto;
     justify-content: flex-end;
     padding-right: 1.5rem;
   }
+}
+
+.submission-toast-root--embedded {
+  position: absolute;
+  inset-inline: 0;
+  z-index: 130;
+  top: calc(env(safe-area-inset-top, 0px) + 5.75rem);
+  bottom: auto;
 }
 
 .submission-toast-panel {
@@ -97,6 +115,10 @@ const compactHighlight = computed(() => {
 @media (min-width: 768px) {
   .submission-toast-panel {
     transform-origin: top right;
+  }
+
+  .submission-toast-root--embedded .submission-toast-panel {
+    transform-origin: top center;
   }
 }
 

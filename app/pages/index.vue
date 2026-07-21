@@ -1,8 +1,5 @@
 <template>
   <main class="relative flex min-h-screen flex-col bg-slate-50 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-slate-950 dark:bg-slate-950 dark:text-white">
-    <div class="fixed top-[max(1rem,env(safe-area-inset-top))] right-[max(1rem,env(safe-area-inset-right))] z-50">
-      <VchThemeToggle size="md" />
-    </div>
     <div class="flex flex-1 items-center">
       <div class="mx-auto grid w-full max-w-7xl items-start gap-10 px-6 py-12 pb-[max(2rem,env(safe-area-inset-bottom))] lg:grid-cols-[1fr_minmax(20rem,28rem)] lg:gap-14 lg:py-16 lg:pb-16 xl:gap-20">
         <div class="flex flex-col justify-center gap-8 lg:pr-2">
@@ -81,7 +78,7 @@
             </ClientOnly>
           </div>
           <p class="mt-4 text-center text-xs text-slate-500 dark:text-slate-400 lg:text-right">
-            Live preview — use the tracker here, or
+            Live preview — click the phone to try it yourself, or
             <NuxtLink to="/app" class="font-semibold text-sky-600 underline underline-offset-2 dark:text-sky-400">
               open full screen
             </NuxtLink>

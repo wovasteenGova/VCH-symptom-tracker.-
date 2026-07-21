@@ -663,6 +663,7 @@
                           <div
                             v-if="field.type === 'slider'"
                             data-step-swipe-block
+                            data-demo-field="severity-slider"
                             class="w-full space-y-5"
                           >
                             <div class="space-y-1 text-center">
@@ -726,6 +727,7 @@
 
                           <div
                             v-else-if="field.type === 'datetime'"
+                            data-demo-field="datetime"
                             class="space-y-4"
                           >
                           <div>
@@ -786,6 +788,7 @@
                         </div>
                         <div
                           v-else-if="isEpisodeDurationField(field) || isEpisodeFollowUpField(field) || isMedicationsStepField(field) || getPresetsForEntryField(field.label).length"
+                          :data-entry-field-key="fieldKey(field.label)"
                           class="space-y-5"
                         >
                           <div class="flex flex-wrap gap-2.5">
@@ -818,6 +821,7 @@
                           <textarea
                             v-if="field.type === 'textarea'"
                             v-model="entryForm[fieldKey(field.label)]"
+                            :data-entry-field-key="fieldKey(field.label)"
                             :placeholder="field.placeholder"
                             rows="4"
                             class="w-full resize-none border-0 border-b border-slate-300/80 bg-transparent px-0 py-4 text-base font-medium leading-7 text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-700 dark:text-white dark:focus:border-slate-400"
@@ -825,6 +829,7 @@
                           <input
                             v-else
                             v-model="entryForm[fieldKey(field.label)]"
+                            :data-entry-field-key="fieldKey(field.label)"
                             type="text"
                             :placeholder="field.placeholder"
                             class="w-full border-0 bg-transparent px-0 py-3 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 dark:text-white"
@@ -833,6 +838,7 @@
                         <textarea
                           v-else-if="field.type === 'textarea'"
                           v-model="entryForm[fieldKey(field.label)]"
+                          :data-entry-field-key="fieldKey(field.label)"
                           :placeholder="field.placeholder"
                           rows="4"
                           class="w-full resize-none border-0 border-b border-slate-300/80 bg-transparent px-0 py-4 text-base font-medium leading-7 text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-700 dark:text-white dark:focus:border-slate-400"
@@ -840,6 +846,7 @@
                         <input
                           v-else-if="field.type !== 'slider' && field.type !== 'datetime' && !isEpisodeDurationField(field) && !isEpisodeFollowUpField(field) && !isMedicationsStepField(field) && !getPresetsForEntryField(field.label).length"
                           v-model="entryForm[fieldKey(field.label)]"
+                          :data-entry-field-key="fieldKey(field.label)"
                           :type="field.type"
                           :placeholder="field.placeholder"
                           class="w-full border-0 border-b border-slate-300/80 bg-transparent px-0 py-4 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-700 dark:text-white dark:focus:border-slate-400"
@@ -930,6 +937,7 @@
                   :show-pro-limit="false"
                   :saving="isSavingTrackedConditions"
                   :error="trackedConditionsError"
+                  :demo-search-query="isDemoMode ? demoConditionSearch : undefined"
                   @toggle="toggleDraftCondition"
                   @confirm="confirmConditionOnboarding"
                   @done="finishConditionBrowser"
@@ -1384,7 +1392,7 @@
             @wheel="handleHistoryWheel"
           >
             <div v-if="activeHistoryTab === 'Entries'" class="divide-y divide-slate-200 dark:divide-slate-800">
-              <div v-if="!user && !isAuthLoading" class="py-8 text-center">
+              <div v-if="!user && !isAuthLoading && !isDemoMode" class="py-8 text-center">
                 <p class="font-bold text-slate-950 dark:text-white">Sign in to save entries</p>
                 <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
                   Your symptom logs sync to your account once you sign in.
@@ -1580,6 +1588,8 @@
         <ProfilePage />
       </div>
     </Transition>
+
+    <SubmissionToast v-if="isEmbeddedPreview" embedded />
   </main>
 
   <Transition
@@ -2269,12 +2279,12 @@ import { androidAddToHomeScreenVideoUrl, iosAddToHomeScreenVideoUrl } from '../.
 import { filterAndRankConditions } from '../../utils/conditionSearch'
 import { getWeeklyLogCaution, type WeeklyLogCaution } from '../../utils/loggingCadence'
 import { buildLoggingActivityMetrics } from '../../utils/loggingActivityReport'
-import { conditionCatalog, buildHomeVisitTips, normalizeConditionLabel, pickRandomHomeVisitTip, resolveCatalogConditionByStoredKey, VA_CRISIS_LINE_SHORT, type HomeVisitTip } from '../../utils/conditionCatalog'
+import { conditionCatalog, buildHomeVisitTips, getCatalogConditionByKey, normalizeConditionLabel, pickRandomHomeVisitTip, resolveCatalogConditionByStoredKey, VA_CRISIS_LINE_SHORT, type HomeVisitTip } from '../../utils/conditionCatalog'
 import { LOG_REMINDER_TEST_INTERVAL_MS, LOG_REMINDER_TEST_MODE } from '../../utils/logReminders'
 import { conditionImageAssets } from '../../utils/conditionImages'
 import { getSeverityEmoji, getSeverityGuidance, severityQuickPresets } from '../../utils/severityGuidance'
 import { CalendarDate } from '@internationalized/date'
-import { computed, nextTick, onBeforeMount, onBeforeUnmount, onMounted, provide, ref, shallowRef, watch } from 'vue'
+import { computed, inject, nextTick, onBeforeMount, onBeforeUnmount, onMounted, provide, ref, shallowRef, watch } from 'vue'
 import { useKeyboardAwareScroll } from '../../composables/useKeyboardAwareScroll'
 import {
   buildEntryDraftSnapshot,
@@ -2285,7 +2295,9 @@ import {
   writeEntryDraft,
   type EntryDraftSnapshot
 } from '../../composables/useEntryDraft'
-import { useTrackerLayout, TRACKER_CLOSE_EMBED_PROFILE_KEY } from '../../composables/useTrackerLayout'
+import { useTrackerLayout, TRACKER_CLOSE_EMBED_PROFILE_KEY, TRACKER_DEMO_ACTIONS_KEY, TRACKER_DEMO_CONTROL_KEY, TRACKER_DEMO_KEY } from '../../composables/useTrackerLayout'
+import { useTrackerDemoScript, type TrackerDemoActions } from '../../composables/useTrackerDemoScript'
+import { trackerDemoFieldDefaults, trackerDemoTiming } from '../../utils/trackerDemoConfig'
 import { useAppOverlayHistoryInset } from '../../composables/useAppOverlayHistoryInset'
 import ProfilePage from '../profile.vue'
 
@@ -2332,7 +2344,8 @@ const {
   loadError: trackedConditionsLoadError,
   loadTrackedConditions,
   completeOnboarding,
-  updateTrackedConditions
+  updateTrackedConditions,
+  applyLocalState
 } = useTrackedConditions()
 const { showSubmissionToast } = useSubmissionToast()
 
@@ -2514,6 +2527,11 @@ const {
   enableRemindersWithPermission
 } = useLogReminders()
 const { isDesktopLayout, isMobileLayout, isEmbeddedPreview } = useTrackerLayout()
+const isDemoMode = inject(TRACKER_DEMO_KEY, false)
+const demoControl = inject(TRACKER_DEMO_CONTROL_KEY, null)
+const demoConditionSearch = ref('')
+const demoReady = ref(false)
+let demoEntryCounter = 0
 const isEmbedProfileOpen = ref(false)
 
 const notificationNeedsAttention = computed(() => {
@@ -2618,7 +2636,8 @@ const {
   scrollStyle: entryStepScrollStyle,
   handleFieldFocus: handleEntryFieldFocus,
   keyboardInset: entryKeyboardInset,
-  isKeyboardOpen: isEntryKeyboardOpen
+  isKeyboardOpen: isEntryKeyboardOpen,
+  scrollElementIntoView: scrollEntryElementIntoView
 } = useKeyboardAwareScroll(entryStepScrollEl, {
   footerHeight: entryActionBarHeight
 })
@@ -4035,6 +4054,10 @@ onMounted(async () => {
     scheduleLogReminderCheck,
     LOG_REMINDER_TEST_MODE ? LOG_REMINDER_TEST_INTERVAL_MS : 60 * 60 * 1000
   )
+
+  if (isDemoMode) {
+    demoReady.value = true
+  }
 })
 
 onBeforeUnmount(() => {
@@ -4948,6 +4971,11 @@ function openSubmissionLogDetails(entryId: string) {
 }
 
 async function saveEntry() {
+  if (isDemoMode) {
+    await saveDemoEntry()
+    return
+  }
+
   if (!user.value) {
     entryError.value = 'Please sign in before saving symptom entries.'
     openAuthPanel()
@@ -6371,6 +6399,17 @@ function showSlide(index: number) {
   showConditionSlide(index, { clearSelectedSearchCondition: true })
 }
 
+function focusHomeConditionByKey(conditionKey: string) {
+  const resolvedKey = resolveCatalogConditionByStoredKey(conditionKey)?.key ?? conditionKey
+  const conditionIndex = homeConditions.value.findIndex((condition) => condition.key === resolvedKey)
+
+  if (conditionIndex < 0) {
+    return
+  }
+
+  showConditionSlide(conditionIndex + 1)
+}
+
 function handleCancelEntry() {
   if (
     isMeaningfulEntryDraft({
@@ -7181,6 +7220,11 @@ async function openEntryPanelAsync(options: {
     image: string
   }
 } = {}) {
+  if (isDemoMode) {
+    openEntryPanelInner(options)
+    return
+  }
+
   if (needsAppWelcome.value) {
     return
   }
@@ -7476,6 +7520,380 @@ function handleEntryPrimaryAction() {
 
   showNextEntryStep()
 }
+
+function isDemoEntryId(id: string) {
+  return id.startsWith('demo-entry-')
+}
+
+async function saveDemoEntry() {
+  if (currentStepHasDateTimeField() && !entryForm.value.date_and_time) {
+    setEntryDateTimeNow()
+  }
+
+  if (!validateEntryDateTimeStep()) {
+    return
+  }
+
+  isSavingEntry.value = true
+  entryError.value = ''
+
+  await demoSleep(700)
+  await scrollDemoEntryFormToBottom()
+
+  const payload = buildSymptomEntrySavePayload({
+    entryTitle: entryTitle.value,
+    severity: severityValue.value,
+    entryForm: entryForm.value
+  })
+
+  const now = new Date().toISOString()
+  demoEntryCounter += 1
+  const entryId = `demo-entry-${demoEntryCounter}-${Date.now()}`
+
+  const demoEntry = {
+    id: entryId,
+    source: 'veteran',
+    entry_status: 'complete',
+    condition_key: payload.condition_key,
+    condition_label: payload.condition_label,
+    severity: payload.severity,
+    occurred_at: payload.occurred_at,
+    summary: payload.summary,
+    impact: payload.impact,
+    details: payload.details,
+    created_at: now,
+    updated_at: now
+  }
+
+  savedEntries.value = [demoEntry, ...savedEntries.value]
+  hasLoadedEntriesOnce.value = true
+  hasActiveDraft.value = false
+  clearPersistedEntryDraft()
+  editingEntrySaveSnapshot.value = null
+  promoteHomeConditionOrderKey(payload.condition_key)
+  syncHomeConditionOrderKeys()
+  closeEntryPanel(true)
+
+  await nextTick()
+  await focusSubmission(entryId)
+
+  showSubmissionToast({
+    message: 'Entry saved.',
+    highlight: '+1'
+  })
+
+  isSavingEntry.value = false
+}
+
+async function revealDemoSavedConditionOnHome(conditionKey: string) {
+  if (historyExpanded.value) {
+    collapseHistorySheet()
+    await demoSleep(650)
+  }
+
+  await nextTick()
+  focusHomeConditionByKey(conditionKey)
+}
+
+function easeOutCubic(progress: number) {
+  return 1 - (1 - progress) ** 3
+}
+
+async function animateDemoScroll(container: HTMLElement, targetScrollTop: number) {
+  const startScrollTop = container.scrollTop
+  const distance = targetScrollTop - startScrollTop
+
+  if (Math.abs(distance) < 4) {
+    await demoSleep(trackerDemoTiming.scrollPauseMs)
+    return
+  }
+
+  const duration = trackerDemoTiming.scrollDurationMs
+  const startedAt = Date.now()
+
+  while (true) {
+    if (demoControl?.isUserControlled.value) {
+      return
+    }
+
+    const elapsed = Date.now() - startedAt
+    const progress = Math.min(1, elapsed / duration)
+    container.scrollTop = startScrollTop + distance * easeOutCubic(progress)
+
+    if (progress >= 1) {
+      break
+    }
+
+    await demoSleep(32)
+  }
+
+  await demoSleep(trackerDemoTiming.scrollPauseMs)
+}
+
+async function scrollDemoFieldIntoView(targetKey: string) {
+  await nextTick()
+
+  const container = entryStepScrollEl.value
+  if (!container) {
+    return
+  }
+
+  const selector = targetKey === 'severity-slider'
+    ? '[data-demo-field="severity-slider"]'
+    : targetKey === 'datetime'
+      ? '[data-demo-field="datetime"]'
+      : `[data-entry-field-key="${targetKey}"]`
+
+  const target = container.querySelector(selector)
+  if (!(target instanceof HTMLElement)) {
+    return
+  }
+
+  const previousScrollTop = container.scrollTop
+  scrollEntryElementIntoView(target)
+  const targetScrollTop = container.scrollTop
+  container.scrollTop = previousScrollTop
+
+  await animateDemoScroll(container, targetScrollTop)
+}
+
+async function scrollDemoEntryFormToBottom() {
+  await nextTick()
+
+  const container = entryStepScrollEl.value
+  if (!container) {
+    return
+  }
+
+  const targetScrollTop = Math.max(0, container.scrollHeight - container.clientHeight)
+  await animateDemoScroll(container, targetScrollTop)
+}
+
+function resolveDemoFieldText(
+  field: { label: string, type: string },
+  samples: Record<string, string>
+) {
+  const key = fieldKey(field.label)
+
+  if (samples[key]) {
+    return samples[key]
+  }
+
+  if (trackerDemoFieldDefaults[key]) {
+    return trackerDemoFieldDefaults[key]
+  }
+
+  if (field.type === 'textarea') {
+    return 'Symptoms made routine tasks harder than usual today.'
+  }
+
+  if (field.type === 'text') {
+    return 'Moderate impact on daily routine.'
+  }
+
+  return ''
+}
+
+function demoSleep(ms: number) {
+  return new Promise<void>((resolve) => {
+    if (!demoControl || demoControl.isUserControlled.value) {
+      resolve()
+      return
+    }
+
+    const started = Date.now()
+    const tick = () => {
+      if (!demoControl || demoControl.isUserControlled.value) {
+        resolve()
+        return
+      }
+
+      if (demoControl.isPaused.value) {
+        setTimeout(tick, 100)
+        return
+      }
+
+      if (Date.now() - started >= ms) {
+        resolve()
+        return
+      }
+
+      setTimeout(tick, 100)
+    }
+
+    tick()
+  })
+}
+
+async function typeDemoFormField(key: string, text: string) {
+  entryForm.value[key] = ''
+  await scrollDemoFieldIntoView(key)
+
+  let charCount = 0
+  for (const char of text) {
+    if (demoControl?.isUserControlled.value) {
+      return
+    }
+
+    entryForm.value[key] += char
+    charCount += 1
+
+    if (charCount % 36 === 0) {
+      await scrollDemoFieldIntoView(key)
+    }
+
+    await demoSleep(trackerDemoTiming.charFieldMs)
+
+    if (char === ' ' || char === ',') {
+      await demoSleep(trackerDemoTiming.charPauseMs)
+    }
+  }
+
+  await scrollDemoFieldIntoView(key)
+}
+
+async function animateDemoSeverity(target: number) {
+  await scrollDemoFieldIntoView('severity-slider')
+
+  const step = target >= severityValue.value ? 1 : -1
+
+  while (severityValue.value !== target) {
+    if (demoControl?.isUserControlled.value) {
+      return
+    }
+
+    severityValue.value += step
+    await demoSleep(trackerDemoTiming.severityStepMs)
+  }
+
+  await scrollDemoFieldIntoView('severity-slider')
+}
+
+async function fillDemoEntryStep(samples: Record<string, string>, severity: number) {
+  for (const field of currentEntryStepFields.value) {
+    if (demoControl?.isUserControlled.value) {
+      return
+    }
+
+    if (field.type === 'datetime') {
+      await scrollDemoFieldIntoView('datetime')
+      await demoSleep(trackerDemoTiming.datetimePauseMs)
+      setEntryDateTimeNow()
+      continue
+    }
+
+    if (field.type === 'slider') {
+      await animateDemoSeverity(severity)
+      continue
+    }
+
+    const key = fieldKey(field.label)
+    const text = resolveDemoFieldText(field, samples)
+
+    if (!text) {
+      continue
+    }
+
+    await typeDemoFormField(key, text)
+    await demoSleep(trackerDemoTiming.charPauseMs)
+  }
+}
+
+async function selectDemoCondition(key: string) {
+  await demoSleep(trackerDemoTiming.afterSearchMs / 2)
+  toggleDraftCondition(key)
+}
+
+function demoAdvanceEntryStep() {
+  if (currentStepHasDateTimeField() && !entryForm.value.date_and_time) {
+    setEntryDateTimeNow()
+  }
+
+  entryError.value = ''
+
+  if (isLastEntryStep.value) {
+    return true
+  }
+
+  showNextEntryStep()
+  return false
+}
+
+async function resetDemoPreview() {
+  demoConditionSearch.value = ''
+  draftSelectedKeys.value = []
+  isConditionBrowserOpen.value = false
+  highlightedSubmissionId.value = null
+  savedEntries.value = savedEntries.value.filter((entry) => !isDemoEntryId(String(entry.id)))
+  collapseHistorySheet()
+  closeEntryPanel(true)
+  applyLocalState([], false)
+  await nextTick()
+}
+
+const trackerDemoActions: TrackerDemoActions = {
+  ready: demoReady,
+  resetPreview: resetDemoPreview,
+  openConditionBrowser,
+  setConditionSearch: (text: string) => {
+    demoConditionSearch.value = text
+  },
+  selectCondition: selectDemoCondition,
+  finishConditionBrowser: finishConditionBrowser,
+  openEntryForConditionKey: (key: string) => {
+    const condition = getCatalogConditionByKey(key)
+    if (!condition) {
+      return
+    }
+
+    openEntryPanelInner({
+      condition: {
+        title: condition.title,
+        category: condition.category,
+        description: condition.description,
+        image: condition.image
+      }
+    })
+  },
+  fillCurrentEntryStep: fillDemoEntryStep,
+  advanceEntryStep: demoAdvanceEntryStep,
+  submitDemoEntry: saveDemoEntry,
+  revealSavedConditionOnHome: revealDemoSavedConditionOnHome,
+  collapseHistoryForDemo: () => {
+    if (historyExpanded.value) {
+      collapseHistorySheet()
+    }
+  },
+  isConditionBrowserVisible: () => showConditionBrowser.value,
+  isEntryOpen: () => isEntryOpen.value
+}
+
+if (isDemoMode) {
+  provide(TRACKER_DEMO_ACTIONS_KEY, trackerDemoActions)
+
+  if (demoControl) {
+    watch(() => demoControl.isPaused.value, (paused) => {
+      if (demoControl.isUserControlled.value) {
+        return
+      }
+
+      if (paused) {
+        openAuthPanel()
+        return
+      }
+
+      isAuthPanelOpen.value = false
+    })
+
+    watch(() => demoControl.isUserControlled.value, (controlled) => {
+      if (controlled) {
+        isAuthPanelOpen.value = false
+      }
+    })
+  }
+}
+
+useTrackerDemoScript(isDemoMode ? trackerDemoActions : null, demoControl)
 </script>
 
 <style scoped>

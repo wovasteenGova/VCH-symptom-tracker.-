@@ -1,20 +1,23 @@
 import { useSupabaseClient } from '#imports'
-import { computed, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
 import { useSupabaseAuth } from './useSupabaseAuth'
 import { useTrackerDb } from './useTrackerDb'
+import { TRACKER_DEMO_KEY } from './useTrackerLayout'
 import { conditionKeyFromLabel } from '../utils/subscription'
 import { normalizeTrackedConditionKeys, resolveCatalogConditionByStoredKey } from '../utils/conditionCatalog'
 
 const TRACKED_CONDITIONS_STORAGE_KEY = 'symptom-tracker-tracked-condition-keys'
 const ONBOARDING_COMPLETED_STORAGE_KEY = 'symptom-tracker-conditions-onboarding-completed'
+const DEMO_TRACKED_CONDITIONS_STORAGE_KEY = 'symptom-tracker-demo-tracked-condition-keys'
+const DEMO_ONBOARDING_COMPLETED_STORAGE_KEY = 'symptom-tracker-demo-conditions-onboarding-completed'
 
-function readStoredKeys() {
+function readStoredKeys(storageKey: string) {
   if (!import.meta.client) {
     return [] as string[]
   }
 
   try {
-    const raw = window.localStorage.getItem(TRACKED_CONDITIONS_STORAGE_KEY)
+    const raw = window.localStorage.getItem(storageKey)
     if (!raw) {
       return []
     }
@@ -26,37 +29,40 @@ function readStoredKeys() {
   }
 }
 
-function readStoredOnboardingCompleted() {
+function readStoredOnboardingCompleted(onboardingKey: string) {
   if (!import.meta.client) {
     return false
   }
 
-  return window.localStorage.getItem(ONBOARDING_COMPLETED_STORAGE_KEY) === 'true'
+  return window.localStorage.getItem(onboardingKey) === 'true'
 }
 
-function writeLocalState(keys: string[], completed: boolean) {
+function writeLocalState(keys: string[], completed: boolean, storageKey: string, onboardingKey: string) {
   if (!import.meta.client) {
     return
   }
 
-  window.localStorage.setItem(TRACKED_CONDITIONS_STORAGE_KEY, JSON.stringify(keys))
-  window.localStorage.setItem(ONBOARDING_COMPLETED_STORAGE_KEY, completed ? 'true' : 'false')
+  window.localStorage.setItem(storageKey, JSON.stringify(keys))
+  window.localStorage.setItem(onboardingKey, completed ? 'true' : 'false')
 }
 
 export function useTrackedConditions() {
+  const isDemoMode = inject(TRACKER_DEMO_KEY, false)
+  const storageKey = isDemoMode ? DEMO_TRACKED_CONDITIONS_STORAGE_KEY : TRACKED_CONDITIONS_STORAGE_KEY
+  const onboardingKey = isDemoMode ? DEMO_ONBOARDING_COMPLETED_STORAGE_KEY : ONBOARDING_COMPLETED_STORAGE_KEY
   const supabase = useSupabaseClient()
   const trackerDb = useTrackerDb()
   const { user, isAuthLoading } = useSupabaseAuth()
-  const initialStoredKeys = readStoredKeys()
-  const initialOnboardingCompleted = readStoredOnboardingCompleted() || initialStoredKeys.length > 0
+  const initialStoredKeys = readStoredKeys(storageKey)
+  const initialOnboardingCompleted = readStoredOnboardingCompleted(onboardingKey) || initialStoredKeys.length > 0
   const trackedConditionKeys = ref<string[]>(normalizeTrackedConditionKeys(initialStoredKeys))
   const onboardingCompleted = ref(initialOnboardingCompleted)
   const isLoading = ref(false)
-  const hasLoadedTrackedConditions = ref(false)
+  const hasLoadedTrackedConditions = ref(isDemoMode)
   const loadError = ref('')
 
   const needsOnboarding = computed(() => {
-    if (!user.value || isAuthLoading.value) {
+    if (isDemoMode || !user.value || isAuthLoading.value) {
       return false
     }
 
@@ -67,14 +73,18 @@ export function useTrackedConditions() {
   function applyLocalState(keys: string[], completed: boolean) {
     trackedConditionKeys.value = normalizeTrackedConditionKeys(keys)
     onboardingCompleted.value = completed
-    writeLocalState(trackedConditionKeys.value, completed)
+    writeLocalState(trackedConditionKeys.value, completed, storageKey, onboardingKey)
   }
 
   async function persistTrackedConditions(keys: string[], completed = onboardingCompleted.value) {
     const uniqueKeys = normalizeTrackedConditionKeys(keys)
     trackedConditionKeys.value = uniqueKeys
     onboardingCompleted.value = completed
-    writeLocalState(uniqueKeys, completed)
+    writeLocalState(uniqueKeys, completed, storageKey, onboardingKey)
+
+    if (isDemoMode) {
+      return uniqueKeys
+    }
 
     const { data: userData, error: userError } = await supabase.auth.getUser()
     if (userError || !userData.user) {
@@ -98,6 +108,14 @@ export function useTrackedConditions() {
   }
 
   async function loadTrackedConditions(entryConditionKeys: string[] = []) {
+    if (isDemoMode) {
+      const localKeys = readStoredKeys(storageKey)
+      const localCompleted = readStoredOnboardingCompleted(onboardingKey)
+      applyLocalState(localKeys, localCompleted || localKeys.length > 0)
+      hasLoadedTrackedConditions.value = true
+      return
+    }
+
     isLoading.value = true
     loadError.value = ''
 
@@ -105,8 +123,8 @@ export function useTrackedConditions() {
       const { data: userData, error: userError } = await supabase.auth.getUser()
 
       if (userError || !userData.user) {
-        const localKeys = readStoredKeys()
-        const localCompleted = readStoredOnboardingCompleted()
+        const localKeys = readStoredKeys(storageKey)
+        const localCompleted = readStoredOnboardingCompleted(onboardingKey)
 
         if (localKeys.length) {
           applyLocalState(localKeys, localCompleted)
@@ -151,8 +169,8 @@ export function useTrackedConditions() {
         }
       }
 
-      const localKeys = readStoredKeys()
-      const localCompleted = readStoredOnboardingCompleted()
+      const localKeys = readStoredKeys(storageKey)
+      const localCompleted = readStoredOnboardingCompleted(onboardingKey)
 
       if (!keys.length && localKeys.length) {
         keys = normalizeTrackedConditionKeys(localKeys)
@@ -163,7 +181,7 @@ export function useTrackedConditions() {
 
       trackedConditionKeys.value = keys
       onboardingCompleted.value = completed
-      writeLocalState(keys, completed)
+      writeLocalState(keys, completed, storageKey, onboardingKey)
 
       const rawKeys = [...(profile?.tracked_condition_keys || [])].filter(Boolean)
       const needsHeal = rawKeys.some((rawKey) => {
@@ -176,8 +194,8 @@ export function useTrackedConditions() {
       }
     } catch (error) {
       loadError.value = error instanceof Error ? error.message : 'Could not load your conditions.'
-      trackedConditionKeys.value = normalizeTrackedConditionKeys(readStoredKeys())
-      onboardingCompleted.value = readStoredOnboardingCompleted()
+      trackedConditionKeys.value = normalizeTrackedConditionKeys(readStoredKeys(storageKey))
+      onboardingCompleted.value = readStoredOnboardingCompleted(onboardingKey)
     } finally {
       isLoading.value = false
       hasLoadedTrackedConditions.value = true
@@ -211,6 +229,7 @@ export function useTrackedConditions() {
     loadTrackedConditions,
     completeOnboarding,
     updateTrackedConditions,
+    applyLocalState,
     conditionKeyForLabel
   }
 }

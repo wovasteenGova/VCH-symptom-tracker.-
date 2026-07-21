@@ -136,6 +136,7 @@ export function useKeyboardAwareScroll(
     isKeyboardOpen,
     scrollStyle,
     handleFieldFocus,
-    updateKeyboardInset
+    updateKeyboardInset,
+    scrollElementIntoView: scrollFocusedFieldIntoView
   }
 }

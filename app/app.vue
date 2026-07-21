@@ -11,12 +11,13 @@
     </Transition>
     <NuxtRouteAnnouncer />
     <NuxtPage />
-    <SubmissionToast />
+    <SubmissionToast v-if="showGlobalSubmissionToast" />
   </UApp>
 </template>
 
 <script setup lang="ts">
-import { onBeforeMount, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onBeforeMount, onMounted, onUnmounted, ref } from 'vue'
+import { useMediaQuery } from '@vueuse/core'
 
 useHead({
   htmlAttrs: {
@@ -27,6 +28,15 @@ useHead({
 
 const { showSubmissionToast } = useSubmissionToast()
 const supabase = useSupabaseClient()
+const route = useRoute()
+const isDesktopViewport = useMediaQuery('(min-width: 768px)')
+const showGlobalSubmissionToast = computed(() => {
+  if (route.path === '/' && isDesktopViewport.value) {
+    return false
+  }
+
+  return true
+})
 
 const showAppSplash = ref(true)
 const APP_SPLASH_MIN_MS = 1200
