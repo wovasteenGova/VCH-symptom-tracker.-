@@ -4668,7 +4668,21 @@ function toggleDraftCondition(key: string) {
     return
   }
 
+  // Free / demo: one active condition at a time (replace, don't stack).
+  if (isDemoMode || !isPro.value) {
+    draftSelectedKeys.value = [key]
+    return
+  }
+
   draftSelectedKeys.value = [key, ...draftSelectedKeys.value]
+}
+
+function resolveTrackedKeysToSave(keys: string[]) {
+  if (isDemoMode || !isPro.value) {
+    return keys.slice(0, FREE_CONDITION_LIMIT)
+  }
+
+  return keys
 }
 
 async function syncFreeConditionWithTrackedKeys(keys: string[]) {
@@ -4742,8 +4756,10 @@ async function confirmConditionOnboarding() {
   trackedConditionsError.value = ''
 
   try {
-    await completeOnboarding(draftSelectedKeys.value)
-    await syncFreeConditionWithTrackedKeys(draftSelectedKeys.value)
+    const keysToSave = resolveTrackedKeysToSave(draftSelectedKeys.value)
+    draftSelectedKeys.value = keysToSave
+    await completeOnboarding(keysToSave)
+    await syncFreeConditionWithTrackedKeys(keysToSave)
     isConditionBrowserOpen.value = false
   } catch (error) {
     trackedConditionsError.value = getErrorMessage(error)
@@ -4757,7 +4773,8 @@ async function finishConditionBrowser() {
   trackedConditionsError.value = ''
 
   try {
-    const keysToSave = draftSelectedKeys.value
+    const keysToSave = resolveTrackedKeysToSave(draftSelectedKeys.value)
+    draftSelectedKeys.value = keysToSave
 
     await updateTrackedConditions(keysToSave)
     await syncFreeConditionWithTrackedKeys(keysToSave)
@@ -7801,7 +7818,8 @@ async function fillDemoEntryStep(samples: Record<string, string>, severity: numb
 
 async function selectDemoCondition(key: string) {
   await demoSleep(trackerDemoTiming.afterSearchMs / 2)
-  toggleDraftCondition(key)
+  // Replace prior picks so scenarios don't stack (PTSD + Migraine, etc.).
+  draftSelectedKeys.value = [key]
 }
 
 function demoAdvanceEntryStep() {
