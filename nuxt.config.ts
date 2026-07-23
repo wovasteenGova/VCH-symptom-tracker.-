@@ -32,8 +32,8 @@ const supabaseAnonKey = env('SUPABASE_ANON_KEY')
   || env('NUXT_PUBLIC_SUPABASE_KEY')
   || env('NUXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY')
 
-const supabaseServiceKey = env('SUPABASE_SERVICE_KEY')
-  || env('SUPABASE_SERVICE_ROLE_KEY')
+// Do not read service/Stripe/VAPID secrets at config load — they get inlined
+// into the server bundle. Runtime plugins fill them from process.env.
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
@@ -49,7 +49,6 @@ export default defineNuxtConfig({
     redirect: false,
     url: supabaseUrl,
     key: supabaseAnonKey,
-    serviceKey: supabaseServiceKey,
     clientOptions: {
       auth: {
         // Opt in to Supabase's beta passkey (WebAuthn) API.
@@ -67,13 +66,14 @@ export default defineNuxtConfig({
       : undefined
   },
   runtimeConfig: {
-    stripeSecretKey: envFirst('STRIPE_SECRET_KEY', 'NUXT_STRIPE_SECRET_KEY'),
-    stripeWebhookSecret: envFirst('STRIPE_WEBHOOK_SECRET', 'NUXT_STRIPE_WEBHOOK_SECRET'),
+    // Private keys stay empty at build; server plugin fills from process.env.
+    stripeSecretKey: '',
+    stripeWebhookSecret: '',
     stripeProPriceId: envFirst('STRIPE_PRO_PRICE_ID', 'NUXT_STRIPE_PRO_PRICE_ID'),
-    supabaseServiceRoleKey: supabaseServiceKey,
-    supabaseServiceKey,
-    vapidPrivateKey: env('VAPID_PRIVATE_KEY'),
-    reminderCronSecret: env('REMINDER_CRON_SECRET') || env('NUXT_REMINDER_CRON_SECRET'),
+    supabaseServiceRoleKey: '',
+    supabaseServiceKey: '',
+    vapidPrivateKey: '',
+    reminderCronSecret: '',
     public: {
       supabaseUrl,
       supabaseAnonKey: supabaseAnonKey,
@@ -162,7 +162,8 @@ export default defineNuxtConfig({
     }
   },
   nitro: {
-    preset: 'netlify',
+    // node-server for Render; Netlify sets NITRO_PRESET=netlify.
+    preset: process.env.NITRO_PRESET || 'node-server',
     compatibilityDate: '2025-07-15',
     compressPublicAssets: true
   },

@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: vch-tracker
+    runtime: node
+    plan: starter
+    region: oregon
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NITRO_PRESET
+        value: node-server
+      - key: APP_URL
+        value: https://tracker.veteranscentralhub.us
+      - key: NODE_ENV
+        value: production

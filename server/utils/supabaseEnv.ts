@@ -45,7 +45,7 @@ export function getSupabaseConfigError(env: SupabaseEnv = resolveSupabaseEnv()) 
     missing.push('SUPABASE_ANON_KEY')
   }
 
-  return `Missing ${missing.join(' and ')}. Add them in Netlify → Site configuration → Environment variables, then redeploy. Use the anon/publishable key — not the service role key.`
+  return `Missing ${missing.join(' and ')}. Add them in Render/Netlify → Environment variables, then redeploy. Use the anon/publishable key — not the service role key.`
 }
 
 type RuntimePublicConfig = {
