@@ -114,7 +114,7 @@
               <div>
                 <p class="text-xs font-bold uppercase tracking-[0.16em] text-amber-200">Pro</p>
                 <h2 class="mt-1 text-2xl font-bold text-white">{{ PRO_ANNUAL_PRICE_LABEL }}</h2>
-                <p class="mt-1 text-xs text-amber-100/80">{{ PRO_ANNUAL_PRICE_DETAIL }} · renews yearly</p>
+                <p class="mt-1 text-xs text-amber-100/80">{{ PRO_ANNUAL_PRICE_DETAIL }} · renews monthly</p>
                 <p class="mt-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-semibold leading-5 text-amber-50">
                   {{ PRO_REFUND_POLICY }}
                 </p>
@@ -303,8 +303,8 @@ const paymentSteps = [
     body: 'Tap upgrade — secure Stripe checkout opens in the app (card, Cash App, Google Pay when available).'
   },
   {
-    title: 'Pay yearly',
-    body: `${PRO_ANNUAL_PRICE_LABEL} (${PRO_ANNUAL_PRICE_DETAIL}). ${PRO_REFUND_POLICY} Renews automatically each year unless you cancel from billing settings.`
+    title: 'Pay monthly',
+    body: `${PRO_ANNUAL_PRICE_LABEL} (${PRO_ANNUAL_PRICE_DETAIL}). ${PRO_REFUND_POLICY} Renews automatically each month unless you cancel from billing settings.`
   },
   {
     title: 'Unlock instantly',

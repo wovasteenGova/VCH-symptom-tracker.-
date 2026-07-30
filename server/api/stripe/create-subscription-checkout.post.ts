@@ -89,7 +89,7 @@ export default defineEventHandler(async (event) => {
   const configuredPriceId = isStripePriceId(rawConfiguredPriceId) ? rawConfiguredPriceId : ''
 
   if (rawConfiguredPriceId && !configuredPriceId) {
-    logCheckoutWarning('invalid STRIPE_PRO_PRICE_ID ignored; using generated 14.99 yearly price', {
+    logCheckoutWarning('invalid STRIPE_PRO_PRICE_ID ignored; using generated $6.99 monthly price', {
       requestId,
       valuePreview: `${rawConfiguredPriceId.slice(0, 12)}...`,
       expected: 'price_...'
