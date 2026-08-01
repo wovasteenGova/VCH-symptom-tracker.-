@@ -59,6 +59,7 @@
 
 :root {
   --app-height: 100dvh;
+  --app-offset-top: 0px;
   --history-sheet-collapsed-height: calc(4.95rem + env(safe-area-inset-bottom, 0px));
   --history-sheet-expanded-height: 80dvh;
   --app-overlay-history-inset: var(--history-sheet-collapsed-height);
@@ -107,6 +108,24 @@ html.dark body {
   height: var(--app-height);
   max-height: var(--app-height);
   min-height: var(--app-height);
+}
+
+/*
+ * iPhone Safari and Chrome both use WebKit. When WebKit comfort-scrolls a
+ * focused field, visualViewport.offsetTop moves even though the layout
+ * viewport does not. Move the viewport-sized app with that visible band so
+ * the form does not end early and leave a dead area above the keyboard.
+ */
+@media (max-width: 767px) {
+  html[data-ios-keyboard="open"]:not(:has(.app-shell-embed)),
+  html[data-ios-keyboard="open"]:not(:has(.app-shell-embed)) body {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  html[data-ios-keyboard="open"]:not(:has(.app-shell-embed)) body {
+    transform: translateY(var(--app-offset-top));
+  }
 }
 body::-webkit-scrollbar {
   display: none;

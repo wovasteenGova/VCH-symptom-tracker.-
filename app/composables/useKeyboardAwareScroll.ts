@@ -1,4 +1,5 @@
 import { computed, onMounted, onUnmounted, ref, unref, type MaybeRef, type Ref } from 'vue'
+import { isIosWebKitBrowser, resolveMobileViewport } from '../utils/mobileViewport'
 
 type KeyboardAwareScrollOptions = {
   footerHeight?: MaybeRef<number>
@@ -13,6 +14,8 @@ export function useKeyboardAwareScroll(
   options: KeyboardAwareScrollOptions = {}
 ) {
   const keyboardInset = ref(0)
+  const iosWebKit = ref(false)
+  let visualBaselineHeight = 0
 
   const resolvedFooterHeight = computed(() => {
     const footerHeight = options.footerHeight
@@ -27,9 +30,13 @@ export function useKeyboardAwareScroll(
 
   const scrollStyle = computed(() => {
     if (isKeyboardOpen.value) {
-      // Footer chrome is hidden while the keyboard is open; only reserve keyboard scroll room.
+      // Tracker's iPhone shell already matches visualViewport height, so the
+      // keyboard is excluded. Reserving its full inset again creates a large
+      // empty scroll band above the keyboard.
       return {
-        paddingBottom: `${Math.max(FIELD_TOP_GAP, keyboardInset.value)}px`
+        paddingBottom: `${iosWebKit.value
+          ? FIELD_TOP_GAP
+          : Math.max(FIELD_TOP_GAP, keyboardInset.value)}px`
       }
     }
 
@@ -49,7 +56,29 @@ export function useKeyboardAwareScroll(
       return
     }
 
-    keyboardInset.value = Math.max(0, Math.round(window.innerHeight - viewport.height - viewport.offsetTop))
+    const active = document.activeElement
+    const focused = active instanceof HTMLElement
+      && active.matches('input:not([type="hidden"]), textarea, select, [contenteditable="true"]')
+
+    if (!focused || visualBaselineHeight === 0 || viewport.height > visualBaselineHeight) {
+      visualBaselineHeight = viewport.height
+    }
+
+    if (!iosWebKit.value) {
+      keyboardInset.value = Math.max(
+        0,
+        Math.round(window.innerHeight - viewport.height - viewport.offsetTop)
+      )
+      return
+    }
+
+    keyboardInset.value = resolveMobileViewport({
+      layoutHeight: window.innerHeight,
+      visualHeight: viewport.height,
+      visualOffsetTop: viewport.offsetTop,
+      visualBaselineHeight,
+      editableFocused: focused
+    }).keyboardInset
   }
 
   function scrollFocusedFieldIntoView(target: HTMLElement) {
@@ -121,6 +150,11 @@ export function useKeyboardAwareScroll(
   }
 
   onMounted(() => {
+    iosWebKit.value = isIosWebKitBrowser({
+      userAgent: navigator.userAgent,
+      platform: navigator.platform,
+      maxTouchPoints: navigator.maxTouchPoints
+    })
     updateKeyboardInset()
     window.visualViewport?.addEventListener('resize', handleViewportChange)
     window.visualViewport?.addEventListener('scroll', handleViewportChange)
