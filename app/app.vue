@@ -34,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeMount, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onBeforeMount, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useMediaQuery } from '@vueuse/core'
 import { isIosWebKitBrowser, resolveMobileViewport } from './utils/mobileViewport'
 
@@ -50,6 +50,7 @@ useHead(() => ({
 const { showSubmissionToast } = useSubmissionToast()
 const supabase = useSupabaseClient()
 const route = useRoute()
+const { homeWorkspaceReady } = useHomeWorkspaceReady()
 const isDesktopViewport = useMediaQuery('(min-width: 768px)')
 const showGlobalSubmissionToast = computed(() => {
   if (route.path === '/' && isDesktopViewport.value) {
@@ -60,6 +61,7 @@ const showGlobalSubmissionToast = computed(() => {
 })
 
 const showAppSplash = ref(true)
+const waitsForHomeBootstrap = computed(() => route.path === '/')
 // Skip the splash when the page reloads shortly after showing it (e.g. the
 // PWA service worker auto-update reload), so users don't see it twice.
 const APP_SPLASH_REPLAY_WINDOW_MS = 60_000
@@ -81,6 +83,10 @@ function dismissAppSplash() {
 onBeforeMount(() => {
   updateAppHeight()
 
+  if (waitsForHomeBootstrap.value) {
+    return
+  }
+
   try {
     const shownAt = Number(window.sessionStorage.getItem(APP_SPLASH_SHOWN_AT_KEY) || 0)
 
@@ -92,6 +98,12 @@ onBeforeMount(() => {
     window.sessionStorage.setItem(APP_SPLASH_SHOWN_AT_KEY, String(Date.now()))
   } catch {
     // sessionStorage unavailable (private mode edge cases) — keep default splash.
+  }
+})
+
+watch(homeWorkspaceReady, (ready) => {
+  if (ready && waitsForHomeBootstrap.value) {
+    dismissAppSplash()
   }
 })
 
@@ -131,7 +143,10 @@ function updateAppHeight() {
 }
 
 onMounted(async () => {
-  dismissAppSplash()
+  if (!waitsForHomeBootstrap.value || homeWorkspaceReady.value) {
+    dismissAppSplash()
+  }
+
   updateAppHeight()
   if (import.meta.client && window.sessionStorage.getItem(CHECKOUT_SUCCESS_TOAST_KEY)) {
     window.sessionStorage.removeItem(CHECKOUT_SUCCESS_TOAST_KEY)

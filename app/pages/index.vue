@@ -907,11 +907,19 @@
                 />
 
                 <div
-                  v-else-if="(!hasLoadedTrackedConditions || isLoadingTrackedConditions) && !homeConditions.length"
+                  v-else-if="isHomeBootstrapLoading"
                   key="home-loading"
-                  class="absolute inset-0 z-10 bg-default"
-                  aria-hidden="true"
-                />
+                  class="absolute inset-0 z-10 flex flex-col items-center justify-center bg-default px-6"
+                  role="status"
+                  aria-live="polite"
+                  aria-label="Loading your tracker"
+                >
+                  <VchLoader
+                    :width="280"
+                    show-brand
+                    label="Loading your tracker"
+                  />
+                </div>
 
                 <div
                   v-else-if="trackedConditionsLoadError && !homeConditions.length"
@@ -2176,6 +2184,22 @@
       </div>
     </AppOverlayShell>
   </Transition>
+
+  <Teleport to="body">
+    <div
+      v-if="!isEmbeddedPreview && !homeWorkspaceReady"
+      class="fixed inset-0 z-[95] flex items-center justify-center bg-default px-4"
+      role="status"
+      aria-live="polite"
+      aria-label="Loading your tracker"
+    >
+      <VchLoader
+        :width="320"
+        show-brand
+        label="Loading your tracker"
+      />
+    </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -2275,6 +2299,7 @@ import TrackerDesktopQuickEntry from '../components/tracker/TrackerDesktopQuickE
 import TrackerAccountMenu from '../components/TrackerAccountMenu.vue'
 import { useTrackerAuthPrompt } from '../composables/useTrackerAuthPrompt'
 import { useTrackerSettingsPanelOpen } from '../composables/useTrackerSettingsPanelOpen'
+import { useHomeWorkspaceReady } from '../composables/useHomeWorkspaceReady'
 
 const {
   user,
@@ -2505,6 +2530,7 @@ const {
   enableRemindersWithPermission
 } = useLogReminders()
 const { isDesktopLayout, isMobileLayout, isEmbeddedPreview } = useTrackerLayout()
+const { homeWorkspaceReady, markHomeWorkspaceReady, resetHomeWorkspaceReady } = useHomeWorkspaceReady()
 const { openSettingsPanel } = useTrackerSettingsPanelOpen()
 
 watch(isDesktopLayout, (desktop) => {
@@ -2907,6 +2933,11 @@ const homeConditions = computed(() => {
 
     return aIndex - bIndex
   })
+})
+
+const isHomeBootstrapLoading = computed(() => {
+  return !homeWorkspaceReady.value
+    || (isLoadingTrackedConditions.value && !trackedConditionsLoadError.value)
 })
 
 const showConditionBrowser = computed(() => {
@@ -4106,6 +4137,8 @@ onBeforeMount(() => {
 })
 
 onMounted(async () => {
+  resetHomeWorkspaceReady()
+
   if (import.meta.client) {
     const { hash, search } = window.location
     const hashParams = new URLSearchParams(hash.replace(/^#/, ''))
@@ -4115,6 +4148,8 @@ onMounted(async () => {
       || search.includes('token_hash=')
 
     if (hasAuthPayload) {
+      markHomeWorkspaceReady()
+
       if (linkType === 'recovery') {
         window.location.replace(`/auth/reset-password${search}${hash}`)
         return
@@ -4167,6 +4202,8 @@ onMounted(async () => {
   if (isDemoMode) {
     demoReady.value = true
   }
+
+  markHomeWorkspaceReady()
 })
 
 onBeforeUnmount(() => {
@@ -4182,25 +4219,31 @@ onBeforeUnmount(() => {
 })
 
 watch(user, async (currentUser) => {
-  if (currentUser) {
-    isAuthPanelOpen.value = false
-    loadProfileDisplayName()
-    loadEntitlements()
-    await loadAppWelcomeState()
-    await refreshTrackedConditions()
-    restoreCachedHomeConditionOrderKeys()
-    await loadEntries()
-    refreshEntryDraftPreview()
-    return
-  }
+  resetHomeWorkspaceReady()
 
-  profileDisplayName.value = ''
-  savedEntries.value = []
-  homeConditionOrderKeys.value = []
-  hasLoadedEntriesOnce.value = false
-  closeEntryPanel(true, true)
-  refreshEntryDraftPreview()
-  await refreshTrackedConditions()
+  try {
+    if (currentUser) {
+      isAuthPanelOpen.value = false
+      loadProfileDisplayName()
+      loadEntitlements()
+      await loadAppWelcomeState()
+      await refreshTrackedConditions()
+      restoreCachedHomeConditionOrderKeys()
+      await loadEntries()
+      refreshEntryDraftPreview()
+      return
+    }
+
+    profileDisplayName.value = ''
+    savedEntries.value = []
+    homeConditionOrderKeys.value = []
+    hasLoadedEntriesOnce.value = false
+    closeEntryPanel(true, true)
+    refreshEntryDraftPreview()
+    await refreshTrackedConditions()
+  } finally {
+    markHomeWorkspaceReady()
+  }
 })
 
 watch(showConditionBrowser, (showing, wasShowing) => {
@@ -4721,6 +4764,7 @@ async function refreshTrackedConditions() {
 
 async function retryHomeLoad() {
   entriesError.value = ''
+  resetHomeWorkspaceReady()
 
   try {
     await refreshTrackedConditions()
@@ -4730,6 +4774,8 @@ async function retryHomeLoad() {
     }
   } catch (error) {
     entriesError.value = getErrorMessage(error)
+  } finally {
+    markHomeWorkspaceReady()
   }
 }
 
