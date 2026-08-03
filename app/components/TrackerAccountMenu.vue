@@ -443,7 +443,7 @@ async function onSignedIn() {
       color="primary"
       variant="soft"
       icon="i-lucide-log-in"
-      label="Sign in"
+      :label="narrowAuthViewport ? undefined : 'Sign in'"
       :class="authOpen ? 'ring-2 ring-primary/25' : ''"
       @click="openAuth"
     />
@@ -473,10 +473,12 @@ async function onSignedIn() {
         >
           <div
             v-if="narrowAuthViewport"
-            class="flex h-dvh w-full flex-col bg-default"
+            class="flex h-full min-h-0 flex-1 flex-col overflow-hidden"
+            :class="mobileOverlayPanelClass()"
           >
             <TrackerAuthPanel
               compact
+              class="min-h-0 flex-1"
               @close="closeAuth"
               @signed-in="onSignedIn"
             />

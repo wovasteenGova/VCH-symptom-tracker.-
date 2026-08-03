@@ -1,5 +1,5 @@
 <template>
-  <div class="vch-loader" role="status" :aria-label="label || 'Getting things ready.'">
+  <div class="vch-loader" role="status" :aria-label="label || 'Loading'">
     <div
       v-if="showBrand"
       class="vch-loader-brand"

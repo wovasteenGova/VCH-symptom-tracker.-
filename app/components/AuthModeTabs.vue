@@ -7,7 +7,7 @@ const authModes = [
 const model = defineModel<'login' | 'signup'>({ required: true })
 
 withDefaults(defineProps<{
-  tone?: 'light' | 'dark'
+  tone?: 'light' | 'dark' | 'theme'
 }>(), {
   tone: 'light'
 })
@@ -16,7 +16,11 @@ withDefaults(defineProps<{
 <template>
   <div
     class="rounded-full p-1"
-    :class="tone === 'dark' ? 'bg-slate-950/70 ring-1 ring-slate-800' : 'bg-slate-100 dark:bg-slate-800/80'"
+    :class="tone === 'dark'
+      ? 'bg-slate-950/70 ring-1 ring-slate-800'
+      : tone === 'theme'
+        ? 'bg-muted/60 ring-1 ring-default/70'
+        : 'bg-slate-100 dark:bg-slate-800/80'"
     role="tablist"
     aria-label="Account access"
   >
@@ -30,10 +34,14 @@ withDefaults(defineProps<{
         :class="model === mode.value
           ? tone === 'dark'
             ? 'bg-slate-700 text-white shadow-sm ring-1 ring-slate-600/70'
-            : 'bg-white text-slate-950 shadow-sm dark:bg-slate-700 dark:text-white'
+            : tone === 'theme'
+              ? 'bg-elevated text-highlighted shadow-sm ring-1 ring-default/80'
+              : 'bg-white text-slate-950 shadow-sm dark:bg-slate-700 dark:text-white'
           : tone === 'dark'
             ? 'text-slate-400 hover:text-slate-200'
-            : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'"
+            : tone === 'theme'
+              ? 'text-muted hover:text-highlighted'
+              : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'"
         :aria-selected="model === mode.value"
         @click="model = mode.value"
       >

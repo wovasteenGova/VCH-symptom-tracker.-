@@ -83,6 +83,11 @@ function dismissAppSplash() {
 onBeforeMount(() => {
   updateAppHeight()
 
+  if (waitsForHomeBootstrap.value && homeWorkspaceReady.value) {
+    showAppSplash.value = false
+    return
+  }
+
   if (waitsForHomeBootstrap.value) {
     return
   }

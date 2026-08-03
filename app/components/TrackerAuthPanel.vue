@@ -170,16 +170,34 @@ const pinnedAuthMessages = computed(() => {
   const validation = authValidationMessage.value.trim()
   return validation ? [validation] : []
 })
+
+const compactFormClass = computed(() => (
+  props.compact
+    ? 'grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto] overflow-hidden'
+    : 'flex flex-col'
+))
+
+const scrollBodyClass = computed(() => (
+  props.compact
+    ? 'custom-scrollbar min-h-0 overflow-y-auto overscroll-contain px-5 pb-6 pt-6'
+    : ''
+))
+
+const footerClass = computed(() => (
+  props.compact
+    ? 'shrink-0 space-y-2.5 border-t border-default/60 bg-elevated/30 px-5 pt-4 pb-[calc(env(safe-area-inset-bottom)+1rem)]'
+    : 'mt-4 space-y-2.5 border-t border-default/60 bg-elevated/30 p-0 pt-4'
+))
 </script>
 
 <template>
   <div
-    class="flex flex-col"
-    :class="compact ? 'max-h-[min(32rem,calc(100dvh-6rem))]' : ''"
+    class="flex min-h-0 flex-col overflow-hidden"
+    :class="compact ? 'h-full flex-1' : ''"
   >
     <div
       v-if="compact"
-      class="flex shrink-0 items-center justify-between gap-2 border-b border-default/60 px-4 py-3"
+      class="flex shrink-0 items-center justify-between gap-3 border-b border-default/60 px-5 pb-3 pt-[calc(env(safe-area-inset-top)+1rem)]"
     >
       <div class="min-w-0">
         <p class="text-sm font-semibold text-highlighted">
@@ -211,20 +229,17 @@ const pinnedAuthMessages = computed(() => {
 
     <form
       v-else
-      class="flex min-h-0 flex-1 flex-col"
+      :class="compactFormClass"
       @submit.prevent="onSubmit"
     >
-      <div
-        class="custom-scrollbar min-h-0 flex-1 overflow-y-auto"
-        :class="compact ? 'p-4' : ''"
-      >
-        <AuthModeTabs v-model="authMode" tone="light" />
+      <div :class="scrollBodyClass">
+        <AuthModeTabs v-model="authMode" tone="theme" />
 
-        <p class="mt-3 text-xs leading-5 text-muted">
+        <p class="mt-4 text-xs leading-6 text-muted">
           Use your Veterans Central Hub account — the same sign-in as Claim Maker.
         </p>
 
-        <div class="mt-4 space-y-3">
+        <div class="mt-5 space-y-4">
           <label v-if="authMode === 'signup'" class="block">
             <span :class="labelClass">Name</span>
             <input
@@ -257,7 +272,7 @@ const pinnedAuthMessages = computed(() => {
               v-if="authMode === 'login'"
               key="auth-login-password"
               v-model="password"
-              tone="light"
+              tone="theme"
               autocomplete="current-password"
               placeholder="Your password"
               required
@@ -266,7 +281,7 @@ const pinnedAuthMessages = computed(() => {
               v-else
               key="auth-signup-password"
               v-model="password"
-              tone="light"
+              tone="theme"
               autocomplete="new-password"
               placeholder="At least 6 characters"
               :minlength="6"
@@ -281,7 +296,7 @@ const pinnedAuthMessages = computed(() => {
             <span :class="labelClass">Confirm password</span>
             <PasswordInput
               v-model="confirmPassword"
-              tone="light"
+              tone="theme"
               autocomplete="new-password"
               placeholder="Re-enter password"
               :show-toggle="false"
@@ -311,24 +326,21 @@ const pinnedAuthMessages = computed(() => {
         </div>
       </div>
 
-      <div
-        v-if="pinnedAuthMessages.length"
-        class="shrink-0 space-y-2 border-t border-default/60 bg-default px-4 py-3"
-      >
-        <p
-          v-for="(message, index) in pinnedAuthMessages"
-          :key="`${index}-${message}`"
-          class="text-xs font-medium leading-5 text-warning"
-          :aria-live="index === 0 ? 'polite' : undefined"
+      <div :class="footerClass">
+        <div
+          v-if="pinnedAuthMessages.length"
+          class="mb-3 space-y-2"
         >
-          {{ message }}
-        </p>
-      </div>
+          <p
+            v-for="(message, index) in pinnedAuthMessages"
+            :key="`${index}-${message}`"
+            class="text-xs font-medium leading-5 text-warning"
+            :aria-live="index === 0 ? 'polite' : undefined"
+          >
+            {{ message }}
+          </p>
+        </div>
 
-      <div
-        class="shrink-0 border-t border-default/60 bg-elevated/30"
-        :class="compact ? 'p-4' : 'mt-4 p-0 pt-4'"
-      >
         <UButton
           type="submit"
           color="primary"
@@ -341,7 +353,7 @@ const pinnedAuthMessages = computed(() => {
         <GoogleSignInButton
           class="mt-2.5"
           :text="authMode === 'signup' ? 'signup_with' : 'signin_with'"
-          theme="light"
+          theme="outline"
           :size="compact ? 'medium' : 'large'"
           :disabled="submitting"
           @click="onGoogleSignIn"
@@ -350,7 +362,7 @@ const pinnedAuthMessages = computed(() => {
         <PasskeySignInButton
           v-if="authMode === 'login' && isPasskeySupported"
           class="mt-2.5"
-          theme="light"
+          theme="outline"
           :disabled="submitting"
           @click="onPasskeySignIn"
         />

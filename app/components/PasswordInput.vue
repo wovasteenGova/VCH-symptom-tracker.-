@@ -10,7 +10,7 @@ const props = withDefaults(defineProps<{
   name?: string
   required?: boolean
   minlength?: number
-  tone?: 'light' | 'dark'
+  tone?: 'light' | 'dark' | 'theme'
   showToggle?: boolean
   revealed?: boolean
   countdown?: number
@@ -41,7 +41,11 @@ const displayCountdown = computed(() => {
 })
 
 const inputClass = computed(() => {
-  const padding = props.showToggle ? 'py-4 pl-4 pr-16' : 'px-4 py-4'
+  const padding = props.showToggle ? 'py-2.5 pl-3.5 pr-12' : 'px-3.5 py-2.5'
+
+  if (props.tone === 'theme') {
+    return `w-full rounded-xl border border-default/80 bg-default/40 ${padding} text-sm text-highlighted outline-none transition placeholder:text-muted/60 focus:border-primary/60 focus:ring-2 focus:ring-primary/15`
+  }
 
   if (props.tone === 'dark') {
     return `w-full rounded-3xl border border-slate-600/70 bg-slate-800/70 ${padding} text-base font-medium text-white outline-none placeholder:text-slate-400 focus:border-slate-400`
@@ -51,6 +55,10 @@ const inputClass = computed(() => {
 })
 
 const toggleClass = computed(() => {
+  if (props.tone === 'theme') {
+    return 'text-muted hover:text-highlighted'
+  }
+
   if (props.tone === 'dark') {
     return 'text-slate-400 hover:text-slate-200'
   }
@@ -84,8 +92,8 @@ function handleToggle() {
     <button
       v-if="showToggle"
       type="button"
-      class="absolute inset-y-0 right-0 flex w-16 items-center justify-center gap-1 transition"
-      :class="toggleClass"
+      class="absolute inset-y-0 right-0 flex items-center justify-center gap-1 transition"
+      :class="[toggleClass, tone === 'theme' ? 'w-12' : 'w-16']"
       :aria-label="isRevealed ? 'Hide password' : 'Show password briefly'"
       :aria-pressed="isRevealed"
       @click="handleToggle"

@@ -5,15 +5,24 @@
     :class="{ 'app-shell-embed': isEmbeddedPreview }"
   >
     <section
-      class="mx-auto flex h-full w-full flex-col overflow-hidden pt-4"
-      :class="isDesktopLayout && !isEmbeddedPreview ? 'max-w-none px-4 pb-4 lg:px-6' : 'max-w-md pb-0 sm:max-w-lg'"
+      class="mx-auto flex h-full w-full flex-col overflow-hidden"
+      :class="isDesktopLayout && !isEmbeddedPreview
+        ? 'max-w-none px-4 pb-4 pt-4 lg:px-6'
+        : 'max-w-md pb-0 sm:max-w-lg'"
     >
-      <header class="flex shrink-0 flex-col gap-4 px-4">
-        <div class="flex items-center justify-between gap-3">
+      <header
+        class="flex shrink-0 flex-col"
+        :class="isMobileLayout ? 'border-b border-default/60 bg-default' : 'gap-4 px-4'"
+      >
+        <div
+          class="flex min-w-0 items-center justify-between gap-2"
+          :class="isMobileLayout ? 'px-3 py-2' : ''"
+        >
           <VchBrandMark
             :vertical="false"
             compact
-            class="shrink-0"
+            :logo-only="isMobileLayout"
+            class="min-w-0 shrink"
             @home="goAppHome"
           />
 
@@ -35,7 +44,7 @@
             </button>
           </div>
 
-          <div v-else class="ml-auto flex shrink-0 items-center gap-2">
+          <div v-else class="ml-auto flex min-w-0 shrink items-center gap-1.5 sm:gap-2">
             <UTooltip
               v-if="!isEmbeddedPreview"
               :text="LAY_REPORTING_ACTION.tooltip"
@@ -47,11 +56,11 @@
                 size="xs"
                 variant="soft"
                 icon="i-lucide-users"
-                class="shrink-0 whitespace-nowrap bg-sky-500/15 text-sky-600 hover:bg-sky-500/25 dark:text-sky-300"
+                class="shrink-0 bg-sky-500/15 text-sky-600 hover:bg-sky-500/25 dark:text-sky-300"
                 :aria-label="LAY_REPORTING_ACTION.ariaLabel"
                 @click="openLayReportingSettings"
               >
-                <span class="hidden sm:inline">{{ LAY_REPORTING_ACTION.label }}</span>
+                <span class="hidden md:inline">{{ LAY_REPORTING_ACTION.label }}</span>
               </UButton>
             </UTooltip>
 
@@ -65,7 +74,7 @@
             >
               <button
                 type="button"
-                class="relative grid size-10 place-items-center rounded-full bg-amber-100 text-amber-700 shadow-sm ring-1 ring-amber-300/70 transition hover:bg-amber-200 dark:bg-amber-950/60 dark:text-amber-200 dark:ring-amber-700/70 dark:hover:bg-amber-900"
+                class="relative grid size-9 place-items-center rounded-full bg-amber-100 text-amber-700 shadow-sm ring-1 ring-amber-300/70 transition hover:bg-amber-200 sm:size-10 dark:bg-amber-950/60 dark:text-amber-200 dark:ring-amber-700/70 dark:hover:bg-amber-900"
                 :aria-label="notificationAttentionLabel"
                 @click="handleNotificationStatusClick"
               >
@@ -82,7 +91,7 @@
               >
                 <button
                   type="button"
-                  class="relative z-[60] grid size-10 place-items-center rounded-full shadow-sm ring-1 transition"
+                  class="relative z-[60] grid size-9 place-items-center rounded-full shadow-sm ring-1 transition sm:size-10"
                   :class="isSubmissionDropdownOpen
                     ? 'bg-primary text-white ring-primary/50'
                     : 'bg-elevated text-highlighted ring-default hover:bg-accented'"
@@ -131,7 +140,10 @@
               >
                 <div
                   v-if="isSubmissionDropdownOpen"
-                  class="absolute right-0 top-[calc(100%+0.5rem)] z-[70] w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-3xl border border-default bg-elevated shadow-2xl shadow-black/15 dark:shadow-black/40"
+                  class="z-[70] overflow-hidden rounded-3xl border border-default bg-elevated shadow-2xl shadow-black/15 dark:shadow-black/40"
+                  :class="isMobileLayout
+                    ? 'fixed inset-x-3 top-[calc(env(safe-area-inset-top)+3.25rem)] max-h-[min(24rem,calc(100dvh-5rem))]'
+                    : 'absolute right-0 top-[calc(100%+0.5rem)] w-[min(20rem,calc(100vw-2rem))]'"
                 >
                   <div class="border-b border-default px-4 py-3">
                     <div class="flex items-center gap-2">
@@ -225,7 +237,9 @@
         <p
           v-if="homeGreetingLine"
           class="text-xs font-semibold uppercase tracking-[0.2em] text-muted"
-          :class="isDesktopLayout && !isEmbeddedPreview ? 'mb-4' : ''"
+          :class="isMobileLayout
+            ? 'px-3 pb-2 pt-1'
+            : (isDesktopLayout && !isEmbeddedPreview ? 'mb-4' : '')"
         >
           {{ homeGreetingLine }}
         </p>
@@ -866,12 +880,15 @@
           <div
             v-else
             key="home-workspace"
-            class="home-workspace relative mt-2 flex min-h-0 flex-1 flex-col gap-2 overflow-hidden"
-            :class="{ 'home-workspace--history-hidden': shouldHideHistoryChrome }"
+            class="home-workspace relative flex min-h-0 flex-1 flex-col gap-2 overflow-hidden"
+            :class="[
+              { 'home-workspace--history-hidden': shouldHideHistoryChrome },
+              isMobileLayout ? 'mt-1' : 'mt-2'
+            ]"
           >
         <div
-          class="flex min-h-0 flex-col px-4"
-          :class="carouselWorkspaceClass"
+          class="flex min-h-0 flex-col"
+          :class="[isMobileLayout ? 'px-3' : 'px-4', carouselWorkspaceClass]"
           @wheel.passive="handleConditionWheel"
           @touchstart.passive="handleConditionSwipeStart"
           @touchmove.passive="handleConditionTouchMove"
@@ -912,12 +929,11 @@
                   class="absolute inset-0 z-10 flex flex-col items-center justify-center bg-default px-6"
                   role="status"
                   aria-live="polite"
-                  aria-label="Loading your tracker"
+                  aria-label="Loading"
                 >
                   <VchLoader
                     :width="280"
                     show-brand
-                    label="Loading your tracker"
                   />
                 </div>
 
@@ -1243,7 +1259,7 @@
             <span class="h-1.5 w-14 rounded-full bg-muted" />
           </div>
 
-          <div class="history-panel-header shrink-0 px-4 pb-3">
+          <div class="history-panel-header shrink-0 pb-3" :class="isMobileLayout ? 'px-3' : 'px-4'">
             <div class="flex items-start justify-between gap-3">
               <div>
                 <h2 class="text-2xl font-bold text-highlighted">History</h2>
@@ -1357,8 +1373,11 @@
 
           <div
             ref="historyScrollEl"
-            class="history-panel-scroll min-h-0 flex-1 overscroll-contain bg-elevated px-4 pb-2 pt-3 no-scrollbar"
-            :class="historyExpanded ? 'overflow-y-auto' : 'overflow-hidden touch-pan-y'"
+            class="history-panel-scroll min-h-0 flex-1 overscroll-contain bg-elevated pb-2 pt-3 no-scrollbar"
+            :class="[
+              isMobileLayout ? 'px-3' : 'px-4',
+              historyExpanded ? 'overflow-y-auto' : 'overflow-hidden touch-pan-y'
+            ]"
             @scroll="handleHistoryScroll"
             @wheel="handleHistoryWheel"
           >
@@ -2191,12 +2210,11 @@
       class="fixed inset-0 z-[95] flex items-center justify-center bg-default px-4"
       role="status"
       aria-live="polite"
-      aria-label="Loading your tracker"
+      aria-label="Loading"
     >
       <VchLoader
         :width="320"
         show-brand
-        label="Loading your tracker"
       />
     </div>
   </Teleport>
@@ -2936,8 +2954,7 @@ const homeConditions = computed(() => {
 })
 
 const isHomeBootstrapLoading = computed(() => {
-  return !homeWorkspaceReady.value
-    || (isLoadingTrackedConditions.value && !trackedConditionsLoadError.value)
+  return isLoadingTrackedConditions.value && !trackedConditionsLoadError.value
 })
 
 const showConditionBrowser = computed(() => {
@@ -4137,7 +4154,7 @@ onBeforeMount(() => {
 })
 
 onMounted(async () => {
-  resetHomeWorkspaceReady()
+  const shouldShowBootstrapLoader = !homeWorkspaceReady.value
 
   if (import.meta.client) {
     const { hash, search } = window.location
@@ -4167,9 +4184,15 @@ onMounted(async () => {
     homeGreetingWord.value = Math.random() < 0.5 ? 'Hello' : 'Hey'
   }
   setupInstallCard()
-  await loadAppWelcomeState()
 
-  await refreshTrackedConditions()
+  if (shouldShowBootstrapLoader) {
+    await loadAppWelcomeState()
+    await refreshTrackedConditions()
+  } else {
+    void loadAppWelcomeState()
+    void refreshTrackedConditions()
+  }
+
   nextTick(() => {
     suppressHomeMotionOnMount.value = false
   })
@@ -4187,9 +4210,15 @@ onMounted(async () => {
   window.addEventListener('resize', homeConditionsMaxScrollResizeListener)
 
   if (user.value) {
-    loadProfileDisplayName()
-    loadEntitlements()
-    await loadEntries()
+    if (shouldShowBootstrapLoader) {
+      loadProfileDisplayName()
+      loadEntitlements()
+      await loadEntries()
+    } else {
+      loadProfileDisplayName()
+      loadEntitlements()
+      void loadEntries()
+    }
     refreshEntryDraftPreview()
   }
 
@@ -4218,11 +4247,32 @@ onBeforeUnmount(() => {
   }
 })
 
-watch(user, async (currentUser) => {
+watch(() => user.value?.id ?? null, async (nextId, prevId) => {
+  if (nextId === prevId) {
+    return
+  }
+
+  // Auth token refresh / hydration after the first bootstrap — refresh quietly.
+  if (!prevId && nextId && homeWorkspaceReady.value) {
+    loadProfileDisplayName()
+    loadEntitlements()
+    await loadAppWelcomeState()
+    await refreshTrackedConditions()
+    restoreCachedHomeConditionOrderKeys()
+    await loadEntries()
+    refreshEntryDraftPreview()
+    return
+  }
+
+  // Skip until the first bootstrap finishes; onMounted owns that path.
+  if (!homeWorkspaceReady.value) {
+    return
+  }
+
   resetHomeWorkspaceReady()
 
   try {
-    if (currentUser) {
+    if (nextId) {
       isAuthPanelOpen.value = false
       loadProfileDisplayName()
       loadEntitlements()
