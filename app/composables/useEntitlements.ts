@@ -114,28 +114,13 @@ export function useEntitlements() {
   })
 
   async function getAccessToken() {
-    const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession()
+    await supabase.auth.refreshSession()
 
-    if (refreshError) {
-      console.warn('[checkout] refreshSession failed', {
-        message: refreshError.message,
-        code: refreshError.code,
-        status: refreshError.status
-      })
-    }
-
-    const session = refreshed.session ?? (await supabase.auth.getSession()).data.session
+    const session = (await supabase.auth.getSession()).data.session
 
     if (!session?.access_token) {
-      console.error('[checkout] no active session')
       throw new Error('Sign in to continue.')
     }
-
-    console.info('[checkout] session ready', {
-      userId: session.user.id,
-      email: session.user.email,
-      expiresAt: session.expires_at
-    })
 
     return session.access_token
   }
@@ -382,8 +367,6 @@ export function useEntitlements() {
   }
 
   async function createEmbeddedCheckoutSession() {
-    console.info('[checkout] create embedded session')
-
     const accessToken = await getAccessToken()
 
     try {
@@ -401,10 +384,6 @@ export function useEntitlements() {
       if (!response.clientSecret) {
         throw new Error('Stripe checkout secret was missing.')
       }
-
-      console.info('[checkout] embedded session ready', {
-        sessionId: response.sessionId
-      })
 
       rememberPendingCheckoutSession(response.sessionId)
 
@@ -426,8 +405,6 @@ export function useEntitlements() {
   }
 
   async function startCheckout() {
-    console.info('[checkout] start redirect fallback')
-
     let accessToken = ''
 
     try {
@@ -438,19 +415,12 @@ export function useEntitlements() {
     }
 
     try {
-      console.info('[checkout] posting to create-subscription-checkout')
-
       const response = await $fetch<{ url: string, sessionId?: string }>('/api/stripe/create-subscription-checkout', {
         method: 'POST',
         credentials: 'include',
         headers: {
           Authorization: `Bearer ${accessToken}`
         }
-      })
-
-      console.info('[checkout] success', {
-        hasUrl: Boolean(response.url),
-        sessionId: response.sessionId
       })
 
       if (response.sessionId) {

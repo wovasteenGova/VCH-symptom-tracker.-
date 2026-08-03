@@ -53,5 +53,5 @@ export function getRequestBaseUrl(event: Parameters<typeof getRequestHost>[0]) {
     return configuredOrigin
   }
 
-  return 'http://localhost:3000'
+  return 'http://localhost:3001'
 }

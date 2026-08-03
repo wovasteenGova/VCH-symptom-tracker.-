@@ -13,8 +13,6 @@ export default defineNitroPlugin((nitroApp) => {
 
   if (configError) {
     console.error('[supabase-env]', configError)
-  } else {
-    console.info('[supabase-env] Supabase URL and anon key resolved for server runtime.')
   }
 
   nitroApp.hooks.hook('request', (event) => {

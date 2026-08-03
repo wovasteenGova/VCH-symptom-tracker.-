@@ -4,10 +4,6 @@ import { getHeader } from 'h3'
 import { assertSupabasePublicConfig, getSupabasePublicConfig } from './supabasePublicConfig'
 import { getSupabaseNodeOptions } from './supabaseNodeOptions'
 
-function logAuth(step: string, details: Record<string, unknown> = {}) {
-  console.info(`[checkout-auth] ${step}`, details)
-}
-
 function logAuthError(step: string, details: Record<string, unknown> = {}) {
   console.error(`[checkout-auth] ${step}`, details)
 }
@@ -21,12 +17,6 @@ async function getUserFromBearerToken(event: H3Event) {
   }
 
   const { supabaseUrl, supabaseKey, source } = assertSupabasePublicConfig(event)
-
-  logAuth('validating bearer token', {
-    tokenLength: token.length,
-    source,
-    supabaseUrl
-  })
 
   const supabase = createClient(supabaseUrl, supabaseKey, {
     ...getSupabaseNodeOptions(),
@@ -47,11 +37,6 @@ async function getUserFromBearerToken(event: H3Event) {
     })
     return null
   }
-
-  logAuth('bearer token accepted', {
-    userId: data.user.id,
-    email: data.user.email
-  })
 
   return {
     user: data.user,

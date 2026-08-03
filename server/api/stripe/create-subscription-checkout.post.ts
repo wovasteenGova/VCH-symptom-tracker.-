@@ -8,16 +8,8 @@ import {
   resolveSubscriptionLineItems
 } from '../../utils/subscriptionCheckoutSession'
 
-function logCheckout(step: string, details: Record<string, unknown> = {}) {
-  console.info(`[stripe checkout] ${step}`, details)
-}
-
 function logCheckoutError(step: string, details: Record<string, unknown> = {}) {
   console.error(`[stripe checkout] ${step}`, details)
-}
-
-function logCheckoutWarning(step: string, details: Record<string, unknown> = {}) {
-  console.warn(`[stripe checkout] ${step}`, details)
 }
 
 export default defineEventHandler(async (event) => {
@@ -25,15 +17,6 @@ export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
   const body = await readBody<{ embedded?: boolean }>(event).catch(() => ({}))
   const embedded = body?.embedded === true
-
-  logCheckout('request received', {
-    requestId,
-    embedded,
-    hasStripeSecretKey: Boolean(config.stripeSecretKey),
-    stripeMode: config.stripeSecretKey?.startsWith('sk_test_') ? 'test' : config.stripeSecretKey?.startsWith('sk_live_') ? 'live' : 'unknown',
-    hasProPriceId: isStripePriceId(String(config.stripeProPriceId || '').trim()),
-    origin: getRequestHeader(event, 'origin') || null
-  })
 
   if (!config.stripeSecretKey) {
     logCheckoutError('missing stripe secret key', { requestId })
@@ -70,11 +53,6 @@ export default defineEventHandler(async (event) => {
   try {
     const authResult = await requireAuthUser(event)
     user = authResult.user
-    logCheckout('auth ok', {
-      requestId,
-      userId: user.id,
-      email: user.email
-    })
   } catch (error) {
     logCheckoutError('auth failed', {
       requestId,
@@ -87,22 +65,6 @@ export default defineEventHandler(async (event) => {
   const baseUrl = getRequestBaseUrl(event)
   const rawConfiguredPriceId = String(config.stripeProPriceId || '').trim()
   const configuredPriceId = isStripePriceId(rawConfiguredPriceId) ? rawConfiguredPriceId : ''
-
-  if (rawConfiguredPriceId && !configuredPriceId) {
-    logCheckoutWarning('invalid STRIPE_PRO_PRICE_ID ignored; using generated $6.99 monthly price', {
-      requestId,
-      valuePreview: `${rawConfiguredPriceId.slice(0, 12)}...`,
-      expected: 'price_...'
-    })
-  }
-
-  logCheckout('creating session', {
-    requestId,
-    baseUrl,
-    embedded,
-    usingConfiguredPriceId: Boolean(configuredPriceId),
-    paymentMethods: 'dashboard'
-  })
 
   try {
     const lineItems = await resolveSubscriptionLineItems(stripe, configuredPriceId)
@@ -134,12 +96,6 @@ export default defineEventHandler(async (event) => {
         })
       }
 
-      logCheckout('embedded session created', {
-        requestId,
-        sessionId: session.id,
-        returnUrl: typeof checkoutParams.return_url === 'string' ? checkoutParams.return_url : null
-      })
-
       return {
         clientSecret: session.client_secret,
         sessionId: session.id,
@@ -157,12 +113,6 @@ export default defineEventHandler(async (event) => {
         message: 'Stripe did not return a checkout URL.'
       })
     }
-
-    logCheckout('redirect session created', {
-      requestId,
-      sessionId: session.id,
-      checkoutUrlPreview: `${session.url.slice(0, 48)}...`
-    })
 
     return { url: session.url, sessionId: session.id }
   } catch (error) {

@@ -37,7 +37,15 @@ const supabaseAnonKey = env('SUPABASE_ANON_KEY')
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
-  devtools: { enabled: process.env.NODE_ENV === 'development' },
+  devtools: { enabled: false },
+  devServer: {
+    port: 3001
+  },
+  icon: {
+    serverBundle: {
+      collections: ['lucide']
+    }
+  },
   modules: ['@nuxt/ui', '@vite-pwa/nuxt', '@nuxtjs/supabase'],
   css: ['~/assets/css/main.css'],
   colorMode: {

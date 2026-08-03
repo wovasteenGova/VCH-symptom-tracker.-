@@ -8,8 +8,6 @@ export default defineEventHandler(async (event) => {
   const body = await readBody<{ sessionId?: string }>(event)
   const sessionId = String(body?.sessionId || '').trim()
 
-  console.info('[stripe confirm]', { sessionId: sessionId ? `${sessionId.slice(0, 20)}...` : null, userId: user.id })
-
   if (!sessionId) {
     throw createError({
       statusCode: 400,
@@ -32,11 +30,6 @@ export default defineEventHandler(async (event) => {
   }
 
   if (session.payment_status !== 'paid' && session.status !== 'complete') {
-    console.warn('[stripe confirm] payment not ready', {
-      paymentStatus: session.payment_status,
-      status: session.status
-    })
-
     throw createError({
       statusCode: 400,
       message: 'Payment is still processing. Try again in a few seconds.'

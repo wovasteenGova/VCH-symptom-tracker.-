@@ -145,7 +145,6 @@ async function handleCheckoutComplete() {
       await activateCheckoutSession(sessionId)
       await loadEntitlements({ force: true })
       window.sessionStorage.setItem(CHECKOUT_SUCCESS_TOAST_KEY, '1')
-      console.info('[checkout] embedded completion activated Pro', { sessionId })
     } catch (error) {
       console.error('[checkout] embedded completion activation failed', {
         sessionId,
@@ -181,11 +180,6 @@ async function initializeCheckout() {
     if (!publishableKey) {
       throw new Error('Stripe publishable key is not configured.')
     }
-
-    console.info('[checkout] loading stripe.js', {
-      keyPreview: `${publishableKey.slice(0, 12)}...`,
-      isTestMode: publishableKey.startsWith('pk_test_')
-    })
 
     const stripe = await loadStripe(publishableKey)
 
