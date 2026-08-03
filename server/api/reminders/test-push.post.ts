@@ -54,7 +54,7 @@ export default defineEventHandler(async (event) => {
           body: LOG_REMINDER_TEST_MODE
             ? LOG_REMINDER_TEST_BODY
             : 'If you can read this, background log reminders can reach this device.',
-          url: '/app'
+          url: '/'
         }
       )
       successCount += 1

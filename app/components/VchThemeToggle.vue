@@ -1,5 +1,10 @@
 <script setup lang="ts">
 import type { ClaimColorThemeId } from '#shared/claimColorThemes'
+import {
+  COLOR_MODE_ACTION,
+  COLOR_THEME_ACTION,
+  TRACKER_TOOLTIP
+} from '../utils/trackerToolbarUi'
 
 withDefaults(defineProps<{
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
@@ -29,18 +34,23 @@ const isDark = computed(() => colorMode.value === 'dark')
       v-model:open="pickerOpen"
       :content="{ side: 'bottom', align: 'end', sideOffset: 8 }"
     >
-      <button
-        type="button"
-        class="header-theme-swatch-trigger flex size-9 items-center justify-center rounded-lg border border-default/80 bg-elevated/40 transition hover:border-primary/40 hover:bg-elevated/70"
-        :aria-label="`Color theme: ${activeTheme.label}. Open theme picker.`"
-        :title="`Theme: ${activeTheme.label}`"
+      <UTooltip
+        :text="COLOR_THEME_ACTION.tooltip(activeTheme.label)"
+        :delay-duration="TRACKER_TOOLTIP.delayDuration"
+        :content="TRACKER_TOOLTIP.content"
       >
-        <span
-          class="size-6 rounded-md border border-black/10 shadow-sm ring-1 ring-inset ring-white/30"
-          :style="{ background: activeTheme.swatch }"
-          aria-hidden="true"
-        />
-      </button>
+        <button
+          type="button"
+          class="header-theme-swatch-trigger flex size-9 items-center justify-center rounded-lg border border-default/80 bg-elevated/40 transition hover:border-primary/40 hover:bg-elevated/70"
+          :aria-label="`Color theme: ${activeTheme.label}. Open theme picker.`"
+        >
+          <span
+            class="size-6 rounded-md border border-black/10 shadow-sm ring-1 ring-inset ring-white/30"
+            :style="{ background: activeTheme.swatch }"
+            aria-hidden="true"
+          />
+        </button>
+      </UTooltip>
 
       <template #content>
         <div class="w-[11.5rem] p-2.5">
@@ -75,12 +85,18 @@ const isDark = computed(() => colorMode.value === 'dark')
       </template>
     </UPopover>
 
-    <UColorModeSwitch
-      :size="size"
-      color="neutral"
-      class="header-color-toggle"
-      :aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
-    />
+    <UTooltip
+      :text="COLOR_MODE_ACTION.tooltip(isDark)"
+      :delay-duration="TRACKER_TOOLTIP.delayDuration"
+      :content="TRACKER_TOOLTIP.content"
+    >
+      <UColorModeSwitch
+        :size="size"
+        color="neutral"
+        class="header-color-toggle"
+        :aria-label="COLOR_MODE_ACTION.tooltip(isDark)"
+      />
+    </UTooltip>
   </div>
 </template>
 

@@ -29,7 +29,7 @@
             Your account is verified. Sign in with your password to continue.
           </p>
           <NuxtLink
-            to="/app?login=1"
+            to="/?login=1"
             class="inline-flex w-full items-center justify-center rounded-3xl bg-white px-4 py-4 text-base font-semibold text-slate-950 transition hover:bg-slate-100"
           >
             Sign in
@@ -46,7 +46,7 @@
           </p>
           <div class="flex flex-col gap-3">
             <NuxtLink
-              to="/app?login=1"
+              to="/?login=1"
               class="inline-flex w-full items-center justify-center rounded-3xl bg-white px-4 py-4 text-base font-semibold text-slate-950 transition hover:bg-slate-100"
             >
               Back to sign in
@@ -114,7 +114,7 @@ onMounted(async () => {
     window.sessionStorage.setItem('symptom-tracker-auth-success', '1')
 
     window.setTimeout(() => {
-      router.push('/app')
+      router.push('/')
     }, 1800)
   } catch (error) {
     stripAuthQueryFromUrl()

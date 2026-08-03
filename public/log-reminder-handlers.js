@@ -6,7 +6,7 @@ self.addEventListener('push', (event) => {
   let payload = {
     title: 'VCH — Log reminder',
     body: 'Open the app to add your symptom entry.',
-    url: '/app'
+    url: '/'
   }
 
   try {
@@ -72,7 +72,7 @@ async function showPushNotification(payload) {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
 
-  const targetUrl = resolveNotificationUrl(event.notification.data?.url || '/app')
+  const targetUrl = resolveNotificationUrl(event.notification.data?.url || '/')
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
@@ -96,7 +96,7 @@ self.addEventListener('notificationclick', (event) => {
 })
 
 function resolveNotificationUrl(url) {
-  const path = String(url || '/app').trim() || '/app'
+  const path = String(url || '/').trim() || '/'
 
   if (path.startsWith('http://') || path.startsWith('https://')) {
     return path

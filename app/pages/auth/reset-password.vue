@@ -71,7 +71,7 @@
             Your new password is saved. You can sign in with it now.
           </p>
           <NuxtLink
-            to="/app"
+            to="/"
             class="inline-flex w-full items-center justify-center rounded-3xl bg-white px-4 py-4 text-base font-semibold text-slate-950 transition hover:bg-slate-100"
           >
             Open symptom tracker
@@ -87,7 +87,7 @@
             {{ errorMessage }}
           </p>
           <NuxtLink
-            to="/app"
+            to="/"
             class="inline-flex w-full items-center justify-center rounded-3xl bg-white px-4 py-4 text-base font-semibold text-slate-950 transition hover:bg-slate-100"
           >
             Back to sign in

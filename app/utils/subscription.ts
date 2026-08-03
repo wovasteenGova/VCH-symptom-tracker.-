@@ -22,6 +22,7 @@ export const VCH_PRIVACY_URL = `${VCH_HUB_URL}/privacy`
 export const VCH_TERMS_URL = `${VCH_HUB_URL}/terms`
 export const VCH_CONTACT_URL = 'https://veteranscentralhub.us/contact'
 export const VCH_CLAIM_MAKER_URL = 'https://veteranscentralhub.us/claims-maker'
+export const VCH_CLAIMBUILDER_URL = 'https://claimbuilder.veteranscentralhub.us'
 
 export const WHY_WE_CHARGE_COPY =
   "Pro subscriptions help fund our upcoming VCH Claim Maker — a separate tool for organizing service history, symptoms, and claim evidence into a stronger first draft. It is not live yet. This is a self-funded build, so symptom tracker Pro helps cover servers and development until Claim Maker ships. Don't wait on us to file — file on VA.gov when you're ready."
@@ -57,6 +58,27 @@ export function formatConditionKeyLabel(conditionKey: string) {
 export function isActiveEntitlementStatus(status: string | null | undefined) {
   return status === 'active' || status === 'comped'
 }
+
+type BillableEntitlement = {
+  status?: string | null
+  stripe_customer_id?: string | null
+  stripe_subscription_id?: string | null
+} | null | undefined
+
+/** Stripe Customer Portal — paid subscriptions only (not comped / Claim Maker / manual grants). */
+export function canManageStripeBilling(entitlement: BillableEntitlement) {
+  if (!entitlement?.stripe_customer_id || !entitlement.stripe_subscription_id) {
+    return false
+  }
+
+  return entitlement.status === 'active'
+}
+
+export const NO_BILLING_PORTAL_MESSAGE =
+  'Your Pro access was not set up through a subscription we can manage here. If you think something is wrong, contact us.'
+
+export const BILLING_PORTAL_UNAVAILABLE_MESSAGE =
+  'We could not open the billing portal right now. If you think something is wrong, contact us.'
 
 export function buildSupportEmailHref(subject = 'Symptom Tracker — free Pro access request') {
   return `mailto:support@veteranscentralhub.com?subject=${encodeURIComponent(subject)}`

@@ -54,7 +54,7 @@ const message = computed(() => {
 })
 
 async function handleRetry() {
-  await clearError({ redirect: '/app' })
+  await clearError({ redirect: '/' })
 }
 
 function reloadPage() {

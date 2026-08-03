@@ -10,7 +10,7 @@
 </template>
 
 <script setup lang="ts">
-import TrackerAppPage from '~/pages/app/index.vue'
+import TrackerAppPage from '~/pages/index.vue'
 import { useTrackerDemoMode } from '~/composables/useTrackerDemoMode'
 import {
   TRACKER_DEMO_CONTROL_KEY,

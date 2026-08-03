@@ -1,4 +1,11 @@
-import { normalizeConditionLabel } from './conditionCatalog'
+import { normalizeConditionLabel, resolveCatalogConditionByStoredKey } from './conditionCatalog'
+import { conditionKeyFromLabel } from './subscription'
+
+export function resolveEntryConditionKey(entry: Record<string, any>) {
+  const stored = entry.condition_key || entry.condition_label || ''
+  const resolved = resolveCatalogConditionByStoredKey(stored)
+  return resolved?.key || entry.condition_key || conditionKeyFromLabel(entry.condition_label || '')
+}
 
 export function mapEntryHistoryItem(entry: Record<string, any>, options: { deleted?: boolean } = {}) {
   const entryDate = entry.occurred_at ? new Date(entry.occurred_at) : new Date(entry.created_at)
@@ -13,6 +20,7 @@ export function mapEntryHistoryItem(entry: Record<string, any>, options: { delet
     month: entryDate.toLocaleString('en-US', { month: 'short' }),
     day: entryDate.toLocaleString('en-US', { day: '2-digit' }),
     condition: conditionLabel,
+    conditionKey: resolveEntryConditionKey(entry),
     source: entry.source === 'family' ? 'Family' : 'Veteran',
     title: entry.summary || conditionLabel,
     summary: entry.impact || 'No impact note added',

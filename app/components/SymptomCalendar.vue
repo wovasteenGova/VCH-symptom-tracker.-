@@ -3,6 +3,7 @@
     <UCalendar
       v-model="modelValue"
       v-model:placeholder="placeholder"
+      color="primary"
       :view-control="false"
       class="mx-auto w-full"
     >

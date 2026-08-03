@@ -54,32 +54,26 @@ export function useSettingsSectionNav(
   }
 
   function scrollActiveSectionIntoView() {
-    if (!activeSectionId.value) {
-      return
-    }
-
     const container = stripContainer?.value
-    if (container) {
-      const button = container.querySelector<HTMLElement>(
-        `[data-section-id="${CSS.escape(activeSectionId.value)}"]`
-      )
-
-      button?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest',
-        inline: 'center'
-      })
+    if (!container || !activeSectionId.value) {
       return
     }
 
-    const pill = navRoot.value?.querySelector<HTMLElement>(
+    const button = container.querySelector<HTMLElement>(
       `[data-section-id="${CSS.escape(activeSectionId.value)}"]`
     )
 
-    pill?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'nearest',
-      inline: 'center'
+    if (!button) {
+      return
+    }
+
+    const buttonLeft = button.offsetLeft
+    const buttonWidth = button.offsetWidth
+    const containerWidth = container.clientWidth
+    const scrollLeft = buttonLeft - (containerWidth / 2) + (buttonWidth / 2)
+    container.scrollTo({
+      left: Math.max(0, scrollLeft),
+      behavior: 'smooth'
     })
   }
 

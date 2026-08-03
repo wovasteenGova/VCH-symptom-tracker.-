@@ -110,6 +110,10 @@ html.dark body {
   min-height: var(--app-height);
 }
 
+.tracker-desktop-workspace {
+  min-height: 0;
+}
+
 /*
  * iPhone Safari and Chrome both use WebKit. When WebKit comfort-scrolls a
  * focused field, visualViewport.offsetTop moves even though the layout

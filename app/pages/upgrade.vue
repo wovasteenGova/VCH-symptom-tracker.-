@@ -8,7 +8,7 @@
         </div>
 
         <NuxtLink
-          to="/app"
+          to="/"
           class="grid size-10 place-items-center rounded-full bg-slate-900 text-white shadow-sm ring-1 ring-slate-800 transition hover:bg-slate-800"
           aria-label="Back to tracker"
         >
@@ -53,14 +53,18 @@
             <h2 class="text-xl font-bold text-white">You're on Pro</h2>
           </div>
           <p class="mt-2 text-sm leading-6 text-amber-50/90">
-            <span v-if="isComped">Your access was granted at no cost. Thank you for using the tracker.</span>
+            <span v-if="isClaimBuilderPro">
+              Pro is included with your VCH Claim Maker subscription.
+              <span v-if="claimBuilderFoundingProUntil"> Access until {{ claimBuilderFoundingProUntil }}.</span>
+            </span>
+            <span v-else-if="isComped">Your access was granted at no cost. Thank you for using the tracker.</span>
             <span v-else>
               Unlimited entries, family reporting, and PDF exports are unlocked
               <span v-if="renewalLabel"> until {{ renewalLabel }}</span>.
             </span>
           </p>
           <button
-            v-if="!isComped && entitlement?.stripe_customer_id"
+            v-if="canManageBilling"
             type="button"
             class="mt-4 w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-bold text-white ring-1 ring-slate-700"
             :disabled="isPortalLoading"
@@ -68,6 +72,21 @@
           >
             {{ isPortalLoading ? 'Opening billing...' : 'Manage billing' }}
           </button>
+          <div
+            v-else-if="isPro"
+            class="mt-4 rounded-2xl border border-slate-700/80 bg-slate-900/60 px-4 py-3"
+          >
+            <p class="text-sm leading-6 text-slate-200">
+              {{ billingPortalNotice }}
+            </p>
+            <a
+              :href="supportEmailHref"
+              class="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-sky-300 underline-offset-2 hover:underline"
+            >
+              Contact us
+              <UIcon name="i-lucide-mail" class="size-4" />
+            </a>
+          </div>
         </section>
 
         <section v-if="user && !isPro" class="rounded-3xl border border-slate-800 bg-slate-900/70 px-4 py-3">
@@ -200,7 +219,18 @@
           </div>
         </section>
 
-        <p v-if="pageError" class="text-center text-sm font-medium text-red-300">{{ pageError }}</p>
+        <div
+          v-if="pageError"
+          class="rounded-3xl border border-red-900/60 bg-red-950/30 px-4 py-3 text-center text-sm leading-6 text-red-100"
+        >
+          <p>{{ pageError }}</p>
+          <a
+            :href="supportEmailHref"
+            class="mt-2 inline-flex items-center gap-1.5 font-semibold text-red-50 underline-offset-2 hover:underline"
+          >
+            Contact us if you think something is wrong
+          </a>
+        </div>
       </div>
 
       <TrackerEmbeddedCheckout
@@ -242,7 +272,7 @@
 
         <NuxtLink
           v-else
-          to="/app"
+          to="/"
           class="block w-full rounded-2xl bg-white px-5 py-4 text-center text-base font-bold text-slate-950 shadow-lg transition hover:bg-slate-200"
         >
           Back to tracker
@@ -281,19 +311,55 @@ const { user, isAuthLoading } = useSupabaseAuth()
 const {
   entitlement,
   isPro,
+  isClaimBuilderPro,
   isComped,
+  canManageBilling,
+  claimBuilderFoundingPro,
   renewalLabel,
   loadEntitlements,
   openBillingPortal,
   startCheckout
 } = useEntitlements()
 
+const supportEmailHref = buildSupportEmailHref('Symptom Tracker — billing question')
+
+const billingPortalNotice = computed(() => {
+  if (isComped.value) {
+    return 'Your Pro access was granted at no cost, so there is no Stripe subscription to manage here.'
+  }
+
+  if (isClaimBuilderPro.value) {
+    return 'Pro is included with VCH Claim Maker, so billing is managed through Claim Maker — not here.'
+  }
+
+  return 'There is no active paid subscription linked to this account to manage here.'
+})
+
+const claimBuilderFoundingProUntil = computed(() => {
+  const until = claimBuilderFoundingPro.value?.until
+
+  if (!until) {
+    return ''
+  }
+
+  const parsed = new Date(until)
+
+  if (Number.isNaN(parsed.getTime())) {
+    return ''
+  }
+
+  return parsed.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  })
+})
+
 const isCheckoutLoading = ref(false)
 const isCheckoutOpen = ref(false)
 const isPortalLoading = ref(false)
 const pageError = ref('')
 
-const supportEmailHref = buildSupportEmailHref()
 const showCanceledNotice = computed(() => route.query.canceled === '1')
 const pageTitle = computed(() => isPro.value ? 'Your Pro plan' : 'Choose your plan')
 

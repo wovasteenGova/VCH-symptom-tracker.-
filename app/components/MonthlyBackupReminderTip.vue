@@ -13,10 +13,10 @@
       role="status"
       aria-live="polite"
     >
-      <div class="relative rounded-2xl border border-sky-500/30 bg-sky-950 px-3.5 py-3 text-white shadow-xl shadow-sky-950/25 dark:border-sky-400/25 dark:bg-sky-900">
+      <div class="relative rounded-2xl border border-primary/30 bg-primary px-3.5 py-3 text-white shadow-xl shadow-black/20">
         <button
           type="button"
-          class="absolute right-2 top-2 grid size-6 place-items-center rounded-full text-sky-200/80 transition hover:bg-white/10 hover:text-white"
+          class="absolute right-2 top-2 grid size-6 place-items-center rounded-full text-white/80 transition hover:bg-white/10 hover:text-white"
           aria-label="Dismiss backup reminder"
           @click="emit('dismiss')"
         >
@@ -24,15 +24,15 @@
         </button>
 
         <div class="flex items-start gap-2 pr-5">
-          <UIcon name="i-lucide-shield-check" class="mt-0.5 size-4 shrink-0 text-sky-300" />
-          <p class="text-xs leading-5 text-sky-50">
+          <UIcon name="i-lucide-shield-check" class="mt-0.5 size-4 shrink-0 text-white/90" />
+          <p class="text-xs leading-5 text-white/95">
             {{ MONTHLY_BACKUP_REMINDER_COPY }}
           </p>
         </div>
 
         <span
           aria-hidden="true"
-          class="pointer-events-none absolute -bottom-1.5 right-7 size-3 rotate-45 border-b border-r border-sky-500/30 bg-sky-950 dark:border-sky-400/25 dark:bg-sky-900"
+          class="pointer-events-none absolute -bottom-1.5 right-7 size-3 rotate-45 border-b border-r border-primary/30 bg-primary"
         />
       </div>
     </div>

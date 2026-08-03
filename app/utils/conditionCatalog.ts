@@ -679,6 +679,26 @@ export function getCatalogConditionByKey(key: string) {
   return conditionCatalog.find((condition) => condition.key === key) || null
 }
 
+export const MENTAL_HEALTH_CATEGORY = 'Mental Health'
+
+export const MENTAL_HEALTH_ONE_CONDITION_MESSAGE =
+  'The VA evaluates mental health as one combined rating. Pick one mental health condition on your home screen.'
+
+export function isMentalHealthCategory(category: string) {
+  return category === MENTAL_HEALTH_CATEGORY
+}
+
+export function isMentalHealthConditionKey(key: string) {
+  const condition = getCatalogConditionByKey(key)
+  return Boolean(condition && isMentalHealthCategory(condition.category))
+}
+
+export function listMentalHealthConditionKeys() {
+  return conditionCatalog
+    .filter((condition) => isMentalHealthCategory(condition.category))
+    .map((condition) => condition.key)
+}
+
 const conditionKeyAliases: Record<string, string> = {
   [conditionKeyFromLabel('GERD')]: conditionKeyFromLabel('GERD / Acid Reflux'),
   [conditionKeyFromLabel('Acid reflux')]: conditionKeyFromLabel('GERD / Acid Reflux'),

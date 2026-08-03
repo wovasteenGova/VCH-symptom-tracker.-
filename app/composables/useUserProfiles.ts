@@ -4,6 +4,12 @@ import { useTrackerDb } from './useTrackerDb'
 type UserProfilePayload = {
   full_name?: string | null
   display_name?: string | null
+  phone?: string | null
+  date_of_birth?: string | null
+  service_branch?: string | null
+  service_rank?: string | null
+  service_start_year?: number | null
+  service_end_year?: number | null
   free_condition_keys?: string[]
   tracked_condition_keys?: string[]
   conditions_onboarding_completed?: boolean

@@ -88,6 +88,8 @@ export default defineNuxtConfig({
       siteUrl: env('APP_URL')
         || env('NUXT_PUBLIC_SITE_URL')
         || (isProduction ? 'https://tracker.veteranscentralhub.us' : ''),
+      claimBuilderUrl: envFirst('NUXT_PUBLIC_CLAIMBUILDER_URL', 'CLAIMBUILDER_URL')
+        || (isProduction ? 'https://claimbuilder.veteranscentralhub.us' : 'http://localhost:3000'),
       // Web3Forms contact form — create a form at https://web3forms.com (can share VCH inbox key).
       web3formsAccessKey: env('NUXT_PUBLIC_WEB3FORMS_ACCESS_KEY')
     }
@@ -130,7 +132,7 @@ export default defineNuxtConfig({
       display: 'standalone',
       orientation: 'portrait',
       scope: '/',
-      start_url: '/app',
+      start_url: '/',
       icons: [
         {
           src: '/vch-logo.png',
@@ -158,7 +160,7 @@ export default defineNuxtConfig({
   },
   vite: {
     optimizeDeps: {
-      include: ['@stripe/stripe-js']
+      include: ['@stripe/stripe-js', 'chart.js', 'vue-chartjs']
     }
   },
   nitro: {
@@ -168,8 +170,9 @@ export default defineNuxtConfig({
     compressPublicAssets: true
   },
   routeRules: {
-    '/app': { ssr: false },
-    '/app/**': { ssr: false },
+    '/': { redirect: { to: '/', statusCode: 301 } },
+    '/app/**': { redirect: { to: '/', statusCode: 301 } },
+    '/': { ssr: false },
     '/profile': { ssr: false },
     '/report/**': { ssr: false },
     '/auth/**': { ssr: false },

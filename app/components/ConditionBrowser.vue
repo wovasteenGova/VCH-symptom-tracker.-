@@ -12,7 +12,7 @@
 
             v-if="mode === 'onboarding'"
 
-            class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400"
+            class="text-xs font-semibold uppercase tracking-[0.2em] text-muted"
 
           >
 
@@ -22,7 +22,7 @@
 
           <h2
 
-            class="text-2xl font-bold text-slate-950 dark:text-white"
+            class="text-2xl font-bold text-highlighted"
 
             :class="mode === 'onboarding' ? 'mt-1' : ''"
 
@@ -34,7 +34,7 @@
 
           <p
             v-if="mode === 'onboarding'"
-            class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300"
+            class="mt-2 text-sm leading-6 text-toned"
           >
             Pick as many conditions as you want for quick access on your home screen.
           </p>
@@ -49,7 +49,7 @@
 
           type="button"
 
-          class="shrink-0 rounded-full bg-slate-950 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+          class="shrink-0 rounded-full bg-primary px-4 py-2 text-sm font-bold text-white transition hover:opacity-90"
 
           @click="emit('done')"
 
@@ -63,7 +63,7 @@
 
       <p
         v-if="mode === 'manage' && selectedCount === 0"
-        class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300"
+        class="mt-2 text-sm leading-6 text-toned"
       >
         Tap conditions below to add them to your home screen.
       </p>
@@ -86,7 +86,7 @@
 
         placeholder="Search conditions"
 
-        class="mt-3 w-full border-0 border-b border-slate-300/80 bg-transparent px-1 py-2.5 text-lg font-semibold text-slate-950 outline-none placeholder:text-slate-400 focus:border-slate-500 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-500"
+        class="mt-3 w-full border-0 border-b border-default/80 bg-transparent px-1 py-2.5 text-lg font-semibold text-highlighted outline-none placeholder:text-dimmed focus:border-primary"
 
       >
 
@@ -106,9 +106,9 @@
 
         >
 
-          <p class="text-lg font-bold text-slate-950 dark:text-white">No matches</p>
+          <p class="text-lg font-bold text-highlighted">No matches</p>
 
-          <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+          <p class="mt-2 text-sm leading-6 text-toned">
 
             Try a different search term.
 
@@ -132,11 +132,15 @@
 
             ? 'opacity-80 hover:bg-amber-50/80 dark:hover:bg-amber-950/20'
 
+            : isRestricted(condition.key)
+
+              ? 'opacity-70 hover:bg-accented/40'
+
             : isSelected(condition.key)
 
-              ? 'bg-slate-100 ring-1 ring-slate-300 hover:bg-slate-100 dark:bg-slate-800/90 dark:ring-slate-600 dark:hover:bg-slate-800/90'
+              ? 'bg-muted ring-1 ring-default hover:bg-muted'
 
-              : 'hover:bg-slate-100 dark:hover:bg-slate-800/80'"
+              : 'hover:bg-accented/40'"
 
           @click="handleConditionClick(condition.key)"
 
@@ -150,7 +154,7 @@
 
             class="size-16 shrink-0 rounded-2xl object-cover"
 
-            :class="isLocked(condition.key) ? 'opacity-75' : ''"
+            :class="isLocked(condition.key) || isRestricted(condition.key) ? 'opacity-75' : ''"
 
           >
 
@@ -160,7 +164,7 @@
 
             <span class="flex items-center gap-2">
 
-              <span class="block text-lg font-bold leading-snug text-slate-950 dark:text-white">
+              <span class="block text-lg font-bold leading-snug text-highlighted">
 
                 {{ condition.title }}
 
@@ -168,13 +172,13 @@
 
             </span>
 
-            <span class="mt-1 block text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+            <span class="mt-1 block text-xs font-semibold uppercase tracking-[0.12em] text-muted">
 
               {{ condition.category }}
 
             </span>
 
-            <span class="mt-1 block line-clamp-2 text-sm leading-5 text-slate-600 dark:text-slate-300">
+            <span class="mt-1 block line-clamp-2 text-sm leading-5 text-toned">
 
               {{ condition.description }}
 
@@ -186,7 +190,35 @@
 
           <span
 
-            v-if="isLocked(condition.key)"
+            v-if="isRestricted(condition.key)"
+
+            class="flex shrink-0 flex-col items-center gap-1.5"
+
+            aria-hidden="true"
+
+          >
+
+            <span class="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-toned">
+
+              One MH
+
+            </span>
+
+            <UIcon
+
+              name="i-lucide-ban"
+
+              class="size-4 text-muted"
+
+            />
+
+          </span>
+
+
+
+          <span
+
+            v-else-if="isLocked(condition.key)"
 
             class="flex shrink-0 flex-col items-center gap-1.5"
 
@@ -220,9 +252,9 @@
 
             :class="isSelected(condition.key)
 
-              ? 'bg-slate-950 text-white shadow-md shadow-slate-950/20 ring-2 ring-slate-950 dark:bg-white dark:text-slate-950 dark:ring-white'
+              ? 'bg-primary text-white shadow-md shadow-black/20 ring-2 ring-primary'
 
-              : 'bg-white text-transparent ring-2 ring-slate-200 dark:bg-slate-900 dark:ring-slate-700'"
+              : 'bg-elevated text-transparent ring-2 ring-default'"
 
             aria-hidden="true"
 
@@ -252,7 +284,7 @@
 
       v-if="mode === 'onboarding'"
 
-      class="shrink-0 border-t border-slate-200 bg-white px-2 py-3 dark:border-slate-800 dark:bg-slate-950"
+      class="shrink-0 border-t border-default bg-elevated px-2 py-3"
 
     >
 
@@ -260,7 +292,7 @@
 
         type="button"
 
-        class="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-4 text-base font-bold text-white shadow-lg transition hover:bg-slate-800 disabled:opacity-40 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+        class="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 text-base font-bold text-white shadow-lg transition hover:opacity-90 disabled:opacity-40"
 
         :disabled="selectedCount === 0 || saving"
 
@@ -319,6 +351,9 @@ const props = defineProps<{
 
   lockedKeys?: string[]
 
+  /** Non-Pro locks (e.g. one mental health condition at a time). */
+  restrictedKeys?: string[]
+
   showProLimit?: boolean
 
   saving?: boolean
@@ -336,6 +371,8 @@ const emit = defineEmits<{
   toggle: [key: string]
 
   lockedSelect: [key: string]
+
+  restrictedSelect: [key: string]
 
   confirm: []
 
@@ -381,6 +418,7 @@ watch(() => props.demoSearchQuery, (value) => {
 })
 
 const lockedKeySet = computed(() => new Set(props.lockedKeys || []))
+const restrictedKeySet = computed(() => new Set(props.restrictedKeys || []))
 
 
 
@@ -447,6 +485,10 @@ function isLocked(key: string) {
 
 }
 
+function isRestricted(key: string) {
+  return restrictedKeySet.value.has(key)
+}
+
 
 
 function handleConditionClick(key: string) {
@@ -459,7 +501,10 @@ function handleConditionClick(key: string) {
 
   }
 
-
+  if (isRestricted(key)) {
+    emit('restrictedSelect', key)
+    return
+  }
 
   emit('toggle', key)
 

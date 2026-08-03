@@ -160,7 +160,7 @@ export function useLogReminders() {
       icon: PUSH_NOTIFICATION_ICON,
       badge: PUSH_NOTIFICATION_BADGE,
       tag,
-      data: { url: '/app' }
+      data: { url: '/' }
     }
 
     try {

@@ -22,7 +22,7 @@
 
         <div class="mt-6 space-y-3">
           <NuxtLink
-            to="/app"
+            to="/"
             class="block w-full rounded-2xl bg-white px-5 py-4 text-base font-bold text-slate-950 transition hover:bg-slate-200"
           >
             {{ isPro ? 'Start tracking' : 'Back to app' }}
@@ -38,7 +38,7 @@
           </button>
           <NuxtLink
             v-else-if="!user && !isAuthLoading && checkoutSessionId"
-            to="/app?login=1"
+            to="/?login=1"
             class="block w-full rounded-2xl bg-amber-500/15 px-4 py-3 text-sm font-bold text-amber-100 ring-1 ring-amber-400/40 transition hover:bg-amber-500/25"
           >
             Sign in to activate Pro

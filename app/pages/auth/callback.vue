@@ -29,7 +29,7 @@
             {{ errorMessage }}
           </p>
           <NuxtLink
-            :to="isPkceError ? '/app?login=1' : '/app'"
+            :to="isPkceError ? '/?login=1' : '/'"
             class="inline-flex w-full items-center justify-center rounded-3xl bg-white px-4 py-4 text-base font-semibold text-slate-950 transition hover:bg-slate-100"
             @click="handleTryAgainClick"
           >
@@ -104,7 +104,7 @@ onMounted(async () => {
     stripAuthQueryFromUrl()
 
     window.setTimeout(() => {
-      router.push('/app')
+      router.push('/')
     }, 1200)
   } catch (error) {
     const supabase = useSupabaseClient()
@@ -117,7 +117,7 @@ onMounted(async () => {
       stripAuthQueryFromUrl()
 
       window.setTimeout(() => {
-        router.push('/app')
+        router.push('/')
       }, 1200)
       return
     }

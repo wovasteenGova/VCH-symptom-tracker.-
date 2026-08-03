@@ -1,13 +1,23 @@
 <template>
-  <main
-    class="flex h-dvh min-h-0 flex-col overflow-hidden bg-slate-950 text-white"
+  <component
+    :is="overlay ? 'div' : 'main'"
+    :class="overlay
+      ? 'flex min-h-0 flex-1 flex-col overflow-hidden bg-default text-default'
+      : 'flex h-dvh min-h-0 flex-col overflow-hidden bg-default text-default'"
   >
-    <section class="mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col px-4 pt-4 sm:max-w-lg">
-      <header class="sticky top-0 z-40 -mx-4 flex shrink-0 items-center gap-3 border-b border-slate-800 bg-slate-950/95 px-4 pb-4 pt-4 backdrop-blur-md">
+    <section
+      :class="overlay
+        ? 'flex min-h-0 flex-1 flex-col'
+        : 'mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col px-4 pt-4 sm:max-w-lg'"
+    >
+      <header
+        v-if="!overlay"
+        class="sticky top-0 z-40 -mx-4 flex shrink-0 items-center gap-3 border-b border-default bg-default/95 px-4 pb-4 pt-4 backdrop-blur-md"
+      >
         <button
           v-if="closeEmbedProfile"
           type="button"
-          class="grid size-10 shrink-0 place-items-center rounded-full bg-slate-900 text-white shadow-sm ring-1 ring-slate-800 transition hover:bg-slate-800"
+          class="grid size-10 shrink-0 place-items-center rounded-full bg-elevated text-highlighted shadow-sm ring-1 ring-default transition hover:bg-accented"
           aria-label="Back to tracker"
           @click="closeEmbedProfile()"
         >
@@ -15,60 +25,60 @@
         </button>
         <NuxtLink
           v-else
-          to="/app"
-          class="grid size-10 shrink-0 place-items-center rounded-full bg-slate-900 text-white shadow-sm ring-1 ring-slate-800 transition hover:bg-slate-800"
+          to="/"
+          class="grid size-10 shrink-0 place-items-center rounded-full bg-elevated text-highlighted shadow-sm ring-1 ring-default transition hover:bg-accented"
           aria-label="Back to tracker"
         >
           <UIcon name="i-lucide-arrow-left" class="size-5" />
         </NuxtLink>
 
         <div class="min-w-0 flex-1">
-          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Profile</p>
-          <h1 class="mt-1 truncate text-xl font-bold tracking-tight text-white">Account Settings</h1>
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-muted">Profile</p>
+          <h1 class="mt-1 truncate text-xl font-bold tracking-tight text-highlighted">Account Settings</h1>
         </div>
 
         <p
           v-if="user && autoSaveLabel"
           class="shrink-0 text-xs font-semibold"
-          :class="autoSaveState === 'error' ? 'text-red-300' : 'text-slate-400'"
+          :class="autoSaveState === 'error' ? 'text-red-300' : 'text-muted'"
           aria-live="polite"
         >
           {{ autoSaveLabel }}
         </p>
       </header>
 
-      <section v-if="isAuthLoading" class="mt-6 shrink-0 rounded-4xl border border-slate-800 bg-slate-900 p-5">
-        <h2 class="text-xl font-bold text-white">Loading account...</h2>
-        <p class="mt-2 text-sm leading-6 text-slate-400">
+      <section v-if="isAuthLoading" class="mt-6 shrink-0 rounded-xl border border-default/70 bg-elevated/20 p-5">
+        <h2 class="text-xl font-bold text-highlighted">Loading account...</h2>
+        <p class="mt-2 text-sm leading-6 text-muted">
           Checking your saved session.
         </p>
       </section>
 
       <form v-else-if="!user" class="mt-6 flex min-h-0 flex-1 flex-col" @submit.prevent="handleAuthSubmit">
         <div class="flex-1 overflow-y-auto no-scrollbar">
-          <section class="rounded-4xl border border-slate-800 bg-slate-900 p-5">
+          <section class="rounded-xl border border-default/70 bg-elevated/20 p-5">
             <AuthModeTabs v-model="authMode" tone="dark" />
 
-            <p class="mt-3 text-sm leading-6 text-slate-400">
+            <p class="mt-3 text-sm leading-6 text-muted">
               Sign in to save symptom entries, export reports, and manage deleted logs.
             </p>
 
             <div class="mt-5 space-y-4">
               <label v-if="authMode === 'signup'" class="block">
-                <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Name</span>
+                <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-muted">Name</span>
                 <input
                   v-model="authName"
                   type="text"
                   name="name"
                   autocomplete="name"
-                  class="w-full rounded-3xl border border-slate-600/70 bg-slate-800/70 px-4 py-4 text-base font-medium text-white outline-none placeholder:text-slate-400 focus:border-slate-400"
+                  class="w-full rounded-3xl border border-default bg-elevated/40 px-4 py-4 text-base font-medium text-highlighted outline-none placeholder:text-muted focus:border-primary focus:ring-1 focus:ring-primary/40"
                   placeholder="Your full name"
                   :required="authMode === 'signup'"
                 >
               </label>
 
               <label class="block">
-                <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Email</span>
+                <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-muted">Email</span>
                 <input
                   v-model="authEmail"
                   type="email"
@@ -76,14 +86,14 @@
                   autocomplete="email"
                   inputmode="email"
                   autocapitalize="none"
-                  class="w-full rounded-3xl border border-slate-600/70 bg-slate-800/70 px-4 py-4 text-base font-medium text-white outline-none placeholder:text-slate-400 focus:border-slate-400"
+                  class="w-full rounded-3xl border border-default bg-elevated/40 px-4 py-4 text-base font-medium text-highlighted outline-none placeholder:text-muted focus:border-primary focus:ring-1 focus:ring-primary/40"
                   placeholder="you@example.com"
                   required
                 >
               </label>
 
               <label class="block">
-                <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Password</span>
+                <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-muted">Password</span>
                 <PasswordInput
                   v-if="authMode === 'login'"
                   key="auth-login-password"
@@ -111,7 +121,7 @@
               </label>
 
               <label v-if="authMode === 'signup'" class="block">
-                <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Confirm password</span>
+                <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-muted">Confirm password</span>
                 <PasswordInput
                   v-model="authConfirmPassword"
                   name="confirm-password"
@@ -126,7 +136,7 @@
               <button
                 v-if="authMode === 'login'"
                 type="button"
-                class="w-full rounded-2xl px-4 py-2 text-sm font-semibold text-slate-300"
+                class="w-full rounded-2xl px-4 py-2 text-sm font-semibold text-muted"
                 :disabled="isAuthSubmitting || isEmailCooldownActive"
                 @click="handleForgotPassword"
               >
@@ -136,7 +146,7 @@
               <button
                 v-if="needsEmailConfirmation"
                 type="button"
-                class="w-full rounded-2xl px-4 py-2 text-sm font-semibold text-sky-300"
+                class="w-full rounded-2xl px-4 py-2 text-sm font-semibold text-primary"
                 :disabled="isAuthSubmitting || !authEmail || isEmailCooldownActive"
                 @click="handleResendConfirmation"
               >
@@ -157,7 +167,7 @@
 
           <button
             type="submit"
-            class="w-full rounded-2xl bg-white px-5 py-4 text-base font-bold text-slate-950 shadow-lg transition hover:bg-slate-200 disabled:opacity-60"
+            class="w-full rounded-2xl bg-primary px-5 py-4 text-base font-bold text-inverted shadow-lg transition hover:bg-primary/90 disabled:opacity-60"
             :disabled="isAuthSubmitting"
           >
             {{ isAuthSubmitting ? 'Working...' : authMode === 'login' ? 'Sign in' : 'Create account' }}
@@ -181,143 +191,390 @@
 
           <p
             v-else-if="authMode === 'signup' && isPasskeySupported"
-            class="mt-3 text-center text-xs leading-5 text-slate-400"
+            class="mt-3 text-center text-xs leading-5 text-muted"
           >
             Prefer passkeys? Create your account first, then add one under Profile &rarr; Passkeys.
           </p>
         </StickyActionBar>
       </form>
 
-      <div v-else class="mt-3 flex min-h-0 flex-1 flex-col">
+      <div
+        v-else
+        :class="overlay ? 'flex min-h-0 flex-1 flex-col' : 'mt-3 flex min-h-0 flex-1 flex-col'"
+      >
         <SettingsSectionNav
           :sections="settingsSections"
           :scroll-root="settingsScrollEl"
+          :compact="compact"
+          :readable="readable"
         />
 
         <div
           ref="settingsScrollEl"
-          class="min-h-0 flex-1 overflow-y-auto overscroll-y-contain no-scrollbar"
+          class="min-h-0 flex-1 overflow-y-auto overscroll-y-contain no-scrollbar pb-[max(1rem,env(safe-area-inset-bottom))]"
+          :class="[
+            settingsSectionsStackClass(compact),
+            settingsScrollBodyClass({ compact, overlay }),
+            readable ? 'tracker-settings-readable' : ''
+          ]"
         >
-        <div class="space-y-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4">
-        <section id="settings-account" class="scroll-mt-3 rounded-4xl border border-slate-800 bg-slate-900 p-4">
-          <div class="flex items-start justify-between gap-3">
-            <div class="min-w-0">
-              <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Your Info</p>
-              <h2 class="mt-1 truncate text-xl font-bold text-white">{{ user.email }}</h2>
-              <p v-if="signInMethodLabel" class="mt-1.5 flex items-center gap-1.5 text-xs text-slate-400">
-                <UIcon v-if="usesGoogleLogin" name="i-lucide-chrome" class="size-3.5 shrink-0" />
-                {{ signInMethodLabel }}
-              </p>
-            </div>
+        <section
+          id="settings-account"
+          :class="settingsSectionClass(compact)"
+        >
+          <h3
+            class="font-semibold text-highlighted"
+            :class="readable ? 'text-lg' : 'text-sm'"
+          >
+            Account
+          </h3>
 
+          <div
+            v-if="entitlementsLoaded"
+            class="mt-3 flex flex-wrap items-center gap-2"
+          >
             <span
-              v-if="!entitlementsLoaded"
-              class="inline-flex shrink-0 items-center rounded-full bg-slate-800 px-3 py-1.5 ring-1 ring-slate-700"
-              aria-hidden="true"
-            >
-              <span class="inline-block h-3 w-10 animate-pulse rounded-full bg-slate-600/80" />
-            </span>
-            <span
-              v-else
-              class="inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.12em] ring-1"
+              class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.12em] ring-1"
               :class="isPro
-                ? 'bg-amber-500/20 text-amber-100 ring-amber-400/80 shadow-sm shadow-amber-500/20'
-                : 'bg-sky-950 text-sky-200 ring-sky-600/70'"
+                ? PRO_BADGE_CLASS
+                : 'bg-primary/10 text-primary ring-primary/40'"
             >
               <UIcon
                 :name="isPro ? 'i-lucide-crown' : 'i-lucide-sparkles'"
-                class="size-3.5"
-                :class="isPro ? 'text-amber-300' : 'text-sky-300'"
+                class="size-3"
+                :class="isPro ? PRO_BADGE_ICON_CLASS : 'text-primary'"
               />
               {{ isPro ? 'Pro' : 'Free' }}
             </span>
-          </div>
-
-          <template v-if="entitlementsLoaded">
-          <p v-if="!isPro" class="mt-3 text-xs leading-5 text-slate-400">
-            Free plan: 1 condition with unlimited entries, calendar logging charts, and entry PDFs with weekly symptom counts. Upgrade for {{ PRO_ANNUAL_PRICE_LABEL }} to unlock more conditions, family reporting, and severity trends in PDFs.
-          </p>
-          <div v-if="!isPro" class="mt-4 rounded-3xl border border-slate-800 bg-slate-950/60 p-4">
-            <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Your free conditions</p>
-            <p class="mt-1 text-xs leading-5 text-slate-500">
-              {{ freeConditionKeys.length }}/{{ FREE_CONDITION_LIMIT }} selected
+            <p
+              v-if="signInMethodLabel"
+              class="flex items-center gap-1.5 text-xs text-muted"
+            >
+              <UIcon
+                v-if="usesGoogleLogin"
+                name="i-lucide-chrome"
+                class="size-3.5 shrink-0"
+              />
+              {{ signInMethodLabel }}
             </p>
-            <div v-if="freeConditionKeyLabels.length" class="mt-3 flex flex-wrap gap-2">
-              <span
-                v-for="label in freeConditionKeyLabels"
-                :key="label"
-                class="rounded-full bg-sky-950 px-3 py-1.5 text-xs font-semibold text-sky-200 ring-1 ring-sky-800"
-              >
-                {{ label }}
-              </span>
-            </div>
-            <p v-else class="mt-3 text-xs leading-5 text-slate-500">
-              Pick conditions when you start logging from the tracker home screen.
-            </p>
-          </div>
-          <p v-else-if="renewalLabel && !isComped" class="mt-3 text-xs leading-5 text-amber-100/80">
-            Pro renews on {{ renewalLabel }}.
-          </p>
-          <p v-else-if="isComped" class="mt-3 text-xs leading-5 text-amber-100/80">
-            Pro access granted at no cost. Thank you for using the tracker.
-          </p>
-
-          <div class="mt-4 flex flex-wrap gap-2">
             <NuxtLink
               to="/upgrade"
-              class="inline-flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold transition"
+              class="ml-auto inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold transition"
               :class="isPro
-                ? 'bg-slate-800 text-white ring-1 ring-slate-700'
+                ? 'bg-elevated text-highlighted ring-1 ring-default'
                 : 'bg-amber-400 text-slate-950 hover:bg-amber-300'"
             >
-              <UIcon :name="isPro ? 'i-lucide-receipt' : 'i-lucide-crown'" class="size-4" />
+              <UIcon
+                :name="isPro ? 'i-lucide-receipt' : 'i-lucide-crown'"
+                class="size-3.5"
+              />
               {{ isPro ? 'Payment center' : `Upgrade — ${PRO_ANNUAL_PRICE_LABEL}` }}
             </NuxtLink>
           </div>
+
+          <p
+            v-if="!overlay && user?.email"
+            class="mt-2 truncate text-xs text-muted"
+          >
+            {{ user.email }}
+          </p>
+
+          <template v-if="entitlementsLoaded && !overlay">
+            <p
+              v-if="!isPro"
+              class="mt-2 text-xs leading-5 text-muted"
+            >
+              Free plan: 1 condition with unlimited entries, calendar logging charts, and entry PDFs with weekly symptom counts. Upgrade for {{ PRO_ANNUAL_PRICE_LABEL }} to unlock more conditions, family reporting, and severity trends in PDFs.
+            </p>
+            <div
+              v-if="!isPro"
+              class="mt-3 rounded-3xl border border-default bg-default/60 p-4"
+            >
+              <p class="text-xs font-bold uppercase tracking-[0.14em] text-muted">Your free conditions</p>
+              <p class="mt-1 text-xs leading-5 text-muted">
+                {{ freeConditionKeys.length }}/{{ FREE_CONDITION_LIMIT }} selected
+              </p>
+              <div
+                v-if="freeConditionKeyLabels.length"
+                class="mt-3 flex flex-wrap gap-2"
+              >
+                <span
+                  v-for="label in freeConditionKeyLabels"
+                  :key="label"
+                  class="rounded-full bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary ring-1 ring-primary/30"
+                >
+                  {{ label }}
+                </span>
+              </div>
+              <p
+                v-else
+                class="mt-3 text-xs leading-5 text-muted"
+              >
+                Pick conditions when you start logging from the tracker home screen.
+              </p>
+            </div>
+            <p
+              v-else-if="isClaimBuilderPro"
+              class="mt-2 text-xs leading-5"
+              :class="PRO_STATUS_TEXT_CLASS"
+            >
+              Pro included with VCH Claim Maker.
+              <span v-if="claimBuilderFoundingProUntil"> Access until {{ claimBuilderFoundingProUntil }}.</span>
+            </p>
+            <p
+              v-else-if="renewalLabel && !isComped"
+              class="mt-2 text-xs leading-5"
+              :class="PRO_STATUS_TEXT_CLASS"
+            >
+              Pro renews on {{ renewalLabel }}.
+            </p>
+            <p
+              v-else-if="isComped"
+              class="mt-2 text-xs leading-5"
+              :class="PRO_STATUS_TEXT_CLASS"
+            >
+              Pro access granted at no cost. Thank you for using the tracker.
+            </p>
           </template>
 
-          <div class="mt-5 space-y-4">
-            <label class="block">
-              <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Full name</span>
-              <input
-                v-model="profileForm.full_name"
-                type="text"
-                class="w-full rounded-3xl border border-slate-600/70 bg-slate-800/70 px-4 py-4 text-base font-medium text-white outline-none placeholder:text-slate-400 focus:border-slate-400"
-                placeholder="Your full name"
-              >
+          <template v-else-if="entitlementsLoaded && overlay">
+            <p
+              v-if="!isPro"
+              class="mt-2 text-xs leading-5 text-muted"
+            >
+              Free plan: 1 condition with unlimited entries. Upgrade for {{ PRO_ANNUAL_PRICE_LABEL }} to unlock more.
+            </p>
+            <p
+              v-else-if="isClaimBuilderPro"
+              class="mt-2 text-xs leading-5"
+              :class="PRO_STATUS_TEXT_CLASS"
+            >
+              Pro included with VCH Claim Maker.
+            </p>
+            <p
+              v-else-if="renewalLabel && !isComped"
+              class="mt-2 text-xs leading-5"
+              :class="PRO_STATUS_TEXT_CLASS"
+            >
+              Pro renews on {{ renewalLabel }}.
+            </p>
+          </template>
+
+          <div class="mt-3 flex w-full flex-col items-stretch gap-2">
+            <label
+              for="tracker-settings-real-name"
+              class="block text-[10px] font-bold uppercase tracking-[0.12em] text-muted"
+            >
+              Real name
             </label>
+            <UInput
+              id="tracker-settings-real-name"
+              v-model="profileForm.full_name"
+              class="w-full"
+              :size="settingsInputSize"
+              :loading="isSavingProfile || autoSaveState === 'saving'"
+              placeholder="Your name"
+              autocomplete="name"
+            />
+            <p
+              class="text-xs leading-5"
+              :class="autoSaveState === 'error' ? 'text-error' : 'text-muted'"
+            >
+              {{ nameSaveHint || 'Use real name' }}
+            </p>
+
+            <label
+              for="tracker-settings-phone"
+              class="mt-1 block text-[10px] font-bold uppercase tracking-[0.12em] text-muted"
+            >
+              Phone number
+            </label>
+            <UInput
+              id="tracker-settings-phone"
+              :model-value="serviceDraft.phone ?? ''"
+              type="tel"
+              inputmode="tel"
+              autocomplete="tel"
+              class="w-full"
+              :size="settingsInputSize"
+              :loading="isSavingProfile || autoSaveState === 'saving'"
+              placeholder="(555) 555-5555"
+              @update:model-value="serviceDraft.phone = ($event as string).trim() || null; onServiceFieldInput()"
+            />
+
+            <label
+              for="tracker-settings-dob"
+              class="mt-1 block text-[10px] font-bold uppercase tracking-[0.12em] text-muted"
+            >
+              Date of birth
+            </label>
+            <UInput
+              id="tracker-settings-dob"
+              :model-value="serviceDraft.date_of_birth ?? ''"
+              type="date"
+              class="w-full"
+              :size="settingsInputSize"
+              :loading="isSavingProfile || autoSaveState === 'saving'"
+              @update:model-value="serviceDraft.date_of_birth = ($event as string) || null; onServiceFieldInput()"
+            />
+
+            <div class="mt-3 overflow-hidden rounded-xl border border-default/60 bg-default/30">
+              <button
+                type="button"
+                class="flex w-full items-center gap-2 px-3 py-2.5 text-left transition hover:bg-elevated/30"
+                :aria-expanded="projectSettingsExpanded"
+                @click="projectSettingsExpanded = !projectSettingsExpanded"
+              >
+                <div class="min-w-0 flex-1">
+                  <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-muted">
+                    Project settings
+                  </p>
+                  <p
+                    class="mt-0.5 truncate text-xs leading-5"
+                    :class="projectSettingsHasDetails ? 'text-highlighted' : 'text-muted'"
+                  >
+                    {{ projectSettingsSummary }}
+                  </p>
+                </div>
+                <UIcon
+                  name="i-lucide-chevron-down"
+                  class="size-4 shrink-0 text-muted transition-transform duration-200"
+                  :class="projectSettingsExpanded ? 'rotate-180' : ''"
+                />
+              </button>
+
+              <div
+                v-show="projectSettingsExpanded"
+                class="space-y-3 border-t border-default/60 px-3 py-3"
+              >
+                <div>
+                  <label
+                    for="tracker-settings-service-branch"
+                    class="mb-1 block text-[10px] font-bold uppercase tracking-[0.12em] text-muted"
+                  >
+                    Branch
+                  </label>
+                  <USelectMenu
+                    id="tracker-settings-service-branch"
+                    class="w-full"
+                    :model-value="serviceDraft.service_branch ?? undefined"
+                    :items="serviceBranchItems"
+                    value-key="value"
+                    label-key="label"
+                    placeholder="Select branch"
+                    :size="settingsInputSize"
+                    color="primary"
+                    :ui="serviceBranchSelectUi"
+                    :content="serviceBranchSelectContent"
+                    @update:model-value="onServiceBranchChange"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    for="tracker-settings-rank"
+                    class="mb-1 block text-[10px] font-bold uppercase tracking-[0.12em] text-muted"
+                  >
+                    Rank
+                  </label>
+                  <UInput
+                    id="tracker-settings-rank"
+                    :model-value="serviceDraft.service_rank ?? ''"
+                    class="w-full"
+                    :size="settingsInputSize"
+                    :loading="isSavingProfile || autoSaveState === 'saving'"
+                    placeholder="e.g. E-5, Sergeant, Captain"
+                    autocomplete="off"
+                    @update:model-value="serviceDraft.service_rank = ($event as string) || null; onServiceFieldInput()"
+                  />
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label
+                      for="tracker-settings-year-in"
+                      class="mb-1 block text-[10px] font-bold uppercase tracking-[0.12em] text-muted"
+                    >
+                      Year in
+                    </label>
+                    <UInput
+                      id="tracker-settings-year-in"
+                      :model-value="serviceDraft.service_start_year?.toString() ?? ''"
+                      type="number"
+                      min="1940"
+                      max="2100"
+                      inputmode="numeric"
+                      class="w-full"
+                      :size="settingsInputSize"
+                      placeholder="2008"
+                      @update:model-value="onServiceYearInput('service_start_year', String($event ?? ''))"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      for="tracker-settings-year-out"
+                      class="mb-1 block text-[10px] font-bold uppercase tracking-[0.12em] text-muted"
+                    >
+                      Year out
+                    </label>
+                    <UInput
+                      id="tracker-settings-year-out"
+                      :model-value="serviceDraft.service_end_year?.toString() ?? ''"
+                      type="number"
+                      min="1940"
+                      max="2100"
+                      inputmode="numeric"
+                      class="w-full"
+                      :size="settingsInputSize"
+                      placeholder="2012"
+                      @update:model-value="onServiceYearInput('service_end_year', String($event ?? ''))"
+                    />
+                  </div>
+                </div>
+
+                <p
+                  class="text-xs leading-5"
+                  :class="autoSaveState === 'error' ? 'text-error' : 'text-muted'"
+                >
+                  {{ serviceSaveHint || 'Used for claim packets and export headers.' }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div
+            v-if="user"
+            :class="SETTINGS_ACCOUNT_HELP_CLASS"
+          >
+            <span>Issues?</span>
+            <button
+              type="button"
+              class="font-semibold text-primary underline decoration-primary/40 underline-offset-2 transition hover:text-primary/80"
+              @click="isContactSupportOpen = true"
+            >
+              Contact us
+            </button>
+            <span aria-hidden="true" class="text-muted">·</span>
+            <button
+              type="button"
+              class="font-semibold text-primary underline decoration-primary/40 underline-offset-2 transition hover:text-primary/80"
+              @click="isFaqOverlayOpen = true"
+            >
+              FAQ
+            </button>
           </div>
         </section>
 
-        <div class="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 rounded-3xl border border-slate-800 bg-slate-900/60 px-4 py-3 text-center text-sm text-slate-400">
-          <span>Issues?</span>
-          <button
-            type="button"
-            class="font-semibold text-sky-300 underline decoration-sky-500/40 underline-offset-2 transition hover:text-sky-200"
-            @click="isContactSupportOpen = true"
-          >
-            Contact us
-          </button>
-          <span aria-hidden="true" class="text-slate-600">·</span>
-          <button
-            type="button"
-            class="font-semibold text-sky-300 underline decoration-sky-500/40 underline-offset-2 transition hover:text-sky-200"
-            @click="isFaqOverlayOpen = true"
-          >
-            Visit FAQ
-          </button>
-        </div>
-
         <div
           v-if="needsAppWelcome"
-          class="scroll-mt-3 rounded-4xl border border-teal-500/40 bg-teal-950/40 p-5"
+          class="settings-section-block scroll-mt-3 rounded-4xl border border-teal-500/40 bg-teal-950/40 p-5"
         >
           <p class="text-xs font-semibold uppercase tracking-[0.2em] text-teal-300">Setup incomplete</p>
           <p class="mt-2 text-sm leading-6 text-teal-50">
             Finish the quick setup wizard to choose how often you log and accept the terms.
           </p>
           <NuxtLink
-            to="/app"
+            to="/"
             class="mt-4 inline-flex items-center gap-2 rounded-2xl bg-teal-400 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-teal-300"
           >
             Resume setup
@@ -325,10 +582,10 @@
           </NuxtLink>
         </div>
 
-        <section id="settings-logging" class="scroll-mt-3 rounded-4xl border border-slate-800 bg-slate-900 p-5">
-          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Logging rhythm</p>
-          <h2 class="mt-1 text-xl font-bold text-white">When you log symptoms</h2>
-          <p class="mt-2 text-sm leading-6 text-slate-400">
+        <section id="settings-logging" :class="settingsSectionClass(compact)">
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-muted">Logging rhythm</p>
+          <h2 class="mt-1 text-xl font-bold text-highlighted">When you log symptoms</h2>
+          <p class="mt-2 text-sm leading-6 text-muted">
             Weekly logging is recommended for PTSD and mental health so you are not revisiting painful events every day.
           </p>
 
@@ -337,29 +594,29 @@
               type="button"
               class="rounded-3xl border px-4 py-4 text-left transition"
               :class="loggingCadence === 'weekly'
-                ? 'border-white bg-slate-800'
-                : 'border-slate-700 bg-slate-800/50'"
+                ? 'border-primary bg-primary/10 ring-1 ring-primary/30'
+                : 'border-default bg-elevated/30'"
               @click="saveLoggingCadence('weekly')"
             >
-              <span class="block font-bold text-white">End of the week</span>
-              <span class="mt-1 block text-sm leading-6 text-slate-400">Log once and capture the week together.</span>
+              <span class="block font-bold text-highlighted">End of the week</span>
+              <span class="mt-1 block text-sm leading-6 text-muted">Log once and capture the week together.</span>
             </button>
 
             <button
               type="button"
               class="rounded-3xl border px-4 py-4 text-left transition"
               :class="loggingCadence === 'daily'
-                ? 'border-white bg-slate-800'
-                : 'border-slate-700 bg-slate-800/50'"
+                ? 'border-primary bg-primary/10 ring-1 ring-primary/30'
+                : 'border-default bg-elevated/30'"
               @click="saveLoggingCadence('daily')"
             >
-              <span class="block font-bold text-white">Every day</span>
-              <span class="mt-1 block text-sm leading-6 text-slate-400">Best when you want details while they are fresh.</span>
+              <span class="block font-bold text-highlighted">Every day</span>
+              <span class="mt-1 block text-sm leading-6 text-muted">Best when you want details while they are fresh.</span>
             </button>
           </div>
 
           <div v-if="loggingCadence === 'weekly'" class="mt-4">
-            <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Preferred log day</p>
+            <p class="text-xs font-bold uppercase tracking-[0.14em] text-muted">Preferred log day</p>
             <div class="mt-3 flex flex-wrap gap-2">
               <button
                 v-for="option in weeklyLogDayOptions"
@@ -367,8 +624,8 @@
                 type="button"
                 class="rounded-full px-3 py-2 text-sm font-bold transition"
                 :class="weeklyLogDay === option.value
-                  ? 'bg-white text-slate-950'
-                  : 'bg-slate-800 text-slate-300 ring-1 ring-slate-700'"
+                  ? 'bg-primary text-inverted'
+                  : 'bg-elevated text-muted ring-1 ring-default'"
                 @click="saveWeeklyLogDay(option.value)"
               >
                 {{ option.label }}
@@ -377,13 +634,13 @@
           </div>
         </section>
 
-        <section id="settings-reminders" class="scroll-mt-3 rounded-4xl border border-slate-800 bg-slate-900 p-5">
-          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Reminders</p>
-          <h2 class="mt-1 text-xl font-bold text-white">Logging notifications</h2>
-          <p class="mt-2 text-sm leading-6 text-slate-400">
+        <section id="settings-reminders" :class="settingsSectionClass(compact)">
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-muted">Reminders</p>
+          <h2 class="mt-1 text-xl font-bold text-highlighted">Logging notifications</h2>
+          <p class="mt-2 text-sm leading-6 text-muted">
             {{ logReminderScheduleDescription }}
           </p>
-          <p class="mt-2 text-xs leading-5 text-slate-500">
+          <p class="mt-2 text-xs leading-5 text-muted">
             Device permission: {{ logReminderDevicePermissionLabel }}. Turning VCH reminders off stops app reminders but does not change your device notification permission.
           </p>
 
@@ -400,10 +657,10 @@
             This device is not registered for push reminders yet. Tap Enable after notifications are allowed.
           </p>
 
-          <div class="mt-4 flex items-center justify-between gap-3 rounded-3xl border border-slate-700 bg-slate-800/50 px-4 py-4">
+          <div class="mt-4 flex items-center justify-between gap-3 rounded-3xl border border-default bg-elevated/30 px-4 py-4">
             <div>
-              <p class="font-bold text-white">Log reminders</p>
-              <p class="mt-1 text-sm text-slate-400">
+              <p class="font-bold text-highlighted">Log reminders</p>
+              <p class="mt-1 text-sm text-muted">
                 {{ logReminderStatusLabel }}
               </p>
             </div>
@@ -411,8 +668,8 @@
               type="button"
               class="rounded-full px-4 py-2 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-60"
               :class="remindersEnabled
-                ? 'bg-white text-slate-950'
-                : 'bg-slate-700 text-slate-200 ring-1 ring-slate-600'"
+                ? 'bg-primary text-inverted'
+                : 'bg-elevated text-muted ring-1 ring-default'"
               :disabled="isReminderTogglePending"
               @click="toggleLogReminders"
             >
@@ -420,13 +677,13 @@
             </button>
           </div>
 
-          <div class="mt-4 rounded-3xl border border-slate-700 bg-slate-800/50 px-4 py-4">
-            <label class="block text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+          <div class="mt-4 rounded-3xl border border-default bg-elevated/30 px-4 py-4">
+            <label class="block text-xs font-bold uppercase tracking-[0.14em] text-muted">
               {{ loggingCadence === 'daily' ? 'Morning reminder' : 'Reminder time' }}
             </label>
             <select
               :value="reminderHour"
-              class="mt-2 w-full rounded-2xl border border-slate-600 bg-slate-900 px-4 py-3 text-sm font-semibold text-white"
+              class="mt-2 w-full rounded-2xl border border-default bg-default px-4 py-3 text-sm font-semibold text-highlighted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40"
               @change="handleReminderHourChange"
             >
               <option
@@ -441,14 +698,14 @@
 
           <div
             v-if="loggingCadence === 'daily'"
-            class="mt-4 rounded-3xl border border-slate-700 bg-slate-800/50 px-4 py-4"
+            class="mt-4 rounded-3xl border border-default bg-elevated/30 px-4 py-4"
           >
-            <label class="block text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+            <label class="block text-xs font-bold uppercase tracking-[0.14em] text-muted">
               Evening reminder
             </label>
             <select
               :value="reminderEveningHour"
-              class="mt-2 w-full rounded-2xl border border-slate-600 bg-slate-900 px-4 py-3 text-sm font-semibold text-white"
+              class="mt-2 w-full rounded-2xl border border-default bg-default px-4 py-3 text-sm font-semibold text-highlighted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40"
               @change="handleReminderEveningHourChange"
             >
               <option
@@ -461,21 +718,21 @@
             </select>
           </div>
 
-          <p class="mt-3 text-xs leading-5 text-slate-500">
+          <p class="mt-3 text-xs leading-5 text-muted">
             Uses your local timezone: {{ logReminderTimezoneLabel }} ({{ reminderTimezone }}).
             Install the app for background alerts when closed. On Android, set notification channel to Sound and pop-up if alerts only appear in the shade.
           </p>
 
-          <div class="mt-4 flex items-center justify-between gap-3 rounded-3xl border border-slate-700 bg-slate-800/50 px-4 py-4">
+          <div class="mt-4 flex items-center justify-between gap-3 rounded-3xl border border-default bg-elevated/30 px-4 py-4">
             <div class="min-w-0">
-              <p class="font-bold text-white">Test notification</p>
-              <p class="mt-1 text-sm text-slate-400">
+              <p class="font-bold text-highlighted">Test notification</p>
+              <p class="mt-1 text-sm text-muted">
                 Sends a real OS notification now so you can confirm this device is set up.
               </p>
             </div>
             <button
               type="button"
-              class="shrink-0 rounded-full bg-slate-700 px-4 py-2 text-sm font-bold text-slate-200 ring-1 ring-slate-600 transition hover:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-60"
+              class="shrink-0 rounded-full bg-elevated px-4 py-2 text-sm font-bold text-muted ring-1 ring-default transition hover:bg-accented disabled:cursor-not-allowed disabled:opacity-60"
               :disabled="isReminderTogglePending || isSendingTestReminder"
               @click="sendTestLogReminder"
             >
@@ -484,17 +741,17 @@
           </div>
         </section>
 
-        <section id="settings-display" class="scroll-mt-3 rounded-4xl border border-slate-800 bg-slate-900 p-5">
-          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Display</p>
-          <h2 class="mt-1 text-xl font-bold text-white">Tracker layout</h2>
-          <p class="mt-2 text-sm leading-6 text-slate-400">
+        <section id="settings-display" :class="settingsSectionClass(compact)">
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-muted">Display</p>
+          <h2 class="mt-1 text-xl font-bold text-highlighted">Tracker layout</h2>
+          <p class="mt-2 text-sm leading-6 text-muted">
             Auto hides arrow controls on small screens. Choose desktop to keep arrows and the wide layout on a tablet or narrow window.
           </p>
 
-          <div class="mt-5 flex items-center justify-between gap-4 rounded-3xl border border-slate-700 bg-slate-800/50 px-4 py-3">
+          <div class="mt-5 flex items-center justify-between gap-4 rounded-3xl border border-default bg-elevated/30 px-4 py-3">
             <div class="min-w-0">
-              <p class="font-bold text-white">Color theme</p>
-              <p class="mt-1 text-sm leading-6 text-slate-400">
+              <p class="font-bold text-highlighted">Color theme</p>
+              <p class="mt-1 text-sm leading-6 text-muted">
                 Pick a palette and light or dark mode.
               </p>
             </div>
@@ -508,35 +765,38 @@
               type="button"
               class="rounded-3xl border px-4 py-4 text-left transition"
               :class="layoutMode === option.value
-                ? 'border-white bg-slate-800'
-                : 'border-slate-700 bg-slate-800/50'"
+                ? 'border-primary bg-primary/10 ring-1 ring-primary/30'
+                : 'border-default bg-elevated/30'"
               @click="chooseLayoutMode(option.value)"
             >
-              <span class="block font-bold text-white">{{ option.label }}</span>
-              <span class="mt-1 block text-sm leading-6 text-slate-400">{{ option.copy }}</span>
+              <span class="block font-bold text-highlighted">{{ option.label }}</span>
+              <span class="mt-1 block text-sm leading-6 text-muted">{{ option.copy }}</span>
             </button>
           </div>
         </section>
 
-        <div id="settings-supporters" class="scroll-mt-3 space-y-5">
-        <section class="rounded-4xl border border-slate-800 bg-slate-900 p-4">
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Family, friends, other</p>
-            <h2 class="mt-1 text-xl font-bold text-white">Family reporting access</h2>
-            <p class="mt-2 text-sm leading-6 text-slate-400">
-              Create a private link for someone you trust. They enter their own contact info on each report. You can also create a link from a saved entry in your history.
+        <section
+          id="settings-supporters"
+          :class="settingsSectionClass(compact)"
+        >
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-muted">Lay reporting</p>
+            <h2 class="mt-1 text-xl font-bold text-highlighted">Observer access links</h2>
+            <p class="mt-2 text-sm leading-6 text-muted">
+              Create a private link for someone you trust — family, friends, caregivers, or anyone else. They enter their own contact info on each report. You can also create a link from a saved entry in your history.
             </p>
           </div>
 
           <div
             v-if="!canUseFamilyReporting"
-            class="mt-4 rounded-3xl border border-amber-900/50 bg-amber-950/20 p-4"
+            class="mt-4"
+            :class="PRO_LOCK_PANEL_CLASS"
           >
             <div class="flex items-start gap-3">
-              <UIcon name="i-lucide-lock" class="mt-0.5 size-5 shrink-0 text-amber-300" />
+              <UIcon name="i-lucide-lock" class="mt-0.5 size-5 shrink-0 text-amber-700 dark:text-amber-300" />
               <div>
-                <p class="font-semibold text-amber-100">Pro feature</p>
-                <p class="mt-1 text-sm leading-6 text-amber-50/90">
+                <p :class="PRO_LOCK_TITLE_CLASS">Pro feature</p>
+                <p :class="PRO_LOCK_BODY_CLASS">
                   Family reporting links are included with Pro so family, friends, or others can submit signed observations for your claim.
                 </p>
                 <NuxtLink
@@ -547,7 +807,7 @@
                 </NuxtLink>
                 <a
                   :href="supportEmailHref"
-                  class="mt-3 block text-xs font-semibold text-amber-100/80 underline-offset-2 hover:underline"
+                  :class="PRO_LOCK_LINK_CLASS"
                 >
                   Can't pay? Email us for free access
                 </a>
@@ -557,28 +817,28 @@
 
           <template v-else>
 
-          <div v-if="linkedEntryContext" class="mt-4 rounded-3xl border border-sky-900/60 bg-sky-950/30 p-4">
-            <p class="text-xs font-bold uppercase tracking-[0.14em] text-sky-300">Linked entry</p>
-            <p class="mt-2 font-semibold text-white">{{ linkedEntryContext.summary }}</p>
-            <p class="mt-1 text-xs text-sky-200/80">{{ linkedEntryContext.condition }}</p>
+          <div v-if="linkedEntryContext" class="mt-4 rounded-3xl border border-primary/35 bg-primary/10 p-4">
+            <p class="text-xs font-bold uppercase tracking-[0.14em] text-primary">Linked entry</p>
+            <p class="mt-2 font-semibold text-highlighted">{{ linkedEntryContext.summary }}</p>
+            <p class="mt-1 text-xs text-primary/80">{{ linkedEntryContext.condition }}</p>
           </div>
 
           <div class="mt-5 space-y-4">
             <label class="block">
-              <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Link label (optional)</span>
+              <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-muted">Link label (optional)</span>
               <input
                 v-model="supporterForm.link_label"
                 type="text"
-                class="w-full rounded-3xl border border-slate-600/70 bg-slate-800/70 px-4 py-4 text-base font-medium text-white outline-none placeholder:text-slate-400 focus:border-slate-400"
+                class="w-full rounded-3xl border border-default bg-elevated/40 px-4 py-4 text-base font-medium text-highlighted outline-none placeholder:text-muted focus:border-primary focus:ring-1 focus:ring-primary/40"
                 placeholder="Example: Mom, spouse, caregiver"
               >
-              <p class="mt-2 px-1 text-xs leading-5 text-slate-400">
+              <p class="mt-2 px-1 text-xs leading-5 text-muted">
                 This label is only for you to recognize the link. They enter their real info when submitting a report.
               </p>
             </label>
 
             <div>
-              <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Visible conditions</span>
+              <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-muted">Visible conditions</span>
               <USelectMenu
                 v-model="supporterForm.visible_conditions"
                 :items="conditionOptions"
@@ -592,7 +852,7 @@
 
             <button
               type="button"
-              class="w-full rounded-2xl bg-white px-5 py-4 text-base font-bold text-slate-950 shadow-lg transition hover:bg-slate-200"
+              class="w-full rounded-2xl bg-primary px-5 py-4 text-base font-bold text-inverted shadow-lg transition hover:bg-primary/90"
               :disabled="isCreatingSupporter"
               @click="createSupporter"
             >
@@ -616,26 +876,26 @@
             </button>
           </div>
           </template>
-        </section>
 
-        <section class="space-y-3">
-          <h2 class="px-1 text-xl font-bold text-white">Existing reporting links</h2>
+          <div class="mt-8 border-t border-default/70 pt-5">
+            <h2 class="text-xl font-bold text-highlighted">Existing reporting links</h2>
 
-          <div v-if="!supporterProfiles.length" class="rounded-4xl border border-slate-800 bg-slate-900 p-5 text-center text-sm text-slate-400">
-            No reporting links yet.
-          </div>
+            <div v-if="!supporterProfiles.length" class="py-5 text-center text-sm text-muted">
+              No reporting links yet.
+            </div>
 
-          <article
-            v-for="profile in supporterProfiles"
-            :key="profile.id"
-            class="rounded-4xl border border-slate-800 bg-slate-900 p-4"
-          >
+            <div v-else class="mt-4 divide-y divide-default/70">
+              <article
+                v-for="profile in supporterProfiles"
+                :key="profile.id"
+                class="py-4 first:pt-0"
+              >
             <div class="flex items-start justify-between gap-3">
               <div>
-                <h3 class="font-bold text-white">{{ profile.display_name || 'Private reporting link' }}</h3>
-                <p class="mt-1 text-sm text-slate-400">Reporter details are collected on each submission.</p>
+                <h3 class="font-bold text-highlighted">{{ profile.display_name || 'Private reporting link' }}</h3>
+                <p class="mt-1 text-sm text-muted">Reporter details are collected on each submission.</p>
               </div>
-              <UBadge :color="profile.active ? 'success' : 'neutral'" variant="soft">
+              <UBadge :color="profile.active ? 'success' : 'neutral'" variant="soft" size="md">
                 {{ profile.active ? 'Active' : 'Disabled' }}
               </UBadge>
             </div>
@@ -646,20 +906,21 @@
                 :key="condition"
                 color="neutral"
                 variant="soft"
+                size="md"
               >
                 {{ condition }}
               </UBadge>
             </div>
 
-            <div v-if="profile.entry_context_summary" class="mt-3 rounded-2xl border border-sky-900/50 bg-sky-950/20 px-3 py-2">
-              <p class="text-xs font-bold uppercase tracking-[0.12em] text-sky-300">Linked entry</p>
-              <p class="mt-1 text-sm text-sky-100">{{ profile.entry_context_summary }}</p>
+            <div v-if="profile.entry_context_summary" class="mt-3 rounded-2xl border border-primary/30 bg-primary/10 px-3 py-2">
+              <p class="text-xs font-bold uppercase tracking-[0.12em] text-primary">Linked entry</p>
+              <p class="mt-1 text-sm text-highlighted">{{ profile.entry_context_summary }}</p>
             </div>
 
             <div class="mt-4 flex items-center gap-3">
               <button
                 type="button"
-                class="grid size-11 shrink-0 place-items-center rounded-full bg-slate-800 text-white ring-1 ring-slate-700 transition hover:bg-slate-700"
+                class="grid size-11 shrink-0 place-items-center rounded-full bg-elevated text-highlighted ring-1 ring-default transition hover:bg-accented"
                 :disabled="isCopyingSupporterId === profile.id"
                 :aria-label="`Copy link for ${profile.display_name || 'private reporting link'}`"
                 @click="copyExistingSupporterLink(profile)"
@@ -672,7 +933,7 @@
               </button>
               <button
                 type="button"
-                class="flex-1 rounded-2xl bg-slate-800 px-4 py-3 text-sm font-bold text-white ring-1 ring-slate-700"
+                class="flex-1 rounded-2xl bg-elevated px-4 py-3 text-sm font-bold text-highlighted ring-1 ring-default"
                 @click="toggleSupporter(profile)"
               >
                 {{ profile.active ? 'Disable link' : 'Reactivate link' }}
@@ -685,14 +946,15 @@
                 Delete link
               </button>
             </div>
-          </article>
+              </article>
+            </div>
+          </div>
         </section>
-        </div>
 
-        <section id="settings-passkeys" class="scroll-mt-3 rounded-4xl border border-slate-800 bg-slate-900 p-5">
-          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Sign-in &amp; security</p>
-          <h2 class="mt-1 text-xl font-bold text-white">Passkeys</h2>
-          <p class="mt-2 text-sm leading-6 text-slate-400">
+        <section id="settings-passkeys" :class="settingsSectionClass(compact)">
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-muted">Sign-in &amp; security</p>
+          <h2 class="mt-1 text-xl font-bold text-highlighted">Passkeys</h2>
+          <p class="mt-2 text-sm leading-6 text-muted">
             Sign in with your fingerprint, face, or device PIN instead of a password. Passkeys stay on your device and cannot be phished.
           </p>
 
@@ -705,33 +967,33 @@
             <p v-if="passkeyActionError" class="mt-3 text-sm font-medium text-red-300">{{ passkeyActionError }}</p>
 
             <div v-if="isLoadingPasskeys && !passkeys.length" class="mt-4 space-y-2">
-              <div class="h-16 animate-pulse rounded-3xl bg-slate-800/70" />
+              <div class="h-16 animate-pulse rounded-3xl bg-elevated/50" />
             </div>
 
             <div v-else-if="passkeys.length" class="mt-4 space-y-2">
               <div
                 v-for="passkey in passkeys"
                 :key="passkey.id"
-                class="rounded-3xl border border-slate-700 bg-slate-800/50 px-4 py-4"
+                class="rounded-3xl border border-default bg-elevated/30 px-4 py-4"
               >
                 <div class="flex items-center justify-between gap-3">
                   <div class="flex min-w-0 items-center gap-3">
-                    <UIcon name="i-lucide-fingerprint" class="size-5 shrink-0 text-sky-300" />
+                    <UIcon name="i-lucide-fingerprint" class="size-5 shrink-0 text-primary" />
                     <div class="min-w-0">
                       <template v-if="renamingPasskeyId === passkey.id">
                         <input
                           v-model="renamePasskeyName"
                           type="text"
                           maxlength="120"
-                          class="w-full rounded-2xl border border-slate-600 bg-slate-900 px-3 py-2 text-sm font-semibold text-white outline-none focus:border-slate-400"
+                          class="w-full rounded-2xl border border-default bg-default px-3 py-2 text-sm font-semibold text-highlighted outline-none focus:border-primary focus:ring-1 focus:ring-primary/40"
                           placeholder="Name this passkey (e.g. My phone)"
                           @keydown.enter.prevent="saveRenamePasskey"
                           @keydown.esc="cancelRenamePasskey"
                         >
                       </template>
                       <template v-else>
-                        <p class="truncate font-bold text-white">{{ passkey.friendly_name || 'Passkey' }}</p>
-                        <p class="mt-0.5 text-xs text-slate-400">
+                        <p class="truncate font-bold text-highlighted">{{ passkey.friendly_name || 'Passkey' }}</p>
+                        <p class="mt-0.5 text-xs text-muted">
                           Added {{ formatPasskeyDate(passkey.created_at) }}<template v-if="passkey.last_used_at"> · Last used {{ formatPasskeyDate(passkey.last_used_at) }}</template>
                         </p>
                       </template>
@@ -742,7 +1004,7 @@
                     <template v-if="renamingPasskeyId === passkey.id">
                       <button
                         type="button"
-                        class="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-slate-950 disabled:opacity-60"
+                        class="rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-inverted disabled:opacity-60"
                         :disabled="isPasskeyBusy"
                         @click="saveRenamePasskey"
                       >
@@ -750,7 +1012,7 @@
                       </button>
                       <button
                         type="button"
-                        class="rounded-full bg-slate-700 px-3 py-1.5 text-xs font-bold text-slate-200"
+                        class="rounded-full bg-elevated px-3 py-1.5 text-xs font-bold text-muted"
                         :disabled="isPasskeyBusy"
                         @click="cancelRenamePasskey"
                       >
@@ -760,7 +1022,7 @@
                     <template v-else>
                       <button
                         type="button"
-                        class="rounded-full p-2 text-slate-400 transition hover:bg-slate-700 hover:text-white"
+                        class="rounded-full p-2 text-muted transition hover:bg-accented hover:text-highlighted"
                         aria-label="Rename passkey"
                         @click="startRenamePasskey(passkey)"
                       >
@@ -768,7 +1030,7 @@
                       </button>
                       <button
                         type="button"
-                        class="rounded-full p-2 text-slate-400 transition hover:bg-red-950 hover:text-red-300"
+                        class="rounded-full p-2 text-muted transition hover:bg-red-950 hover:text-red-300"
                         aria-label="Delete passkey"
                         @click="requestDeletePasskey(passkey)"
                       >
@@ -780,13 +1042,13 @@
               </div>
             </div>
 
-            <p v-else class="mt-4 text-sm leading-6 text-slate-500">
+            <p v-else class="mt-4 text-sm leading-6 text-muted">
               No passkeys yet. Add one to sign in without your password next time.
             </p>
 
             <button
               type="button"
-              class="mt-4 inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-slate-200 disabled:opacity-60"
+              class="mt-4 inline-flex items-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-inverted transition hover:bg-primary/90 disabled:opacity-60"
               :disabled="isAddingPasskey || isPasskeyBusy"
               @click="handleAddPasskey"
             >
@@ -796,25 +1058,25 @@
           </template>
         </section>
 
-        <section id="settings-sessions" class="scroll-mt-3 rounded-4xl border border-red-900/40 bg-slate-900 p-5">
-          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-red-300/80">Sign-in &amp; security</p>
-          <h2 class="mt-1 text-xl font-bold text-white">Sessions</h2>
-          <p class="mt-2 text-sm leading-6 text-slate-400">
-            Signed in on a shared or borrowed computer? Use <span class="font-semibold text-slate-300">Sign out everywhere</span> so no one else can open your logs. You can sign back in anytime with your passkey, Google, or email.
+        <section id="settings-sessions" :class="settingsSectionClass(compact)">
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-red-600/80 dark:text-red-300/80">Sign-in &amp; security</p>
+          <h2 class="mt-1 text-xl font-bold text-highlighted">Sessions</h2>
+          <p class="mt-2 text-sm leading-6 text-muted">
+            Signed in on a shared or borrowed computer? Use <span class="font-semibold text-muted">Sign out everywhere</span> so no one else can open your logs. You can sign back in anytime with your passkey, Google, or email.
           </p>
 
-          <div class="mt-4 rounded-3xl border border-slate-700 bg-slate-800/50 px-4 py-4">
+          <div class="mt-4 rounded-3xl border border-default bg-elevated/30 px-4 py-4">
             <div class="flex items-start gap-3">
-              <UIcon name="i-lucide-monitor-smartphone" class="mt-0.5 size-5 shrink-0 text-sky-300" />
+              <UIcon name="i-lucide-monitor-smartphone" class="mt-0.5 size-5 shrink-0 text-primary" />
               <div class="min-w-0">
-                <p class="font-bold text-white">Signed in in this browser</p>
-                <p class="mt-1 text-xs text-slate-500">
+                <p class="font-bold text-highlighted">Signed in in this browser</p>
+                <p class="mt-1 text-xs text-muted">
                   Other browsers or computers you used are not listed here yet.
                 </p>
-                <p v-if="sessionSignInMethodLabel" class="mt-1 text-sm text-slate-400">
+                <p v-if="sessionSignInMethodLabel" class="mt-1 text-sm text-muted">
                   {{ sessionSignInMethodLabel }}
                 </p>
-                <p v-if="sessionLastSignInLabel" class="mt-1 text-xs text-slate-500">
+                <p v-if="sessionLastSignInLabel" class="mt-1 text-xs text-muted">
                   {{ sessionLastSignInLabel }}
                 </p>
               </div>
@@ -824,7 +1086,7 @@
           <div class="mt-4 grid gap-3 sm:grid-cols-2">
             <button
               type="button"
-              class="rounded-2xl bg-slate-800 px-4 py-3 text-sm font-bold text-white ring-1 ring-slate-700 transition hover:bg-slate-700 disabled:opacity-60"
+              class="rounded-2xl bg-elevated px-4 py-3 text-sm font-bold text-highlighted ring-1 ring-default transition hover:bg-accented disabled:opacity-60"
               :disabled="Boolean(pendingSessionAction)"
               @click="handleSignOut"
             >
@@ -841,16 +1103,16 @@
           </div>
         </section>
 
-        <section id="settings-recovery" class="scroll-mt-3 rounded-4xl border border-slate-800 bg-slate-900 p-4">
+        <section id="settings-recovery" :class="settingsSectionClass(compact)">
           <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Deleted Entries</p>
-            <h2 class="mt-1 text-xl font-bold text-white">Recovery bin</h2>
-            <p class="mt-2 text-sm leading-6 text-slate-400">
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-muted">Deleted Entries</p>
+            <h2 class="mt-1 text-xl font-bold text-highlighted">Recovery bin</h2>
+            <p class="mt-2 text-sm leading-6 text-muted">
               Entries removed from your log stay here until you restore or permanently remove them.
             </p>
           </div>
 
-          <div v-if="!deletedHistoryEntries.length" class="mt-5 rounded-3xl border border-slate-800 bg-slate-950/60 p-5 text-center text-sm text-slate-400">
+          <div v-if="!deletedHistoryEntries.length" class="mt-5 rounded-3xl border border-default bg-default/60 p-5 text-center text-sm text-muted">
             No deleted entries.
           </div>
 
@@ -858,22 +1120,22 @@
             <article
               v-for="entry in deletedHistoryEntries"
               :key="entry.id"
-              class="rounded-3xl border border-slate-800 bg-slate-950/60 p-4"
+              class="rounded-3xl border border-default bg-default/60 p-4"
             >
               <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0">
                   <div class="flex flex-wrap items-center gap-2">
-                    <UBadge color="neutral" variant="soft" size="sm">{{ entry.condition }}</UBadge>
-                    <UBadge color="error" variant="soft" size="sm">Deleted</UBadge>
+                    <UBadge color="neutral" variant="soft" size="md">{{ entry.condition }}</UBadge>
+                    <UBadge color="error" variant="soft" size="md">Deleted</UBadge>
                   </div>
-                  <h3 class="mt-2 font-bold text-white">{{ entry.title }}</h3>
-                  <p class="mt-1 text-xs text-slate-400">{{ entry.deletedLabel }}</p>
+                  <h3 class="mt-2 font-bold text-highlighted">{{ entry.title }}</h3>
+                  <p class="mt-1 text-xs text-muted">{{ entry.deletedLabel }}</p>
                 </div>
 
                 <div class="flex shrink-0 flex-col gap-2">
                   <button
                     type="button"
-                    class="rounded-full bg-white px-3 py-2 text-xs font-bold text-slate-950"
+                    class="rounded-full bg-primary px-3 py-2 text-xs font-bold text-inverted"
                     :disabled="isRestoringEntryId === entry.id"
                     @click="restoreDeletedEntry(entry.id)"
                   >
@@ -892,17 +1154,17 @@
           </div>
         </section>
 
-        <section id="settings-danger" class="scroll-mt-3 rounded-4xl border border-red-900/40 bg-slate-900 p-4">
+        <section id="settings-danger" :class="settingsSectionClass(compact)">
           <div>
             <p class="text-xs font-semibold uppercase tracking-[0.2em] text-red-300/80">Data control</p>
-            <h2 class="mt-1 text-xl font-bold text-white">Delete all logs</h2>
-            <p class="mt-2 text-sm leading-6 text-slate-400">
+            <h2 class="mt-1 text-xl font-bold text-highlighted">Delete all logs</h2>
+            <p class="mt-2 text-sm leading-6 text-muted">
               Permanently remove every symptom entry from your account, including items in your recovery bin. Your profile, plan, and condition picks stay saved.
             </p>
-            <p v-if="activeLogCount > 0" class="mt-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+            <p v-if="activeLogCount > 0" class="mt-3 text-xs font-semibold uppercase tracking-[0.14em] text-muted">
               {{ activeLogCount }} {{ activeLogCount === 1 ? 'entry' : 'entries' }} saved
             </p>
-            <p v-else class="mt-3 text-xs leading-5 text-slate-500">
+            <p v-else class="mt-3 text-xs leading-5 text-muted">
               No logs saved right now. You can still use this setting anytime you need a fresh start.
             </p>
           </div>
@@ -916,10 +1178,9 @@
           </button>
         </section>
 
-        <p v-if="pageError" class="rounded-3xl border border-red-900/60 bg-red-950/30 px-4 py-3 text-sm font-medium text-red-200">
+        <p v-if="pageError" class="px-1 py-3 text-sm font-medium text-red-600 dark:text-red-200">
           {{ pageError }}
         </p>
-        </div>
         </div>
       </div>
     </section>
@@ -934,28 +1195,28 @@
     >
       <div
         v-if="pendingPurgeEntry"
-        class="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/70 p-4 sm:items-center"
+        class="fixed inset-0 z-[100] flex items-end justify-center bg-black/55 p-4 backdrop-blur-[2px] sm:items-center"
         @click.self="cancelPurgeDeletedEntry"
       >
-        <div class="w-full max-w-md rounded-[1.75rem] border border-slate-800 bg-slate-900 p-5 shadow-2xl">
-          <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Permanent removal</p>
-          <h3 class="mt-2 text-xl font-bold text-white">Remove forever?</h3>
-          <p class="mt-3 text-sm leading-6 text-slate-300">
-            <span class="font-semibold text-white">{{ pendingPurgeEntry.title }}</span>
+        <div class="w-full max-w-md rounded-[1.75rem] border border-default/80 bg-default p-5 shadow-2xl">
+          <p class="text-xs font-bold uppercase tracking-[0.16em] text-muted">Permanent removal</p>
+          <h3 class="mt-2 text-xl font-bold text-highlighted">Remove forever?</h3>
+          <p class="mt-3 text-sm leading-6 text-muted">
+            <span class="font-semibold text-highlighted">{{ pendingPurgeEntry.title }}</span>
             will be removed from your deleted archive. This cannot be undone.
           </p>
 
           <div class="mt-5 grid grid-cols-2 gap-3">
             <button
               type="button"
-              class="rounded-2xl bg-slate-800 px-4 py-3 text-sm font-bold text-white"
+              class="rounded-2xl bg-elevated px-4 py-3 text-sm font-bold text-highlighted"
               @click="cancelPurgeDeletedEntry"
             >
               Cancel
             </button>
             <button
               type="button"
-              class="rounded-2xl bg-red-600 px-4 py-3 text-sm font-bold text-white"
+              class="rounded-2xl bg-red-600 px-4 py-3 text-sm font-bold text-highlighted"
               @click="confirmPurgeDeletedEntry"
             >
               Remove forever
@@ -975,28 +1236,28 @@
     >
       <div
         v-if="pendingDeleteSupporter"
-        class="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/70 p-4 sm:items-center"
+        class="fixed inset-0 z-[100] flex items-end justify-center bg-black/55 p-4 backdrop-blur-[2px] sm:items-center"
         @click.self="cancelDeleteSupporter"
       >
-        <div class="w-full max-w-md rounded-[1.75rem] border border-slate-800 bg-slate-900 p-5 shadow-2xl">
-          <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Delete reporting link</p>
-          <h3 class="mt-2 text-xl font-bold text-white">Remove this link forever?</h3>
-          <p class="mt-3 text-sm leading-6 text-slate-300">
-            <span class="font-semibold text-white">{{ pendingDeleteSupporter.display_name }}</span>
+        <div class="w-full max-w-md rounded-[1.75rem] border border-default/80 bg-default p-5 shadow-2xl">
+          <p class="text-xs font-bold uppercase tracking-[0.16em] text-muted">Delete reporting link</p>
+          <h3 class="mt-2 text-xl font-bold text-highlighted">Remove this link forever?</h3>
+          <p class="mt-3 text-sm leading-6 text-muted">
+            <span class="font-semibold text-highlighted">{{ pendingDeleteSupporter.display_name }}</span>
             will stop working immediately. Anyone with the old URL will no longer be able to submit reports.
           </p>
 
           <div class="mt-5 grid grid-cols-2 gap-3">
             <button
               type="button"
-              class="rounded-2xl bg-slate-800 px-4 py-3 text-sm font-bold text-white"
+              class="rounded-2xl bg-elevated px-4 py-3 text-sm font-bold text-highlighted"
               @click="cancelDeleteSupporter"
             >
               Cancel
             </button>
             <button
               type="button"
-              class="rounded-2xl bg-red-600 px-4 py-3 text-sm font-bold text-white"
+              class="rounded-2xl bg-red-600 px-4 py-3 text-sm font-bold text-highlighted"
               :disabled="isDeletingSupporterId === pendingDeleteSupporter.id"
               @click="confirmDeleteSupporter"
             >
@@ -1017,21 +1278,21 @@
     >
       <div
         v-if="isDeleteAllLogsModalOpen"
-        class="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/70 p-4 sm:items-center"
+        class="fixed inset-0 z-[100] flex items-end justify-center bg-black/55 p-4 backdrop-blur-[2px] sm:items-center"
         @click.self="closeDeleteAllLogsModal"
       >
         <form
-          class="w-full max-w-md rounded-[1.75rem] border border-slate-800 bg-slate-900 p-5 shadow-2xl"
+          class="w-full max-w-md rounded-[1.75rem] border border-default/80 bg-default p-5 shadow-2xl"
           @submit.prevent="confirmDeleteAllLogs"
         >
           <p class="text-xs font-bold uppercase tracking-[0.16em] text-red-300/80">Delete all logs</p>
-          <h3 class="mt-2 text-xl font-bold text-white">Remove every entry?</h3>
-          <p class="mt-3 text-sm leading-6 text-slate-300">
+          <h3 class="mt-2 text-xl font-bold text-highlighted">Remove every entry?</h3>
+          <p class="mt-3 text-sm leading-6 text-muted">
             This permanently deletes all symptom logs and clears your recovery bin. It cannot be undone.
           </p>
 
           <label v-if="usesPasswordLogin" class="mt-5 block">
-            <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Password</span>
+            <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-muted">Password</span>
             <PasswordInput
               v-model="deleteAllLogsPassword"
               tone="dark"
@@ -1042,17 +1303,17 @@
           </label>
 
           <label v-else class="mt-5 block">
-            <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Confirmation</span>
+            <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-muted">Confirmation</span>
             <input
               v-model="deleteAllLogsConfirmPhrase"
               type="text"
               autocomplete="off"
-              class="w-full rounded-3xl border border-slate-600/70 bg-slate-800/70 px-4 py-4 text-base font-medium text-white outline-none placeholder:text-slate-400 focus:border-slate-400"
+              class="w-full rounded-3xl border border-default bg-elevated/40 px-4 py-4 text-base font-medium text-highlighted outline-none placeholder:text-muted focus:border-primary focus:ring-1 focus:ring-primary/40"
               placeholder="Type DELETE ALL LOGS"
               required
             >
-            <p class="mt-2 px-1 text-xs leading-5 text-slate-400">
-              Google sign-in accounts must type <span class="font-semibold text-slate-300">DELETE ALL LOGS</span> to confirm.
+            <p class="mt-2 px-1 text-xs leading-5 text-muted">
+              Google sign-in accounts must type <span class="font-semibold text-muted">DELETE ALL LOGS</span> to confirm.
             </p>
           </label>
 
@@ -1061,7 +1322,7 @@
           <div class="mt-5 grid grid-cols-2 gap-3">
             <button
               type="button"
-              class="rounded-2xl bg-slate-800 px-4 py-3 text-sm font-bold text-white"
+              class="rounded-2xl bg-elevated px-4 py-3 text-sm font-bold text-highlighted"
               :disabled="isDeletingAllLogs"
               @click="closeDeleteAllLogsModal"
             >
@@ -1069,7 +1330,7 @@
             </button>
             <button
               type="submit"
-              class="rounded-2xl bg-red-600 px-4 py-3 text-sm font-bold text-white disabled:opacity-60"
+              class="rounded-2xl bg-red-600 px-4 py-3 text-sm font-bold text-highlighted disabled:opacity-60"
               :disabled="isDeletingAllLogs"
             >
               {{ isDeletingAllLogs ? 'Deleting...' : 'Delete all logs' }}
@@ -1089,14 +1350,14 @@
     >
       <div
         v-if="pendingDeletePasskey"
-        class="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/70 p-4 sm:items-center"
+        class="fixed inset-0 z-[100] flex items-end justify-center bg-black/55 p-4 backdrop-blur-[2px] sm:items-center"
         @click.self="cancelDeletePasskey"
       >
-        <div class="w-full max-w-md rounded-[1.75rem] border border-slate-800 bg-slate-900 p-5 shadow-2xl">
-          <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Delete passkey</p>
-          <h3 class="mt-2 text-xl font-bold text-white">Remove this passkey?</h3>
-          <p class="mt-3 text-sm leading-6 text-slate-300">
-            <span class="font-semibold text-white">{{ pendingDeletePasskey.friendly_name || 'This passkey' }}</span>
+        <div class="w-full max-w-md rounded-[1.75rem] border border-default/80 bg-default p-5 shadow-2xl">
+          <p class="text-xs font-bold uppercase tracking-[0.16em] text-muted">Delete passkey</p>
+          <h3 class="mt-2 text-xl font-bold text-highlighted">Remove this passkey?</h3>
+          <p class="mt-3 text-sm leading-6 text-muted">
+            <span class="font-semibold text-highlighted">{{ pendingDeletePasskey.friendly_name || 'This passkey' }}</span>
             will stop working for sign-in immediately. You can still sign in with your other methods, and you can add a new passkey any time.
           </p>
 
@@ -1105,7 +1366,7 @@
           <div class="mt-5 grid grid-cols-2 gap-3">
             <button
               type="button"
-              class="rounded-2xl bg-slate-800 px-4 py-3 text-sm font-bold text-white"
+              class="rounded-2xl bg-elevated px-4 py-3 text-sm font-bold text-highlighted"
               :disabled="isDeletingPasskey"
               @click="cancelDeletePasskey"
             >
@@ -1113,7 +1374,7 @@
             </button>
             <button
               type="button"
-              class="rounded-2xl bg-red-600 px-4 py-3 text-sm font-bold text-white disabled:opacity-60"
+              class="rounded-2xl bg-red-600 px-4 py-3 text-sm font-bold text-highlighted disabled:opacity-60"
               :disabled="isDeletingPasskey"
               @click="confirmDeletePasskey"
             >
@@ -1136,7 +1397,7 @@
       @close="isFaqOverlayOpen = false"
       @open-contact="openContactFromFaq"
     />
-  </main>
+  </component>
 </template>
 
 <script setup lang="ts">
@@ -1160,24 +1421,83 @@ import {
   formatTimezoneLabel,
   LOG_REMINDER_HOUR_OPTIONS
 } from '../utils/logReminders'
-import { useTrackerLayout, TRACKER_CLOSE_EMBED_PROFILE_KEY, type TrackerLayoutMode } from '../composables/useTrackerLayout'
+import { useTrackerLayout, TRACKER_CLOSE_EMBED_PROFILE_KEY, TRACKER_CLOSE_SETTINGS_KEY, type TrackerLayoutMode } from '../composables/useTrackerLayout'
 import type { SettingsSection } from '../composables/useSettingsSectionNav'
 import { mapEntryHistoryItem } from '../utils/entryDisplay'
 import { copyToClipboard } from '../utils/copyToClipboard'
+import {
+  PRO_BADGE_CLASS,
+  PRO_BADGE_ICON_CLASS,
+  PRO_LOCK_BODY_CLASS,
+  PRO_LOCK_LINK_CLASS,
+  PRO_LOCK_PANEL_CLASS,
+  PRO_LOCK_TITLE_CLASS,
+  PRO_STATUS_TEXT_CLASS,
+  SETTINGS_ACCOUNT_HELP_CLASS,
+  settingsSectionsStackClass,
+  settingsScrollBodyClass,
+  settingsSectionClass
+} from '../utils/settingsSectionLayout'
+import {
+  EMPTY_VETERAN_SERVICE_PROFILE,
+  SERVICE_BRANCH_OPTIONS,
+  formatVeteranServiceProfileSummary,
+  hasVeteranServiceProfileDetails,
+  normalizeVeteranServiceProfilePatch,
+  readVeteranServiceProfileFromRow,
+  type VeteranServiceProfile
+} from '#shared/veteranServiceProfile'
 import { AUTH_NOTICES, authNoticeToast, authSuccessToast, handleAuthApiFailure, resolveAuthApiErrorMessage, validateSignupForm, AUTH_VALIDATION, authErrorToast, isEmailConfirmationNotice } from '../utils/authNotices'
-import { computed, inject, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+
+const props = withDefaults(defineProps<{
+  overlay?: boolean
+  compact?: boolean
+  readable?: boolean
+  initialSection?: string | null
+}>(), {
+  overlay: false,
+  compact: false,
+  readable: false,
+  initialSection: null
+})
+
+const emit = defineEmits<{
+  close: []
+}>()
+
+const settingsInputSize = computed(() => {
+  if (props.readable) return 'lg'
+  if (props.compact) return 'sm'
+  return 'md'
+})
 
 const route = useRoute()
 const closeEmbedProfile = inject<(() => void) | null>(TRACKER_CLOSE_EMBED_PROFILE_KEY, null)
+const closeSettings = inject<(() => void) | null>(TRACKER_CLOSE_SETTINGS_KEY, null)
 const settingsScrollEl = ref<HTMLElement | null>(null)
+
+function closeSettingsPanel() {
+  if (closeSettings) {
+    closeSettings()
+    return
+  }
+
+  if (closeEmbedProfile) {
+    closeEmbedProfile()
+    return
+  }
+
+  emit('close')
+}
 
 const settingsSections: SettingsSection[] = [
   { id: 'settings-account', label: 'Account' },
   { id: 'settings-logging', label: 'Logging' },
   { id: 'settings-reminders', label: 'Reminders' },
   { id: 'settings-display', label: 'Display' },
-  { id: 'settings-supporters', label: 'Family, friends, other' },
+  { id: 'settings-supporters', label: 'Lay Reporting' },
   { id: 'settings-passkeys', label: 'Passkeys' },
   { id: 'settings-sessions', label: 'Sessions' },
   { id: 'settings-recovery', label: 'Recovery' },
@@ -1230,7 +1550,9 @@ const {
 } = useDeletedEntryArchive()
 const {
   isPro,
+  isClaimBuilderPro,
   isComped,
+  claimBuilderFoundingPro,
   freeConditionKeys,
   canUseFamilyReporting,
   canTrackCondition,
@@ -1238,6 +1560,26 @@ const {
   entitlementsLoaded,
   loadEntitlements
 } = useEntitlements()
+
+const claimBuilderFoundingProUntil = computed(() => {
+  const until = claimBuilderFoundingPro.value?.until
+
+  if (!until) {
+    return ''
+  }
+
+  const parsed = new Date(until)
+
+  if (Number.isNaN(parsed.getTime())) {
+    return ''
+  }
+
+  return parsed.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  })
+})
 const {
   loggingCadence,
   weeklyLogDay,
@@ -1391,6 +1733,22 @@ watch(authMode, () => {
 const profileForm = useState('profile-page-form', () => ({
   full_name: ''
 }))
+const serviceDraft = ref<VeteranServiceProfile>({ ...EMPTY_VETERAN_SERVICE_PROFILE })
+const projectSettingsExpanded = ref(false)
+const serviceBranchItems: Array<{ label: string, value: string }> = [
+  ...SERVICE_BRANCH_OPTIONS
+]
+const serviceBranchSelectUi = {
+  base: 'w-full',
+  content: 'z-[120] min-w-72 max-w-96',
+  itemLabel: 'whitespace-normal truncate-none'
+}
+const serviceBranchSelectContent = {
+  align: 'start' as const,
+  side: 'bottom' as const,
+  sideOffset: 4,
+  collisionPadding: 8
+}
 const supporterForm = ref({
   link_label: '',
   visible_conditions: [] as string[]
@@ -1422,7 +1780,32 @@ const autoSaveLabel = computed(() => {
   return ''
 })
 
+const nameSaveHint = computed(() => {
+  if (autoSaveState.value === 'saving') return 'Saving…'
+  if (autoSaveState.value === 'saved') return 'Saved'
+  if (autoSaveState.value === 'error') return 'Could not save — try again'
+  return ''
+})
+
+const serviceSaveHint = computed(() => {
+  if (autoSaveState.value === 'saving') return 'Saving…'
+  if (autoSaveState.value === 'saved') return 'Saved'
+  if (autoSaveState.value === 'error') return 'Could not save — try again'
+  return ''
+})
+
+const projectSettingsSummary = computed(() => {
+  const summary = formatVeteranServiceProfileSummary(serviceDraft.value)
+  if (summary) return summary
+  return 'Branch, rank, and service years'
+})
+
+const projectSettingsHasDetails = computed(() =>
+  hasVeteranServiceProfileDetails(serviceDraft.value)
+)
+
 let profileSaveTimer: ReturnType<typeof setTimeout> | undefined
+let serviceSaveTimer: ReturnType<typeof setTimeout> | undefined
 let savedLabelTimer: ReturnType<typeof setTimeout> | undefined
 const isCreatingSupporter = ref(false)
 const isRestoringEntryId = ref<string | null>(null)
@@ -1517,6 +1900,38 @@ onMounted(() => {
   if (user.value) {
     loadProfilePage()
   }
+  void scrollToInitialSection()
+})
+
+function scrollToInitialSection() {
+  const sectionId = props.initialSection
+  if (!sectionId || !props.overlay) {
+    return
+  }
+
+  return nextTick(() => {
+    requestAnimationFrame(() => {
+      const root = settingsScrollEl.value
+      if (!root) {
+        return
+      }
+
+      const target = root.querySelector<HTMLElement>(`#${CSS.escape(sectionId)}`)
+      if (!target) {
+        return
+      }
+
+      const navHeight = 48
+      const rootRect = root.getBoundingClientRect()
+      const targetRect = target.getBoundingClientRect()
+      const targetTop = targetRect.top - rootRect.top + root.scrollTop
+      root.scrollTo({ top: Math.max(0, targetTop - navHeight - 8), behavior: 'auto' })
+    })
+  })
+}
+
+watch(() => props.initialSection, () => {
+  void scrollToInitialSection()
 })
 
 function applySupporterLinkQuery() {
@@ -1550,6 +1965,7 @@ watch(user, (currentUser) => {
     deletedEntries.value = []
     supporterProfiles.value = []
     profileForm.value.full_name = ''
+    serviceDraft.value = { ...EMPTY_VETERAN_SERVICE_PROFILE }
     activeLogCount.value = 0
     profileInitialized.value = false
     clearPasskeys()
@@ -1594,6 +2010,9 @@ async function loadProfilePage() {
 
     activeLogCount.value = entries.length
     profileForm.value.full_name = profile?.full_name || user.value?.user_metadata?.full_name || ''
+    if (autoSaveState.value !== 'saving') {
+      serviceDraft.value = readVeteranServiceProfileFromRow(profile as Record<string, unknown> | null)
+    }
     hydrateReminderSettings(profile)
     supporterProfiles.value = supporters
     await refreshPushReminderStatus()
@@ -1646,9 +2065,78 @@ watch(
   }
 )
 
+function onServiceBranchChange(value: string | null | undefined) {
+  serviceDraft.value.service_branch = value?.trim() || null
+  scheduleServiceAutoSave()
+}
+
+function onServiceFieldInput() {
+  scheduleServiceAutoSave()
+}
+
+function onServiceYearInput(field: 'service_start_year' | 'service_end_year', raw: string) {
+  const trimmed = raw.trim()
+  serviceDraft.value[field] = trimmed ? Number.parseInt(trimmed, 10) : null
+  if (trimmed && !Number.isFinite(serviceDraft.value[field]!)) {
+    serviceDraft.value[field] = null
+  }
+  scheduleServiceAutoSave()
+}
+
+function scheduleServiceAutoSave() {
+  if (!user.value || !profileInitialized.value || isHydratingProfile.value) {
+    return
+  }
+
+  markAutoSavePending()
+
+  if (serviceSaveTimer) {
+    clearTimeout(serviceSaveTimer)
+  }
+
+  serviceSaveTimer = setTimeout(() => {
+    void saveServiceProfile()
+  }, 650)
+}
+
+async function saveServiceProfile() {
+  isSavingProfile.value = true
+  pageError.value = ''
+
+  const normalized = normalizeVeteranServiceProfilePatch({
+    phone: serviceDraft.value.phone,
+    date_of_birth: serviceDraft.value.date_of_birth,
+    service_branch: serviceDraft.value.service_branch,
+    service_rank: serviceDraft.value.service_rank,
+    service_start_year: serviceDraft.value.service_start_year,
+    service_end_year: serviceDraft.value.service_end_year
+  })
+
+  if ('error' in normalized) {
+    autoSaveState.value = 'error'
+    pageError.value = normalized.error
+    isSavingProfile.value = false
+    return
+  }
+
+  try {
+    await upsertProfile(normalized.patch)
+    markAutoSaveSaved()
+  } catch (error) {
+    autoSaveState.value = 'error'
+    pageError.value = getErrorMessage(error)
+  } finally {
+    isSavingProfile.value = false
+  }
+}
+
 onUnmounted(() => {
   if (profileSaveTimer) {
     clearTimeout(profileSaveTimer)
+  }
+
+  if (serviceSaveTimer) {
+    clearTimeout(serviceSaveTimer)
   }
 
   if (savedLabelTimer) {
@@ -2081,12 +2569,12 @@ async function confirmDeleteAllLogs() {
 }
 
 function redirectAfterAuth() {
-  if (closeEmbedProfile) {
-    closeEmbedProfile()
+  if (props.overlay || closeEmbedProfile || closeSettings) {
+    closeSettingsPanel()
     return
   }
 
-  navigateTo('/app')
+  navigateTo('/')
 }
 
 async function handleAuthSubmit() {
@@ -2375,13 +2863,13 @@ async function handleSignOut() {
     authMode.value = 'login'
     authValidationMessage.value = ''
 
-    if (closeEmbedProfile) {
+    if (closeEmbedProfile || closeSettings || props.overlay) {
       pendingAuthPanelOpen.value = true
-      closeEmbedProfile()
+      closeSettingsPanel()
       return
     }
 
-    await navigateTo('/app?login=1')
+    await navigateTo('/?login=1')
   } catch {
     pageError.value = authError.value
   } finally {
@@ -2402,13 +2890,13 @@ async function handleSignOutEverywhere() {
     authMode.value = 'login'
     authValidationMessage.value = ''
 
-    if (closeEmbedProfile) {
+    if (closeEmbedProfile || closeSettings || props.overlay) {
       pendingAuthPanelOpen.value = true
-      closeEmbedProfile()
+      closeSettingsPanel()
       return
     }
 
-    await navigateTo('/app?login=1')
+    await navigateTo('/?login=1')
   } catch {
     pageError.value = authError.value
   } finally {
@@ -2424,3 +2912,52 @@ function getErrorMessage(error: unknown) {
   return 'Something went wrong. Please try again.'
 }
 </script>
+
+<style scoped>
+.tracker-settings-readable :deep(.text-\[10px\]) {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.tracker-settings-readable :deep(.text-xs) {
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
+}
+
+.tracker-settings-readable :deep(.text-sm) {
+  font-size: 1.0625rem;
+  line-height: 1.625rem;
+}
+
+.tracker-settings-readable :deep(.text-base) {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+}
+
+.tracker-settings-readable :deep(.text-xl) {
+  font-size: 1.375rem;
+  line-height: 1.875rem;
+}
+
+.tracker-settings-readable :deep(.text-2xl) {
+  font-size: 1.625rem;
+  line-height: 2rem;
+}
+
+.tracker-settings-readable :deep(input:not([type='checkbox']):not([type='radio'])),
+.tracker-settings-readable :deep(select),
+.tracker-settings-readable :deep(textarea) {
+  min-height: 3rem;
+  font-size: 1.0625rem;
+}
+
+.tracker-settings-readable :deep(button.rounded-3xl),
+.tracker-settings-readable :deep(button.rounded-2xl) {
+  min-height: 3rem;
+}
+
+.tracker-settings-readable :deep(.rounded-3xl.border.px-4.py-4) {
+  padding-top: 1.125rem;
+  padding-bottom: 1.125rem;
+}
+</style>

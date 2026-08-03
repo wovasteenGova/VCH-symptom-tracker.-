@@ -22,7 +22,7 @@ export function resolveTrackerPublicOrigin(configuredSiteUrl?: string | null) {
 }
 
 export function resolveTrackerAppUrl(configuredSiteUrl?: string | null) {
-  return `${resolveTrackerPublicOrigin(configuredSiteUrl)}/app`
+  return `${resolveTrackerPublicOrigin(configuredSiteUrl)}/`
 }
 
 export const reportBranding = {

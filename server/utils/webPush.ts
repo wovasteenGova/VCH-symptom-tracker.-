@@ -49,7 +49,7 @@ export async function sendWebPushNotification(
     JSON.stringify({
       title: payload.title,
       body: payload.body,
-      url: payload.url || '/app'
+      url: payload.url || '/'
     }),
     {
       // High urgency helps Android/FCM wake the device instead of waiting for

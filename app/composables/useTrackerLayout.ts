@@ -10,6 +10,7 @@ export const TRACKER_DEMO_KEY = Symbol('tracker-demo')
 export const TRACKER_DEMO_ACTIONS_KEY = Symbol('tracker-demo-actions')
 export const TRACKER_DEMO_CONTROL_KEY = Symbol('tracker-demo-control')
 export const TRACKER_CLOSE_EMBED_PROFILE_KEY = Symbol('close-embed-profile')
+export const TRACKER_CLOSE_SETTINGS_KEY = Symbol('close-tracker-settings')
 
 function readStoredLayoutMode(): TrackerLayoutMode {
   if (!import.meta.client) {
@@ -28,7 +29,7 @@ function readStoredLayoutMode(): TrackerLayoutMode {
 export function useTrackerLayout() {
   const route = useRoute()
   const isEmbeddedPreview = inject(TRACKER_EMBED_KEY, false)
-  const matchesDesktopViewport = useMediaQuery('(min-width: 768px)')
+  const matchesDesktopViewport = useMediaQuery('(min-width: 1024px)')
   const layoutMode = useState<TrackerLayoutMode>('tracker-layout-mode', readStoredLayoutMode)
 
   if (import.meta.client) {

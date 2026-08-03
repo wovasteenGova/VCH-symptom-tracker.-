@@ -38,12 +38,14 @@ import { computed, onBeforeMount, onMounted, onUnmounted, ref } from 'vue'
 import { useMediaQuery } from '@vueuse/core'
 import { isIosWebKitBrowser, resolveMobileViewport } from './utils/mobileViewport'
 
-useHead({
+const { themeId } = useClaimColorTheme()
+
+useHead(() => ({
   htmlAttrs: {
     lang: 'en',
-    'data-theme': 'classic-warm'
+    'data-theme': themeId.value
   }
-})
+}))
 
 const { showSubmissionToast } = useSubmissionToast()
 const supabase = useSupabaseClient()

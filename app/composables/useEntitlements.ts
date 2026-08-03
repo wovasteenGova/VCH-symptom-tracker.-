@@ -6,7 +6,8 @@ import { resolveCatalogConditionByStoredKey } from '../utils/conditionCatalog'
 import {
   FREE_CONDITION_LIMIT,
   PRO_PRODUCT_KEY,
-  isActiveEntitlementStatus
+  isActiveEntitlementStatus,
+  canManageStripeBilling
 } from '../utils/subscription'
 
 function normalizeConditionKeyForComparison(conditionKey: string) {
@@ -24,6 +25,11 @@ type EntitlementRow = {
   grant_note?: string | null
   unlocked_at?: string | null
 }
+
+type ClaimBuilderFoundingPro = {
+  source: string
+  until: string
+} | null
 
 let entitlementsLoadPromise: Promise<void> | null = null
 const PENDING_CHECKOUT_SESSION_KEY = 'symptom-tracker-pending-checkout-session'
@@ -58,6 +64,8 @@ export function useEntitlements() {
   const trackerDb = useTrackerDb()
   const { user } = useSupabaseAuth()
   const entitlement = useState<EntitlementRow | null>('tracker-entitlement', () => null)
+  const claimBuilderProEntitled = useState('tracker-claimbuilder-pro-entitled', () => false)
+  const claimBuilderFoundingPro = useState<ClaimBuilderFoundingPro>('tracker-claimbuilder-founding-pro', () => null)
   const freeConditionKeys = useState<string[]>('tracker-free-condition-keys', () => [])
   const isLoading = useState('tracker-entitlements-loading', () => false)
   const loadError = useState('tracker-entitlements-error', () => '')
@@ -71,14 +79,20 @@ export function useEntitlements() {
 
     if (!userId || (loadedUserId.value && loadedUserId.value !== userId)) {
       entitlement.value = null
+      claimBuilderProEntitled.value = false
+      claimBuilderFoundingPro.value = null
       freeConditionKeys.value = []
       entitlementsLoaded.value = false
       loadedUserId.value = null
     }
   })
 
-  const isPro = computed(() => isActiveEntitlementStatus(entitlement.value?.status))
+  const isClaimBuilderPro = computed(() => {
+    return claimBuilderProEntitled.value && !isActiveEntitlementStatus(entitlement.value?.status)
+  })
+  const isPro = computed(() => isActiveEntitlementStatus(entitlement.value?.status) || claimBuilderProEntitled.value)
   const isComped = computed(() => entitlement.value?.status === 'comped')
+  const canManageBilling = computed(() => canManageStripeBilling(entitlement.value))
   const canUseLoggingCharts = computed(() => true)
   const canUseAdvancedCharts = computed(() => isPro.value)
   const canUseCharts = computed(() => isPro.value)
@@ -88,7 +102,7 @@ export function useEntitlements() {
     return Math.max(0, FREE_CONDITION_LIMIT - freeConditionKeys.value.length)
   })
   const renewalLabel = computed(() => {
-    if (!entitlement.value?.current_period_end || !isPro.value || isComped.value) {
+    if (!entitlement.value?.current_period_end || !isPro.value || isComped.value || isClaimBuilderPro.value) {
       return ''
     }
 
@@ -147,9 +161,32 @@ export function useEntitlements() {
 
   function clearEntitlements() {
     entitlement.value = null
+    claimBuilderProEntitled.value = false
+    claimBuilderFoundingPro.value = null
     freeConditionKeys.value = []
     entitlementsLoaded.value = false
     loadedUserId.value = null
+  }
+
+  async function loadClaimBuilderProEntitlement() {
+    try {
+      const accessToken = await getAccessToken()
+      const response = await $fetch<{
+        entitled: boolean
+        planId: string
+        foundingPro: ClaimBuilderFoundingPro
+      }>('/api/claimbuilder/pro-entitlement', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      })
+
+      claimBuilderProEntitled.value = response.entitled
+      claimBuilderFoundingPro.value = response.foundingPro ?? null
+    } catch {
+      claimBuilderProEntitled.value = false
+      claimBuilderFoundingPro.value = null
+    }
   }
 
   async function loadEntitlements(options: { force?: boolean } = {}) {
@@ -176,7 +213,8 @@ export function useEntitlements() {
         const [
           { data: entitlementData, error: entitlementError },
           { data: profile, error: profileError },
-          { data: entries, error: entriesError }
+          { data: entries, error: entriesError },
+          _
         ] = await Promise.all([
           trackerDb
             .from('user_entitlements')
@@ -194,7 +232,8 @@ export function useEntitlements() {
             .select('condition_key, created_at')
             .eq('user_id', userId)
             .eq('source', 'veteran')
-            .order('created_at', { ascending: true })
+            .order('created_at', { ascending: true }),
+          loadClaimBuilderProEntitlement()
         ])
 
         if (entitlementError) {
@@ -445,24 +484,42 @@ export function useEntitlements() {
   }
 
   async function openBillingPortal() {
+    if (!canManageBilling.value) {
+      throw new Error('Your Pro access was not set up through a subscription we can manage here. If you think something is wrong, contact us.')
+    }
+
     const accessToken = await getAccessToken()
 
-    const response = await $fetch<{ url: string }>('/api/stripe/create-portal-session', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`
+    try {
+      const response = await $fetch<{ url: string }>('/api/stripe/create-portal-session', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      })
+
+      if (!response.url) {
+        throw new Error('Billing portal URL was missing.')
       }
-    })
 
-    if (!response.url) {
-      throw new Error('Billing portal URL was missing.')
+      if (import.meta.client) {
+        window.location.href = response.url
+      }
+
+      return response.url
+    } catch (error) {
+      const fetchError = error as {
+        statusCode?: number
+        data?: { message?: string }
+        message?: string
+      }
+
+      throw new Error(
+        fetchError.data?.message
+        || fetchError.message
+        || 'We could not open the billing portal right now. If you think something is wrong, contact us.'
+      )
     }
-
-    if (import.meta.client) {
-      window.location.href = response.url
-    }
-
-    return response.url
   }
 
   async function confirmCheckoutSession(sessionId: string) {
@@ -503,7 +560,9 @@ export function useEntitlements() {
     loadError,
     entitlementsLoaded,
     isPro,
+    isClaimBuilderPro,
     isComped,
+    claimBuilderFoundingPro,
     canUseLoggingCharts,
     canUseAdvancedCharts,
     canUseCharts,
@@ -511,6 +570,7 @@ export function useEntitlements() {
     canExportPdf,
     freeConditionSlotsRemaining,
     renewalLabel,
+    canManageBilling,
     loadEntitlements,
     canTrackCondition,
     canAddFreeCondition,

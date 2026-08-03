@@ -51,7 +51,7 @@ export function parsePushNotificationPayload(eventData: unknown) {
     return {
       title: parsed.title,
       body: parsed.body || '',
-      url: parsed.url || '/app'
+      url: parsed.url || '/'
     }
   } catch {
     return null

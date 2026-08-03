@@ -1,0 +1,14 @@
+allowBuilds:
+  '@parcel/watcher': true
+  '@tailwindcss/oxide': true
+  core-js: true
+  esbuild: true
+  vue-demi: true
+
+# Kept for pnpm 10 local installs; pnpm 11 uses allowBuilds above.
+onlyBuiltDependencies:
+  - '@parcel/watcher'
+  - '@tailwindcss/oxide'
+  - core-js
+  - esbuild
+  - vue-demi

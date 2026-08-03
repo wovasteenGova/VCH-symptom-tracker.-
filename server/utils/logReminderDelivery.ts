@@ -135,7 +135,7 @@ export async function deliverReminderCandidates(
         await sendWebPushNotification(subscription, {
           title: candidate.title,
           body: candidate.body,
-          url: '/app'
+          url: '/'
         })
         successCount += 1
       } catch (error) {
