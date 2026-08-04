@@ -22,6 +22,9 @@ const message = ref('')
 const formError = ref('')
 const submitted = ref(false)
 
+const fieldClass = 'w-full rounded-xl border border-default/80 bg-default/40 px-3.5 py-2.5 text-sm text-highlighted outline-none transition placeholder:text-muted/60 focus:border-primary/60 focus:ring-2 focus:ring-primary/15'
+const labelClass = 'mb-1.5 block text-xs font-semibold text-highlighted'
+
 watch(() => props.open, (isOpen) => {
   if (!isOpen) {
     return
@@ -94,6 +97,9 @@ function handleClose() {
   >
     <AppOverlayShell
       v-if="open"
+      settings-support-overlay
+      :z-index="120"
+      backdrop-class="bg-black/55 lg:bg-black/55"
       @dismiss="handleClose"
     >
       <Transition
@@ -106,23 +112,23 @@ function handleClose() {
       >
         <section
           v-if="open"
-          class="app-overlay-panel app-overlay-panel--stack overflow-hidden rounded-[1.75rem] border border-slate-800 bg-slate-900 shadow-2xl"
+          class="app-overlay-panel app-overlay-panel--stack flex max-h-[min(92dvh,40rem)] w-full max-w-lg flex-col overflow-hidden rounded-none border-0 bg-default shadow-none lg:max-h-[min(80dvh,40rem)] lg:rounded-[1.75rem] lg:border lg:border-default/80 lg:shadow-2xl"
           role="dialog"
           aria-modal="true"
           aria-labelledby="contact-support-title"
         >
-          <div class="flex shrink-0 items-start justify-between gap-3 border-b border-slate-800 px-5 py-4">
-            <div>
-              <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+          <div class="flex shrink-0 items-start justify-between gap-3 border-b border-default/60 px-5 pb-3 pt-[calc(env(safe-area-inset-top)+1rem)] lg:py-4">
+            <div class="min-w-0">
+              <p class="text-xs font-bold uppercase tracking-[0.14em] text-muted">
                 Support
               </p>
-              <h2 id="contact-support-title" class="mt-1 text-xl font-bold text-white">
+              <h2 id="contact-support-title" class="mt-1 text-xl font-bold text-highlighted">
                 Contact us
               </h2>
             </div>
             <button
               type="button"
-              class="grid size-10 place-items-center rounded-full bg-slate-800 text-slate-200 transition hover:bg-slate-700"
+              class="grid size-9 shrink-0 place-items-center rounded-lg text-muted transition hover:bg-elevated/60 hover:text-highlighted"
               aria-label="Close contact form"
               @click="handleClose"
             >
@@ -130,73 +136,110 @@ function handleClose() {
             </button>
           </div>
 
-          <div class="min-h-0 flex-1 overflow-y-auto px-5 py-4 no-scrollbar">
+          <div class="custom-scrollbar min-h-0 flex-1 overflow-y-auto px-5 py-5 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
             <template v-if="submitted">
-              <p class="text-sm leading-6 text-slate-300">
-                Thanks — your message is on its way. We usually reply within a few business days.
-              </p>
-              <button
-                type="button"
-                class="mt-5 w-full rounded-2xl bg-white px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-slate-200"
-                @click="handleClose"
-              >
-                Done
-              </button>
+              <div class="flex flex-col items-center px-2 py-6 text-center">
+                <span class="grid size-14 place-items-center rounded-full bg-success/15 text-success">
+                  <UIcon name="i-lucide-check" class="size-7" />
+                </span>
+                <p class="mt-4 text-base font-semibold text-highlighted">
+                  Message sent
+                </p>
+                <p class="mt-2 max-w-sm text-sm leading-6 text-muted">
+                  Thanks — we got your note and usually reply within a few business days at the email you provided.
+                </p>
+                <button
+                  type="button"
+                  class="mt-6 w-full max-w-xs rounded-xl bg-primary px-4 py-3 text-sm font-bold text-white transition hover:opacity-90"
+                  @click="handleClose"
+                >
+                  Done
+                </button>
+              </div>
             </template>
 
-            <form v-else class="space-y-4" @submit.prevent="handleSubmit">
-              <p class="text-sm leading-6 text-slate-400">
-                Questions about logging, Pro, or your account? Send a note and we will get back to you by email.
-              </p>
+            <form v-else class="space-y-5" @submit.prevent="handleSubmit">
+              <div class="rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3.5">
+                <div class="flex items-start gap-3">
+                  <span class="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary">
+                    <UIcon name="i-lucide-mail" class="size-5" />
+                  </span>
+                  <div class="min-w-0">
+                    <p class="text-sm font-semibold text-highlighted">
+                      Email our support team
+                    </p>
+                    <p class="mt-1 text-xs leading-5 text-muted">
+                      Questions about logging, Pro, or your account — we reply by email, usually within a few business days.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="grid gap-4 sm:grid-cols-2">
+                <label class="block sm:col-span-1">
+                  <span :class="labelClass">Name</span>
+                  <input
+                    v-model="name"
+                    type="text"
+                    name="name"
+                    autocomplete="name"
+                    :class="fieldClass"
+                    placeholder="Your name"
+                    required
+                  >
+                </label>
+
+                <label class="block sm:col-span-1">
+                  <span :class="labelClass">Email</span>
+                  <input
+                    v-model="email"
+                    type="email"
+                    name="email"
+                    autocomplete="email"
+                    inputmode="email"
+                    autocapitalize="none"
+                    :class="fieldClass"
+                    placeholder="you@example.com"
+                    required
+                  >
+                </label>
+              </div>
 
               <label class="block">
-                <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Name</span>
-                <input
-                  v-model="name"
-                  type="text"
-                  name="name"
-                  autocomplete="name"
-                  class="w-full rounded-3xl border border-slate-600/70 bg-slate-800/70 px-4 py-3 text-base font-medium text-white outline-none placeholder:text-slate-400 focus:border-slate-400"
-                  placeholder="Your name"
-                  required
-                >
-              </label>
-
-              <label class="block">
-                <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Email</span>
-                <input
-                  v-model="email"
-                  type="email"
-                  name="email"
-                  autocomplete="email"
-                  inputmode="email"
-                  autocapitalize="none"
-                  class="w-full rounded-3xl border border-slate-600/70 bg-slate-800/70 px-4 py-3 text-base font-medium text-white outline-none placeholder:text-slate-400 focus:border-slate-400"
-                  placeholder="you@example.com"
-                  required
-                >
-              </label>
-
-              <label class="block">
-                <span class="mb-2 block px-1 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Message</span>
+                <span :class="labelClass">Message</span>
                 <textarea
                   v-model="message"
                   name="message"
-                  rows="4"
-                  class="w-full resize-y rounded-3xl border border-slate-600/70 bg-slate-800/70 px-4 py-3 text-base font-medium text-white outline-none placeholder:text-slate-400 focus:border-slate-400"
-                  placeholder="How can we help?"
+                  rows="5"
+                  :class="`${fieldClass} min-h-[7.5rem] resize-y`"
+                  placeholder="Tell us what you need help with — the more detail, the better we can assist."
                   required
                 />
               </label>
 
-              <p v-if="formError" class="text-sm font-medium text-red-300">{{ formError }}</p>
+              <p
+                v-if="formError"
+                class="rounded-xl border border-error/30 bg-error/10 px-3.5 py-2.5 text-sm font-medium text-error"
+              >
+                {{ formError }}
+              </p>
 
               <button
                 type="submit"
-                class="w-full rounded-2xl bg-white px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-slate-200 disabled:opacity-60"
+                class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-white transition hover:opacity-90 disabled:opacity-60"
                 :disabled="loading"
               >
-                {{ loading ? 'Sending...' : 'Send message' }}
+                <UIcon
+                  v-if="loading"
+                  name="i-lucide-loader-circle"
+                  class="size-4 animate-spin"
+                />
+                <UIcon
+                  v-else
+                  name="i-lucide-send"
+                  class="size-4"
+                />
+                {{ loading ? 'Sending…' : 'Send message' }}
               </button>
             </form>
           </div>

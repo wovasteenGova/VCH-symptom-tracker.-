@@ -550,6 +550,7 @@
             <button
               type="button"
               class="font-semibold text-primary underline decoration-primary/40 underline-offset-2 transition hover:text-primary/80"
+              @pointerdown.stop
               @click="isContactSupportOpen = true"
             >
               Contact us
@@ -558,6 +559,7 @@
             <button
               type="button"
               class="font-semibold text-primary underline decoration-primary/40 underline-offset-2 transition hover:text-primary/80"
+              @pointerdown.stop
               @click="isFaqOverlayOpen = true"
             >
               FAQ

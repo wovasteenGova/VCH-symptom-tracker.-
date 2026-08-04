@@ -17,10 +17,13 @@ withDefaults(defineProps<{
   backdropClass?: string
   zIndex?: number
   dismissible?: boolean
+  /** Contact/FAQ overlays opened from settings — keep settings panel open underneath. */
+  settingsSupportOverlay?: boolean
 }>(), {
   backdropClass: 'bg-slate-950/70',
   zIndex: 110,
-  dismissible: true
+  dismissible: true,
+  settingsSupportOverlay: false
 })
 
 const emit = defineEmits<{
@@ -38,6 +41,7 @@ const positionClass = computed(() => (isEmbeddedPreview ? 'absolute' : 'fixed'))
       class="app-overlay-shell inset-0"
       :class="[positionClass, backdropClass]"
       :style="{ zIndex }"
+      :data-settings-support-overlay="settingsSupportOverlay ? '' : undefined"
       @click.self="dismissible && emit('dismiss')"
     >
       <div class="app-overlay-inner">

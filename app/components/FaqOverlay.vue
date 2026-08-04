@@ -87,6 +87,9 @@ function handleOpenContact() {
   >
     <AppOverlayShell
       v-if="open"
+      settings-support-overlay
+      :z-index="120"
+      backdrop-class="bg-black/55 lg:bg-black/55"
       @dismiss="$emit('close')"
     >
       <Transition
@@ -99,23 +102,23 @@ function handleOpenContact() {
       >
         <section
           v-if="open"
-          class="app-overlay-panel app-overlay-panel--stack overflow-hidden rounded-[1.75rem] border border-slate-800 bg-slate-900 shadow-2xl"
+          class="app-overlay-panel app-overlay-panel--stack flex max-h-[min(92dvh,44rem)] w-full max-w-lg flex-col overflow-hidden rounded-none border-0 bg-default shadow-none lg:max-h-[min(80dvh,44rem)] lg:rounded-[1.75rem] lg:border lg:border-default/80 lg:shadow-2xl"
           role="dialog"
           aria-modal="true"
           aria-labelledby="faq-title"
         >
-          <div class="flex shrink-0 items-start justify-between gap-3 border-b border-slate-800 px-5 py-4">
-            <div>
-              <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+          <div class="flex shrink-0 items-start justify-between gap-3 border-b border-default/60 px-5 pb-3 pt-[calc(env(safe-area-inset-top)+1rem)] lg:py-4">
+            <div class="min-w-0">
+              <p class="text-xs font-bold uppercase tracking-[0.14em] text-muted">
                 Help
               </p>
-              <h2 id="faq-title" class="mt-1 text-xl font-bold text-white">
+              <h2 id="faq-title" class="mt-1 text-xl font-bold text-highlighted">
                 Frequently asked questions
               </h2>
             </div>
             <button
               type="button"
-              class="grid size-10 place-items-center rounded-full bg-slate-800 text-slate-200 transition hover:bg-slate-700"
+              class="grid size-9 shrink-0 place-items-center rounded-lg text-muted transition hover:bg-elevated/60 hover:text-highlighted"
               aria-label="Close FAQ"
               @click="$emit('close')"
             >
@@ -123,11 +126,11 @@ function handleOpenContact() {
             </button>
           </div>
 
-          <div class="min-h-0 flex-1 overflow-y-auto px-5 py-2 no-scrollbar">
+          <div class="custom-scrollbar min-h-0 flex-1 overflow-y-auto px-5 py-2 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
             <div
               v-for="item in faqItems"
               :key="item.id"
-              class="border-b border-slate-800 last:border-b-0"
+              class="border-b border-default/60 last:border-b-0"
             >
               <button
                 type="button"
@@ -135,16 +138,16 @@ function handleOpenContact() {
                 :aria-expanded="openItemId === item.id"
                 @click="toggleItem(item.id)"
               >
-                <span class="font-semibold text-white">{{ item.question }}</span>
+                <span class="font-semibold text-highlighted">{{ item.question }}</span>
                 <UIcon
                   :name="openItemId === item.id ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
-                  class="mt-0.5 size-5 shrink-0 text-slate-400"
+                  class="mt-0.5 size-5 shrink-0 text-muted"
                 />
               </button>
 
               <div
                 v-show="openItemId === item.id"
-                class="pb-4 text-sm leading-6 text-slate-300"
+                class="pb-4 text-sm leading-6 text-muted"
               >
                 <p>{{ item.answer }}</p>
                 <template v-if="item.id === 'privacy-data'">
@@ -152,7 +155,7 @@ function handleOpenContact() {
                     :href="VCH_PRIVACY_URL"
                     target="_blank"
                     rel="noopener"
-                    class="mt-2 inline-flex items-center gap-1 text-xs font-bold text-sky-300 underline decoration-sky-500/50 underline-offset-2 hover:text-sky-200"
+                    class="mt-2 inline-flex items-center gap-1 text-xs font-bold text-primary underline decoration-primary/30 underline-offset-2 hover:opacity-80"
                   >
                     Privacy policy
                     <UIcon name="i-lucide-external-link" class="size-3.5" />
@@ -161,7 +164,7 @@ function handleOpenContact() {
                 <button
                   v-if="item.id === 'contact'"
                   type="button"
-                  class="mt-3 inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-slate-200"
+                  class="mt-3 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
                   @click="handleOpenContact"
                 >
                   Contact us
