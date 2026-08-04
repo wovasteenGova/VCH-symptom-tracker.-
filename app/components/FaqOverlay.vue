@@ -102,7 +102,7 @@ function handleOpenContact() {
       >
         <section
           v-if="open"
-          class="app-overlay-panel app-overlay-panel--stack flex max-h-[min(92dvh,44rem)] w-full max-w-lg flex-col overflow-hidden rounded-none border-0 bg-default shadow-none lg:max-h-[min(80dvh,44rem)] lg:rounded-[1.75rem] lg:border lg:border-default/80 lg:shadow-2xl"
+          class="app-overlay-panel app-overlay-panel--stack flex h-dvh max-h-dvh w-full max-w-lg flex-col overflow-hidden rounded-none border-0 bg-default shadow-none lg:h-[min(80dvh,44rem)] lg:max-h-[min(80dvh,44rem)] lg:rounded-[1.75rem] lg:border lg:border-default/80 lg:shadow-2xl"
           role="dialog"
           aria-modal="true"
           aria-labelledby="faq-title"
