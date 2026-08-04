@@ -45,6 +45,16 @@ const {
   closeSettingsPanel,
   consumePendingSettingsSection
 } = useTrackerSettingsPanelOpen()
+const supportOverlays = useSettingsSupportOverlays()
+const {
+  contactOpen: settingsContactOpen,
+  faqOpen: settingsFaqOpen,
+  isOpen: settingsSupportOverlayOpen,
+  openContactFromFaq: openSettingsContactFromFaq,
+  closeContact: closeSettingsContact,
+  closeFaq: closeSettingsFaq,
+  closeAll: closeSettingsSupportOverlays
+} = supportOverlays
 
 const initialSettingsSection = ref<string | null>(null)
 
@@ -87,6 +97,7 @@ const accountDisplayName = computed(() => {
 })
 
 function closeSettings() {
+  closeSettingsSupportOverlays()
   closeSettingsPanel()
 }
 
@@ -194,6 +205,7 @@ function isSettingsPanelInteractionTarget(target: EventTarget | null) {
 
 function onSettingsPanelOutsidePointerDown(event: PointerEvent) {
   if (!settingsPanelOpen.value) return
+  if (settingsSupportOverlayOpen.value) return
   const target = event.target
   if (!(target instanceof Element)) return
   if (isSettingsPanelInteractionTarget(target)) return
@@ -212,6 +224,10 @@ function collapseSettings() {
 
 function onSettingsKeydown(event: KeyboardEvent) {
   if (event.key !== 'Escape') return
+  if (settingsSupportOverlayOpen.value) {
+    closeSettingsSupportOverlays()
+    return
+  }
   if (settingsExpanded.value) {
     if (mobileViewport.value) closeSettings()
     else collapseSettings()
@@ -278,7 +294,7 @@ async function onSignedIn() {
       v-model:open="settingsOpen"
       :content="{ side: 'bottom', align: 'end', sideOffset: 8 }"
       :modal="false"
-      :dismissible="!settingsSectionMenuOpen"
+      :dismissible="!settingsSectionMenuOpen && !settingsSupportOverlayOpen"
     >
       <UTooltip
         :text="ACCOUNT_SETTINGS_ACTION.tooltip"
@@ -361,7 +377,7 @@ async function onSignedIn() {
       >
         <div
           :class="mobileViewport ? mobileOverlayShellClass(90) : desktopOverlayShellClass(90)"
-          @click.self="!mobileViewport && closeSettings()"
+          @click.self="!mobileViewport && !settingsSupportOverlayOpen && closeSettings()"
         >
           <section
             data-settings-panel-root
@@ -502,4 +518,17 @@ async function onSignedIn() {
   >
     <UIcon name="i-lucide-loader-circle" class="size-4 animate-spin" />
   </div>
+
+  <ContactSupportOverlay
+    :open="settingsContactOpen"
+    :default-name="accountDisplayName"
+    :default-email="user?.email || ''"
+    @close="closeSettingsContact()"
+  />
+
+  <FaqOverlay
+    :open="settingsFaqOpen"
+    @close="closeSettingsFaq()"
+    @open-contact="openSettingsContactFromFaq()"
+  />
 </template>

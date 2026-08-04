@@ -551,7 +551,7 @@
               type="button"
               class="font-semibold text-primary underline decoration-primary/40 underline-offset-2 transition hover:text-primary/80"
               @pointerdown.stop
-              @click="isContactSupportOpen = true"
+              @click="supportOverlays.openContact()"
             >
               Contact us
             </button>
@@ -560,7 +560,7 @@
               type="button"
               class="font-semibold text-primary underline decoration-primary/40 underline-offset-2 transition hover:text-primary/80"
               @pointerdown.stop
-              @click="isFaqOverlayOpen = true"
+              @click="supportOverlays.openFaq()"
             >
               FAQ
             </button>
@@ -1388,16 +1388,18 @@
     </Transition>
 
     <ContactSupportOverlay
-      :open="isContactSupportOpen"
+      v-if="!overlay"
+      :open="settingsContactOpen"
       :default-name="profileForm.full_name"
       :default-email="user?.email || ''"
-      @close="isContactSupportOpen = false"
+      @close="supportOverlays.closeContact()"
     />
 
     <FaqOverlay
-      :open="isFaqOverlayOpen"
-      @close="isFaqOverlayOpen = false"
-      @open-contact="openContactFromFaq"
+      v-if="!overlay"
+      :open="settingsFaqOpen"
+      @close="supportOverlays.closeFaq()"
+      @open-contact="supportOverlays.openContactFromFaq()"
     />
   </component>
 </template>
@@ -1817,8 +1819,11 @@ const copiedSupporterId = ref<string | null>(null)
 const pendingPurgeEntry = ref<null | { id: string, title: string }>(null)
 const pendingDeleteSupporter = ref<null | { id: string, display_name: string }>(null)
 const activeLogCount = useState('profile-page-log-count', () => 0)
-const isContactSupportOpen = ref(false)
-const isFaqOverlayOpen = ref(false)
+const supportOverlays = useSettingsSupportOverlays()
+const {
+  contactOpen: settingsContactOpen,
+  faqOpen: settingsFaqOpen
+} = supportOverlays
 const isDeleteAllLogsModalOpen = ref(false)
 const deleteAllLogsPassword = ref('')
 const deleteAllLogsConfirmPhrase = ref('')
@@ -2510,11 +2515,6 @@ function confirmPurgeDeletedEntry() {
   pendingPurgeEntry.value = null
   loadDeletedEntries()
   showSubmissionToast('Deleted entry removed permanently.')
-}
-
-function openContactFromFaq() {
-  isFaqOverlayOpen.value = false
-  isContactSupportOpen.value = true
 }
 
 function openDeleteAllLogsModal() {
