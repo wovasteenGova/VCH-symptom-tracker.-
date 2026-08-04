@@ -21,6 +21,9 @@ type FaqItem = {
   answer: string
 }
 
+const faqPanelClass = 'flex w-[min(calc(100vw-2rem),32rem)] max-w-[32rem] max-h-[min(75dvh,28rem)] flex-col overflow-hidden rounded-[1.75rem] border border-default/80 bg-default shadow-2xl'
+const faqScrollClass = 'max-h-[min(calc(75dvh-5.5rem),22rem)] overflow-y-scroll overscroll-contain px-5 py-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] [scrollbar-gutter:stable]'
+
 const faqItems: FaqItem[] = [
   {
     id: 'what-is-tracker',
@@ -64,7 +67,7 @@ const faqItems: FaqItem[] = [
   }
 ]
 
-const openItemId = ref<string | null>(faqItems[0]?.id ?? null)
+const openItemId = ref<string | null>(null)
 
 function toggleItem(id: string) {
   openItemId.value = openItemId.value === id ? null : id
@@ -92,88 +95,79 @@ function handleOpenContact() {
       backdrop-class="bg-black/55 lg:bg-black/55"
       @dismiss="$emit('close')"
     >
-      <Transition
-        enter-active-class="transition duration-250 ease-out"
-        enter-from-class="translate-y-6 opacity-0 sm:translate-y-0 sm:scale-95"
-        enter-to-class="translate-y-0 opacity-100 sm:scale-100"
-        leave-active-class="transition duration-200 ease-in"
-        leave-from-class="translate-y-0 opacity-100 sm:scale-100"
-        leave-to-class="translate-y-4 opacity-0 sm:translate-y-0 sm:scale-95"
+      <section
+        v-if="open"
+        :class="faqPanelClass"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="faq-title"
       >
-        <section
-          v-if="open"
-          class="app-overlay-panel app-overlay-panel--stack flex h-dvh max-h-dvh w-full max-w-lg flex-col overflow-hidden rounded-none border-0 bg-default shadow-none lg:h-[min(80dvh,44rem)] lg:max-h-[min(80dvh,44rem)] lg:rounded-[1.75rem] lg:border lg:border-default/80 lg:shadow-2xl"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="faq-title"
-        >
-          <div class="flex shrink-0 items-start justify-between gap-3 border-b border-default/60 px-5 pb-3 pt-[calc(env(safe-area-inset-top)+1rem)] lg:py-4">
-            <div class="min-w-0">
-              <p class="text-xs font-bold uppercase tracking-[0.14em] text-muted">
-                Help
-              </p>
-              <h2 id="faq-title" class="mt-1 text-xl font-bold text-highlighted">
-                Frequently asked questions
-              </h2>
-            </div>
+        <div class="flex shrink-0 items-start justify-between gap-3 border-b border-default/60 px-5 py-4">
+          <div class="min-w-0">
+            <p class="text-xs font-bold uppercase tracking-[0.14em] text-muted">
+              Help
+            </p>
+            <h2 id="faq-title" class="mt-1 text-xl font-bold text-highlighted">
+              Frequently asked questions
+            </h2>
+          </div>
+          <button
+            type="button"
+            class="grid size-9 shrink-0 place-items-center rounded-lg text-muted transition hover:bg-elevated/60 hover:text-highlighted"
+            aria-label="Close FAQ"
+            @click="$emit('close')"
+          >
+            <UIcon name="i-lucide-x" class="size-5" />
+          </button>
+        </div>
+
+        <div :class="faqScrollClass">
+          <div
+            v-for="item in faqItems"
+            :key="item.id"
+            class="border-b border-default/60 last:border-b-0"
+          >
             <button
               type="button"
-              class="grid size-9 shrink-0 place-items-center rounded-lg text-muted transition hover:bg-elevated/60 hover:text-highlighted"
-              aria-label="Close FAQ"
-              @click="$emit('close')"
+              class="flex w-full items-start justify-between gap-3 py-3.5 text-left"
+              :aria-expanded="openItemId === item.id"
+              @click="toggleItem(item.id)"
             >
-              <UIcon name="i-lucide-x" class="size-5" />
+              <span class="min-w-0 flex-1 font-semibold text-highlighted">{{ item.question }}</span>
+              <UIcon
+                :name="openItemId === item.id ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
+                class="mt-0.5 size-5 shrink-0 text-muted"
+              />
             </button>
-          </div>
 
-          <div class="custom-scrollbar min-h-0 flex-1 overflow-y-auto px-5 py-2 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
             <div
-              v-for="item in faqItems"
-              :key="item.id"
-              class="border-b border-default/60 last:border-b-0"
+              v-show="openItemId === item.id"
+              class="pb-3.5 text-sm leading-6 text-muted"
             >
-              <button
-                type="button"
-                class="flex w-full items-start justify-between gap-3 py-4 text-left"
-                :aria-expanded="openItemId === item.id"
-                @click="toggleItem(item.id)"
-              >
-                <span class="font-semibold text-highlighted">{{ item.question }}</span>
-                <UIcon
-                  :name="openItemId === item.id ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
-                  class="mt-0.5 size-5 shrink-0 text-muted"
-                />
-              </button>
-
-              <div
-                v-show="openItemId === item.id"
-                class="pb-4 text-sm leading-6 text-muted"
-              >
-                <p>{{ item.answer }}</p>
-                <template v-if="item.id === 'privacy-data'">
-                  <a
-                    :href="VCH_PRIVACY_URL"
-                    target="_blank"
-                    rel="noopener"
-                    class="mt-2 inline-flex items-center gap-1 text-xs font-bold text-primary underline decoration-primary/30 underline-offset-2 hover:opacity-80"
-                  >
-                    Privacy policy
-                    <UIcon name="i-lucide-external-link" class="size-3.5" />
-                  </a>
-                </template>
-                <button
-                  v-if="item.id === 'contact'"
-                  type="button"
-                  class="mt-3 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
-                  @click="handleOpenContact"
+              <p>{{ item.answer }}</p>
+              <template v-if="item.id === 'privacy-data'">
+                <a
+                  :href="VCH_PRIVACY_URL"
+                  target="_blank"
+                  rel="noopener"
+                  class="mt-2 inline-flex items-center gap-1 text-xs font-bold text-primary underline decoration-primary/30 underline-offset-2 hover:opacity-80"
                 >
-                  Contact us
-                </button>
-              </div>
+                  Privacy policy
+                  <UIcon name="i-lucide-external-link" class="size-3.5" />
+                </a>
+              </template>
+              <button
+                v-if="item.id === 'contact'"
+                type="button"
+                class="mt-3 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
+                @click="handleOpenContact"
+              >
+                Contact us
+              </button>
             </div>
           </div>
-        </section>
-      </Transition>
+        </div>
+      </section>
     </AppOverlayShell>
   </Transition>
 </template>
